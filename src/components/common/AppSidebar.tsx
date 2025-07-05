@@ -20,6 +20,7 @@ import {
   ChefHat,
   LogOut,
   Settings,
+  BarChart3,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -30,6 +31,7 @@ const navItems = [
   { href: "/menu", icon: BookOpen, label: "Menu Digital" },
   { href: "/reservations", icon: Calendar, label: "Réservations" },
   { href: "/inventory", icon: Warehouse, label: "Inventaire" },
+  { href: "/menu-performance", icon: BarChart3, label: "Analyse Menu" },
   { href: "/ai-menu-optimizer", icon: Sparkles, label: "Optimiseur IA" },
   { href: "/ai-pricing-tool", icon: DollarSign, label: "Prix Dynamique IA" },
   { href: "/feedback", icon: MessageSquare, label: "Avis Clients" },

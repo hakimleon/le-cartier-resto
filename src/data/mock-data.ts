@@ -3,6 +3,7 @@ export type MenuItem = {
   name: string;
   description: string;
   price: number;
+  cost: number;
   category: 'Entrées' | 'Plats Principaux' | 'Desserts' | 'Boissons';
   image: string;
   imageHint: string;
@@ -24,6 +25,7 @@ export const menuItems: MenuItem[] = [
     name: 'Foie Gras Poêlé',
     description: 'Figues rôties, réduction de balsamique, pain d\'épices maison.',
     price: 28,
+    cost: 12,
     category: 'Entrées',
     image: 'https://placehold.co/600x400.png',
     imageHint: 'gourmet appetizer',
@@ -45,6 +47,7 @@ export const menuItems: MenuItem[] = [
     name: 'Velouté de Potimarron',
     description: 'Châtaignes grillées, huile de truffe noire.',
     price: 18,
+    cost: 6,
     category: 'Entrées',
     image: 'https://placehold.co/600x400.png',
     imageHint: 'pumpkin soup',
@@ -66,6 +69,7 @@ export const menuItems: MenuItem[] = [
     name: 'Filet de Boeuf Rossini',
     description: 'Purée de pommes de terre truffée, sauce Périgueux.',
     price: 45,
+    cost: 18,
     category: 'Plats Principaux',
     image: 'https://placehold.co/600x400.png',
     imageHint: 'beef steak',
@@ -87,6 +91,7 @@ export const menuItems: MenuItem[] = [
     name: 'Saint-Jacques Rôties',
     description: 'Risotto crémeux aux agrumes, asperges vertes.',
     price: 39,
+    cost: 15,
     category: 'Plats Principaux',
     image: 'https://placehold.co/600x400.png',
     imageHint: 'seared scallops',
@@ -108,6 +113,7 @@ export const menuItems: MenuItem[] = [
     name: 'Sphère en Chocolat',
     description: 'Mousse au chocolat noir, cœur caramel, sauce chocolat chaud.',
     price: 16,
+    cost: 5,
     category: 'Desserts',
     image: 'https://placehold.co/600x400.png',
     imageHint: 'chocolate dessert',
@@ -129,6 +135,7 @@ export const menuItems: MenuItem[] = [
     name: 'Tarte Tatin Revisitée',
     description: 'Pommes caramélisées, crème glacée à la vanille de Tahiti.',
     price: 15,
+    cost: 4,
     category: 'Desserts',
     image: 'https://placehold.co/600x400.png',
     imageHint: 'apple tart',
@@ -150,6 +157,7 @@ export const menuItems: MenuItem[] = [
     name: 'Château Margaux 2015',
     description: 'Grand cru classé, Bordeaux, France.',
     price: 1200,
+    cost: 600,
     category: 'Boissons',
     image: 'https://placehold.co/600x400.png',
     imageHint: 'red wine',
@@ -166,6 +174,7 @@ export const menuItems: MenuItem[] = [
     name: 'Eau Minérale Evian',
     description: '75cl',
     price: 8,
+    cost: 1,
     category: 'Boissons',
     image: 'https://placehold.co/600x400.png',
     imageHint: 'water bottle',
@@ -215,4 +224,20 @@ export const tables: Table[] = [
     { id: 7, seats: 2, status: 'occupied', shape: 'square' },
     { id: 8, seats: 8, status: 'reserved', shape: 'square' },
     { id: 9, seats: 4, status: 'available', shape: 'round' },
+];
+
+export type PerformanceData = {
+  menuItemId: string;
+  totalSales: number; // units sold last month
+};
+
+export const menuPerformanceData: PerformanceData[] = [
+  { menuItemId: '1', totalSales: 150 }, // Foie Gras Poêlé (Puzzle)
+  { menuItemId: '2', totalSales: 220 }, // Velouté de Potimarron (Plowhorse)
+  { menuItemId: '3', totalSales: 300 }, // Filet de Boeuf Rossini (Star)
+  { menuItemId: '4', totalSales: 180 }, // Saint-Jacques Rôties (Star)
+  { menuItemId: '5', totalSales: 250 }, // Sphère en Chocolat (Star)
+  { menuItemId: '6', totalSales: 80 }, // Tarte Tatin Revisitée (Dog)
+  { menuItemId: '7', totalSales: 5 },   // Château Margaux (Dog)
+  { menuItemId: '8', totalSales: 400 }, // Eau Minérale Evian (Plowhorse)
 ];
