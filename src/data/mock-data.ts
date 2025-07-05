@@ -6,7 +6,17 @@ export type MenuItem = {
   category: 'Entrées' | 'Plats Principaux' | 'Desserts' | 'Boissons';
   image: string;
   imageHint: string;
+  prepTime: number; // in minutes
+  status: 'Actif' | 'Inactif' | 'Saisonnier';
+  tags: ('Végétarien' | 'Épicé' | 'Sans gluten' | 'Spécialité locale')[];
+  ingredients: { name: string; quantity: string }[];
+  instructions: string;
+  difficulty: 1 | 2 | 3 | 4 | 5;
+  allergens: string[];
 };
+
+export const categories: ('Entrées' | 'Plats Principaux' | 'Desserts' | 'Boissons')[] = ["Entrées", "Plats Principaux", "Desserts", "Boissons"];
+export const tags: ('Végétarien' | 'Épicé' | 'Sans gluten' | 'Spécialité locale')[] = ['Végétarien', 'Épicé', 'Sans gluten', 'Spécialité locale'];
 
 export const menuItems: MenuItem[] = [
   {
@@ -16,7 +26,19 @@ export const menuItems: MenuItem[] = [
     price: 28,
     category: 'Entrées',
     image: 'https://placehold.co/600x400.png',
-    imageHint: 'gourmet appetizer'
+    imageHint: 'gourmet appetizer',
+    prepTime: 15,
+    status: 'Actif',
+    tags: ['Spécialité locale'],
+    ingredients: [
+      { name: 'Foie gras de canard', quantity: '1 tranche (80g)' },
+      { name: 'Figues fraîches', quantity: '2' },
+      { name: 'Vinaigre balsamique', quantity: '30ml' },
+      { name: 'Pain d\'épices', quantity: '1 tranche' },
+    ],
+    instructions: 'Poêler le foie gras 1-2 minutes de chaque côté. Déglacer avec le vinaigre balsamique. Servir chaud avec les figues rôties et le pain d\'épices.',
+    difficulty: 3,
+    allergens: ['Gluten'],
   },
   {
     id: '2',
@@ -25,7 +47,19 @@ export const menuItems: MenuItem[] = [
     price: 18,
     category: 'Entrées',
     image: 'https://placehold.co/600x400.png',
-    imageHint: 'pumpkin soup'
+    imageHint: 'pumpkin soup',
+    prepTime: 20,
+    status: 'Saisonnier',
+    tags: ['Végétarien', 'Sans gluten'],
+    ingredients: [
+        { name: 'Potimarron', quantity: '300g' },
+        { name: 'Châtaignes', quantity: '50g' },
+        { name: 'Huile de truffe', quantity: '5ml' },
+        { name: 'Crème liquide', quantity: '50ml' },
+    ],
+    instructions: 'Cuire le potimarron puis mixer avec la crème. Ajouter les châtaignes grillées et un filet d\'huile de truffe avant de servir.',
+    difficulty: 2,
+    allergens: ['Lactose'],
   },
   {
     id: '3',
@@ -34,7 +68,19 @@ export const menuItems: MenuItem[] = [
     price: 45,
     category: 'Plats Principaux',
     image: 'https://placehold.co/600x400.png',
-    imageHint: 'beef steak'
+    imageHint: 'beef steak',
+    prepTime: 30,
+    status: 'Actif',
+    tags: ['Spécialité locale'],
+    ingredients: [
+        { name: 'Filet de boeuf', quantity: '180g' },
+        { name: 'Escalope de foie gras', quantity: '50g' },
+        { name: 'Truffe noire', quantity: '10g' },
+        { name: 'Pommes de terre', quantity: '200g' },
+    ],
+    instructions: 'Cuire le filet de boeuf à la cuisson désirée. Poêler l\'escalope de foie gras. Servir sur le filet avec une purée truffée et la sauce Périgueux.',
+    difficulty: 4,
+    allergens: ['Lactose'],
   },
   {
     id: '4',
@@ -43,7 +89,19 @@ export const menuItems: MenuItem[] = [
     price: 39,
     category: 'Plats Principaux',
     image: 'https://placehold.co/600x400.png',
-    imageHint: 'seared scallops'
+    imageHint: 'seared scallops',
+    prepTime: 25,
+    status: 'Saisonnier',
+    tags: [],
+    ingredients: [
+        { name: 'Noix de Saint-Jacques', quantity: '5' },
+        { name: 'Riz Arborio', quantity: '80g' },
+        { name: 'Asperges vertes', quantity: '100g' },
+        { name: 'Agrumes (citron, orange)', quantity: '1' },
+    ],
+    instructions: 'Préparer le risotto. Poêler les Saint-Jacques et cuire les asperges. Dresser harmonieusement.',
+    difficulty: 3,
+    allergens: ['Mollusques', 'Lactose'],
   },
   {
     id: '5',
@@ -52,7 +110,19 @@ export const menuItems: MenuItem[] = [
     price: 16,
     category: 'Desserts',
     image: 'https://placehold.co/600x400.png',
-    imageHint: 'chocolate dessert'
+    imageHint: 'chocolate dessert',
+    prepTime: 20,
+    status: 'Actif',
+    tags: [],
+    ingredients: [
+        { name: 'Chocolat noir 70%', quantity: '100g' },
+        { name: 'Sucre', quantity: '50g' },
+        { name: 'Crème liquide', quantity: '100ml' },
+        { name: 'Beurre salé', quantity: '20g' },
+    ],
+    instructions: 'Créer la sphère en chocolat. Garnir de mousse. Préparer le caramel. Verser la sauce chocolat chaud au moment de servir pour faire fondre la sphère.',
+    difficulty: 5,
+    allergens: ['Lactose', 'Soja'],
   },
   {
     id: '6',
@@ -61,7 +131,19 @@ export const menuItems: MenuItem[] = [
     price: 15,
     category: 'Desserts',
     image: 'https://placehold.co/600x400.png',
-    imageHint: 'apple tart'
+    imageHint: 'apple tart',
+    prepTime: 25,
+    status: 'Actif',
+    tags: ['Spécialité locale'],
+    ingredients: [
+      { name: 'Pommes Golden', quantity: '2' },
+      { name: 'Pâte feuilletée', quantity: '100g' },
+      { name: 'Sucre', quantity: '80g' },
+      { name: 'Glace vanille', quantity: '1 boule' },
+    ],
+    instructions: 'Caraméliser les pommes. Recouvrir de pâte feuilletée et cuire au four. Servir tiède avec une boule de glace vanille.',
+    difficulty: 2,
+    allergens: ['Gluten', 'Lactose'],
   },
   {
     id: '7',
@@ -70,7 +152,14 @@ export const menuItems: MenuItem[] = [
     price: 1200,
     category: 'Boissons',
     image: 'https://placehold.co/600x400.png',
-    imageHint: 'red wine'
+    imageHint: 'red wine',
+    prepTime: 5,
+    status: 'Inactif',
+    tags: [],
+    ingredients: [],
+    instructions: '',
+    difficulty: 1,
+    allergens: ['Sulfites'],
   },
   {
     id: '8',
@@ -79,7 +168,14 @@ export const menuItems: MenuItem[] = [
     price: 8,
     category: 'Boissons',
     image: 'https://placehold.co/600x400.png',
-    imageHint: 'water bottle'
+    imageHint: 'water bottle',
+    prepTime: 1,
+    status: 'Actif',
+    tags: [],
+    ingredients: [],
+    instructions: '',
+    difficulty: 1,
+    allergens: [],
   },
 ];
 
