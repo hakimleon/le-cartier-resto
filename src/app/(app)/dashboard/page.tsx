@@ -1,18 +1,28 @@
+"use client";
+
+import { useState, useEffect } from "react";
 import { AppHeader } from "@/components/common/AppHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, XAxis, YAxis } from "recharts";
 import { DollarSign, ShoppingCart, Users, UtensilsCrossed } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DashboardPage() {
-  const barChartData = [
-    { name: "Lun", total: Math.floor(Math.random() * 5000) + 1000 },
-    { name: "Mar", total: Math.floor(Math.random() * 5000) + 1000 },
-    { name: "Mer", total: Math.floor(Math.random() * 5000) + 1000 },
-    { name: "Jeu", total: Math.floor(Math.random() * 5000) + 1000 },
-    { name: "Ven", total: Math.floor(Math.random() * 5000) + 1000 },
-    { name: "Sam", total: Math.floor(Math.random() * 5000) + 1000 },
-    { name: "Dim", total: Math.floor(Math.random() * 5000) + 1000 },
-  ];
+  const [barChartData, setBarChartData] = useState<any[]>([]);
+
+  useEffect(() => {
+    // We generate the data on the client to avoid hydration mismatch
+    const data = [
+      { name: "Lun", total: Math.floor(Math.random() * 5000) + 1000 },
+      { name: "Mar", total: Math.floor(Math.random() * 5000) + 1000 },
+      { name: "Mer", total: Math.floor(Math.random() * 5000) + 1000 },
+      { name: "Jeu", total: Math.floor(Math.random() * 5000) + 1000 },
+      { name: "Ven", total: Math.floor(Math.random() * 5000) + 1000 },
+      { name: "Sam", total: Math.floor(Math.random() * 5000) + 1000 },
+      { name: "Dim", total: Math.floor(Math.random() * 5000) + 1000 },
+    ];
+    setBarChartData(data);
+  }, []);
 
   return (
     <div className="flex flex-col h-full">
@@ -65,26 +75,30 @@ export default function DashboardPage() {
             <CardTitle>Aperçu des revenus</CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={350}>
-              <BarChart data={barChartData}>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  stroke="#888888"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  stroke="#888888"
-                  fontSize={12}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(value) => `€${value}`}
-                />
-                <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            {barChartData.length > 0 ? (
+                <ResponsiveContainer width="100%" height={350}>
+                <BarChart data={barChartData}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis
+                    dataKey="name"
+                    stroke="#888888"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    />
+                    <YAxis
+                    stroke="#888888"
+                    fontSize={12}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(value) => `€${value}`}
+                    />
+                    <Bar dataKey="total" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                </BarChart>
+                </ResponsiveContainer>
+            ) : (
+                <Skeleton className="w-full h-[350px]" />
+            )}
           </CardContent>
         </Card>
       </main>
