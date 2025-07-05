@@ -24,7 +24,7 @@ type DishFormProps = {
 const emptyDish: Omit<MenuItem, 'id'> = {
   name: "",
   description: "",
-  category: "Plats Principaux",
+  category: categories[0],
   price: 0,
   prepTime: 0,
   status: "Actif",
