@@ -21,6 +21,7 @@ import {
   LogOut,
   Settings,
   BarChart3,
+  Wand2,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/menu-performance", icon: BarChart3, label: "Analyse Menu" },
   { href: "/ai-menu-optimizer", icon: Sparkles, label: "Optimiseur IA" },
   { href: "/ai-pricing-tool", icon: DollarSign, label: "Prix Dynamique IA" },
+  { href: "/daily-menu-generator", icon: Wand2, label: "Générateur de Menu" },
   { href: "/feedback", icon: MessageSquare, label: "Avis Clients" },
 ];
 
