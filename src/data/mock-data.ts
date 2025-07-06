@@ -24,8 +24,8 @@ export const menuItems: MenuItem[] = [
   // Entrées Froides
   {
     id: 'ef-1',
-    name: 'Oeuf cremeux a la mayo maison',
-    description: 'Oeuf dur nappé d\'une mayonnaise onctueuse montée à la main.',
+    name: "Oeuf cremeux a la mayo maison au couleurs locales",
+    description: "Oeuf dur nappe avec une mayonnaise enctueuse montee a la main",
     price: 900,
     cost: 360,
     category: 'Entrées Froides',
@@ -1378,4 +1378,18 @@ export const menuPerformanceData: PerformanceData[] = [
   { menuItemId: 'burg-1', totalSales: 300 }, // Burger Gourmet (Plowhorse)
   { menuItemId: 'ec-7', totalSales: 110}, // Perles d’Écume Croquantes (Puzzle)
   { menuItemId: 'pg-14', totalSales: 180}, // L’Entrecôte Signature Grillée (Star)
+];
+
+export type HistoricalPerformanceData = {
+  month: string;
+  [menuItemId: string]: number | string;
+}
+
+export const historicalPerformanceData: HistoricalPerformanceData[] = [
+    { month: "Janvier", "pg-16": 186, "des-1": 305, "burg-1": 280, "lmdcn-2": 140 },
+    { month: "Février", "pg-16": 205, "des-1": 285, "burg-1": 310, "lmdcn-2": 160 },
+    { month: "Mars", "pg-16": 237, "des-1": 330, "burg-1": 340, "lmdcn-2": 180 },
+    { month: "Avril", "pg-16": 220, "des-1": 350, "burg-1": 320, "lmdcn-2": 170 },
+    { month: "Mai", "pg-16": 278, "des-1": 380, "burg-1": 360, "lmdcn-2": 200 },
+    { month: "Juin", "pg-16": 250, "des-1": 350, "burg-1": 300, "lmdcn-2": 150 },
 ];

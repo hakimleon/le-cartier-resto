@@ -5,11 +5,12 @@ import { useState, useEffect, useMemo, ReactNode } from "react";
 import { AppHeader } from "@/components/common/AppHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { menuItems, menuPerformanceData, MenuItem, PerformanceData } from "@/data/mock-data";
+import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, LineChart, Line } from "recharts";
+import { menuItems, menuPerformanceData, MenuItem, PerformanceData, historicalPerformanceData, HistoricalPerformanceData } from "@/data/mock-data";
 import { Anchor, HelpCircle, Star, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart";
 
 type MenuEngineeringCategory = 'Star' | 'Plowhorse' | 'Puzzle' | 'Dog';
 
@@ -51,6 +52,13 @@ const categoryConfig: Record<MenuEngineeringCategory, {
     },
 };
 
+const chartConfig: ChartConfig = {
+    'pg-16': { label: 'Filet de Boeuf', color: 'hsl(var(--chart-1))' },
+    'des-1': { label: 'Tentation Chocolat', color: 'hsl(var(--chart-2))' },
+    'burg-1': { label: 'Burger Gourmet', color: 'hsl(var(--chart-3))' },
+    'lmdcn-2': { label: 'Rechta Royale', color: 'hsl(var(--chart-4))' },
+};
+
 export default function MenuPerformancePage() {
   const [analyzedData, setAnalyzedData] = useState<AnalyzedMenuItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,7 +69,7 @@ export default function MenuPerformancePage() {
         const performance = menuPerformanceData.find(p => p.menuItemId === item.id);
         if (!performance) return null;
 
-        const profit = item.price - item.cost;
+        const profit = (item.price - item.cost) / 100;
         return { ...item, performance, profit };
       })
       .filter((item): item is NonNullable<typeof item> => item !== null);
@@ -213,6 +221,52 @@ export default function MenuPerformancePage() {
                 </Card>
             </div>
         </div>
+        <Card className="shadow-lg">
+            <CardHeader>
+                <CardTitle className="font-headline text-2xl">Saisonnalité des Ventes</CardTitle>
+                <CardDescription>
+                    Évolution des ventes des plats phares sur les 6 derniers mois.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <ChartContainer config={chartConfig} className="h-[300px] w-full">
+                    <LineChart
+                        accessibilityLayer
+                        data={historicalPerformanceData}
+                        margin={{
+                            top: 20,
+                            right: 20,
+                            left: 0,
+                            bottom: 0,
+                        }}
+                    >
+                        <CartesianGrid vertical={false} />
+                        <XAxis
+                            dataKey="month"
+                            tickLine={false}
+                            axisLine={false}
+                            tickMargin={8}
+                            tickFormatter={(value) => value.slice(0, 3)}
+                        />
+                        <ChartTooltip
+                            cursor={false}
+                            content={<ChartTooltipContent indicator="dot" />}
+                        />
+                        <ChartLegend content={<ChartLegendContent />} />
+                        {Object.keys(chartConfig).map((key) => (
+                            <Line
+                                key={key}
+                                dataKey={key}
+                                type="monotone"
+                                stroke={`var(--color-${key})`}
+                                strokeWidth={2}
+                                dot={false}
+                            />
+                        ))}
+                    </LineChart>
+                </ChartContainer>
+            </CardContent>
+        </Card>
       </main>
     </div>
   );
