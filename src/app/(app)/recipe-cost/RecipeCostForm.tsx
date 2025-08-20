@@ -179,23 +179,23 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 rounded-lg bg-muted">
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Prix HT</div>
-              <p className="font-bold text-lg">{formatCurrency(priceHT)}</p>
+              <div className="font-bold text-lg">{formatCurrency(priceHT)}</div>
             </div>
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Coût Portion</div>
-              <p className="font-bold text-lg">{formatCurrency(costPerPortion)}</p>
+              <div className="font-bold text-lg">{formatCurrency(costPerPortion)}</div>
             </div>
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Marge Unitaire</div>
-              <p className="font-bold text-lg text-green-600">{formatCurrency(unitMargin)}</p>
+              <div className="font-bold text-lg text-green-600">{formatCurrency(unitMargin)}</div>
             </div>
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Coût %</div>
-              <p className="font-bold text-lg">{costPercentage.toFixed(1)}%</p>
+              <div className="font-bold text-lg">{costPercentage.toFixed(1)}%</div>
             </div>
              <div className="text-center">
               <div className="text-sm text-muted-foreground">Total Coût</div>
-              <p className="font-bold text-lg">{formatCurrency(totalIngredientCost)}</p>
+              <div className="font-bold text-lg">{formatCurrency(totalIngredientCost)}</div>
             </div>
           </div>
         </CardContent>
