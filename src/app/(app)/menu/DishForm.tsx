@@ -180,7 +180,7 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
           {/* Prix, Préparation, Difficulté */}
           <div className="grid grid-cols-3 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="price">Prix (DZD) *</Label>
+              <Label htmlFor="price">Prix (€) *</Label>
               <Input id="price" name="price" type="number" value={formData.price} onChange={handleChange} step="0.01" required />
             </div>
             <div className="space-y-2">
