@@ -207,7 +207,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
             <CardTitle>Ingrédients & Coûts</CardTitle>
             <CardDescription>Ajoutez les ingrédients pour calculer le coût de la recette.</CardDescription>
           </div>
-          <Button onClick={handleAddIngredient} className="bg-orange-500 hover:bg-orange-600">
+          <Button onClick={handleAddIngredient} className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <PlusCircle className="mr-2" />
             Ajouter un ingrédient
           </Button>
@@ -278,10 +278,10 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
               )}
             </TableBody>
           </Table>
-          <div className="flex justify-end mt-4 p-4 rounded-lg bg-orange-100">
+          <div className="flex justify-end mt-4 p-4 rounded-lg bg-secondary/20">
             <div className="text-right">
-              <p className="text-lg font-semibold">Grand Total</p>
-              <p className="text-2xl font-bold text-orange-600">{formatCurrency(totalIngredientCost)}</p>
+              <div className="text-lg font-semibold">Grand Total</div>
+              <div className="text-2xl font-bold text-secondary">{formatCurrency(totalIngredientCost)}</div>
             </div>
           </div>
         </CardContent>
@@ -319,7 +319,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                     onKeyDown={handleAllergenKeyDown}
                     placeholder="Ajouter un régime spécial ou allergène"
                 />
-                <Button onClick={handleAddAllergen} className="bg-orange-500 hover:bg-orange-600">Ajouter</Button>
+                <Button onClick={handleAddAllergen} className="bg-primary hover:bg-primary/90 text-primary-foreground">Ajouter</Button>
             </div>
             <div className="flex flex-wrap gap-2">
                 {allergens.map(allergen => (
@@ -346,3 +346,5 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     </div>
   );
 }
+
+    
