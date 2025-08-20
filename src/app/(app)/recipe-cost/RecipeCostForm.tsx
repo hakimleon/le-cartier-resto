@@ -9,12 +9,13 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Trash2, X } from "lucide-react";
-import { categories as menuCategories, MenuItem } from "@/data/mock-data";
+import { categories as menuCategories, MenuItem, ingredientItems, IngredientItem as StockIngredient } from "@/data/mock-data";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
 interface Ingredient {
   id: number;
+  stockId: string;
   category: string;
   name: string;
   unit: string;
@@ -52,20 +53,21 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
       setDishName(dish.name);
       setCategory(dish.category);
       setPriceTTC(dish.price);
-      setPortions(1); // Default to 1 portion, can be adjusted
-      // Map dish ingredients if they exist, otherwise empty array
-      setIngredients(dish.ingredients.map((ing, index) => ({
-        id: Date.now() + index,
-        category: '', // You might need to add category to your ingredient data
-        name: ing.name,
-        unit: ing.quantity.replace(/[0-9.]/g, '').trim(), // Extract unit
-        unitCost: 0, // Needs to be sourced from somewhere
-        quantity: parseFloat(ing.quantity) || 0, // Extract quantity
-      })));
+      setPortions(1); 
+      setIngredients(dish.ingredients.map((ing, index) => {
+        const stockItem = ingredientItems.find(item => item.name.toLowerCase() === ing.name.toLowerCase());
+        return {
+          id: Date.now() + index,
+          stockId: stockItem?.id || '',
+          category: stockItem?.category || '',
+          name: ing.name,
+          unit: stockItem?.unit || ing.quantity.replace(/[0-9.]/g, '').trim(),
+          unitCost: stockItem?.unitPrice || 0,
+          quantity: parseFloat(ing.quantity) || 0,
+        }
+      }));
       setPreparation(dish.instructions);
       setAllergens(dish.allergens);
-      // You may want to add salesPitch to your MenuItem type
-      // setSalesPitch(dish.salesPitch || "");
     }
   }, [dish]);
 
@@ -73,7 +75,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
   const handleAddIngredient = () => {
     setIngredients([
       ...ingredients,
-      { id: Date.now(), category: "", name: "", unit: "", unitCost: 0, quantity: 0 },
+      { id: Date.now(), stockId: "", category: "", name: "", unit: "", unitCost: 0, quantity: 0 },
     ]);
   };
 
@@ -81,12 +83,30 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     setIngredients(ingredients.filter((ing) => ing.id !== id));
   };
   
-  const handleIngredientChange = (id: number, field: keyof Omit<Ingredient, 'id'>, value: string | number) => {
+  const handleIngredientChange = (id: number, field: keyof Ingredient, value: string | number) => {
     setIngredients(
       ingredients.map((ing) =>
         ing.id === id ? { ...ing, [field]: value } : ing
       )
     );
+  };
+
+  const handleSelectIngredient = (id: number, stockId: string) => {
+    const selectedStockItem = ingredientItems.find(item => item.id === stockId);
+    if (selectedStockItem) {
+      setIngredients(
+        ingredients.map((ing) =>
+          ing.id === id ? { 
+            ...ing,
+            stockId: selectedStockItem.id,
+            name: selectedStockItem.name,
+            category: selectedStockItem.category,
+            unit: selectedStockItem.unit,
+            unitCost: selectedStockItem.unitPrice,
+           } : ing
+        )
+      );
+    }
   };
   
   const totalIngredientCost = useMemo(() => {
@@ -196,8 +216,8 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-[200px]">Ingrédient</TableHead>
                 <TableHead>Catégorie</TableHead>
-                <TableHead>Ingrédient</TableHead>
                 <TableHead>Unité</TableHead>
                 <TableHead className="text-right">Coût Unitaire (DZD)</TableHead>
                 <TableHead className="text-right">Quantité</TableHead>
@@ -209,33 +229,27 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
               {ingredients.map((ing) => (
                 <TableRow key={ing.id}>
                   <TableCell>
-                     <Input
-                        value={ing.category}
-                        onChange={(e) => handleIngredientChange(ing.id, "category", e.target.value)}
-                        placeholder="Ex: Légumes"
-                      />
+                    <Select value={ing.stockId} onValueChange={(stockId) => handleSelectIngredient(ing.id, stockId)}>
+                        <SelectTrigger>
+                            <SelectValue placeholder="Choisir..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                            {ingredientItems.map(stockItem => (
+                                <SelectItem key={stockItem.id} value={stockItem.id}>
+                                    {stockItem.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                   </TableCell>
-                  <TableCell>
-                    <Input
-                      value={ing.name}
-                      onChange={(e) => handleIngredientChange(ing.id, "name", e.target.value)}
-                      placeholder="Ex: Tomate"
-                    />
+                  <TableCell className="text-muted-foreground">
+                     {ing.category}
                   </TableCell>
-                  <TableCell>
-                    <Input
-                      value={ing.unit}
-                      onChange={(e) => handleIngredientChange(ing.id, "unit", e.target.value)}
-                      placeholder="Ex: kg"
-                    />
+                  <TableCell className="text-muted-foreground">
+                    {ing.unit}
                   </TableCell>
-                  <TableCell>
-                    <Input
-                      type="number"
-                      value={ing.unitCost}
-                      onChange={(e) => handleIngredientChange(ing.id, "unitCost", Number(e.target.value))}
-                      className="text-right"
-                    />
+                  <TableCell className="text-right text-muted-foreground">
+                    {formatCurrency(ing.unitCost)}
                   </TableCell>
                   <TableCell>
                     <Input
@@ -332,3 +346,5 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     </div>
   );
 }
+
+    
