@@ -1324,23 +1324,28 @@ export const menuItems: MenuItem[] = [
 ];
 
 
-export type InventoryItem = {
+export type IngredientItem = {
   id: string;
   name: string;
-  quantity: number;
+  category: string;
+  unitPrice: number;
   unit: string;
+  stock: number;
+  supplier: string;
   lowStockThreshold: number;
 };
 
-export const inventoryItems: InventoryItem[] = [
-  { id: 'inv1', name: 'Filet de Boeuf', quantity: 12, unit: 'kg', lowStockThreshold: 5 },
-  { id: 'inv2', name: 'Poulet', quantity: 30, unit: 'kg', lowStockThreshold: 10 },
-  { id: 'inv3', name: 'Pommes de Terre', quantity: 50, unit: 'kg', lowStockThreshold: 20 },
-  { id: 'inv4', name: 'Chocolat Noir 70%', quantity: 8, unit: 'kg', lowStockThreshold: 10 },
-  { id: 'inv5', name: 'Fromage (divers)', quantity: 15, unit: 'kg', lowStockThreshold: 5 },
-  { id: 'inv6', name: 'Crevettes', quantity: 8, unit: 'kg', lowStockThreshold: 4 },
-  { id: 'inv7', name: 'Farine', quantity: 25, unit: 'kg', lowStockThreshold: 10 },
-  { id: 'inv8', name: 'Sucre', quantity: 30, unit: 'kg', lowStockThreshold: 15 },
+export const ingredientItems: IngredientItem[] = [
+  { id: 'ing-1', name: 'Abricot', category: 'Fruits', unitPrice: 4.2, unit: 'kg', stock: 20, supplier: 'Produits Laitiers & Œufs', lowStockThreshold: 5 },
+  { id: 'ing-2', name: 'Abricot sec', category: 'Fruits secs', unitPrice: 6, unit: 'kg', stock: 15, supplier: 'Huiles & Matières Grasses', lowStockThreshold: 5 },
+  { id: 'ing-3', name: 'Ail frais', category: 'Légumes', unitPrice: 3.5, unit: 'kg', stock: 0, supplier: 'Primeur Légumes & Fruits', lowStockThreshold: 2 },
+  { id: 'ing-4', name: 'Ailes de poulet', category: 'Viandes et volailles', unitPrice: 5.5, unit: 'kg', stock: 20, supplier: 'Fournisseur volailles', lowStockThreshold: 8 },
+  { id: 'ing-5', name: 'Amande', category: 'Fruits secs', unitPrice: 12, unit: 'kg', stock: 10, supplier: 'Huiles & Matières Grasses', lowStockThreshold: 4 },
+  { id: 'ing-6', name: 'Ananas', category: 'Fruits exotiques', unitPrice: 4.5, unit: 'pièce', stock: 20, supplier: 'Épices & Aromates du Monde', lowStockThreshold: 5 },
+  { id: 'ing-7', name: 'Anchois à l\'huile', category: 'Poissons et fruits de mer', unitPrice: 4.5, unit: 'boîte', stock: 30, supplier: 'Fournisseur produits secs', lowStockThreshold: 10 },
+  { id: 'ing-8', name: 'Boeuf - Filet', category: 'Viandes et volailles', unitPrice: 25, unit: 'kg', stock: 12, supplier: 'Boucherie du Centre', lowStockThreshold: 5 },
+  { id: 'ing-9', name: 'Tomate', category: 'Légumes', unitPrice: 2, unit: 'kg', stock: 40, supplier: 'Primeur Légumes & Fruits', lowStockThreshold: 10 },
+  { id: 'ing-10', name: 'Fromage de chèvre', category: 'Produits Laitiers & Œufs', unitPrice: 15, unit: 'kg', stock: 8, supplier: 'La Ferme Locale', lowStockThreshold: 3 },
 ];
 
 export type Table = {

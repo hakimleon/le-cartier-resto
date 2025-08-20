@@ -23,6 +23,7 @@ import {
   BarChart3,
   Wand2,
   FileText,
+  Package,
 } from "lucide-react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -32,7 +33,7 @@ const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/menu", icon: BookOpen, label: "Menu Digital" },
   { href: "/reservations", icon: Calendar, label: "Réservations" },
-  { href: "/inventory", icon: Warehouse, label: "Inventaire" },
+  { href: "/ingredients", icon: Package, label: "Ingrédients" },
   { href: "/recipe-cost", icon: FileText, label: "Fiches Techniques" },
   { href: "/menu-performance", icon: BarChart3, label: "Analyse Menu" },
   { href: "/ai-menu-optimizer", icon: Sparkles, label: "Optimiseur IA" },

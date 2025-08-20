@@ -35,44 +35,29 @@ export default function IngredientsPage() {
 
   return (
     <div className="flex flex-col h-full">
-      <AppHeader title="Dashboard">
-        <div className="flex items-center gap-4">
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Rechercher..." className="pl-9 bg-background" />
-            </div>
-            {/* User Profile will go here */}
-        </div>
+       <AppHeader title="Inventaire des Ingrédients">
+        <Button className="bg-orange-500 hover:bg-orange-600">
+            <Plus className="mr-2 h-4 w-4" />
+            Ajouter un ingrédient
+        </Button>
       </AppHeader>
       <main className="flex-1 p-4 lg:p-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-             <Package className="w-8 h-8 text-orange-500" />
-            <div>
-                <h1 className="text-2xl font-bold font-headline tracking-tight">Inventaire des Ingrédients</h1>
-                <p className="text-muted-foreground">Gérez vos ingrédients et leurs prix d'achat</p>
+        <div className="mb-6">
+            <h2 className="text-lg font-semibold mb-2">Gérez vos ingrédients et leurs prix d'achat</h2>
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Rechercher un ingrédient..." 
+                    className="pl-9 max-w-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
             </div>
-          </div>
-          <Button className="bg-orange-500 hover:bg-orange-600">
-            <Plus className="mr-2" />
-            Ajouter un ingrédient
-          </Button>
         </div>
         
         <Card className="shadow-lg">
            <CardHeader>
-            <div className="flex justify-between items-center">
-                <CardTitle>Liste des Ingrédients ({filteredIngredients.length})</CardTitle>
-                <div className="w-1/3 relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input 
-                        placeholder="Rechercher un ingrédient..." 
-                        className="pl-9"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-            </div>
+            <CardTitle>Liste des Ingrédients ({filteredIngredients.length})</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -91,7 +76,7 @@ export default function IngredientsPage() {
                 {filteredIngredients.map((item) => {
                   const status = getStockStatus(item.stock, item.lowStockThreshold);
                   return (
-                    <TableRow key={item.id}>
+                    <TableRow key={item.id} className={cn(item.stock === 0 && 'bg-red-50', item.stock > 0 && item.stock < item.lowStockThreshold && 'bg-yellow-50')}>
                       <TableCell className="font-medium">{item.name}</TableCell>
                       <TableCell>
                         <Badge variant="secondary" className="whitespace-nowrap">{item.category}</Badge>
@@ -101,7 +86,7 @@ export default function IngredientsPage() {
                       <TableCell>
                           <span className={cn(
                               "font-medium",
-                              item.stock === 0 ? "text-red-600" : item.stock < item.lowStockThreshold ? "text-yellow-600" : "text-green-600"
+                              item.stock === 0 ? "text-red-600" : item.stock < item.lowStockThreshold ? "text-yellow-600" : ""
                           )}>
                               {item.stock} {item.unit}
                           </span>
@@ -118,7 +103,7 @@ export default function IngredientsPage() {
                  {filteredIngredients.length === 0 && (
                     <TableRow>
                         <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
-                            Aucun ingrédient trouvé.
+                            Aucun ingrédient trouvé pour votre recherche.
                         </TableCell>
                     </TableRow>
                 )}
