@@ -19,16 +19,16 @@ import Link from "next/link";
 
 const getStatusClass = (status: MenuItem['status']) => {
   switch (status) {
-    case 'Actif': return "border-green-500 bg-green-100 text-green-800";
-    case 'Saisonnier': return "border-blue-500 bg-blue-100 text-blue-800";
-    case 'Inactif': return "border-gray-500 bg-gray-100 text-gray-800";
+    case 'Actif': return "border-green-500/20 bg-green-500/10 text-green-400";
+    case 'Saisonnier': return "border-blue-500/20 bg-blue-500/10 text-blue-400";
+    case 'Inactif': return "border-gray-500/20 bg-gray-500/10 text-gray-400";
   }
 };
 
 const MenuCategory = ({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: (dish: MenuItem) => void, onDelete: (dishId: string) => void }) => (
   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     {items.map((item) => (
-      <Card key={item.id} className="flex flex-col overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300">
+      <Card key={item.id} className="flex flex-col overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 bg-[#2B2B2B] border-[#2B2B2B] hover:shadow-primary/20">
         <div className="relative w-full h-48">
           <Image
             src={item.image}
@@ -53,12 +53,12 @@ const MenuCategory = ({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: 
           </div>
         </CardContent>
         <CardFooter className="flex justify-between items-center">
-          <p className="text-lg font-semibold text-primary">{item.price.toFixed(2)} €</p>
+          <p className="font-code text-lg font-bold text-primary">{item.price.toFixed(2)} €</p>
           <div className="flex gap-2">
-             <Button variant="ghost" size="icon" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
+             <Button variant="ghost" size="icon" className="text-green-400 hover:text-green-500" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-500"><Trash2 className="h-4 w-4" /></Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
@@ -73,7 +73,7 @@ const MenuCategory = ({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: 
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-              <Button asChild variant="ghost" size="icon">
+              <Button asChild variant="ghost" size="icon" className="text-orange-400 hover:text-orange-500">
                 <Link href={`/recipe-cost/${item.id}`}>
                     <FileText className="h-4 w-4" />
                 </Link>
@@ -122,7 +122,7 @@ export default function MenuPage() {
   return (
     <div className="flex flex-col h-full">
       <AppHeader title="Gestion du Menu">
-        <Button onClick={handleAddNew} variant="destructive">
+        <Button onClick={handleAddNew} className="bg-primary hover:bg-primary/90 text-primary-foreground">
           <PlusCircle className="mr-2" />
           Ajouter un plat
         </Button>
