@@ -108,7 +108,7 @@ export default function DashboardPage() {
                             #{dish.rank}
                         </div>
                         <div className="flex-1">
-                            <p className="font-semibold">{dish.name} <Badge variant="secondary" className="ml-2">{dish.category}</Badge></p>
+                            <div className="font-semibold">{dish.name} <Badge variant="secondary" className="ml-2">{dish.category}</Badge></div>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="text-sm text-muted-foreground">Marge:</span>
                                 <Progress value={dish.margin} className="h-2 w-full bg-secondary" />
