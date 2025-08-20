@@ -8,12 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { X, PlusCircle, Upload, Image as ImageIcon } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Slider } from "@/components/ui/slider";
+import { Upload, Image as ImageIcon } from "lucide-react";
 import Image from "next/image";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { Switch } from "@/components/ui/switch";
 
 type DishFormProps = {
   dish: MenuItem | null;
@@ -26,8 +26,9 @@ const emptyDish: Omit<MenuItem, 'id'> = {
   description: "",
   category: categories[0],
   price: 0,
+  cost: 0,
   prepTime: 0,
-  status: "Actif",
+  status: "Inactif",
   tags: [],
   image: "",
   imageHint: "",
@@ -51,15 +52,17 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
     setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
   };
 
-  const handleSelectChange = (name: string, value: string) => {
+  const handleSelectChange = (name: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-
-  const handleTagChange = (tag: typeof availableTags[number], checked: boolean) => {
-    setFormData(prev => ({
-      ...prev,
-      tags: checked ? [...prev.tags, tag] : prev.tags.filter(t => t !== tag)
-    }));
+  
+  const handleTagClick = (tag: typeof availableTags[number]) => {
+    setFormData(prev => {
+      const newTags = prev.tags.includes(tag)
+        ? prev.tags.filter(t => t !== tag)
+        : [...prev.tags, tag];
+      return { ...prev, tags: newTags };
+    });
   };
 
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -74,20 +77,6 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
       reader.readAsDataURL(file);
     }
   };
-  
-  const handleIngredientChange = (index: number, field: 'name' | 'quantity', value: string) => {
-    const newIngredients = [...formData.ingredients];
-    newIngredients[index][field] = value;
-    setFormData(prev => ({ ...prev, ingredients: newIngredients }));
-  };
-
-  const addIngredient = () => {
-    setFormData(prev => ({ ...prev, ingredients: [...prev.ingredients, { name: '', quantity: '' }] }));
-  };
-
-  const removeIngredient = (index: number) => {
-    setFormData(prev => ({ ...prev, ingredients: formData.ingredients.filter((_, i) => i !== index) }));
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,128 +86,133 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
     };
     onSave(finalData);
   };
+  
+  const difficultyLevels = [
+    { value: 1, label: "Facile" },
+    { value: 2, label: "Moyen" },
+    { value: 3, label: "Difficile" },
+    { value: 4, label: "Expert" },
+    { value: 5, label: "Chef" },
+  ];
 
   return (
     <form onSubmit={handleSubmit}>
       <ScrollArea className="h-[70vh]">
-        <div className="p-6 pt-0">
-          <Tabs defaultValue="details">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="details">Détails du Plat</TabsTrigger>
-              <TabsTrigger value="recipe">Recette</TabsTrigger>
-              <TabsTrigger value="settings">Paramètres</TabsTrigger>
-            </TabsList>
-            <TabsContent value="details" className="mt-4 space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Nom du plat</Label>
-                <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
+        <div className="p-6 space-y-6">
+          
+          {/* Image Upload */}
+          <div className="space-y-2">
+            <Label>Image du plat</Label>
+            <div className="flex items-center gap-4">
+              <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted/50 overflow-hidden relative">
+                {imagePreview ? (
+                  <>
+                    <Image src={imagePreview} alt="Aperçu" width={96} height={96} className="object-cover" />
+                    <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 rounded-full" onClick={() => {
+                        setImagePreview(null);
+                        setFormData(prev => ({ ...prev, image: "" }));
+                    }}>
+                        <ImageIcon className="w-4 h-4" />
+                    </Button>
+                  </>
+                ) : (
+                  <ImageIcon className="w-10 h-10 text-muted-foreground" />
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea id="description" name="description" value={formData.description} onChange={handleChange} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="price">Prix de vente (€)</Label>
-                    <Input id="price" name="price" type="number" value={formData.price} onChange={handleChange} step="0.01" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="category">Catégorie</Label>
-                  <Select name="category" value={formData.category} onValueChange={(value) => handleSelectChange('category', value)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Image du plat</Label>
-                <div className="flex items-center gap-4">
-                  <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted/50 overflow-hidden">
-                    {imagePreview ? (
-                      <Image src={imagePreview} alt="Aperçu" width={96} height={96} className="object-cover" />
-                    ) : (
-                      <ImageIcon className="w-10 h-10 text-muted-foreground" />
-                    )}
-                  </div>
-                  <Button type="button" asChild>
-                    <Label htmlFor="image-upload" className="cursor-pointer">
-                      <Upload className="mr-2" /> Changer l'image
-                    </Label>
-                  </Button>
-                  <Input id="image-upload" type="file" className="hidden" onChange={handleImageChange} accept="image/*" />
-                </div>
-              </div>
-            </TabsContent>
-            <TabsContent value="recipe" className="mt-4 space-y-4">
-               <div className="space-y-2">
-                <Label>Ingrédients</Label>
-                <div className="space-y-2">
-                  {formData.ingredients.map((ing, index) => (
-                    <div key={index} className="flex items-center gap-2">
-                      <Input placeholder="Nom (ex: Tomate)" value={ing.name} onChange={(e) => handleIngredientChange(index, 'name', e.target.value)} />
-                      <Input placeholder="Quantité (ex: 200g)" value={ing.quantity} onChange={(e) => handleIngredientChange(index, 'quantity', e.target.value)} />
-                      <Button type="button" variant="ghost" size="icon" onClick={() => removeIngredient(index)}><X className="w-4 h-4" /></Button>
-                    </div>
-                  ))}
-                  <Button type="button" variant="outline" size="sm" onClick={addIngredient}><PlusCircle className="mr-2"/>Ajouter un ingrédient</Button>
-                </div>
-              </div>
-               <div className="space-y-2">
-                <Label htmlFor="instructions">Instructions de préparation</Label>
-                <Textarea id="instructions" name="instructions" value={formData.instructions} onChange={handleChange} rows={6} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="prepTime">Temps de préparation (min)</Label>
-                  <Input id="prepTime" name="prepTime" type="number" value={formData.prepTime} onChange={handleChange} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Niveau de difficulté ({formData.difficulty})</Label>
-                  <Slider
-                    name="difficulty"
-                    min={1} max={5} step={1}
-                    value={[formData.difficulty]}
-                    onValueChange={([value]) => handleSelectChange('difficulty', String(value))}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-            <TabsContent value="settings" className="mt-4 space-y-6">
-              <div className="space-y-2">
-                  <Label>Statut</Label>
-                  <Select name="status" value={formData.status} onValueChange={(value) => handleSelectChange('status', value)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Actif">Actif</SelectItem>
-                      <SelectItem value="Inactif">Inactif</SelectItem>
-                      <SelectItem value="Saisonnier">Saisonnier</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Tags</Label>
-                  <div className="flex flex-wrap gap-4">
-                    {availableTags.map(tag => (
-                      <div key={tag} className="flex items-center space-x-2">
-                        <Checkbox
-                          id={`tag-${tag}`}
-                          checked={formData.tags.includes(tag)}
-                          onCheckedChange={(checked) => handleTagChange(tag, !!checked)}
-                        />
-                        <Label htmlFor={`tag-${tag}`} className="font-normal">{tag}</Label>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-            </TabsContent>
-          </Tabs>
+              <Button type="button" asChild variant="outline" className="bg-gray-100 border-dashed">
+                <Label htmlFor="image-upload" className="cursor-pointer">
+                  <Upload className="mr-2" /> Télécharger une image
+                </Label>
+              </Button>
+              <Input id="image-upload" type="file" className="hidden" onChange={handleImageChange} accept="image/*" />
+            </div>
+          </div>
+          
+          {/* Nom et Catégorie */}
+          <div className="grid grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="name">Nom du plat *</Label>
+              <Input id="name" name="name" value={formData.name} onChange={handleChange} required className="border-orange-400 focus:border-orange-500 ring-offset-orange-300"/>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="category">Catégorie *</Label>
+              <Select name="category" value={formData.category} onValueChange={(value) => handleSelectChange('category', value)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Description */}
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea id="description" name="description" value={formData.description} onChange={handleChange} rows={3} />
+          </div>
+
+          {/* Tags */}
+          <div className="space-y-2">
+            <Label>Tags</Label>
+            <div className="flex flex-wrap gap-2">
+              {availableTags.map(tag => {
+                 const isSelected = formData.tags.includes(tag);
+                 return (
+                    <Badge 
+                        key={tag}
+                        onClick={() => handleTagClick(tag)}
+                        variant={isSelected ? "default" : "outline"}
+                        className={cn("cursor-pointer", {
+                            'bg-red-100 text-red-700 border-red-200': isSelected && tag === 'Épicé',
+                            'bg-green-100 text-green-700 border-green-200': isSelected && (tag === 'Halal' || tag === 'Végétarien'),
+                            'bg-blue-100 text-blue-700 border-blue-200': isSelected && tag === 'Nouveau',
+                            'bg-yellow-100 text-yellow-700 border-yellow-200': isSelected && tag === 'Populaire',
+                            'bg-purple-100 text-purple-700 border-purple-200': isSelected && tag === 'Sans gluten',
+                        })}
+                    >
+                        {tag}
+                    </Badge>
+                 )
+              })}
+            </div>
+          </div>
+
+          {/* Prix, Préparation, Difficulté */}
+          <div className="grid grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="price">Prix (DZD) *</Label>
+              <Input id="price" name="price" type="number" value={formData.price} onChange={handleChange} step="0.01" required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="prepTime">Temps de préparation (min) *</Label>
+              <Input id="prepTime" name="prepTime" type="number" value={formData.prepTime} onChange={handleChange} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="difficulty">Difficulté *</Label>
+              <Select value={String(formData.difficulty)} onValueChange={(value) => handleSelectChange('difficulty', parseInt(value))}>
+                <SelectTrigger id="difficulty"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {difficultyLevels.map(level => <SelectItem key={level.value} value={String(level.value)}>{level.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          {/* Disponibilité */}
+          <div className="flex items-center space-x-2">
+             <Switch 
+                id="status" 
+                checked={formData.status === "Actif"} 
+                onCheckedChange={(checked) => handleSelectChange('status', checked ? 'Actif' : 'Inactif')}
+                />
+            <Label htmlFor="status">Plat disponible</Label>
+          </div>
+
         </div>
       </ScrollArea>
       <div className="flex justify-end gap-2 p-4 border-t">
         <Button type="button" variant="ghost" onClick={onCancel}>Annuler</Button>
-        <Button type="submit">Enregistrer</Button>
+        <Button type="submit" className="bg-orange-500 hover:bg-orange-600">Mettre à jour</Button>
       </div>
     </form>
   );
