@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Trash2, X } from "lucide-react";
+import { PlusCircle, Search, Trash2, X } from "lucide-react";
 import { categories as menuCategories, MenuItem, ingredientItems, IngredientItem as StockIngredient } from "@/data/mock-data";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -47,6 +47,8 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
   const [allergens, setAllergens] = useState<string[]>([]);
   
   const [salesPitch, setSalesPitch] = useState("");
+  const [ingredientSearchTerm, setIngredientSearchTerm] = useState("");
+
 
   useEffect(() => {
     if (dish) {
@@ -138,6 +140,12 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
   const handleRemoveAllergen = (allergenToRemove: string) => {
     setAllergens(allergens.filter(allergen => allergen !== allergenToRemove));
   };
+
+  const filteredIngredients = useMemo(() => {
+    return ingredientItems.filter(item =>
+      item.name.toLowerCase().includes(ingredientSearchTerm.toLowerCase())
+    );
+  }, [ingredientSearchTerm]);
 
 
   return (
@@ -234,11 +242,27 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                             <SelectValue placeholder="Choisir..." />
                         </SelectTrigger>
                         <SelectContent>
-                            {ingredientItems.map(stockItem => (
+                          <div className="p-2">
+                            <div className="relative">
+                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input 
+                                  placeholder="Rechercher un ingrédient..." 
+                                  className="pl-8"
+                                  value={ingredientSearchTerm}
+                                  onChange={(e) => setIngredientSearchTerm(e.target.value)}
+                                />
+                            </div>
+                           </div>
+                            {filteredIngredients.map(stockItem => (
                                 <SelectItem key={stockItem.id} value={stockItem.id}>
                                     {stockItem.name}
                                 </SelectItem>
                             ))}
+                           {filteredIngredients.length === 0 && (
+                              <div className="text-center text-muted-foreground p-2 text-sm">
+                                Aucun ingrédient trouvé.
+                              </div>
+                            )}
                         </SelectContent>
                     </Select>
                   </TableCell>
