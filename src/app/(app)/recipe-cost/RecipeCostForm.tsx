@@ -1,6 +1,7 @@
+
 "use client";
 
-import { useState, useMemo, ChangeEvent, KeyboardEvent } from "react";
+import { useState, useMemo, ChangeEvent, KeyboardEvent, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Trash2, X } from "lucide-react";
-import { categories as menuCategories } from "@/data/mock-data";
+import { categories as menuCategories, MenuItem } from "@/data/mock-data";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
@@ -25,7 +26,11 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("fr-DZ", { style: "currency", currency: "DZD" }).format(value).replace("DZD", "").trim() + " DZD";
 };
 
-export function RecipeCostForm() {
+type RecipeCostFormProps = {
+  dish: MenuItem | null;
+};
+
+export function RecipeCostForm({ dish }: RecipeCostFormProps) {
   const [dishName, setDishName] = useState("");
   const [category, setCategory] = useState(menuCategories[0]);
   const [priceTTC, setPriceTTC] = useState(0);
@@ -42,6 +47,28 @@ export function RecipeCostForm() {
   
   const [salesPitch, setSalesPitch] = useState("");
 
+  useEffect(() => {
+    if (dish) {
+      setDishName(dish.name);
+      setCategory(dish.category);
+      setPriceTTC(dish.price);
+      setPortions(1); // Default to 1 portion, can be adjusted
+      // Map dish ingredients if they exist, otherwise empty array
+      setIngredients(dish.ingredients.map((ing, index) => ({
+        id: Date.now() + index,
+        category: '', // You might need to add category to your ingredient data
+        name: ing.name,
+        unit: ing.quantity.replace(/[0-9.]/g, '').trim(), // Extract unit
+        unitCost: 0, // Needs to be sourced from somewhere
+        quantity: parseFloat(ing.quantity) || 0, // Extract quantity
+      })));
+      setPreparation(dish.instructions);
+      setAllergens(dish.allergens);
+      // You may want to add salesPitch to your MenuItem type
+      // setSalesPitch(dish.salesPitch || "");
+    }
+  }, [dish]);
+
 
   const handleAddIngredient = () => {
     setIngredients([
@@ -54,7 +81,7 @@ export function RecipeCostForm() {
     setIngredients(ingredients.filter((ing) => ing.id !== id));
   };
   
-  const handleIngredientChange = (id: number, field: keyof Ingredient, value: string | number) => {
+  const handleIngredientChange = (id: number, field: keyof Omit<Ingredient, 'id'>, value: string | number) => {
     setIngredients(
       ingredients.map((ing) =>
         ing.id === id ? { ...ing, [field]: value } : ing

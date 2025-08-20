@@ -10,11 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { menuItems as initialMenuItems, MenuItem, categories } from "@/data/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { PlusCircle, Edit, Trash2, Clock, Star } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Clock, Star, FileText } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DishForm } from "./DishForm";
 import { useToast } from "@/hooks/use-toast";
+import Link from "next/link";
 
 const getStatusClass = (status: MenuItem['status']) => {
   switch (status) {
@@ -72,6 +73,11 @@ const MenuCategory = ({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: 
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
+              <Button asChild variant="ghost" size="icon">
+                <Link href={`/recipe-cost/${item.id}`}>
+                    <FileText className="h-4 w-4" />
+                </Link>
+              </Button>
           </div>
         </CardFooter>
       </Card>
