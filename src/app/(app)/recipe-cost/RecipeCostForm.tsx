@@ -1,14 +1,16 @@
 "use client";
 
-import { useState, useMemo, ChangeEvent } from "react";
+import { useState, useMemo, ChangeEvent, KeyboardEvent } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Trash2 } from "lucide-react";
+import { PlusCircle, Trash2, X } from "lucide-react";
 import { categories as menuCategories } from "@/data/mock-data";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 
 interface Ingredient {
   id: number;
@@ -30,6 +32,16 @@ export function RecipeCostForm() {
   const [vatRate, setVatRate] = useState(10);
   const [portions, setPortions] = useState(1);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  
+  const [preparation, setPreparation] = useState("");
+  const [cooking, setCooking] = useState("");
+  const [service, setService] = useState("");
+  
+  const [allergenInput, setAllergenInput] = useState("");
+  const [allergens, setAllergens] = useState<string[]>([]);
+  
+  const [salesPitch, setSalesPitch] = useState("");
+
 
   const handleAddIngredient = () => {
     setIngredients([
@@ -61,6 +73,24 @@ export function RecipeCostForm() {
     const costPercentage = priceHT > 0 ? (costPerPortion / priceHT) * 100 : 0;
     return { priceHT, costPerPortion, unitMargin, costPercentage };
   }, [priceTTC, vatRate, portions, totalIngredientCost]);
+
+  const handleAddAllergen = () => {
+    if (allergenInput.trim() && !allergens.includes(allergenInput.trim())) {
+      setAllergens([...allergens, allergenInput.trim()]);
+      setAllergenInput("");
+    }
+  };
+
+  const handleAllergenKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddAllergen();
+    }
+  };
+  
+  const handleRemoveAllergen = (allergenToRemove: string) => {
+    setAllergens(allergens.filter(allergen => allergen !== allergenToRemove));
+  };
 
 
   return (
@@ -215,6 +245,63 @@ export function RecipeCostForm() {
           </div>
         </CardContent>
       </Card>
+      
+      <Card>
+        <CardHeader>
+          <CardTitle>Procédure</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="preparation">Préparation</Label>
+            <Textarea id="preparation" value={preparation} onChange={(e) => setPreparation(e.target.value)} placeholder="Étapes de préparation..." />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="cooking">Cuisson</Label>
+            <Textarea id="cooking" value={cooking} onChange={(e) => setCooking(e.target.value)} placeholder="Instructions de cuisson..." />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="service">Service</Label>
+            <Textarea id="service" value={service} onChange={(e) => setService(e.target.value)} placeholder="Instructions de service..." />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+            <CardTitle>Régimes Spéciaux & Allergènes</CardTitle>
+        </CardHeader>
+        <CardContent>
+            <div className="flex gap-2 mb-4">
+                <Input 
+                    value={allergenInput} 
+                    onChange={(e) => setAllergenInput(e.target.value)}
+                    onKeyDown={handleAllergenKeyDown}
+                    placeholder="Ajouter un régime spécial ou allergène"
+                />
+                <Button onClick={handleAddAllergen} className="bg-orange-500 hover:bg-orange-600">Ajouter</Button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+                {allergens.map(allergen => (
+                    <Badge key={allergen} variant="secondary" className="text-base">
+                        {allergen}
+                        <button onClick={() => handleRemoveAllergen(allergen)} className="ml-2">
+                            <X className="h-3 w-3" />
+                        </button>
+                    </Badge>
+                ))}
+            </div>
+        </CardContent>
+      </Card>
+
+       <Card>
+        <CardHeader>
+            <CardTitle>Argumentation Commerciale</CardTitle>
+        </CardHeader>
+        <CardContent>
+             <Textarea value={salesPitch} onChange={(e) => setSalesPitch(e.target.value)} placeholder="Décrivez les points forts du plat pour aider le personnel de salle à le vendre..." rows={4}/>
+        </CardContent>
+      </Card>
+
     </div>
   );
 }
