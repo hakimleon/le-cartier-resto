@@ -116,14 +116,14 @@ export default function MenuPage() {
   return (
     <div className="flex flex-col h-full">
       <AppHeader title="Gestion du Menu">
-        <Button onClick={handleAddNew}>
+        <Button onClick={handleAddNew} variant="destructive">
           <PlusCircle className="mr-2" />
           Ajouter un plat
         </Button>
       </AppHeader>
       <main className="flex-1 p-4 lg:p-6">
         <Tabs defaultValue={categories[0]} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 mb-6 h-auto gap-2">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 mb-6 h-auto gap-x-2 gap-y-2">
             {categories.map((category) => (
               <TabsTrigger key={category} value={category} className="whitespace-normal h-auto">
                 {category}
