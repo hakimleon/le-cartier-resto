@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -46,7 +47,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-border/50">
+    <Sidebar collapsible="icon" className="border-r border-border/20">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-2">
             <ChefHat className="w-8 h-8 text-primary" />
@@ -86,7 +87,7 @@ export function AppSidebar() {
                     </SidebarMenuButton>
                 </SidebarMenuItem>
             </SidebarMenu>
-            <div className="border-t my-2 border-border/50"></div>
+            <div className="border-t my-2 border-border/20"></div>
             <div className="flex items-center gap-3 px-2">
                 <Avatar>
                     <AvatarImage src="https://placehold.co/40x40.png" alt="Chef" data-ai-hint="chef portrait" />

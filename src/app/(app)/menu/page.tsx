@@ -19,16 +19,27 @@ import Link from "next/link";
 
 const getStatusClass = (status: MenuItem['status']) => {
   switch (status) {
-    case 'Actif': return "border-green-500/20 bg-green-500/10 text-green-400";
-    case 'Saisonnier': return "border-blue-500/20 bg-blue-500/10 text-blue-400";
-    case 'Inactif': return "border-gray-500/20 bg-gray-500/10 text-gray-400";
+    case 'Actif': return "bg-green-100/10 text-green-400 border-green-400/20";
+    case 'Saisonnier': return "bg-blue-100/10 text-blue-400 border-blue-400/20";
+    case 'Inactif': return "bg-gray-100/10 text-gray-400 border-gray-400/20";
   }
 };
+
+const getTagClass = (tag: MenuItem['tags'][number]) => {
+  switch (tag) {
+    case 'Végétarien': return "bg-yellow-400/10 text-yellow-400 border-yellow-400/20";
+    case 'Épicé': return "bg-red-400/10 text-red-400 border-red-400/20";
+    case 'Sans gluten': return "bg-purple-400/10 text-purple-400 border-purple-400/20";
+    case 'Nouveau': return "bg-blue-400/10 text-blue-400 border-blue-400/20";
+    case 'Populaire': return "bg-pink-400/10 text-pink-400 border-pink-400/20";
+    default: return "bg-secondary text-secondary-foreground";
+  }
+}
 
 const MenuCategory = ({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: (dish: MenuItem) => void, onDelete: (dishId: string) => void }) => (
   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
     {items.map((item) => (
-      <Card key={item.id} className="flex flex-col overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 bg-[#2B2B2B] border-[#2B2B2B] hover:shadow-primary/20">
+      <Card key={item.id} className="flex flex-col overflow-hidden bg-card shadow-lg hover:shadow-primary/20 transition-shadow duration-300 border-border/10 rounded-xl">
         <div className="relative w-full h-48">
           <Image
             src={item.image}
@@ -37,28 +48,28 @@ const MenuCategory = ({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: 
             className="object-cover"
             data-ai-hint={item.imageHint}
           />
-           <Badge className={cn("absolute top-2 right-2", getStatusClass(item.status))}>{item.status}</Badge>
+           <Badge className={cn("absolute top-3 right-3 text-xs", getStatusClass(item.status))}>{item.status}</Badge>
         </div>
-        <CardHeader>
-          <CardTitle className="font-headline text-xl">{item.name}</CardTitle>
+        <CardHeader className="p-4">
+          <CardTitle className="font-headline text-xl text-foreground">{item.name}</CardTitle>
           <div className="flex items-center text-xs text-muted-foreground gap-4 pt-1">
             <span className="flex items-center gap-1"><Clock className="w-3 h-3"/> {item.prepTime} min</span>
-            <span className="flex items-center gap-1"><Star className="w-3 h-3"/> Diff. {item.difficulty}/5</span>
+            <span className="flex items-center gap-1"><Star className="w-3 h-3"/> Diff {item.difficulty}/5</span>
           </div>
         </CardHeader>
-        <CardContent className="flex-grow space-y-2">
-          <CardDescription>{item.description}</CardDescription>
+        <CardContent className="flex-grow p-4 pt-0 space-y-4">
+          <CardDescription className="text-sm">{item.description}</CardDescription>
           <div className="flex flex-wrap gap-2">
-            {item.tags.map(tag => <Badge key={tag} variant="secondary">{tag}</Badge>)}
+            {item.tags.map(tag => <Badge key={tag} className={cn("text-xs", getTagClass(tag))}>{tag}</Badge>)}
           </div>
         </CardContent>
-        <CardFooter className="flex justify-between items-center">
-          <p className="font-code text-lg font-bold text-primary">{item.price.toFixed(2)} €</p>
-          <div className="flex gap-2">
-             <Button variant="ghost" size="icon" className="text-green-400 hover:text-green-500" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
+        <CardFooter className="flex justify-between items-center p-4">
+          <p className="text-lg font-bold text-primary font-code">{item.price.toFixed(2).replace('.', ',')} €</p>
+          <div className="flex gap-1">
+             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-accent" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-500"><Trash2 className="h-4 w-4" /></Button>
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
                 </AlertDialogTrigger>
                 <AlertDialogContent>
                   <AlertDialogHeader>
@@ -73,7 +84,7 @@ const MenuCategory = ({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: 
                   </AlertDialogFooter>
                 </AlertDialogContent>
               </AlertDialog>
-              <Button asChild variant="ghost" size="icon" className="text-orange-400 hover:text-orange-500">
+              <Button asChild variant="ghost" size="icon" className="text-muted-foreground hover:text-secondary">
                 <Link href={`/recipe-cost/${item.id}`}>
                     <FileText className="h-4 w-4" />
                 </Link>
@@ -120,7 +131,7 @@ export default function MenuPage() {
   };
   
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-background text-foreground">
       <AppHeader title="Gestion du Menu">
         <Button onClick={handleAddNew} className="bg-primary hover:bg-primary/90 text-primary-foreground">
           <PlusCircle className="mr-2" />
@@ -129,9 +140,9 @@ export default function MenuPage() {
       </AppHeader>
       <main className="flex-1 p-4 lg:p-6">
         <Tabs defaultValue={categories[0]} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 mb-6 h-auto gap-x-2 gap-y-2">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-3 md:grid-cols-4 mb-6 h-auto gap-2 bg-transparent p-0">
             {categories.map((category) => (
-              <TabsTrigger key={category} value={category} className="whitespace-normal h-auto">
+              <TabsTrigger key={category} value={category} className="whitespace-normal h-auto bg-card text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md">
                 {category}
               </TabsTrigger>
             ))}
@@ -149,7 +160,7 @@ export default function MenuPage() {
       </main>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-4xl p-0">
+        <DialogContent className="max-w-4xl p-0 bg-card border-border/20">
           <DialogHeader className="p-6 pb-0">
             <DialogTitle className="font-headline text-2xl">{dishToEdit ? "Modifier le plat" : "Ajouter un nouveau plat"}</DialogTitle>
             <DialogDescription>

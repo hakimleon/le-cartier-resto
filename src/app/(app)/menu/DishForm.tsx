@@ -104,7 +104,7 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
           <div className="space-y-2">
             <Label>Image du plat</Label>
             <div className="flex items-center gap-4">
-              <div className="w-24 h-24 border rounded-md flex items-center justify-center bg-muted/50 overflow-hidden relative">
+              <div className="w-24 h-24 border-2 border-dashed border-border/50 rounded-md flex items-center justify-center bg-background/50 overflow-hidden relative">
                 {imagePreview ? (
                   <>
                     <Image src={imagePreview} alt="Aperçu" width={96} height={96} className="object-cover" />
@@ -119,7 +119,7 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
                   <ImageIcon className="w-10 h-10 text-muted-foreground" />
                 )}
               </div>
-              <Button type="button" asChild variant="outline" className="bg-gray-100 border-dashed">
+              <Button type="button" asChild variant="outline">
                 <Label htmlFor="image-upload" className="cursor-pointer">
                   <Upload className="mr-2" /> Télécharger une image
                 </Label>
@@ -132,7 +132,7 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="name">Nom du plat *</Label>
-              <Input id="name" name="name" value={formData.name} onChange={handleChange} required className="border-orange-400 focus:border-orange-500 ring-offset-orange-300"/>
+              <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Catégorie *</Label>
@@ -161,13 +161,9 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
                     <Badge 
                         key={tag}
                         onClick={() => handleTagClick(tag)}
-                        variant={isSelected ? "default" : "outline"}
-                        className={cn("cursor-pointer", {
-                            'bg-red-100 text-red-700 border-red-200': isSelected && tag === 'Épicé',
-                            'bg-green-100 text-green-700 border-green-200': isSelected && (tag === 'Halal' || tag === 'Végétarien'),
-                            'bg-blue-100 text-blue-700 border-blue-200': isSelected && tag === 'Nouveau',
-                            'bg-yellow-100 text-yellow-700 border-yellow-200': isSelected && tag === 'Populaire',
-                            'bg-purple-100 text-purple-700 border-purple-200': isSelected && tag === 'Sans gluten',
+                        variant="outline"
+                        className={cn("cursor-pointer border-border/20", {
+                            "bg-primary/10 text-primary border-primary/20": isSelected,
                         })}
                     >
                         {tag}
@@ -199,7 +195,7 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
           </div>
           
           {/* Disponibilité */}
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 pt-2">
              <Switch 
                 id="status" 
                 checked={formData.status === "Actif"} 
@@ -210,9 +206,11 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
 
         </div>
       </ScrollArea>
-      <div className="flex justify-end gap-2 p-4 border-t">
+      <div className="flex justify-end gap-2 p-4 border-t border-border/20">
         <Button type="button" variant="ghost" onClick={onCancel}>Annuler</Button>
-        <Button type="submit" className="bg-orange-500 hover:bg-orange-600">Mettre à jour</Button>
+        <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+          {dish ? "Mettre à jour" : "Ajouter le plat"}
+        </Button>
       </div>
     </form>
   );

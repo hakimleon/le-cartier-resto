@@ -9,12 +9,11 @@ type AppHeaderProps = {
 
 export function AppHeader({ title, children }: AppHeaderProps) {
   return (
-    <header className="flex items-center justify-between gap-4 p-4 lg:px-6 lg:py-4 border-b sticky top-0 bg-card/95 backdrop-blur-sm z-10">
+    <header className="flex items-center justify-between gap-4 p-4 lg:px-6 lg:py-4 border-b border-border/20 sticky top-0 bg-card/95 backdrop-blur-sm z-10">
       <div className="flex items-center gap-4">
         <SidebarTrigger className="md:hidden" />
         <div>
             <h1 className="text-2xl font-bold font-headline tracking-tight">{title}</h1>
-            { title === 'Dashboard' && <p className="text-sm text-muted-foreground hidden md:block">Vue d'ensemble de votre restaurant</p> }
         </div>
       </div>
       <div className="flex items-center gap-2">
