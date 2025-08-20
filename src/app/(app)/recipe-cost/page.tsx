@@ -1,12 +1,24 @@
+
 import { AppHeader } from "@/components/common/AppHeader";
 import { Button } from "@/components/ui/button";
 import { RecipeCostForm } from "./RecipeCostForm";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
-import { redirect } from 'next/navigation';
 
 export default function RecipeCostPage() {
-  // This page is a fallback. If no dishId is provided,
-  // we can redirect to the menu or show a message.
-  redirect('/menu');
+  return (
+    <div className="flex flex-col h-full">
+      <AppHeader title="Nouvelle Fiche Technique">
+         <Button asChild variant="outline">
+           <Link href="/menu">
+            <ChevronLeft className="mr-2" />
+            Retour au menu
+          </Link>
+        </Button>
+      </AppHeader>
+      <main className="flex-1 p-4 lg:p-6">
+        <RecipeCostForm dish={null} />
+      </main>
+    </div>
+  );
 }
