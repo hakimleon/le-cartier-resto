@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Search, Trash2, X } from "lucide-react";
+import { PlusCircle, Trash2, X } from "lucide-react";
 import { categories as menuCategories, MenuItem, ingredientItems, IngredientItem as StockIngredient } from "@/data/mock-data";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Combobox } from "@/components/ui/combobox";
 
 interface Ingredient {
   id: number;
@@ -47,7 +48,6 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
   const [allergens, setAllergens] = useState<string[]>([]);
   
   const [salesPitch, setSalesPitch] = useState("");
-  const [ingredientSearchTerm, setIngredientSearchTerm] = useState("");
 
 
   useEffect(() => {
@@ -141,11 +141,12 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     setAllergens(allergens.filter(allergen => allergen !== allergenToRemove));
   };
 
-  const filteredIngredients = useMemo(() => {
-    return ingredientItems.filter(item =>
-      item.name.toLowerCase().includes(ingredientSearchTerm.toLowerCase())
-    );
-  }, [ingredientSearchTerm]);
+  const ingredientOptions = useMemo(() => {
+    return ingredientItems.map(item => ({
+      value: item.id,
+      label: item.name,
+    }));
+  }, []);
 
 
   return (
@@ -237,34 +238,14 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
               {ingredients.map((ing) => (
                 <TableRow key={ing.id}>
                   <TableCell>
-                    <Select value={ing.stockId} onValueChange={(stockId) => handleSelectIngredient(ing.id, stockId)}>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Choisir..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <div className="p-2">
-                            <div className="relative">
-                                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                                <Input 
-                                  placeholder="Rechercher un ingrédient..." 
-                                  className="pl-8"
-                                  value={ingredientSearchTerm}
-                                  onChange={(e) => setIngredientSearchTerm(e.target.value)}
-                                />
-                            </div>
-                           </div>
-                            {filteredIngredients.map(stockItem => (
-                                <SelectItem key={stockItem.id} value={stockItem.id}>
-                                    {stockItem.name}
-                                </SelectItem>
-                            ))}
-                           {filteredIngredients.length === 0 && (
-                              <div className="text-center text-muted-foreground p-2 text-sm">
-                                Aucun ingrédient trouvé.
-                              </div>
-                            )}
-                        </SelectContent>
-                    </Select>
+                    <Combobox
+                      options={ingredientOptions}
+                      value={ing.stockId}
+                      onSelect={(stockId) => handleSelectIngredient(ing.id, stockId)}
+                      placeholder="Choisir un ingrédient..."
+                      searchPlaceholder="Rechercher..."
+                      notFoundText="Aucun ingrédient trouvé."
+                    />
                   </TableCell>
                   <TableCell className="text-muted-foreground">
                      {ing.category}
@@ -370,3 +351,5 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     </div>
   );
 }
+
+    
