@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Trash2, X } from "lucide-react";
-import { categories as menuCategories, MenuItem, ingredientItems, IngredientItem as StockIngredient } from "@/data/mock-data";
+import { categories as menuCategories, MenuItem, initialIngredientItems, IngredientItem as StockIngredient } from "@/data/mock-data";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 
@@ -56,19 +56,20 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
       setPriceTTC(dish.price);
       setPortions(1); 
       setIngredients(dish.ingredients.map((ing, index) => {
-        const stockItem = ingredientItems.find(item => item.name.toLowerCase() === ing.name.toLowerCase());
+        const stockItem = initialIngredientItems.find(item => item.name.toLowerCase() === ing.name.toLowerCase());
         return {
           id: Date.now() + index,
           stockId: stockItem?.id || '',
           category: stockItem?.category || '',
           name: ing.name,
-          unit: stockItem?.unit || ing.quantity.replace(/[0-9.]/g, '').trim(),
+          unit: stockItem?.unit || ing.quantity.toString().replace(/[0-9.]/g, '').trim(),
           unitCost: stockItem?.unitPrice || 0,
-          quantity: parseFloat(ing.quantity) || 0,
+          quantity: parseFloat(ing.quantity.toString()) || 0,
         }
       }));
-      setPreparation(dish.instructions);
+      setPreparation(Array.isArray(dish.instructions) ? dish.instructions.join('\n') : dish.instructions);
       setAllergens(dish.allergens);
+      setSalesPitch(dish.argumentationCommerciale || '');
     }
   }, [dish]);
 
@@ -93,7 +94,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
   };
   
   const handleSelectIngredient = (ingredientRowId: number, selectedStockId: string) => {
-    const stockItem = ingredientItems.find(item => item.id === selectedStockId);
+    const stockItem = initialIngredientItems.find(item => item.id === selectedStockId);
 
     if (stockItem) {
         setIngredients(
@@ -144,7 +145,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
   };
 
   const ingredientOptions = useMemo(() => {
-    return ingredientItems.map(item => ({
+    return initialIngredientItems.map(item => ({
       value: item.id,
       label: item.name,
     }));

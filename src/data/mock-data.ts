@@ -1,38 +1,50 @@
 
+type Quantity = {
+  value: number;
+  unit: string;
+  originalString: string;
+};
+
+type Ingredient = {
+  name: string;
+  quantity: string | number;
+  unitCost?: number;
+  totalCost?: number;
+  notes?: string | null;
+};
+
+
+type Servings = {
+  amount: number;
+  unit: string;
+};
+
+
 export type MenuItem = {
   id: string;
   name: string;
   description: string;
   category: 'Entrées Froides – Fraîcheur et Élégance' | 'Entrées Chaudes – Gourmandise et Chaleur' | 'Plats et Grillades – Saveurs en Majesté' | 'Les Mets de chez Nous' | 'Symphonie de Pâtes – Évasion Italienne' | 'Nos Burgers Bistronomiques' | 'Douceurs Signature – Éclats Sucrés de l’Instant' | 'Élixirs & Rafraîchissements';
-  
   price: number;
   cost: number;
-  
   image: string;
   imageHint: string;
-  
-  prepTime: number; 
+  prepTime: number;
   difficulty: 1 | 2 | 3 | 4 | 5;
   status: 'Actif' | 'Inactif' | 'Saisonnier';
-  tags: ('Végétarien' | 'Épicé' | 'Sans gluten' | 'Spécialité locale' | 'Halal' | 'Nouveau' | 'Populaire')[];
-  
+  tags: string[];
   portionSize?: string;
   calories?: number;
-  
-  ingredients: { name: string; quantity: string; unitCost?: number; totalCost?: number }[];
-  
+  ingredients: Ingredient[];
   instructions: string | string[];
-  
   allergens: string[];
-  notes?: string;
-  
+  notes?: string | null;
   argumentationCommerciale?: string;
 };
 
 
 export const categories: ('Entrées Froides – Fraîcheur et Élégance' | 'Entrées Chaudes – Gourmandise et Chaleur' | 'Plats et Grillades – Saveurs en Majesté' | 'Les Mets de chez Nous' | 'Symphonie de Pâtes – Évasion Italienne' | 'Nos Burgers Bistronomiques' | 'Douceurs Signature – Éclats Sucrés de l’Instant' | 'Élixirs & Rafraîchissements')[] = ['Entrées Froides – Fraîcheur et Élégance', 'Entrées Chaudes – Gourmandise et Chaleur', 'Plats et Grillades – Saveurs en Majesté', 'Les Mets de chez Nous', 'Symphonie de Pâtes – Évasion Italienne', 'Nos Burgers Bistronomiques', 'Douceurs Signature – Éclats Sucrés de l’Instant', 'Élixirs & Rafraîchissements'];
 export const tags: ('Végétarien' | 'Épicé' | 'Sans gluten' | 'Spécialité locale' | 'Halal' | 'Nouveau' | 'Populaire')[] = ['Végétarien', 'Épicé', 'Sans gluten', 'Spécialité locale', 'Halal', 'Nouveau', 'Populaire'];
-
 export const menuItems: MenuItem[] = [
   // Entrées Froides – Fraîcheur et Élégance
   {
@@ -69,7 +81,7 @@ export const menuItems: MenuItem[] = [
     calories: 250,
     ingredients: [
       { name: 'Tomate', quantity: '2 pièces (150g)', unitCost: 100, totalCost: 200 },
-      { name: 'Mozzarella di bufala', quantity: '125g', unitCost: 2.2, totalCost: 250 },
+      { name: 'Mozzarella', quantity: '125g', unitCost: 2.2, totalCost: 250 },
       { name: 'Basilic frais', quantity: '1 botte (30g)', unitCost: 1, totalCost: 30 }
     ],
     instructions: [
@@ -610,7 +622,7 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Blanc de poulet', quantity: '200g' }, { name: 'Parmesan Reggiano', quantity: '30g' }, { name: 'Tomate', quantity: '50g' }],
-    instructions: 'Faire dorer le poulet. Ajouter la crème, le parmesan, les tomates confites et les pousses d\'épinards. Laisser mijoter.',
+    instructions: 'Faire dorer le poulet. Ajouter la crème, le parmesan, les tomates confites et les pousses d\'épinards. La laisser mijoter.',
     allergens: ['Lactose'],
   },
   {
@@ -796,7 +808,7 @@ export const menuItems: MenuItem[] = [
     status: 'Actif',
     difficulty: 4,
     tags: [],
-    ingredients: [{ name: 'Riz arborio', quantity: '150g' }, { name: 'Crevettes décortiquées', quantity: '100g' }, { name: 'Moules fraîches', quantity: '100g' }],
+    ingredients: [{ name: 'Riz arborio', quantity: '150g' }, { name: 'Crevettes décortiquées', quantity: '100g' }, { name: 'Moules fraîches', quantity: '70g' }],
     instructions: 'Préparer un sofrito, ajouter le riz, le safran et le bouillon. Incorporer les fruits de mer et les légumes et laisser cuire.',
     allergens: ['Crustacés', 'Mollusques'],
   },
@@ -1182,12 +1194,12 @@ export const menuItems: MenuItem[] = [
     instructions: 'Assortiment de pâtisseries orientales maison, comme des cigares aux amandes ou des makrouts.',
     allergens: ['Gluten', 'Noix'],
   },
-  
+
   // Élixirs & Rafraîchissements
   {
     id: 'boi-1',
     name: 'Expresso Signature',
-    description: '',
+    description: 'Un café intense et court, parfait pour une pause rapide.',
     price: 600,
     cost: 100,
     category: 'Élixirs & Rafraîchissements',
@@ -1198,13 +1210,13 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: '',
+    instructions: [],
     allergens: [],
   },
   {
     id: 'boi-2',
     name: 'Cappuccino Mousse de Lait',
-    description: '',
+    description: 'Café expresso couronné d\'une mousse de lait onctueuse.',
     price: 800,
     cost: 200,
     category: 'Élixirs & Rafraîchissements',
@@ -1215,13 +1227,13 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: '',
+    instructions: [],
     allergens: ['Lactose'],
   },
   {
     id: 'boi-3',
     name: 'Café Latte Douceur Vanille',
-    description: '',
+    description: 'Douce alliance d\'expresso, de lait chaud et d\'une touche de vanille.',
     price: 1000,
     cost: 250,
     category: 'Élixirs & Rafraîchissements',
@@ -1232,13 +1244,13 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: '',
+    instructions: [],
     allergens: ['Lactose'],
   },
   {
     id: 'boi-4',
     name: 'Thé Vert ou Noir Infusé Minute',
-    description: '',
+    description: 'Infusion délicate de thé vert ou noir, rafraîchissante et pleine de bienfaits.',
     price: 600,
     cost: 100,
     category: 'Élixirs & Rafraîchissements',
@@ -1249,13 +1261,13 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: '',
+    instructions: [],
     allergens: [],
   },
   {
     id: 'boi-5',
     name: 'Thé aux Épices Signature (cannelle, gingembre, orange)',
-    description: '',
+    description: 'Thé noir infusé avec des notes chaleureuses de cannelle, gingembre et orange.',
     price: 800,
     cost: 150,
     category: 'Élixirs & Rafraîchissements',
@@ -1266,7 +1278,7 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: '',
+    instructions: [],
     allergens: [],
   },
   {
@@ -1283,13 +1295,13 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [],
-    instructions: '',
+    instructions: [],
     allergens: [],
   },
   {
     id: 'boi-7',
     name: 'Citronnade Maison à la Menthe',
-    description: '',
+    description: 'Rafraîchissante citronnade maison préparée avec de la menthe fraîche.',
     price: 1000,
     cost: 300,
     category: 'Élixirs & Rafraîchissements',
@@ -1300,13 +1312,13 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: '',
+    instructions: [],
     allergens: [],
   },
   {
     id: 'boi-8',
     name: 'Smoothie Mangue Passion',
-    description: '',
+    description: 'Un smoothie exotique et onctueux à la mangue et au fruit de la passion.',
     price: 1500,
     cost: 600,
     category: 'Élixirs & Rafraîchissements',
@@ -1317,13 +1329,13 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: '',
+    instructions: [],
     allergens: [],
   },
   {
     id: 'boi-9',
     name: 'Eau minérale / gazeuse',
-    description: '',
+    description: 'Eau minérale naturelle ou gazeuse, pour s\'hydrater en toute simplicité.',
     price: 500,
     cost: 100,
     category: 'Élixirs & Rafraîchissements',
@@ -1334,13 +1346,13 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: '',
+    instructions: [],
     allergens: [],
   },
   {
     id: 'boi-10',
     name: 'Sodas classiques',
-    description: '',
+    description: 'Vos sodas préférés pour une pause pétillante.',
     price: 700,
     cost: 150,
     category: 'Élixirs & Rafraîchissements',
@@ -1351,378 +1363,97 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: '',
+    instructions: [],
     allergens: [],
   },
 ];
 
-
-export type IngredientItem = {
-  id: string;
-  name: string;
-  category: string;
-  unitPrice: number;
-  unit: string;
-  stock: number;
-  supplier: string;
-  lowStockThreshold: number;
-};
-
-export const suppliers: Record<string, string> = {
-    "SUP001": "Fournisseur volailles",
-    "SUP002": "Boucherie du Centre",
-    "SUP003": "Agneau de Prestige",
-    "SUP004": "Charcuterie Fine",
-    "SUP005": "Le Pêcheur Local",
-    "SUP006": "Primeur Légumes & Fruits",
-    "SUP007": "Le Jardin des Herbes",
-    "SUP008": "Fruits du Monde",
-    "SUP009": "Les Trésors Rouges",
-    "SUP010": "Saveurs Exotiques",
-    "SUP011": "Le Comptoir des Fruits Secs",
-    "SUP012": "La Crèmerie",
-    "SUP013": "Fromagerie Affinage d'Or",
-    "SUP014": "Œufs de la Ferme",
-    "SUP015": "Épices & Aromates du Monde",
-    "SUP016": "Condiments & Sauces",
-    "SUP017": "Huiles & Vinaigres",
-    "SUP018": "Céréales & Co",
-    "SUP019": "Boulangerie Artisanale",
-    "SUP020": "Le Chocolatier",
-    "SUP021": "Glaces & Sorbets",
-    "SUP022": "Boissons du Monde",
-    "SUP023": "Brasserie Artisanale",
-    "f6eb0839-f3ad-430e-bcd1-27000a82bff8": "Boulangerie Patisserie",
-    "01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a": "Produits Laitiers & Œufs",
-};
-
-export const ingredientItems: IngredientItem[] = [
-    { id: 'ING128', name: 'Abricot', category: 'Fruits', unitPrice: 4.2, unit: 'kg', stock: 20, supplier: suppliers['SUP008'], lowStockThreshold: 5 },
-    { id: 'ING137', name: 'Abricot sec', category: 'Fruits secs', unitPrice: 6, unit: 'kg', stock: 15, supplier: suppliers['SUP011'], lowStockThreshold: 3 },
-    { id: 'ING047', name: 'Ail frais', category: 'légumes', unitPrice: 3.5, unit: 'kg', stock: 0, supplier: suppliers['SUP006'], lowStockThreshold: 10 },
-    { id: 'ING018', name: 'Ailes de poulet', category: 'Viandes et volailles', unitPrice: 5.5, unit: 'kg', stock: 20, supplier: suppliers['SUP001'], lowStockThreshold: 5 },
-    { id: 'ING140', name: 'Amande', category: 'Fruits secs', unitPrice: 12, unit: 'kg', stock: 10, supplier: suppliers['SUP011'], lowStockThreshold: 2 },
-    { id: 'ING118', name: 'Ananas', category: 'Fruits exotiques', unitPrice: 4.5, unit: 'pièce', stock: 20, supplier: suppliers['SUP010'], lowStockThreshold: 5 },
-    { id: 'ING037', name: 'Anchois à l’huile', category: 'Poissons et fruits de mer', unitPrice: 4.5, unit: 'boîte', stock: 30, supplier: suppliers['SUP005'], lowStockThreshold: 6 },
-    { id: 'ING071', name: 'Aneth frais', category: 'Herbes aromatiques', unitPrice: 2.5, unit: 'botte', stock: 20, supplier: suppliers['SUP007'], lowStockThreshold: 5 },
-    { id: 'ING185', name: 'Anis étoilé', category: 'Épices', unitPrice: 30, unit: 'kg', stock: 3, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING085', name: 'Artichaut', category: 'Légumes', unitPrice: 2.8, unit: 'pièce', stock: 20, supplier: suppliers['SUP006'], lowStockThreshold: 5 },
-    { id: 'ING086', name: 'Asperges vertes', category: 'Légumes', unitPrice: 8, unit: 'kg', stock: 15, supplier: suppliers['SUP006'], lowStockThreshold: 3 },
-    { id: 'ING052', name: 'Aubergine', category: 'Légumes', unitPrice: 3.2, unit: 'kg', stock: 70, supplier: suppliers['SUP006'], lowStockThreshold: 15 },
-    { id: 'ING013', name: 'Bacon fumé artisanal', category: 'Viandes et volailles', unitPrice: 11, unit: 'kg', stock: 25, supplier: suppliers['SUP004'], lowStockThreshold: 5 },
-    { id: 'ING104', name: 'Banane', category: 'Fruits', unitPrice: 2.5, unit: 'kg', stock: 100, supplier: suppliers['SUP008'], lowStockThreshold: 20 },
-    { id: 'ING023', name: 'Bar entier écaillé', category: 'Poissons et fruits de mer', unitPrice: 20, unit: 'kg', stock: 15, supplier: suppliers['SUP002'], lowStockThreshold: 3 },
-    { id: '885c44a8-4813-4594-b0c0-7363e1348c70', name: 'Base biscuitée cheesecake', category: 'Produits boulangerie', unitPrice: 800, unit: 'kg', stock: 0, supplier: suppliers['f6eb0839-f3ad-430e-bcd1-27000a82bff8'], lowStockThreshold: 1 },
-    { id: 'ING069', name: 'Basilic frais', category: 'Herbes aromatiques', unitPrice: 2.2, unit: 'botte', stock: 30, supplier: suppliers['SUP007'], lowStockThreshold: 6 },
-    { id: 'ING187', name: 'Basilic séché', category: 'Épices', unitPrice: 20, unit: 'kg', stock: 4, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING009', name: 'Bavette de bœuf', category: 'Viandes et volailles', unitPrice: 13, unit: 'kg', stock: 15, supplier: suppliers['SUP002'], lowStockThreshold: 5 },
-    { id: 'ING088', name: 'Betterave crue', category: 'Légumes', unitPrice: 2.8, unit: 'kg', stock: 20, supplier: suppliers['SUP006'], lowStockThreshold: 5 },
-    { id: 'ING062', name: 'Betterave cuite', category: 'Légumes', unitPrice: 3.2, unit: 'kg', stock: 35, supplier: suppliers['SUP006'], lowStockThreshold: 8 },
-    { id: 'a38c2401-036a-4a6a-9c29-3a6ea64c2e72', name: 'Beurre', category: 'Produits laitiers/œufs', unitPrice: 650, unit: 'kg', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 5 },
-    { id: 'ING147', name: 'Beurre demi-sel', category: 'Produits laitiers', unitPrice: 8.2, unit: 'kg', stock: 20, supplier: suppliers['SUP012'], lowStockThreshold: 5 },
-    { id: 'ING146', name: 'Beurre doux', category: 'Produits laitiers', unitPrice: 8, unit: 'kg', stock: 30, supplier: suppliers['SUP012'], lowStockThreshold: 6 },
-    { id: 'ING243', name: 'Bière blonde 33cl', category: 'Boissons alcoolisées', unitPrice: 1.5, unit: 'canette', stock: 100, supplier: suppliers['SUP023'], lowStockThreshold: 30 },
-    { id: 'ING244', name: 'Bière brune 33cl', category: 'Boissons alcoolisées', unitPrice: 1.7, unit: 'canette', stock: 80, supplier: suppliers['SUP023'], lowStockThreshold: 20 },
-    { id: 'adbc7ca5-a821-4249-971f-64f60897cdff', name: 'Biscuit savoyard', category: 'Produits boulangerie', unitPrice: 1000, unit: 'kg', stock: 0, supplier: suppliers['f6eb0839-f3ad-430e-bcd1-27000a82bff8'], lowStockThreshold: 1 },
-    { id: 'ING003', name: 'Blanc de poulet', category: 'Viandes et volailles', unitPrice: 6.8, unit: 'kg', stock: 60, supplier: suppliers['SUP001'], lowStockThreshold: 10 },
-    { id: 'ING096', name: 'Blette', category: 'Légumes', unitPrice: 3.2, unit: 'kg', stock: 15, supplier: suppliers['SUP006'], lowStockThreshold: 3 },
-    { id: 'ING160', name: 'Bleu d’Auvergne', category: 'Fromages', unitPrice: 16, unit: 'kg', stock: 10, supplier: suppliers['SUP013'], lowStockThreshold: 2 },
-    { id: 'ING008', name: 'Bœuf haché', category: 'Viandes et volailles', unitPrice: 9, unit: 'kg', stock: 60, supplier: suppliers['SUP002'], lowStockThreshold: 15 },
-    { id: 'ING206', name: 'Boulgour', category: 'Céréales', unitPrice: 3, unit: 'kg', stock: 25, supplier: suppliers['SUP018'], lowStockThreshold: 8 },
-    { id: 'ING034', name: 'Brandade de morue', category: 'Poissons et fruits de mer', unitPrice: 16, unit: 'kg', stock: 10, supplier: suppliers['SUP002'], lowStockThreshold: 2 },
-    { id: 'ING156', name: 'Brie de Meaux', category: 'Fromages', unitPrice: 14, unit: 'kg', stock: 12, supplier: suppliers['SUP013'], lowStockThreshold: 3 },
-    { id: 'ING057', name: 'Brocoli', category: 'Légumes', unitPrice: 3.5, unit: 'kg', stock: 50, supplier: suppliers['SUP006'], lowStockThreshold: 10 },
-    { id: 'ec4d26b4-3c71-45d4-8657-0901c823cb5c', name: 'Burrata', category: 'Produits laitiers/œufs', unitPrice: 250, unit: 'pièce', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 5 },
-    { id: 'ING030', name: 'Calamars frais', category: 'Poissons et fruits de mer', unitPrice: 13.5, unit: 'kg', stock: 20, supplier: suppliers['SUP002'], lowStockThreshold: 5 },
-    { id: 'ING157', name: 'Camembert', category: 'Produits laitiers/œufs', unitPrice: 350, unit: 'pièce', stock: 20, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 5 },
-    { id: 'ING180', name: 'Cannelle en poudre', category: 'Épices', unitPrice: 24, unit: 'kg', stock: 3, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING182', name: 'Cardamome verte', category: 'Épices', unitPrice: 60, unit: 'kg', stock: 2, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING044', name: 'Carotte', category: 'Légumes', unitPrice: 2.2, unit: 'kg', stock: 150, supplier: suppliers['SUP006'], lowStockThreshold: 30 },
-    { id: 'ING115', name: 'Cassis', category: 'Fruits rouges', unitPrice: 8.5, unit: 'kg', stock: 15, supplier: suppliers['SUP009'], lowStockThreshold: 3 },
-    { id: 'ING065', name: 'Céleri branche', category: 'Légumes', unitPrice: 2.8, unit: 'kg', stock: 25, supplier: suppliers['SUP006'], lowStockThreshold: 5 },
-    { id: 'ING066', name: 'Céleri rave', category: 'Légumes', unitPrice: 3, unit: 'kg', stock: 20, supplier: suppliers['SUP006'], lowStockThreshold: 5 },
-    { id: 'ING116', name: 'Cerise', category: 'Fruits rouges', unitPrice: 7, unit: 'kg', stock: 25, supplier: suppliers['SUP009'], lowStockThreshold: 5 },
-    { id: 'ING076', name: 'Champignons de Paris', category: 'Légumes', unitPrice: 4.5, unit: 'kg', stock: 60, supplier: suppliers['SUP006'], lowStockThreshold: 12 },
-    { id: 'ING077', name: 'Champignons pleurotes', category: 'Légumes', unitPrice: 5.5, unit: 'kg', stock: 25, supplier: suppliers['SUP006'], lowStockThreshold: 5 },
-    { id: 'ING078', name: 'Champignons shiitake', category: 'Légumes', unitPrice: 6.5, unit: 'kg', stock: 15, supplier: suppliers['SUP006'], lowStockThreshold: 3 },
-    { id: '91cce841-a9c4-430e-9e21-5250bd5bcd6b', name: 'Chantilly', category: 'Produits laitiers/œufs', unitPrice: 600, unit: 'litre', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 2 },
-    { id: '3639d4b8-0546-4ecb-8520-ed031912cf4b', name: 'Cheddar', category: 'Produits laitiers/œufs', unitPrice: 1200, unit: 'kg', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 2 },
-    { id: 'ING164', name: 'Chèvre frais', category: 'Fromages', unitPrice: 4, unit: 'pièce', stock: 15, supplier: suppliers['SUP013'], lowStockThreshold: 3 },
-    { id: 'ING222', name: 'Chocolat au lait pâtissier', category: 'Desserts', unitPrice: 11, unit: 'kg', stock: 15, supplier: suppliers['SUP020'], lowStockThreshold: 5 },
-    { id: 'ING221', name: 'Chocolat noir pâtissier', category: 'Desserts', unitPrice: 12, unit: 'kg', stock: 20, supplier: suppliers['SUP020'], lowStockThreshold: 5 },
-    { id: 'ING014', name: 'Chorizo doux', category: 'Viandes et volailles', unitPrice: 10, unit: 'kg', stock: 15, supplier: suppliers['SUP004'], lowStockThreshold: 5 },
-    { id: 'ING093', name: 'Chou frisé', category: 'Légumes', unitPrice: 2.8, unit: 'kg', stock: 20, supplier: suppliers['SUP006'], lowStockThreshold: 5 },
-    { id: 'ING094', name: 'Chou kale', category: 'Légumes', unitPrice: 4.2, unit: 'kg', stock: 15, supplier: suppliers['SUP006'], lowStockThreshold: 3 },
-    { id: 'ING055', name: 'Chou vert', category: 'Légumes', unitPrice: 2.5, unit: 'kg', stock: 40, supplier: suppliers['SUP006'], lowStockThreshold: 8 },
-    { id: 'ING056', name: 'Chou-fleur', category: 'Légumes', unitPrice: 3.2, unit: 'pièce', stock: 35, supplier: suppliers['SUP006'], lowStockThreshold: 8 },
-    { id: 'ING075', name: 'Ciboulette fraîche', category: 'Herbes aromatiques', unitPrice: 2.2, unit: 'botte', stock: 15, supplier: suppliers['SUP007'], lowStockThreshold: 3 },
-    { id: 'ING108', name: 'Citron jaune', category: 'Fruits', unitPrice: 3.5, unit: 'kg', stock: 80, supplier: suppliers['SUP008'], lowStockThreshold: 15 },
-    { id: 'ING109', name: 'Citron vert', category: 'Fruits', unitPrice: 4, unit: 'kg', stock: 70, supplier: suppliers['SUP008'], lowStockThreshold: 15 },
-    { id: 'ING084', name: 'Citronnelle fraîche', category: 'Herbes aromatiques', unitPrice: 3, unit: 'botte', stock: 10, supplier: suppliers['SUP007'], lowStockThreshold: 2 },
-    { id: 'ING107', name: 'Clémentine', category: 'Fruits', unitPrice: 3, unit: 'kg', stock: 100, supplier: suppliers['SUP008'], lowStockThreshold: 20 },
-    { id: 'ING183', name: 'Clous de girofle', category: 'Épices', unitPrice: 28, unit: 'kg', stock: 3, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING237', name: 'Coca-Cola 33cl', category: 'Boissons', unitPrice: 1.2, unit: 'canette', stock: 100, supplier: suppliers['SUP022'], lowStockThreshold: 30 },
-    { id: 'b73d58ba-6b40-458c-b1d0-2bb5e5ee8886', name: 'Comté affiné', category: 'Produits laitiers/œufs', unitPrice: 1800, unit: 'kg', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 1 },
-    { id: 'ING151', name: 'Comté AOP', category: 'Fromages', unitPrice: 18, unit: 'kg', stock: 15, supplier: suppliers['SUP013'], lowStockThreshold: 3 },
-    { id: 'ING053', name: 'Concombre', category: 'Légumes', unitPrice: 2.5, unit: 'kg', stock: 80, supplier: suppliers['SUP006'], lowStockThreshold: 20 },
-    { id: 'ING228', name: 'Confiture d’abricot', category: 'Épicerie sucrée', unitPrice: 7, unit: 'kg', stock: 10, supplier: suppliers['SUP020'], lowStockThreshold: 3 },
-    { id: 'ING227', name: 'Confiture de fraise', category: 'Épicerie sucrée', unitPrice: 7, unit: 'kg', stock: 10, supplier: suppliers['SUP020'], lowStockThreshold: 3 },
-    { id: 'ING032', name: 'Coquilles Saint-Jacques', category: 'Poissons et fruits de mer', unitPrice: 25, unit: 'kg', stock: 12, supplier: suppliers['SUP002'], lowStockThreshold: 3 },
-    { id: 'ING068', name: 'Coriandre fraîche', category: 'Herbes aromatiques', unitPrice: 1.8, unit: 'botte', stock: 40, supplier: suppliers['SUP007'], lowStockThreshold: 8 },
-    { id: 'ING177', name: 'Coriandre moulue', category: 'Épices', unitPrice: 19, unit: 'kg', stock: 4, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING012', name: 'Côtelette d’agneau', category: 'Viandes et volailles', unitPrice: 16, unit: 'kg', stock: 20, supplier: suppliers['SUP003'], lowStockThreshold: 5 },
-    { id: 'ING079', name: 'Courge butternut', category: 'Légumes', unitPrice: 2.8, unit: 'kg', stock: 20, supplier: suppliers['SUP006'], lowStockThreshold: 5 },
-    { id: 'ING051', name: 'Courgette', category: 'Légumes', unitPrice: 3, unit: 'kg', stock: 90, supplier: suppliers['SUP006'], lowStockThreshold: 20 },
-    { id: 'ING205', name: 'Couscous moyen', category: 'Céréales', unitPrice: 3.2, unit: 'kg', stock: 40, supplier: suppliers['SUP018'], lowStockThreshold: 10 },
-    { id: 'fad4ef95-93cf-403a-93b4-8463688a2177', name: 'Crème fraîche épaisse', category: 'Produits laitiers/œufs', unitPrice: 450, unit: 'litre', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 3 },
-    { id: 'ING144', name: 'Crème fraîche épaisse 30%', category: 'Produits laitiers', unitPrice: 6, unit: 'kg', stock: 40, supplier: suppliers['SUP012'], lowStockThreshold: 10 },
-    { id: '862a3e1c-8722-48c6-9a51-870a98f4ef41', name: 'Crème liquide', category: 'Produits laitiers/œufs', unitPrice: 380, unit: 'litre', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 3 },
-    { id: 'ING145', name: 'Crème liquide 30%', category: 'Produits laitiers', unitPrice: 5.5, unit: 'L', stock: 40, supplier: suppliers['SUP012'], lowStockThreshold: 10 },
-    { id: 'ING220', name: 'Crème pâtissière', category: 'Desserts', unitPrice: 6, unit: 'kg', stock: 15, supplier: suppliers['SUP004'], lowStockThreshold: 5 },
-    { id: 'ING098', name: 'Cresson', category: 'Légumes', unitPrice: 2.5, unit: 'botte', stock: 10, supplier: suppliers['SUP006'], lowStockThreshold: 2 },
-    { id: 'ING029', name: 'Crevettes décortiquées', category: 'Poissons et fruits de mer', unitPrice: 14, unit: 'kg', stock: 25, supplier: suppliers['SUP002'], lowStockThreshold: 6 },
-    { id: 'e0d9fae1-24f5-4c29-a2e0-bd97d4e8557a', name: 'Croûtons', category: 'Produits boulangerie', unitPrice: 600, unit: 'kg', stock: 0, supplier: suppliers['f6eb0839-f3ad-430e-bcd1-27000a82bff8'], lowStockThreshold: 2 },
-    { id: 'ING002', name: 'Cuisse de poulet', category: 'Viandes et volailles', unitPrice: 5.8, unit: 'kg', stock: 40, supplier: suppliers['SUP001'], lowStockThreshold: 8 },
-    { id: 'ING176', name: 'Cumin moulu', category: 'Épices', unitPrice: 19, unit: 'kg', stock: 5, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING083', name: 'Curcuma frais', category: 'Herbes aromatiques', unitPrice: 7, unit: 'kg', stock: 10, supplier: suppliers['SUP007'], lowStockThreshold: 2 },
-    { id: 'ING179', name: 'Curcuma moulu', category: 'Épices', unitPrice: 20, unit: 'kg', stock: 4, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING175', name: 'Curry en poudre', category: 'Épices', unitPrice: 18, unit: 'kg', stock: 6, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING134', name: 'Datte', category: 'Fruits secs', unitPrice: 6.5, unit: 'kg', stock: 20, supplier: suppliers['SUP011'], lowStockThreshold: 5 },
-    { id: 'ING024', name: 'Dorade royale', category: 'Poissons et fruits de mer', unitPrice: 18.5, unit: 'kg', stock: 18, supplier: suppliers['SUP002'], lowStockThreshold: 4 },
-    { id: 'ING022', name: 'Dos de cabillaud', category: 'Poissons et fruits de mer', unitPrice: 16, unit: 'kg', stock: 20, supplier: suppliers['SUP002'], lowStockThreshold: 5 },
-    { id: 'ING234', name: 'Eau gazeuse 50cl', category: 'Boissons', unitPrice: 0.6, unit: 'bouteille', stock: 150, supplier: suppliers['SUP022'], lowStockThreshold: 40 },
-    { id: 'ING233', name: 'Eau plate 50cl', category: 'Boissons', unitPrice: 0.5, unit: 'bouteille', stock: 200, supplier: suppliers['SUP022'], lowStockThreshold: 50 },
-    { id: 'ING153', name: 'Emmental râpé', category: 'Fromages', unitPrice: 12, unit: 'kg', stock: 20, supplier: suppliers['SUP013'], lowStockThreshold: 5 },
-    { id: 'ING097', name: 'Endive', category: 'Légumes', unitPrice: 3, unit: 'kg', stock: 15, supplier: suppliers['SUP006'], lowStockThreshold: 3 },
-    { id: 'ING005', name: 'Entrecôte de bœuf', category: 'Viandes et volailles', unitPrice: 15, unit: 'kg', stock: 25, supplier: suppliers['SUP002'], lowStockThreshold: 5 },
-    { id: 'ING011', name: 'Épaule d’agneau', category: 'Viandes et volailles', unitPrice: 14.5, unit: 'kg', stock: 18, supplier: suppliers['SUP003'], lowStockThreshold: 4 },
-    { id: 'ING058', name: 'Épinards frais', category: 'Légumes', unitPrice: 4, unit: 'kg', stock: 30, supplier: suppliers['SUP006'], lowStockThreshold: 6 },
-    { id: 'ING064', name: 'Fenouil', category: 'Légumes', unitPrice: 3.8, unit: 'kg', stock: 25, supplier: suppliers['SUP006'], lowStockThreshold: 5 },
-    { id: 'ING165', name: 'Feta', category: 'Fromages', unitPrice: 12, unit: 'kg', stock: 15, supplier: suppliers['SUP013'], lowStockThreshold: 3 },
-    { id: 'ING132', name: 'Figue fraîche', category: 'Fruits', unitPrice: 6, unit: 'kg', stock: 15, supplier: suppliers['SUP008'], lowStockThreshold: 3 },
-    { id: 'ING135', name: 'Figue sèche', category: 'autres', unitPrice: 7, unit: 'kg', stock: 0, supplier: suppliers['SUP011'], lowStockThreshold: 10 },
-    { id: 'ING006', name: 'Filet de bœuf', category: 'Viandes et volailles', unitPrice: 22, unit: 'kg', stock: 20, supplier: suppliers['SUP002'], lowStockThreshold: 5 },
-    { id: 'ING017', name: 'Filet de dinde', category: 'Viandes et volailles', unitPrice: 7.8, unit: 'kg', stock: 30, supplier: suppliers['SUP001'], lowStockThreshold: 8 },
-    { id: 'ING001', name: 'Filet de poulet', category: 'Viandes et volailles', unitPrice: 6.5, unit: 'kg', stock: 50, supplier: suppliers['SUP001'], lowStockThreshold: 10 },
-    { id: 'ING021', name: 'Filet de saumon', category: 'Poissons et fruits de mer', unitPrice: 18, unit: 'kg', stock: 25, supplier: suppliers['SUP002'], lowStockThreshold: 5 },
-    { id: 'ING039', name: 'Filet de sole', category: 'Poissons et fruits de mer', unitPrice: 19, unit: 'kg', stock: 12, supplier: suppliers['SUP002'], lowStockThreshold: 3 },
-    { id: 'ING219', name: 'Focaccia', category: 'Boulangerie', unitPrice: 3, unit: 'pièce', stock: 10, supplier: suppliers['SUP019'], lowStockThreshold: 3 },
-    { id: 'ING016', name: 'Foie de veau', category: 'Viandes et volailles', unitPrice: 12, unit: 'kg', stock: 12, supplier: suppliers['SUP005'], lowStockThreshold: 3 },
-    { id: 'ING111', name: 'Fraise', category: 'Fruits rouges', unitPrice: 6, unit: 'kg', stock: 40, supplier: suppliers['SUP009'], lowStockThreshold: 8 },
-    { id: 'ING112', name: 'Framboise', category: 'Fruits rouges', unitPrice: 9, unit: 'kg', stock: 20, supplier: suppliers['SUP009'], lowStockThreshold: 5 },
-    { id: '4cd355f0-5449-4fd5-83a6-6f57dae41f4c', name: 'Fromage ail & fines herbes', category: 'Produits laitiers/œufs', unitPrice: 1100, unit: 'kg', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 2 },
-    { id: 'ING150', name: 'Fromage blanc 40%', category: 'Produits laitiers', unitPrice: 5, unit: 'kg', stock: 25, supplier: suppliers['SUP012'], lowStockThreshold: 5 },
-    { id: '4b33250e-9eb6-47f4-9af0-d5a1909db8fe', name: 'Fromages affinés mixtes', category: 'Produits laitiers/œufs', unitPrice: 1800, unit: 'kg', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 2 },
-    { id: 'ING120', name: 'Fruit de la passion', category: 'Fruits exotiques', unitPrice: 9, unit: 'kg', stock: 10, supplier: suppliers['SUP010'], lowStockThreshold: 2 },
-    { id: 'ING247', name: 'Gélatine en feuilles', category: 'Desserts', unitPrice: 18, unit: 'kg', stock: 5, supplier: suppliers['SUP020'], lowStockThreshold: 1 },
-    { id: 'ING082', name: 'Gingembre frais', category: 'Herbes aromatiques', unitPrice: 6, unit: 'kg', stock: 15, supplier: suppliers['SUP007'], lowStockThreshold: 3 },
-    { id: 'ING178', name: 'Gingembre moulu', category: 'Épices', unitPrice: 22, unit: 'kg', stock: 4, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING230', name: 'Glace chocolat', category: 'Desserts', unitPrice: 6, unit: 'L', stock: 15, supplier: suppliers['SUP021'], lowStockThreshold: 5 },
-    { id: 'ING229', name: 'Glace vanille', category: 'Desserts', unitPrice: 6, unit: 'L', stock: 15, supplier: suppliers['SUP021'], lowStockThreshold: 5 },
-    { id: 'a93c5171-0b90-4c16-9e1a-d6f7c37efba1', name: 'Gouda', category: 'Produits laitiers/œufs', unitPrice: 1100, unit: 'kg', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 2 },
-    { id: 'ING121', name: 'Goyave', category: 'Fruits exotiques', unitPrice: 6, unit: 'kg', stock: 12, supplier: suppliers['SUP010'], lowStockThreshold: 2 },
-    { id: 'ING114', name: 'Groseille', category: 'Fruits rouges', unitPrice: 8, unit: 'kg', stock: 15, supplier: suppliers['SUP009'], lowStockThreshold: 3 },
-    { id: 'ING152', name: 'Gruyère', category: 'Produits laitiers/œufs', unitPrice: 1300, unit: 'kg', stock: 15, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 3 },
-    { id: 'ING166', name: 'Halloumi', category: 'Fromages', unitPrice: 13, unit: 'kg', stock: 10, supplier: suppliers['SUP013'], lowStockThreshold: 2 },
-    { id: 'ING213', name: 'Haricots blancs secs', category: 'Légumineuses', unitPrice: 3.5, unit: 'kg', stock: 20, supplier: suppliers['SUP018'], lowStockThreshold: 5 },
-    { id: 'ING212', name: 'Haricots rouges secs', category: 'Légumineuses', unitPrice: 3.5, unit: 'kg', stock: 20, supplier: suppliers['SUP018'], lowStockThreshold: 5 },
-    { id: 'ING059', name: 'Haricots verts', category: 'Légumes', unitPrice: 4.2, unit: 'kg', stock: 40, supplier: suppliers['SUP006'], lowStockThreshold: 10 },
-    { id: 'ING198', name: 'Huile d’arachide', category: 'Huiles', unitPrice: 6, unit: 'L', stock: 15, supplier: suppliers['SUP017'], lowStockThreshold: 3 },
-    { id: 'ING196', name: 'Huile d’olive extra vierge', category: 'Huiles', unitPrice: 12, unit: 'L', stock: 20, supplier: suppliers['SUP017'], lowStockThreshold: 5 },
-    { id: 'ING199', name: 'Huile de colza', category: 'Huiles', unitPrice: 5.5, unit: 'L', stock: 15, supplier: suppliers['SUP017'], lowStockThreshold: 3 },
-    { id: 'ING200', name: 'Huile de sésame', category: 'Huiles', unitPrice: 14, unit: 'L', stock: 8, supplier: suppliers['SUP017'], lowStockThreshold: 2 },
-    { id: 'ING197', name: 'Huile de tournesol', category: 'Huiles', unitPrice: 5, unit: 'L', stock: 25, supplier: suppliers['SUP017'], lowStockThreshold: 5 },
-    { id: 'ING239', name: 'Ice Tea 33cl', category: 'Boissons', unitPrice: 1.2, unit: 'canette', stock: 80, supplier: suppliers['SUP022'], lowStockThreshold: 20 },
-    { id: 'ING091', name: 'Igname', category: 'Légumes', unitPrice: 3.8, unit: 'kg', stock: 15, supplier: suppliers['SUP006'], lowStockThreshold: 3 },
-    { id: 'ING170', name: 'Jaune d’œuf pasteurisé', category: 'Œufs', unitPrice: 15, unit: 'L', stock: 5, supplier: suppliers['SUP014'], lowStockThreshold: 1 },
-    { id: 'ING235', name: 'Jus d’orange', category: 'Boissons', unitPrice: 2.5, unit: 'L', stock: 60, supplier: suppliers['SUP022'], lowStockThreshold: 15 },
-    { id: 'ING236', name: 'Jus de pomme', category: 'Boissons', unitPrice: 2.5, unit: 'L', stock: 50, supplier: suppliers['SUP022'], lowStockThreshold: 15 },
-    { id: 'ING019', name: 'Jus de viande réduit', category: 'Condiments et sauces', unitPrice: 12, unit: 'L', stock: 10, supplier: suppliers['SUP006'], lowStockThreshold: 2 },
-    { id: 'ING122', name: 'Kaki', category: 'Fruits exotiques', unitPrice: 4, unit: 'kg', stock: 15, supplier: suppliers['SUP010'], lowStockThreshold: 3 },
-    { id: 'ING192', name: 'Ketchup', category: 'Condiments', unitPrice: 8, unit: 'kg', stock: 20, supplier: suppliers['SUP016'], lowStockThreshold: 5 },
-    { id: 'ING133', name: 'Kiwis', category: 'Fruits', unitPrice: 3.5, unit: 'kg', stock: 20, supplier: suppliers['SUP008'], lowStockThreshold: 5 },
-    { id: 'ING142', name: 'Lait demi-écrémé', category: 'Produits laitiers', unitPrice: 1.1, unit: 'L', stock: 80, supplier: suppliers['SUP012'], lowStockThreshold: 20 },
-    { id: 'ING143', name: 'Lait écrémé', category: 'Produits laitiers', unitPrice: 1, unit: 'L', stock: 50, supplier: suppliers['SUP012'], lowStockThreshold: 10 },
-    { id: 'ING141', name: 'Lait entier', category: 'Produits laitiers/œufs', unitPrice: 120, unit: 'litre', stock: 100, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 20 },
-    { id: 'ING040', name: 'Langoustines fraîches', category: 'Poissons et fruits de mer', unitPrice: 22, unit: 'kg', stock: 10, supplier: suppliers['SUP002'], lowStockThreshold: 2 },
-    { id: 'ING074', name: 'Laurier frais', category: 'Herbes aromatiques', unitPrice: 1.8, unit: 'botte', stock: 15, supplier: suppliers['SUP007'], lowStockThreshold: 3 },
-    { id: 'ING190', name: 'Laurier séché', category: 'Épices', unitPrice: 15, unit: 'kg', stock: 3, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING209', name: 'Lentilles corail', category: 'Légumineuses', unitPrice: 3.8, unit: 'kg', stock: 25, supplier: suppliers['SUP018'], lowStockThreshold: 8 },
-    { id: 'ING210', name: 'Lentilles vertes', category: 'Légumineuses', unitPrice: 3.5, unit: 'kg', stock: 30, supplier: suppliers['SUP018'], lowStockThreshold: 8 },
-    { id: 'ING245', name: 'Levure boulangère', category: 'Boulangerie', unitPrice: 8, unit: 'kg', stock: 8, supplier: suppliers['SUP019'], lowStockThreshold: 2 },
-    { id: 'ING246', name: 'Levure chimique', category: 'Épicerie sucrée', unitPrice: 6, unit: 'kg', stock: 10, supplier: suppliers['SUP020'], lowStockThreshold: 3 },
-    { id: '528bf028-3f64-41c4-bc7b-3fe50eb6706c', name: 'Linguines', category: 'Céréales/légumineuses', unitPrice: 220, unit: 'kg', stock: 0, supplier: suppliers['f6eb0839-f3ad-430e-bcd1-27000a82bff8'], lowStockThreshold: 5 },
-    { id: 'ING123', name: 'Litchi', category: 'Fruits exotiques', unitPrice: 8, unit: 'kg', stock: 10, supplier: suppliers['SUP010'], lowStockThreshold: 2 },
-    { id: 'ING099', name: 'Mâche', category: 'Légumes', unitPrice: 4.2, unit: 'kg', stock: 10, supplier: suppliers['SUP006'], lowStockThreshold: 2 },
-    { id: 'ING106', name: 'Mandarine', category: 'Fruits', unitPrice: 3.2, unit: 'kg', stock: 100, supplier: suppliers['SUP008'], lowStockThreshold: 20 },
-    { id: 'ING117', name: 'Mangue', category: 'Fruits exotiques', unitPrice: 5.5, unit: 'kg', stock: 30, supplier: suppliers['SUP010'], lowStockThreshold: 6 },
-    { id: 'ING092', name: 'Manioc', category: 'Légumes', unitPrice: 3.5, unit: 'kg', stock: 12, supplier: suppliers['SUP006'], lowStockThreshold: 2 },
-    { id: 'ING028', name: 'Maquereau frais', category: 'Poissons et fruits de mer', unitPrice: 10, unit: 'kg', stock: 18, supplier: suppliers['SUP002'], lowStockThreshold: 5 },
-    { id: 'ING020', name: 'Marinade aux herbes fraîches', category: 'Condiments et sauces', unitPrice: 8, unit: 'L', stock: 15, supplier: suppliers['SUP006'], lowStockThreshold: 3 },
-    { id: 'ING163', name: 'Mascarpone', category: 'Produits laitiers/œufs', unitPrice: 1100, unit: 'kg', stock: 12, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 3 },
-    { id: 'ING193', name: 'Mayonnaise', category: 'Condiments', unitPrice: 9, unit: 'kg', stock: 15, supplier: suppliers['SUP016'], lowStockThreshold: 3 },
-    { id: 'ING070', name: 'Menthe fraîche', category: 'Herbes aromatiques', unitPrice: 2, unit: 'botte', stock: 25, supplier: suppliers['SUP007'], lowStockThreshold: 5 },
-    { id: 'ING015', name: 'Merguez fraîche', category: 'Viandes et volailles', unitPrice: 9.5, unit: 'kg', stock: 30, supplier: suppliers['SUP004'], lowStockThreshold: 10 },
-    { id: 'ING026', name: 'Merlan frais', category: 'Poissons et fruits de mer', unitPrice: 12, unit: 'kg', stock: 20, supplier: suppliers['SUP002'], lowStockThreshold: 5 },
-    { id: 'ING226', name: 'Miel', category: 'Épicerie sucrée', unitPrice: 8, unit: 'kg', stock: 15, supplier: suppliers['SUP020'], lowStockThreshold: 5 },
-    { id: 'ING031', name: 'Moules fraîches', category: 'Poissons et fruits de mer', unitPrice: 7, unit: 'kg', stock: 25, supplier: suppliers['SUP002'], lowStockThreshold: 8 },
-    { id: 'ING191', name: 'Moutarde de Dijon', category: 'Condiments', unitPrice: 10, unit: 'kg', stock: 15, supplier: suppliers['SUP016'], lowStockThreshold: 3 },
-    { id: 'a2502654-f10e-41c9-8c58-2c3b2b9f9233', name: 'Mozzarella', category: 'Produits laitiers/œufs', unitPrice: 950, unit: 'kg', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 3 },
-    { id: 'ING161', name: 'Mozzarella di bufala', category: 'Fromages', unitPrice: 2.5, unit: 'pièce', stock: 30, supplier: suppliers['SUP013'], lowStockThreshold: 6 },
-    { id: 'ING158', name: 'Munster', category: 'Fromages', unitPrice: 16, unit: 'kg', stock: 10, supplier: suppliers['SUP013'], lowStockThreshold: 2 },
-    { id: 'ING184', name: 'Muscade entière', category: 'Épices', unitPrice: 32, unit: 'kg', stock: 2, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING113', name: 'Myrtille', category: 'Fruits rouges', unitPrice: 10, unit: 'kg', stock: 20, supplier: suppliers['SUP009'], lowStockThreshold: 5 },
-    { id: 'ING061', name: 'Navet', category: 'Légumes', unitPrice: 2.2, unit: 'kg', stock: 40, supplier: suppliers['SUP006'], lowStockThreshold: 10 },
-    { id: 'ING131', name: 'Nectarine', category: 'Fruits', unitPrice: 4.2, unit: 'kg', stock: 20, supplier: suppliers['SUP008'], lowStockThreshold: 5 },
-    { id: 'ING010', name: 'Noisette d’agneau', category: 'Viandes et volailles', unitPrice: 17, unit: 'kg', stock: 20, supplier: suppliers['SUP003'], lowStockThreshold: 5 },
-    { id: 'ING139', name: 'Noix', category: 'Fruits secs', unitPrice: 9, unit: 'kg', stock: 10, supplier: suppliers['SUP011'], lowStockThreshold: 2 },
-    { id: 'ING124', name: 'Noix de coco fraîche', category: 'Fruits exotiques', unitPrice: 3.5, unit: 'pièce', stock: 10, supplier: suppliers['SUP010'], lowStockThreshold: 2 },
-    { id: 'ING168', name: 'Œuf bio', category: 'Œufs', unitPrice: 0.35, unit: 'pièce', stock: 200, supplier: suppliers['SUP014'], lowStockThreshold: 50 },
-    { id: 'ING169', name: 'Œuf de caille', category: 'Œufs', unitPrice: 0.2, unit: 'pièce', stock: 100, supplier: suppliers['SUP014'], lowStockThreshold: 20 },
-    { id: 'ING167', name: 'Œuf de poule', category: 'Œufs', unitPrice: 0.25, unit: 'pièce', stock: 500, supplier: suppliers['SUP014'], lowStockThreshold: 100 },
-    { id: 'e5b67d47-ed17-4b19-bb63-30a67c3fb2d7', name: 'Œufs frais', category: 'Produits laitiers/œufs', unitPrice: 30, unit: 'pièce', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 50 },
-    { id: 'ING045', name: 'Oignon jaune', category: 'Légumes', unitPrice: 1.8, unit: 'kg', stock: 120, supplier: suppliers['SUP006'], lowStockThreshold: 25 },
-    { id: 'ING046', name: 'Oignon rouge', category: 'Légumes', unitPrice: 2.2, unit: 'kg', stock: 100, supplier: suppliers['SUP006'], lowStockThreshold: 20 },
-    { id: 'ING105', name: 'Orange', category: 'Fruits', unitPrice: 2.8, unit: 'kg', stock: 120, supplier: suppliers['SUP008'], lowStockThreshold: 25 },
-    { id: 'ING186', name: 'Origan séché', category: 'Épices', unitPrice: 18, unit: 'kg', stock: 5, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: '13eeed53-45cc-4b16-afd6-e3f9c125e34b', name: 'Pain artisanal', category: 'Produits boulangerie', unitPrice: 350, unit: 'kg', stock: 0, supplier: suppliers['f6eb0839-f3ad-430e-bcd1-27000a82bff8'], lowStockThreshold: 5 },
-    { id: 'ING214', name: 'Pain baguette', category: 'Boulangerie', unitPrice: 1.2, unit: 'pièce', stock: 50, supplier: suppliers['SUP019'], lowStockThreshold: 15 },
-    { id: '1ac7a6fd-745a-4330-b724-f3ee328802a7', name: 'Pain brioche burger', category: 'Produits boulangerie', unitPrice: 80, unit: 'pièce', stock: 0, supplier: suppliers['f6eb0839-f3ad-430e-bcd1-27000a82bff8'], lowStockThreshold: 20 },
-    { id: 'ING218', name: 'Pain burger', category: 'Boulangerie', unitPrice: 1.5, unit: 'pièce', stock: 40, supplier: suppliers['SUP019'], lowStockThreshold: 10 },
-    { id: 'ING216', name: 'Pain complet', category: 'Boulangerie', unitPrice: 2.2, unit: 'pièce', stock: 15, supplier: suppliers['SUP019'], lowStockThreshold: 5 },
-    { id: 'ING215', name: 'Pain de campagne', category: 'Boulangerie', unitPrice: 2.5, unit: 'pièce', stock: 20, supplier: suppliers['SUP019'], lowStockThreshold: 5 },
-    { id: 'ING217', name: 'Pain pita', category: 'Boulangerie', unitPrice: 1, unit: 'pièce', stock: 30, supplier: suppliers['SUP019'], lowStockThreshold: 10 },
-    { id: 'ING095', name: 'Pak choï', category: 'Légumes', unitPrice: 4, unit: 'kg', stock: 10, supplier: suppliers['SUP006'], lowStockThreshold: 2 },
-    { id: 'ING004', name: 'Paleron de bœuf', category: 'Viandes et volailles', unitPrice: 9.5, unit: 'kg', stock: 30, supplier: suppliers['SUP002'], lowStockThreshold: 5 },
-    { id: 'ING110', name: 'Pamplemousse', category: 'Fruits', unitPrice: 3.8, unit: 'kg', stock: 60, supplier: suppliers['SUP008'], lowStockThreshold: 12 },
-    { id: 'ING063', name: 'Panais', category: 'Légumes', unitPrice: 3.5, unit: 'kg', stock: 20, supplier: suppliers['SUP006'], lowStockThreshold: 5 },
-    { id: 'ING119', name: 'Papaye', category: 'Fruits exotiques', unitPrice: 5, unit: 'kg', stock: 15, supplier: suppliers['SUP010'], lowStockThreshold: 3 },
-    { id: 'ING173', name: 'Paprika doux', category: 'Épices', unitPrice: 20, unit: 'kg', stock: 5, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING174', name: 'Paprika fumé', category: 'Épices', unitPrice: 22, unit: 'kg', stock: 4, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: '731038e6-eea3-4d32-ab92-79c4301d53cd', name: 'Parmesan', category: 'Produits laitiers/œufs', unitPrice: 1400, unit: 'kg', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 2 },
-    { id: 'ING154', name: 'Parmesan Reggiano', category: 'Fromages', unitPrice: 22, unit: 'kg', stock: 10, supplier: suppliers['SUP013'], lowStockThreshold: 2 },
-    { id: 'ING090', name: 'Patate douce', category: 'Légumes', unitPrice: 3.2, unit: 'kg', stock: 40, supplier: suppliers['SUP006'], lowStockThreshold: 8 },
-    { id: 'ING204', name: 'Pâtes penne', category: 'Céréales/légumineuses', unitPrice: 200, unit: 'kg', stock: 60, supplier: suppliers['f6eb0839-f3ad-430e-bcd1-27000a82bff8'], lowStockThreshold: 15 },
-    { id: 'ING203', name: 'Pâtes spaghetti', category: 'Céréales', unitPrice: 2.5, unit: 'kg', stock: 60, supplier: suppliers['SUP018'], lowStockThreshold: 15 },
-    { id: 'ING130', name: 'Pêche blanche', category: 'Fruits', unitPrice: 4.2, unit: 'kg', stock: 20, supplier: suppliers['SUP008'], lowStockThreshold: 5 },
-    { id: 'ING129', name: 'Pêche jaune', category: 'Fruits', unitPrice: 4, unit: 'kg', stock: 20, supplier: suppliers['SUP008'], lowStockThreshold: 5 },
-    { id: 'ING155', name: 'Pecorino', category: 'Fromages', unitPrice: 20, unit: 'kg', stock: 10, supplier: suppliers['SUP013'], lowStockThreshold: 2 },
-    { id: 'ING067', name: 'Persil frais', category: 'Herbes aromatiques', unitPrice: 1.5, unit: 'botte', stock: 40, supplier: suppliers['SUP007'], lowStockThreshold: 8 },
-    { id: 'ING060', name: 'Petit pois frais', category: 'Légumes', unitPrice: 4.5, unit: 'kg', stock: 30, supplier: suppliers['SUP006'], lowStockThreshold: 6 },
-    { id: 'ING103', name: 'Poire Conférence', category: 'Fruits', unitPrice: 3.2, unit: 'kg', stock: 50, supplier: suppliers['SUP008'], lowStockThreshold: 10 },
-    { id: 'ING089', name: 'Poireau', category: 'Légumes', unitPrice: 3, unit: 'kg', stock: 30, supplier: suppliers['SUP006'], lowStockThreshold: 6 },
-    { id: 'ING211', name: 'Pois chiches secs', category: 'Légumineuses', unitPrice: 3.2, unit: 'kg', stock: 25, supplier: suppliers['SUP018'], lowStockThreshold: 8 },
-    { id: 'ING172', name: 'Poivre blanc', category: 'Épices', unitPrice: 28, unit: 'kg', stock: 3, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING171', name: 'Poivre noir moulu', category: 'Épices', unitPrice: 25, unit: 'kg', stock: 5, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING050', name: 'Poivron jaune', category: 'Légumes', unitPrice: 3.8, unit: 'kg', stock: 70, supplier: suppliers['SUP006'], lowStockThreshold: 15 },
-    { id: 'ING048', name: 'Poivron rouge', category: 'Légumes', unitPrice: 3.8, unit: 'kg', stock: 80, supplier: suppliers['SUP006'], lowStockThreshold: 15 },
-    { id: 'ING049', name: 'Poivron vert', category: 'Légumes', unitPrice: 3.2, unit: 'kg', stock: 80, supplier: suppliers['SUP006'], lowStockThreshold: 15 },
-    { id: 'ING043', name: 'Pomme de terre', category: 'Légumes', unitPrice: 1.5, unit: 'kg', stock: 200, supplier: suppliers['SUP006'], lowStockThreshold: 50 },
-    { id: 'ING101', name: 'Pomme Golden', category: 'Fruits', unitPrice: 2.8, unit: 'kg', stock: 80, supplier: suppliers['SUP008'], lowStockThreshold: 20 },
-    { id: 'ING102', name: 'Pomme Granny Smith', category: 'Fruits', unitPrice: 3, unit: 'kg', stock: 60, supplier: suppliers['SUP008'], lowStockThreshold: 15 },
-    { id: 'ING080', name: 'Potiron', category: 'Légumes', unitPrice: 2.5, unit: 'kg', stock: 20, supplier: suppliers['SUP006'], lowStockThreshold: 5 },
-    { id: 'ING248', name: 'Poudre à flan', category: 'Desserts', unitPrice: 12, unit: 'kg', stock: 6, supplier: suppliers['SUP020'], lowStockThreshold: 2 },
-    { id: 'ING223', name: 'Poudre de cacao', category: 'Desserts', unitPrice: 10, unit: 'kg', stock: 12, supplier: suppliers['SUP020'], lowStockThreshold: 3 },
-    { id: 'ING127', name: 'Prune', category: 'Fruits', unitPrice: 3.8, unit: 'kg', stock: 20, supplier: suppliers['SUP008'], lowStockThreshold: 5 },
-    { id: 'ING138', name: 'Pruneau', category: 'Fruits secs', unitPrice: 6, unit: 'kg', stock: 15, supplier: suppliers['SUP011'], lowStockThreshold: 3 },
-    { id: 'ING207', name: 'Quinoa blanc', category: 'Céréales', unitPrice: 5.5, unit: 'kg', stock: 20, supplier: suppliers['SUP018'], lowStockThreshold: 5 },
-    { id: 'ING081', name: 'Radis rouge', category: 'Légumes', unitPrice: 2.2, unit: 'botte', stock: 20, supplier: suppliers['SUP006'], lowStockThreshold: 5 },
-    { id: 'ING125', name: 'Raisin blanc', category: 'Fruits', unitPrice: 4, unit: 'kg', stock: 25, supplier: suppliers['SUP008'], lowStockThreshold: 5 },
-    { id: 'ING126', name: 'Raisin noir', category: 'Fruits', unitPrice: 4.5, unit: 'kg', stock: 25, supplier: suppliers['SUP008'], lowStockThreshold: 5 },
-    { id: 'ING136', name: 'Raisin sec', category: 'Fruits secs', unitPrice: 5.5, unit: 'kg', stock: 15, supplier: suppliers['SUP011'], lowStockThreshold: 3 },
-    { id: 'f6a68d50-fac1-4434-9999-bb8c3d6778f9', name: 'Reblochon', category: 'Produits laitiers/œufs', unitPrice: 1500, unit: 'kg', stock: 0, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 1 },
-    { id: '89a1140d-8baa-4812-91ce-3d91e90cb3f6', name: 'Rechta (pâte algérienne)', category: 'Céréales/légumineuses', unitPrice: 400, unit: 'kg', stock: 0, supplier: suppliers['f6eb0839-f3ad-430e-bcd1-27000a82bff8'], lowStockThreshold: 5 },
-    { id: 'ING162', name: 'Ricotta', category: 'Fromages', unitPrice: 10, unit: 'kg', stock: 12, supplier: suppliers['SUP013'], lowStockThreshold: 3 },
-    { id: 'ING033', name: 'Rillettes de saumon maison', category: 'Poissons et fruits de mer', unitPrice: 18, unit: 'kg', stock: 8, supplier: suppliers['SUP002'], lowStockThreshold: 2 },
-    { id: 'ING202', name: 'Riz arborio', category: 'Céréales', unitPrice: 4.2, unit: 'kg', stock: 30, supplier: suppliers['SUP018'], lowStockThreshold: 8 },
-    { id: 'ING201', name: 'Riz basmati', category: 'Céréales', unitPrice: 3.5, unit: 'kg', stock: 50, supplier: suppliers['SUP018'], lowStockThreshold: 10 },
-    { id: '06b04a88-2204-4673-8929-f6a5315e4879', name: 'Riz rond', category: 'Céréales/légumineuses', unitPrice: 210, unit: 'kg', stock: 0, supplier: suppliers['f6eb0839-f3ad-430e-bcd1-27000a82bff8'], lowStockThreshold: 10 },
-    { id: 'ING072', name: 'Romarin frais', category: 'Herbes aromatiques', unitPrice: 2, unit: 'botte', stock: 20, supplier: suppliers['SUP007'], lowStockThreshold: 5 },
-    { id: 'ING189', name: 'Romarin séché', category: 'Épices', unitPrice: 18, unit: 'kg', stock: 3, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING159', name: 'Roquefort', category: 'Produits laitiers/œufs', unitPrice: 1800, unit: 'kg', stock: 10, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 2 },
-    { id: 'ING100', name: 'Roquette', category: 'Légumes', unitPrice: 4.5, unit: 'kg', stock: 12, supplier: suppliers['SUP006'], lowStockThreshold: 2 },
-    { id: 'ING181', name: 'Safran pistil', category: 'Épices', unitPrice: 45, unit: 'g', stock: 200, supplier: suppliers['SUP015'], lowStockThreshold: 50 },
-    { id: 'ING054', name: 'Salade verte (laitue)', category: 'Légumes', unitPrice: 1.8, unit: 'pièce', stock: 60, supplier: suppliers['SUP006'], lowStockThreshold: 15 },
-    { id: 'ING027', name: 'Sardine fraîche', category: 'Poissons et fruits de mer', unitPrice: 9, unit: 'kg', stock: 30, supplier: suppliers['SUP002'], lowStockThreshold: 8 },
-    { id: 'ING038', name: 'Sardines à l’huile', category: 'Poissons et fruits de mer', unitPrice: 3.8, unit: 'boîte', stock: 25, supplier: suppliers['SUP005'], lowStockThreshold: 5 },
-    { id: 'ING208', name: 'Semoule de blé', category: 'Céréales', unitPrice: 2.8, unit: 'kg', stock: 30, supplier: suppliers['SUP018'], lowStockThreshold: 8 },
-    { id: 'ING249', name: 'Sirop de grenadine', category: 'Boissons', unitPrice: 7, unit: 'L', stock: 12, supplier: suppliers['SUP022'], lowStockThreshold: 3 },
-    { id: 'ING250', name: 'Sirop de menthe', category: 'Boissons', unitPrice: 7, unit: 'L', stock: 12, supplier: suppliers['SUP022'], lowStockThreshold: 3 },
-    { id: 'ING231', name: 'Sorbet citron', category: 'Desserts', unitPrice: 5.5, unit: 'L', stock: 12, supplier: suppliers['SUP021'], lowStockThreshold: 3 },
-    { id: 'ING232', name: 'Sorbet fraise', category: 'Desserts', unitPrice: 5.5, unit: 'L', stock: 12, supplier: suppliers['SUP021'], lowStockThreshold: 3 },
-    { id: 'ING035', name: 'Soupe de poisson maison', category: 'Poissons et fruits de mer', unitPrice: 12, unit: 'L', stock: 10, supplier: suppliers['SUP002'], lowStockThreshold: 2 },
-    { id: '192063a6-a480-40cc-9155-631918bd7dfb', name: 'Spaghetti', category: 'Céréales/légumineuses', unitPrice: 200, unit: 'kg', stock: 0, supplier: suppliers['f6eb0839-f3ad-430e-bcd1-27000a82bff8'], lowStockThreshold: 10 },
-    { id: 'ING238', name: 'Sprite 33cl', category: 'Boissons', unitPrice: 1.2, unit: 'canette', stock: 80, supplier: suppliers['SUP022'], lowStockThreshold: 20 },
-    { id: 'ING007', name: 'Steak haché de bœuf', category: 'Viandes et volailles', unitPrice: 10.5, unit: 'kg', stock: 50, supplier: suppliers['SUP002'], lowStockThreshold: 10 },
-    { id: 'ING225', name: 'Sucre glace', category: 'Épicerie sucrée', unitPrice: 2.5, unit: 'kg', stock: 25, supplier: suppliers['SUP020'], lowStockThreshold: 8 },
-    { id: 'ING224', name: 'Sucre semoule', category: 'Épicerie sucrée', unitPrice: 2, unit: 'kg', stock: 50, supplier: suppliers['SUP020'], lowStockThreshold: 15 },
-    { id: 'b184b44d-1c8b-4416-a63d-901e1973d79d', name: 'Tagliatelles', category: 'Céréales/légumineuses', unitPrice: 220, unit: 'kg', stock: 0, supplier: suppliers['f6eb0839-f3ad-430e-bcd1-27000a82bff8'], lowStockThreshold: 5 },
-    { id: 'ING036', name: 'Thon en conserve', category: 'Poissons et fruits de mer', unitPrice: 3, unit: 'boîte', stock: 50, supplier: suppliers['SUP005'], lowStockThreshold: 10 },
-    { id: 'ING025', name: 'Thon frais', category: 'Poissons et fruits de mer', unitPrice: 19, unit: 'kg', stock: 15, supplier: suppliers['SUP002'], lowStockThreshold: 3 },
-    { id: 'ING073', name: 'Thym frais', category: 'Herbes aromatiques', unitPrice: 2, unit: 'botte', stock: 20, supplier: suppliers['SUP007'], lowStockThreshold: 5 },
-    { id: 'ING188', name: 'Thym séché', category: 'Épices', unitPrice: 18, unit: 'kg', stock: 4, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
-    { id: 'ING042', name: 'Tomate cerise', category: 'Légumes', unitPrice: 4.5, unit: 'kg', stock: 50, supplier: suppliers['SUP006'], lowStockThreshold: 10 },
-    { id: 'ING041', name: 'Tomate', category: 'Légumes', unitPrice: 2.8, unit: 'kg', stock: 100, supplier: suppliers['SUP006'], lowStockThreshold: 20 },
-    { id: 'ING087', name: 'Topinambour', category: 'Légumes', unitPrice: 3.5, unit: 'kg', stock: 10, supplier: suppliers['SUP006'], lowStockThreshold: 2 },
-    { id: 'ING241', name: 'Vin blanc maison', category: 'Boissons alcoolisées', unitPrice: 11, unit: 'bouteille', stock: 35, supplier: suppliers['SUP023'], lowStockThreshold: 10 },
-    { id: 'ING242', name: 'Vin rosé maison', category: 'Boissons alcoolisées', unitPrice: 11, unit: 'bouteille', stock: 30, supplier: suppliers['SUP023'], lowStockThreshold: 8 },
-    { id: 'ING240', name: 'Vin rouge maison', category: 'Boissons alcoolisées', unitPrice: 12, unit: 'bouteille', stock: 40, supplier: suppliers['SUP023'], lowStockThreshold: 10 },
-    { id: 'ING194', name: 'Vinaigre balsamique', category: 'Condiments', unitPrice: 6, unit: 'L', stock: 10, supplier: suppliers['SUP016'], lowStockThreshold: 2 },
-    { id: 'ING195', name: 'Vinaigre de vin rouge', category: 'Condiments', unitPrice: 4, unit: 'L', stock: 12, supplier: suppliers['SUP016'], lowStockThreshold: 3 },
-    { id: 'ING149', name: 'Yaourt grec', category: 'Produits laitiers', unitPrice: 1, unit: 'pièce', stock: 60, supplier: suppliers['SUP012'], lowStockThreshold: 15 },
-    { id: 'ING148', name: 'Yaourt nature', category: 'Produits laitiers/œufs', unitPrice: 400, unit: 'kg', stock: 100, supplier: suppliers['01b2c2b3-b5c1-4bdc-83b9-88eeeab0c15a'], lowStockThreshold: 20 },
-  ];
-
-
 export type PerformanceData = {
   menuItemId: string;
   totalSales: number;
-  rating: number;
+  averageRating: number;
 };
 
 export const menuPerformanceData: PerformanceData[] = [
-  { menuItemId: 'ef-1', totalSales: 120, rating: 4.5 },
-  { menuItemId: 'ef-2', totalSales: 150, rating: 4.6 },
-  { menuItemId: 'ef-3', totalSales: 200, rating: 4.8 },
-  { menuItemId: 'lmdcn-2', totalSales: 250, rating: 4.9 },
-  { menuItemId: 'pg-16', totalSales: 300, rating: 4.9 },
-  { menuItemId: 'des-1', totalSales: 280, rating: 4.7 },
-  { menuItemId: 'burg-1', totalSales: 180, rating: 4.4 },
-  { menuItemId: 'sp-4', totalSales: 160, rating: 4.5 },
+  { menuItemId: "ef-2", totalSales: 150, averageRating: 4.8 },
+  { menuItemId: "ef-3", totalSales: 120, averageRating: 4.5 },
+  { menuItemId: "pg-16", totalSales: 200, averageRating: 4.9 },
+  { menuItemId: "des-1", totalSales: 180, averageRating: 4.7 },
+  { menuItemId: "burg-1", totalSales: 250, averageRating: 4.6 },
+  { menuItemId: 'lmdcn-2', totalSales: 90, averageRating: 4.9 },
+  { menuItemId: 'ec-2', totalSales: 70, averageRating: 4.2 },
+  { menuItemId: 'sp-7', totalSales: 110, averageRating: 4.5 },
+  { menuItemId: 'pg-14', totalSales: 130, averageRating: 4.8 },
+  { menuItemId: 'ef-9', totalSales: 60, averageRating: 3.9 },
 ];
-
 
 export type HistoricalPerformanceData = {
-  month: string;
-  [key: string]: number | string;
-};
+    month: string;
+    'pg-16': number;
+    'des-1': number;
+    'burg-1': number;
+    'lmdcn-2': number;
+}
 
 export const historicalPerformanceData: HistoricalPerformanceData[] = [
-  { month: 'Janvier', 'pg-16': 186, 'des-1': 80, 'burg-1': 120, 'lmdcn-2': 150 },
-  { month: 'Février', 'pg-16': 305, 'des-1': 200, 'burg-1': 140, 'lmdcn-2': 180 },
-  { month: 'Mars', 'pg-16': 237, 'des-1': 120, 'burg-1': 160, 'lmdcn-2': 200 },
-  { month: 'Avril', 'pg-16': 273, 'des-1': 190, 'burg-1': 180, 'lmdcn-2': 220 },
-  { month: 'Mai', 'pg-16': 209, 'des-1': 130, 'burg-1': 150, 'lmdcn-2': 190 },
-  { month: 'Juin', 'pg-16': 310, 'des-1': 220, 'burg-1': 170, 'lmdcn-2': 240 },
+  { month: "Janvier", "pg-16": 186, "des-1": 80, "burg-1": 210, "lmdcn-2": 70 },
+  { month: "Février", "pg-16": 305, "des-1": 200, "burg-1": 250, "lmdcn-2": 120 },
+  { month: "Mars", "pg-16": 237, "des-1": 120, "burg-1": 300, "lmdcn-2": 150 },
+  { month: "Avril", "pg-16": 73, "des-1": 190, "burg-1": 280, "lmdcn-2": 110 },
+  { month: "Mai", "pg-16": 209, "des-1": 130, "burg-1": 320, "lmdcn-2": 160 },
+  { month: "Juin", "pg-16": 214, "des-1": 140, "burg-1": 350, "lmdcn-2": 180 },
 ];
+
 
 export type Table = {
     id: number;
     seats: number;
     status: 'available' | 'occupied' | 'reserved';
     shape: 'round' | 'square';
-};
+}
 
 export const tables: Table[] = [
-    { id: 1, seats: 4, status: 'occupied', shape: 'square' },
-    { id: 2, seats: 2, status: 'available', shape: 'round' },
-    { id: 3, seats: 6, status: 'reserved', shape: 'square' },
-    { id: 4, seats: 4, status: 'available', shape: 'square' },
-    { id: 5, seats: 2, status: 'available', shape: 'round' },
+    { id: 1, seats: 2, status: 'available', shape: 'round' },
+    { id: 2, seats: 4, status: 'occupied', shape: 'square' },
+    { id: 3, seats: 2, status: 'reserved', shape: 'round' },
+    { id: 4, seats: 6, status: 'available', shape: 'square' },
+    { id: 5, seats: 4, status: 'available', shape: 'round' },
     { id: 6, seats: 8, status: 'occupied', shape: 'square' },
-    { id: 7, seats: 4, status: 'reserved', shape: 'round' },
-    { id: 8, seats: 2, status: 'available', shape: 'square' },
-    { id: 9, seats: 6, status: 'available', shape: 'round' },
 ];
 
-    
+export type IngredientItem = {
+    id: string;
+    name: string;
+    category: string;
+    unitPrice: number;
+    unit: string;
+    stock: number;
+    supplier: string;
+    lowStockThreshold: number;
+};
+
+export const suppliers = {
+    METRO: "Metro Cash & Carry",
+    FRUITS_LEGUMES_ALGER: "Fruits & Légumes d'Alger Centre",
+    BOUCHERIE_MODERNE: "Boucherie Moderne El Biar",
+    POISSONNERIE_LA_SIRENE: "Poissonnerie La Sirène",
+    EPICES_DU_MONDE: "Épices du Monde Bab Ezzouar",
+};
+
+export const initialIngredientItems: IngredientItem[] = [
+  { id: 'ing-1', name: "Tomate Grappe", category: "Légumes", unitPrice: 350, unit: "kg", stock: 20, supplier: suppliers.FRUITS_LEGUMES_ALGER, lowStockThreshold: 5 },
+  { id: 'ing-2', name: "Mozzarella di Bufala", category: "Fromages", unitPrice: 2200, unit: "kg", stock: 5, supplier: suppliers.METRO, lowStockThreshold: 2 },
+  { id: 'ing-3', name: "Basilic Frais", category: "Herbes aromatiques", unitPrice: 1000, unit: "kg", stock: 1, supplier: suppliers.FRUITS_LEGUMES_ALGER, lowStockThreshold: 0.5 },
+  { id: 'ing-4', name: "Filet de Boeuf", category: "Viandes et volailles", unitPrice: 4500, unit: "kg", stock: 10, supplier: suppliers.BOUCHERIE_MODERNE, lowStockThreshold: 3 },
+  { id: 'ing-5', name: "Parmesan Reggiano", category: "Fromages", unitPrice: 3000, unit: "kg", stock: 8, supplier: suppliers.METRO, lowStockThreshold: 1 },
+  { id: 'ing-6', name: "Roquette", category: "Légumes", unitPrice: 800, unit: "kg", stock: 3, supplier: suppliers.FRUITS_LEGUMES_ALGER, lowStockThreshold: 1 },
+  { id: 'ing-7', name: "Filet de Saumon", category: "Poissons et fruits de mer", unitPrice: 3800, unit: "kg", stock: 7, supplier: suppliers.POISSONNERIE_LA_SIRENE, lowStockThreshold: 2 },
+  { id: 'ing-8', name: "Crevettes Roses", category: "Poissons et fruits de mer", unitPrice: 2500, unit: "kg", stock: 4, supplier: suppliers.POISSONNERIE_LA_SIRENE, lowStockThreshold: 1 },
+  { id: 'ing-9', name: "Pâtes Penne", category: "Céréales", unitPrice: 400, unit: "kg", stock: 50, supplier: suppliers.METRO, lowStockThreshold: 10 },
+  { id: 'ing-10', name: "Piment Rouge", category: "Épices", unitPrice: 1200, unit: "kg", stock: 2, supplier: suppliers.EPICES_DU_MONDE, lowStockThreshold: 0.5 },
+  { id: 'ing-11', name: "Chocolat Noir 70%", category: "Desserts", unitPrice: 2500, unit: "kg", stock: 6, supplier: suppliers.METRO, lowStockThreshold: 2 },
+  { id: 'ing-12', name: "Crème liquide 35%", category: "Produits laitiers", unitPrice: 800, unit: "L", stock: 10, supplier: suppliers.METRO, lowStockThreshold: 3 },
+  { id: 'ing-13', name: "Oeuf de poule", category: "Œufs", unitPrice: 30, unit: "pièce", stock: 120, supplier: suppliers.FRUITS_LEGUMES_ALGER, lowStockThreshold: 24 },
+  { id: 'ing-14', name: "Farine T55", category: "Céréales", unitPrice: 150, unit: "kg", stock: 30, supplier: suppliers.METRO, lowStockThreshold: 5 },
+  { id: 'ing-15', name: "Sucre semoule", category: "Desserts", unitPrice: 180, unit: "kg", stock: 40, supplier: suppliers.METRO, lowStockThreshold: 10 },
+];
