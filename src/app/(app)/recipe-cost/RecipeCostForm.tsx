@@ -94,9 +94,6 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
   };
   
   const handleSelectIngredient = (ingredientRowId: number, selectedStockId: string) => {
-    const ingredientInState = ingredients.find(ing => ing.id === ingredientRowId);
-    if (!ingredientInState) return;
-
     const stockItem = ingredientItems.find(item => item.id === selectedStockId);
 
     if (stockItem) {
@@ -111,15 +108,6 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                         unit: stockItem.unit,
                         unitCost: stockItem.unitPrice,
                       }
-                    : ing
-            )
-        );
-    } else {
-        // Clear if no item found or selection is cleared
-        setIngredients(
-            ingredients.map(ing =>
-                ing.id === ingredientRowId
-                    ? { ...ing, stockId: '', name: '', category: '', unit: '', unitCost: 0 }
                     : ing
             )
         );
@@ -200,26 +188,26 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
               <Input id="portions" type="number" value={portions} onChange={(e: ChangeEvent<HTMLInputElement>) => setPortions(Number(e.target.value))} min="1"/>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 rounded-lg bg-green-50">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 rounded-lg bg-secondary">
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Prix HT</div>
-              <div className="font-bold text-lg">{formatCurrency(priceHT)}</div>
+              <div className="font-bold text-lg text-foreground">{formatCurrency(priceHT)}</div>
             </div>
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Coût Portion</div>
-              <div className="font-bold text-lg">{formatCurrency(costPerPortion)}</div>
+              <div className="font-bold text-lg text-foreground">{formatCurrency(costPerPortion)}</div>
             </div>
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Marge Unitaire</div>
               <div className="font-bold text-lg text-green-600">{formatCurrency(unitMargin)}</div>
             </div>
             <div className="text-center">
-              <div className="text-sm text-muted-foreground">Coût %</div>
-              <div className="font-bold text-lg">{costPercentage.toFixed(1)}%</div>
+              <div className="text-sm text-muted-foreground">Ratio Coût</div>
+              <div className="font-bold text-lg text-foreground">{costPercentage.toFixed(1)}%</div>
             </div>
              <div className="text-center">
-              <div className="text-sm text-muted-foreground">Total Coût</div>
-              <div className="font-bold text-lg">{formatCurrency(totalIngredientCost)}</div>
+              <div className="text-sm text-muted-foreground">Total Coût Recette</div>
+              <div className="font-bold text-lg text-primary">{formatCurrency(totalIngredientCost)}</div>
             </div>
           </div>
         </CardContent>
@@ -231,8 +219,8 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
             <CardTitle>Ingrédients & Coûts</CardTitle>
             <CardDescription>Ajoutez les ingrédients pour calculer le coût de la recette.</CardDescription>
           </div>
-          <Button onClick={handleAddIngredient} className="bg-primary hover:bg-primary/90">
-            <PlusCircle className="mr-2" />
+          <Button onClick={handleAddIngredient}>
+            <PlusCircle className="mr-2 h-4 w-4" />
             Ajouter un ingrédient
           </Button>
         </CardHeader>
@@ -244,10 +232,10 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                   <TableHead className="w-[250px]">Ingrédient</TableHead>
                   <TableHead>Catégorie</TableHead>
                   <TableHead>Unité</TableHead>
-                  <TableHead className="text-right">Coût Unitaire (DA)</TableHead>
-                  <TableHead className="text-right">Quantité</TableHead>
+                  <TableHead className="text-right">Coût Unitaire</TableHead>
+                  <TableHead className="w-[120px] text-right">Quantité</TableHead>
                   <TableHead className="text-right">Coût Total</TableHead>
-                  <TableHead className="text-center">Actions</TableHead>
+                  <TableHead className="text-center w-[80px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -258,12 +246,11 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                         options={ingredientOptions}
                         value={ing.stockId}
                         onSelect={(currentValue) => {
-                          const newStockId = currentValue === ing.stockId ? "" : currentValue;
-                          handleSelectIngredient(ing.id, newStockId);
+                          handleSelectIngredient(ing.id, currentValue);
                         }}
-                        placeholder="Choisir un ingrédient..."
+                        placeholder="Choisir..."
                         searchPlaceholder="Rechercher..."
-                        notFoundText="Aucun ingrédient trouvé."
+                        notFoundText="Aucun ingrédient."
                       />
                     </TableCell>
                     <TableCell className="text-muted-foreground">
@@ -303,10 +290,10 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
               </TableBody>
             </Table>
           </div>
-          <div className="flex justify-end mt-4 p-4 rounded-lg bg-green-900 text-white">
+          <div className="flex justify-end mt-4 p-4 rounded-lg bg-muted">
             <div className="text-right">
-              <div className="text-lg font-semibold">Grand Total</div>
-              <div className="text-2xl font-bold">{formatCurrency(totalIngredientCost)}</div>
+              <div className="text-lg font-semibold text-muted-foreground">Coût Total des Ingrédients</div>
+              <div className="text-2xl font-bold text-primary">{formatCurrency(totalIngredientCost)}</div>
             </div>
           </div>
         </CardContent>
@@ -315,6 +302,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
       <Card>
         <CardHeader>
           <CardTitle>Procédure</CardTitle>
+          <CardDescription>Décrivez les étapes de préparation, cuisson et service.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
@@ -326,16 +314,16 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
             <Textarea id="cooking" value={cooking} onChange={(e) => setCooking(e.target.value)} placeholder="Instructions de cuisson..." />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="service">Service</Label>
-            <Textarea id="service" value={service} onChange={(e) => setService(e.target.value)} placeholder="Instructions de service..." />
+            <Label htmlFor="service">Service / Dressage</Label>
+            <Textarea id="service" value={service} onChange={(e) => setService(e.target.value)} placeholder="Instructions de dressage..." />
           </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row justify-between items-center">
-            <CardTitle>Régimes Spéciaux & Allergènes</CardTitle>
-            <Button onClick={handleAddAllergen} className="bg-primary hover:bg-primary/90">Ajouter</Button>
+        <CardHeader>
+            <CardTitle>Allergènes & Régimes Spéciaux</CardTitle>
+            <CardDescription>Listez les allergènes présents et les régimes compatibles.</CardDescription>
         </CardHeader>
         <CardContent>
             <div className="flex gap-2 mb-4">
@@ -343,14 +331,15 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                     value={allergenInput} 
                     onChange={(e) => setAllergenInput(e.target.value)}
                     onKeyDown={handleAllergenKeyDown}
-                    placeholder="Ajouter un régime spécial ou allergène"
+                    placeholder="Ajouter un allergène (ex: Gluten, Lactose...)"
                 />
+                 <Button onClick={handleAddAllergen}>Ajouter</Button>
             </div>
             <div className="flex flex-wrap gap-2">
                 {allergens.map(allergen => (
-                    <Badge key={allergen} variant="secondary" className="text-base">
+                    <Badge key={allergen} variant="secondary" className="text-base py-1 px-3">
                         {allergen}
-                        <button onClick={() => handleRemoveAllergen(allergen)} className="ml-2">
+                        <button onClick={() => handleRemoveAllergen(allergen)} className="ml-2 rounded-full hover:bg-destructive/20 p-0.5">
                             <X className="h-3 w-3" />
                         </button>
                     </Badge>
@@ -362,12 +351,15 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
        <Card>
         <CardHeader>
             <CardTitle>Argumentation Commerciale</CardTitle>
+            <CardDescription>Rédigez un texte pour aider le personnel de salle à vendre ce plat.</CardDescription>
         </CardHeader>
         <CardContent>
-             <Textarea value={salesPitch} onChange={(e) => setSalesPitch(e.target.value)} placeholder="Décrivez les points forts du plat pour aider le personnel de salle à le vendre..." rows={4}/>
+             <Textarea value={salesPitch} onChange={(e) => setSalesPitch(e.target.value)} placeholder="Ex: Un plat généreux et réconfortant, parfait avec notre vin rouge maison..." rows={4}/>
         </CardContent>
       </Card>
 
     </div>
   );
 }
+
+    
