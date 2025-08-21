@@ -3,19 +3,40 @@ export type MenuItem = {
   id: string;
   name: string;
   description: string;
+  category: 'Entrées Froides – Fraîcheur et Élégance' | 'Entrées Chaudes – Gourmandise et Chaleur' | 'Plats et Grillades – Saveurs en Majesté' | 'Les Mets de chez Nous' | 'Symphonie de Pâtes – Évasion Italienne' | 'Nos Burgers Bistronomiques' | 'Douceurs Signature – Éclats Sucrés de l’Instant' | 'Élixirs & Rafraîchissements';
+  
+  // Gestion
   price: number;
   cost: number;
-  category: 'Entrées Froides – Fraîcheur et Élégance' | 'Entrées Chaudes – Gourmandise et Chaleur' | 'Plats et Grillades – Saveurs en Majesté' | 'Les Mets de chez Nous' | 'Symphonie de Pâtes – Évasion Italienne' | 'Nos Burgers Bistronomiques' | 'Douceurs Signature – Éclats Sucrés de l’Instant' | 'Élixirs & Rafraîchissements';
+  
+  // Présentation
   image: string;
   imageHint: string;
+  
+  // Infos de préparation
   prepTime: number; // in minutes
+  difficulty: 1 | 2 | 3 | 4 | 5;
   status: 'Actif' | 'Inactif' | 'Saisonnier';
   tags: ('Végétarien' | 'Épicé' | 'Sans gluten' | 'Spécialité locale' | 'Halal' | 'Nouveau' | 'Populaire')[];
-  ingredients: { name: string; quantity: string }[];
-  instructions: string;
-  difficulty: 1 | 2 | 3 | 4 | 5;
+  
+  // Portion & Nutrition
+  portionSize?: string;
+  calories?: number;
+  
+  // Ingrédients détaillés
+  ingredients: { name: string; quantity: string; unitCost?: number; totalCost?: number }[];
+  
+  // Instructions
+  instructions: string | string[];
+  
+  // Allergènes & Notes
   allergens: string[];
+  notes?: string;
+  
+  // Argumentaire commercial
+  argumentationCommerciale?: string;
 };
+
 
 export const categories: ('Entrées Froides – Fraîcheur et Élégance' | 'Entrées Chaudes – Gourmandise et Chaleur' | 'Plats et Grillades – Saveurs en Majesté' | 'Les Mets de chez Nous' | 'Symphonie de Pâtes – Évasion Italienne' | 'Nos Burgers Bistronomiques' | 'Douceurs Signature – Éclats Sucrés de l’Instant' | 'Élixirs & Rafraîchissements')[] = ['Entrées Froides – Fraîcheur et Élégance', 'Entrées Chaudes – Gourmandise et Chaleur', 'Plats et Grillades – Saveurs en Majesté', 'Les Mets de chez Nous', 'Symphonie de Pâtes – Évasion Italienne', 'Nos Burgers Bistronomiques', 'Douceurs Signature – Éclats Sucrés de l’Instant', 'Élixirs & Rafraîchissements'];
 export const tags: ('Végétarien' | 'Épicé' | 'Sans gluten' | 'Spécialité locale' | 'Halal' | 'Nouveau' | 'Populaire')[] = ['Végétarien', 'Épicé', 'Sans gluten', 'Spécialité locale', 'Halal', 'Nouveau', 'Populaire'];
@@ -42,19 +63,32 @@ export const menuItems: MenuItem[] = [
   {
     id: 'ef-2',
     name: 'Caprice Méditerranéen',
-    description: 'Duo de tomate et mozzarella aux herbes frais',
+    description: 'Duo de tomate et mozzarella aux herbes fraîches',
+    category: 'Entrées Froides – Fraîcheur et Élégance',
     price: 1200,
     cost: 480,
-    category: 'Entrées Froides – Fraîcheur et Élégance',
     image: 'https://placehold.co/600x400.png',
     imageHint: 'caprese salad',
     prepTime: 10,
+    difficulty: 1,
     status: 'Actif',
     tags: ['Végétarien'],
-    ingredients: [{ name: 'Tomate', quantity: '2' }, { name: 'Mozzarella', quantity: '125g' }, { name: 'Basilic frais', quantity: '1 botte' }],
-    instructions: 'Couper les tomates et la mozzarella, ajouter le basilic et un filet d\'huile d\'olive.',
-    difficulty: 1,
+    portionSize: '1 assiette / 200g',
+    calories: 250,
+    ingredients: [
+      { name: 'Tomate', quantity: '2 pièces (150g)', unitCost: 100, totalCost: 200 },
+      { name: 'Mozzarella', quantity: '125g', unitCost: 2.2, totalCost: 250 },
+      { name: 'Basilic frais', quantity: '1 botte (30g)', unitCost: 1, totalCost: 30 }
+    ],
+    instructions: [
+      'Couper les tomates en rondelles régulières.',
+      'Alterner les tranches de tomate et de mozzarella sur une assiette.',
+      'Ajouter des feuilles de basilic frais.',
+      'Assaisonner d’un filet d’huile d’olive, sel et poivre.'
+    ],
     allergens: ['Lactose'],
+    notes: 'Privilégier une mozzarella de bufflonne et des tomates bien mûres pour un goût optimal.',
+    argumentationCommerciale: "Je vous conseille ce grand classique de la cuisine méditerranéenne : l’alliance des tomates mûres, de la mozzarella fondante et du basilic frais, relevée d’une touche d’huile d’olive. C’est une entrée fraîche, légère et pleine de soleil."
   },
   {
     id: 'ef-3',
@@ -1636,7 +1670,7 @@ export const ingredientItems: IngredientItem[] = [
     { id: 'ING073', name: 'Thym frais', category: 'Herbes aromatiques', unitPrice: 2, unit: 'botte', stock: 20, supplier: suppliers['SUP007'], lowStockThreshold: 5 },
     { id: 'ING188', name: 'Thym séché', category: 'Épices', unitPrice: 18, unit: 'kg', stock: 4, supplier: suppliers['SUP015'], lowStockThreshold: 1 },
     { id: 'ING042', name: 'Tomate cerise', category: 'Légumes', unitPrice: 4.5, unit: 'kg', stock: 50, supplier: suppliers['SUP006'], lowStockThreshold: 10 },
-    { id: 'ING041', name: 'Tomate ronde', category: 'Légumes', unitPrice: 2.8, unit: 'kg', stock: 100, supplier: suppliers['SUP006'], lowStockThreshold: 20 },
+    { id: 'ING041', name: 'Tomate', category: 'Légumes', unitPrice: 2.8, unit: 'kg', stock: 100, supplier: suppliers['SUP006'], lowStockThreshold: 20 },
     { id: 'ING087', name: 'Topinambour', category: 'Légumes', unitPrice: 3.5, unit: 'kg', stock: 10, supplier: suppliers['SUP006'], lowStockThreshold: 2 },
     { id: 'ING241', name: 'Vin blanc maison', category: 'Boissons alcoolisées', unitPrice: 11, unit: 'bouteille', stock: 35, supplier: suppliers['SUP023'], lowStockThreshold: 10 },
     { id: 'ING242', name: 'Vin rosé maison', category: 'Boissons alcoolisées', unitPrice: 11, unit: 'bouteille', stock: 30, supplier: suppliers['SUP023'], lowStockThreshold: 8 },
@@ -1698,3 +1732,5 @@ export const tables: Table[] = [
     { id: 8, seats: 2, status: 'available', shape: 'square' },
     { id: 9, seats: 6, status: 'available', shape: 'round' },
 ];
+
+    
