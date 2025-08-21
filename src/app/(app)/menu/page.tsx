@@ -38,73 +38,76 @@ const getTagClass = (tag: MenuItem['tags'][number]) => {
   }
 }
 
-const MenuCategory = ({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: (dish: MenuItem) => void, onDelete: (dishId: string) => void }) => {
+const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, items: MenuItem[], onEdit: (dish: MenuItem) => void, onDelete: (dishId: string) => void }) => {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
           <p className="text-lg font-semibold">Aucun plat trouvé</p>
-          <p className="text-sm">Essayez d'affiner votre recherche.</p>
+          <p className="text-sm">Essayez d'affiner votre recherche ou de sélectionner une autre catégorie.</p>
       </div>
     )
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {items.map((item) => (
-        <Card key={item.id} className="flex flex-col overflow-hidden bg-card shadow-lg hover:shadow-primary/20 transition-all duration-300 border-border/10 rounded-xl group hover:border-primary/30">
-          <div className="relative w-full h-48">
-            <Image
-              src={item.image}
-              alt={item.name}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              data-ai-hint={item.imageHint}
-            />
-            <Badge className={cn("absolute top-3 right-3 text-xs font-semibold", getStatusClass(item.status))}>{item.status}</Badge>
-          </div>
-          <CardHeader className="p-4">
-            <CardTitle className="font-headline text-xl text-foreground">{item.name}</CardTitle>
-            <div className="flex items-center text-xs text-muted-foreground gap-4 pt-1">
-              <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-accent"/> {item.prepTime} min</span>
-              <span className="flex items-center gap-1"><Star className="w-3 h-3 text-accent"/> Diff {item.difficulty}/5</span>
+    <div>
+        {title && <h2 className="text-2xl font-bold font-headline mb-4 text-foreground">{title}</h2>}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {items.map((item) => (
+            <Card key={item.id} className="flex flex-col overflow-hidden bg-card shadow-lg hover:shadow-primary/20 transition-all duration-300 border-border/10 rounded-xl group hover:border-primary/30">
+            <div className="relative w-full h-48">
+                <Image
+                src={item.image}
+                alt={item.name}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                data-ai-hint={item.imageHint}
+                />
+                <Badge className={cn("absolute top-3 right-3 text-xs font-semibold", getStatusClass(item.status))}>{item.status}</Badge>
             </div>
-          </CardHeader>
-          <CardContent className="flex-grow p-4 pt-0 space-y-4">
-            <CardDescription className="text-sm">{item.description}</CardDescription>
-            <div className="flex flex-wrap gap-2">
-              {item.tags.map(tag => <Badge key={tag} className={cn("text-xs font-medium", getTagClass(tag))}>{tag}</Badge>)}
-            </div>
-          </CardContent>
-          <CardFooter className="flex justify-between items-center p-4 bg-card/50 mt-auto">
-            <p className="text-lg font-bold text-primary font-code">{item.price.toFixed(2).replace('.', ',')} €</p>
-            <div className="flex gap-1">
-              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-green-500" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce plat ?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        Cette action est irréversible. Le plat "{item.name}" sera définitivement supprimé.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Annuler</AlertDialogCancel>
-                      <AlertDialogAction onClick={() => onDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-                <Button asChild variant="ghost" size="icon" className="text-muted-foreground hover:text-secondary">
-                  <Link href={`/recipe-cost/${item.id}`}>
-                      <FileText className="h-4 w-4" />
-                  </Link>
-                </Button>
-            </div>
-          </CardFooter>
-        </Card>
-      ))}
+            <CardHeader className="p-4">
+                <CardTitle className="font-headline text-xl text-foreground">{item.name}</CardTitle>
+                <div className="flex items-center text-xs text-muted-foreground gap-4 pt-1">
+                <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-accent"/> {item.prepTime} min</span>
+                <span className="flex items-center gap-1"><Star className="w-3 h-3 text-accent"/> Diff {item.difficulty}/5</span>
+                </div>
+            </CardHeader>
+            <CardContent className="flex-grow p-4 pt-0 space-y-4">
+                <CardDescription className="text-sm">{item.description}</CardDescription>
+                <div className="flex flex-wrap gap-2">
+                {item.tags.map(tag => <Badge key={tag} className={cn("text-xs font-medium", getTagClass(tag))}>{tag}</Badge>)}
+                </div>
+            </CardContent>
+            <CardFooter className="flex justify-between items-center p-4 bg-card/50 mt-auto">
+                <p className="text-lg font-bold text-primary font-code">{item.price.toFixed(2).replace('.', ',')} €</p>
+                <div className="flex gap-1">
+                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-green-500" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
+                    <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce plat ?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            Cette action est irréversible. Le plat "{item.name}" sera définitivement supprimé.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => onDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                    </AlertDialog>
+                    <Button asChild variant="ghost" size="icon" className="text-muted-foreground hover:text-secondary">
+                    <Link href={`/recipe-cost/${item.id}`}>
+                        <FileText className="h-4 w-4" />
+                    </Link>
+                    </Button>
+                </div>
+            </CardFooter>
+            </Card>
+        ))}
+        </div>
     </div>
   )
 };
@@ -145,8 +148,12 @@ export default function MenuPage() {
   };
   
   const filteredMenuItems = menuItems.filter(item => 
-    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+    item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const isSearching = searchTerm.length > 0;
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
@@ -161,7 +168,7 @@ export default function MenuPage() {
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                    placeholder="Rechercher un plat par son nom..." 
+                    placeholder="Rechercher un plat par nom, tag, description..." 
                     className="pl-9 max-w-sm"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
@@ -169,24 +176,33 @@ export default function MenuPage() {
             </div>
         </div>
 
-        <Tabs defaultValue={categories[0]} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 mb-6 h-auto gap-2 bg-transparent p-0">
-            {categories.map((category) => (
-              <TabsTrigger key={category} value={category} className="whitespace-normal h-auto bg-card text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md transition-all">
-                {category}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          {categories.map((category) => (
-            <TabsContent key={category} value={category}>
-              <MenuCategory 
-                items={filteredMenuItems.filter(item => item.category === category)} 
+        {isSearching ? (
+            <MenuCategory 
+                title={`Résultats de la recherche pour "${searchTerm}"`}
+                items={filteredMenuItems} 
                 onEdit={handleEdit}
                 onDelete={handleDelete}
               />
-            </TabsContent>
-          ))}
-        </Tabs>
+        ) : (
+            <Tabs defaultValue={categories[0]} className="w-full">
+            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 mb-6 h-auto gap-2 bg-transparent p-0">
+                {categories.map((category) => (
+                <TabsTrigger key={category} value={category} className="whitespace-normal h-auto bg-card text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md transition-all">
+                    {category}
+                </TabsTrigger>
+                ))}
+            </TabsList>
+            {categories.map((category) => (
+                <TabsContent key={category} value={category}>
+                <MenuCategory 
+                    items={menuItems.filter(item => item.category === category)} 
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                />
+                </TabsContent>
+            ))}
+            </Tabs>
+        )}
       </main>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
