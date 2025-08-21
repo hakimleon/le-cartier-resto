@@ -62,7 +62,7 @@ export function Combobox({ options, value, onSelect, placeholder, searchPlacehol
                     setOpen(false)
                   }}
                 >
-                  <Check
+                   <Check
                     className={cn(
                       "mr-2 h-4 w-4",
                       value === option.value ? "opacity-100" : "opacity-0"
