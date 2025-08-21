@@ -56,9 +56,10 @@ export function Combobox({ options, value, onSelect, placeholder, searchPlacehol
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.value}
-                  onSelect={(currentValue) => {
-                    onSelect(currentValue === value ? "" : currentValue)
+                  value={option.label} // Use label for filtering
+                  onSelect={(currentLabel) => {
+                    const selectedValue = options.find(o => o.label.toLowerCase() === currentLabel.toLowerCase())?.value || "";
+                    onSelect(selectedValue === value ? "" : selectedValue)
                     setOpen(false)
                   }}
                 >
@@ -78,5 +79,3 @@ export function Combobox({ options, value, onSelect, placeholder, searchPlacehol
     </Popover>
   )
 }
-
-    
