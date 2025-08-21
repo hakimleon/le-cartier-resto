@@ -93,36 +93,36 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     );
   };
   
-  const handleSelectIngredient = (id: number, selectedStockId: string) => {
-    const currentIngredient = ingredients.find(ing => ing.id === id);
-    if (!currentIngredient) return;
+  const handleSelectIngredient = (ingredientRowId: number, selectedStockId: string) => {
+    const ingredientInState = ingredients.find(ing => ing.id === ingredientRowId);
+    if (!ingredientInState) return;
 
-    // Toggle logic: if the same item is selected again, clear the selection.
-    const newStockId = selectedStockId === currentIngredient.stockId ? "" : selectedStockId;
-    
-    if (newStockId === "") {
+    const stockItem = ingredientItems.find(item => item.id === selectedStockId);
+
+    if (stockItem) {
         setIngredients(
-          ingredients.map((ing) =>
-            ing.id === id ? { ...ing, stockId: "", name: "", category: "", unit: "", unitCost: 0 } : ing
-          )
+            ingredients.map(ing =>
+                ing.id === ingredientRowId
+                    ? {
+                        ...ing,
+                        stockId: stockItem.id,
+                        name: stockItem.name,
+                        category: stockItem.category,
+                        unit: stockItem.unit,
+                        unitCost: stockItem.unitPrice,
+                      }
+                    : ing
+            )
         );
-        return;
-    }
-
-    const selectedStockItem = ingredientItems.find(item => item.id === newStockId);
-    if (selectedStockItem) {
-      setIngredients(
-        ingredients.map((ing) =>
-          ing.id === id ? { 
-            ...ing,
-            stockId: selectedStockItem.id,
-            name: selectedStockItem.name,
-            category: selectedStockItem.category,
-            unit: selectedStockItem.unit,
-            unitCost: selectedStockItem.unitPrice,
-           } : ing
-        )
-      );
+    } else {
+        // Clear if no item found or selection is cleared
+        setIngredients(
+            ingredients.map(ing =>
+                ing.id === ingredientRowId
+                    ? { ...ing, stockId: '', name: '', category: '', unit: '', unitCost: 0 }
+                    : ing
+            )
+        );
     }
   };
   
@@ -258,7 +258,8 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                         options={ingredientOptions}
                         value={ing.stockId}
                         onSelect={(currentValue) => {
-                          handleSelectIngredient(ing.id, currentValue);
+                          const newStockId = currentValue === ing.stockId ? "" : currentValue;
+                          handleSelectIngredient(ing.id, newStockId);
                         }}
                         placeholder="Choisir un ingrédient..."
                         searchPlaceholder="Rechercher..."
