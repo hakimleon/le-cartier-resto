@@ -108,6 +108,12 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
            } : ing
         )
       );
+    } else {
+        setIngredients(
+            ingredients.map((ing) =>
+              ing.id === id ? { ...ing, stockId: "" } : ing
+            )
+        )
     }
   };
   
