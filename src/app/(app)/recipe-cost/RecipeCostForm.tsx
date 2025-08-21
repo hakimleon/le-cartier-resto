@@ -8,10 +8,11 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Trash2, X } from "lucide-react";
+import { PlusCircle, Save, Trash2, X } from "lucide-react";
 import { categories as menuCategories, MenuItem, initialIngredientItems, IngredientItem as StockIngredient } from "@/data/mock-data";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
 
 interface Ingredient {
   id: number;
@@ -32,6 +33,7 @@ type RecipeCostFormProps = {
 };
 
 export function RecipeCostForm({ dish }: RecipeCostFormProps) {
+  const { toast } = useToast();
   const [dishName, setDishName] = useState("");
   const [category, setCategory] = useState(menuCategories[0]);
   const [priceTTC, setPriceTTC] = useState(0);
@@ -67,7 +69,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
           quantity: parseFloat(ing.quantity.toString()) || 0,
         }
       }));
-      setPreparation(Array.isArray(dish.instructions) ? dish.instructions.join('\n') : dish.instructions);
+      setPreparation(Array.isArray(dish.instructions) ? dish.instructions.join('\\n') : dish.instructions);
       setAllergens(dish.allergens);
       setSalesPitch(dish.argumentationCommerciale || '');
     }
@@ -151,9 +153,17 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     }));
   }, []);
 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    toast({
+      title: "Fiche technique sauvegardée !",
+      description: `Les informations pour "${dishName}" ont été mises à jour.`,
+    });
+  };
+
 
   return (
-    <div className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-8">
       <Card>
         <CardHeader>
           <CardTitle>Informations Générales</CardTitle>
@@ -219,7 +229,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
             <CardTitle>Ingrédients & Coûts</CardTitle>
             <CardDescription>Ajoutez les ingrédients pour calculer le coût de la recette.</CardDescription>
           </div>
-          <Button onClick={handleAddIngredient}>
+          <Button type="button" onClick={handleAddIngredient}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Ajouter un ingrédient
           </Button>
@@ -277,7 +287,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                       {formatCurrency(ing.unitCost * ing.quantity)}
                     </TableCell>
                     <TableCell className="text-center">
-                      <Button variant="ghost" size="icon" onClick={() => handleRemoveIngredient(ing.id)}>
+                      <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveIngredient(ing.id)}>
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </TableCell>
@@ -336,13 +346,13 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                     onKeyDown={handleAllergenKeyDown}
                     placeholder="Ajouter un allergène (ex: Gluten, Lactose...)"
                 />
-                 <Button onClick={handleAddAllergen}>Ajouter</Button>
+                 <Button type="button" onClick={handleAddAllergen}>Ajouter</Button>
             </div>
             <div className="flex flex-wrap gap-2">
                 {allergens.map(allergen => (
                     <Badge key={allergen} variant="secondary" className="text-base py-1 px-3">
                         {allergen}
-                        <button onClick={() => handleRemoveAllergen(allergen)} className="ml-2 rounded-full hover:bg-destructive/20 p-0.5">
+                        <button type="button" onClick={() => handleRemoveAllergen(allergen)} className="ml-2 rounded-full hover:bg-destructive/20 p-0.5">
                             <X className="h-3 w-3" />
                         </button>
                     </Badge>
@@ -361,6 +371,13 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
         </CardContent>
       </Card>
 
-    </div>
+      <div className="flex justify-end mt-8">
+        <Button type="submit" size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
+            <Save className="mr-2 h-5 w-5" />
+            {dish ? "Sauvegarder les modifications" : "Créer la fiche technique"}
+        </Button>
+      </div>
+
+    </form>
   );
 }
