@@ -12,7 +12,6 @@ import { PlusCircle, Trash2, X } from "lucide-react";
 import { categories as menuCategories, MenuItem, ingredientItems, IngredientItem as StockIngredient } from "@/data/mock-data";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Combobox } from "@/components/ui/combobox";
 
 interface Ingredient {
   id: number;
@@ -242,16 +241,19 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                 {ingredients.map((ing) => (
                   <TableRow key={ing.id}>
                     <TableCell>
-                      <Combobox
-                        options={ingredientOptions}
-                        value={ing.stockId}
-                        onSelect={(currentValue) => {
-                          handleSelectIngredient(ing.id, currentValue);
-                        }}
-                        placeholder="Choisir..."
-                        searchPlaceholder="Rechercher..."
-                        notFoundText="Aucun ingrédient."
-                      />
+                       <Select 
+                          value={ing.stockId} 
+                          onValueChange={(value) => handleSelectIngredient(ing.id, value)}
+                        >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Choisir un ingrédient..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ingredientOptions.map(option => (
+                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                        {ing.category}
@@ -361,5 +363,3 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     </div>
   );
 }
-
-    
