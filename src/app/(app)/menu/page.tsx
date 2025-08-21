@@ -10,12 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { menuItems as initialMenuItems, MenuItem, categories } from "@/data/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { PlusCircle, Edit, Trash2, Clock, Star, FileText } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DishForm } from "./DishForm";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
+import { Input } from "@/components/ui/input";
 
 const getStatusClass = (status: MenuItem['status']) => {
   switch (status) {
@@ -37,70 +38,82 @@ const getTagClass = (tag: MenuItem['tags'][number]) => {
   }
 }
 
-const MenuCategory = ({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: (dish: MenuItem) => void, onDelete: (dishId: string) => void }) => (
-  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-    {items.map((item) => (
-      <Card key={item.id} className="flex flex-col overflow-hidden bg-card shadow-lg hover:shadow-primary/20 transition-all duration-300 border-border/10 rounded-xl group hover:border-primary/30">
-        <div className="relative w-full h-48">
-          <Image
-            src={item.image}
-            alt={item.name}
-            fill
-            className="object-cover transition-transform duration-300 group-hover:scale-105"
-            data-ai-hint={item.imageHint}
-          />
-           <Badge className={cn("absolute top-3 right-3 text-xs font-semibold", getStatusClass(item.status))}>{item.status}</Badge>
-        </div>
-        <CardHeader className="p-4">
-          <CardTitle className="font-headline text-xl text-foreground">{item.name}</CardTitle>
-          <div className="flex items-center text-xs text-muted-foreground gap-4 pt-1">
-            <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-accent"/> {item.prepTime} min</span>
-            <span className="flex items-center gap-1"><Star className="w-3 h-3 text-accent"/> Diff {item.difficulty}/5</span>
+const MenuCategory = ({ items, onEdit, onDelete }: { items: MenuItem[], onEdit: (dish: MenuItem) => void, onDelete: (dishId: string) => void }) => {
+  if (items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
+          <p className="text-lg font-semibold">Aucun plat trouvé</p>
+          <p className="text-sm">Essayez d'affiner votre recherche.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {items.map((item) => (
+        <Card key={item.id} className="flex flex-col overflow-hidden bg-card shadow-lg hover:shadow-primary/20 transition-all duration-300 border-border/10 rounded-xl group hover:border-primary/30">
+          <div className="relative w-full h-48">
+            <Image
+              src={item.image}
+              alt={item.name}
+              fill
+              className="object-cover transition-transform duration-300 group-hover:scale-105"
+              data-ai-hint={item.imageHint}
+            />
+            <Badge className={cn("absolute top-3 right-3 text-xs font-semibold", getStatusClass(item.status))}>{item.status}</Badge>
           </div>
-        </CardHeader>
-        <CardContent className="flex-grow p-4 pt-0 space-y-4">
-          <CardDescription className="text-sm">{item.description}</CardDescription>
-          <div className="flex flex-wrap gap-2">
-            {item.tags.map(tag => <Badge key={tag} className={cn("text-xs font-medium", getTagClass(tag))}>{tag}</Badge>)}
-          </div>
-        </CardContent>
-        <CardFooter className="flex justify-between items-center p-4 bg-card/50 mt-auto">
-          <p className="text-lg font-bold text-primary font-code">{item.price.toFixed(2).replace('.', ',')} €</p>
-          <div className="flex gap-1">
-             <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-green-500" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce plat ?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Cette action est irréversible. Le plat "{item.name}" sera définitivement supprimé.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Annuler</AlertDialogCancel>
-                    <AlertDialogAction onClick={() => onDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
-              <Button asChild variant="ghost" size="icon" className="text-muted-foreground hover:text-secondary">
-                <Link href={`/recipe-cost/${item.id}`}>
-                    <FileText className="h-4 w-4" />
-                </Link>
-              </Button>
-          </div>
-        </CardFooter>
-      </Card>
-    ))}
-  </div>
-);
+          <CardHeader className="p-4">
+            <CardTitle className="font-headline text-xl text-foreground">{item.name}</CardTitle>
+            <div className="flex items-center text-xs text-muted-foreground gap-4 pt-1">
+              <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-accent"/> {item.prepTime} min</span>
+              <span className="flex items-center gap-1"><Star className="w-3 h-3 text-accent"/> Diff {item.difficulty}/5</span>
+            </div>
+          </CardHeader>
+          <CardContent className="flex-grow p-4 pt-0 space-y-4">
+            <CardDescription className="text-sm">{item.description}</CardDescription>
+            <div className="flex flex-wrap gap-2">
+              {item.tags.map(tag => <Badge key={tag} className={cn("text-xs font-medium", getTagClass(tag))}>{tag}</Badge>)}
+            </div>
+          </CardContent>
+          <CardFooter className="flex justify-between items-center p-4 bg-card/50 mt-auto">
+            <p className="text-lg font-bold text-primary font-code">{item.price.toFixed(2).replace('.', ',')} €</p>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-green-500" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce plat ?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Cette action est irréversible. Le plat "{item.name}" sera définitivement supprimé.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction onClick={() => onDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button asChild variant="ghost" size="icon" className="text-muted-foreground hover:text-secondary">
+                  <Link href={`/recipe-cost/${item.id}`}>
+                      <FileText className="h-4 w-4" />
+                  </Link>
+                </Button>
+            </div>
+          </CardFooter>
+        </Card>
+      ))}
+    </div>
+  )
+};
 
 export default function MenuPage() {
   const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenuItems);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dishToEdit, setDishToEdit] = useState<MenuItem | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
   const handleAddNew = () => {
@@ -131,6 +144,10 @@ export default function MenuPage() {
     toast({ variant: "destructive", title: "Plat supprimé !", description: `Le plat "${dishName}" a été supprimé.` });
   };
   
+  const filteredMenuItems = menuItems.filter(item => 
+    item.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
       <AppHeader title="Gestion du Menu">
@@ -140,6 +157,18 @@ export default function MenuPage() {
         </Button>
       </AppHeader>
       <main className="flex-1 p-4 lg:p-6">
+        <div className="mb-6">
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Rechercher un plat par son nom..." 
+                    className="pl-9 max-w-sm"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+        </div>
+
         <Tabs defaultValue={categories[0]} className="w-full">
           <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 mb-6 h-auto gap-2 bg-transparent p-0">
             {categories.map((category) => (
@@ -151,7 +180,7 @@ export default function MenuPage() {
           {categories.map((category) => (
             <TabsContent key={category} value={category}>
               <MenuCategory 
-                items={menuItems.filter(item => item.category === category)} 
+                items={filteredMenuItems.filter(item => item.category === category)} 
                 onEdit={handleEdit}
                 onDelete={handleDelete}
               />
@@ -178,5 +207,3 @@ export default function MenuPage() {
     </div>
   );
 }
-
-    
