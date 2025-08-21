@@ -49,15 +49,15 @@ export function Combobox({ options, value, onSelect, placeholder, searchPlacehol
       <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
         <Command>
           <CommandInput placeholder={searchPlaceholder || "Search..."} />
-           <CommandList>
+          <CommandList>
             <CommandEmpty>{notFoundText || "No option found."}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
+                  value={option.value}
                   onSelect={(currentValue) => {
-                    onSelect(currentValue === options.find(o => o.value === value)?.label ? "" : option.value)
+                    onSelect(currentValue === value ? "" : currentValue)
                     setOpen(false)
                   }}
                 >
