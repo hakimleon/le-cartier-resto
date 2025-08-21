@@ -7,9 +7,9 @@ import { PlusCircle } from "lucide-react";
 
 export default function RecipeCostPage() {
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-background">
       <AppHeader title="Nouvelle Fiche Technique">
-         <Button>
+         <Button className="bg-primary hover:bg-primary/90">
             <PlusCircle className="mr-2 h-4 w-4" />
             Créer la recette
           </Button>

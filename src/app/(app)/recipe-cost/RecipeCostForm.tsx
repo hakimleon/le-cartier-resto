@@ -95,7 +95,11 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
   
   const handleSelectIngredient = (id: number, stockId: string) => {
     if (stockId === "") {
-        handleIngredientChange(id, "stockId", "");
+        setIngredients(
+          ingredients.map((ing) =>
+            ing.id === id ? { ...ing, stockId: "", name: "", category: "", unit: "", unitCost: 0 } : ing
+          )
+        );
         return;
     }
     const selectedStockItem = ingredientItems.find(item => item.id === stockId);
@@ -189,7 +193,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
               <Input id="portions" type="number" value={portions} onChange={(e: ChangeEvent<HTMLInputElement>) => setPortions(Number(e.target.value))} min="1"/>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 rounded-lg bg-muted">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 rounded-lg bg-green-50">
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Prix HT</div>
               <div className="font-bold text-lg">{formatCurrency(priceHT)}</div>
@@ -200,7 +204,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
             </div>
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Marge Unitaire</div>
-              <div className="font-bold text-lg text-green-500">{formatCurrency(unitMargin)}</div>
+              <div className="font-bold text-lg text-green-600">{formatCurrency(unitMargin)}</div>
             </div>
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Coût %</div>
@@ -220,7 +224,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
             <CardTitle>Ingrédients & Coûts</CardTitle>
             <CardDescription>Ajoutez les ingrédients pour calculer le coût de la recette.</CardDescription>
           </div>
-          <Button onClick={handleAddIngredient}>
+          <Button onClick={handleAddIngredient} className="bg-primary hover:bg-primary/90">
             <PlusCircle className="mr-2" />
             Ajouter un ingrédient
           </Button>
@@ -289,10 +293,10 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
               </TableBody>
             </Table>
           </div>
-          <div className="flex justify-end mt-4 p-4 rounded-lg bg-[#3A3A3A]">
+          <div className="flex justify-end mt-4 p-4 rounded-lg bg-green-900 text-white">
             <div className="text-right">
               <div className="text-lg font-semibold">Grand Total</div>
-              <div className="text-2xl font-bold text-secondary-foreground">{formatCurrency(totalIngredientCost)}</div>
+              <div className="text-2xl font-bold">{formatCurrency(totalIngredientCost)}</div>
             </div>
           </div>
         </CardContent>
@@ -321,7 +325,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
       <Card>
         <CardHeader className="flex flex-row justify-between items-center">
             <CardTitle>Régimes Spéciaux & Allergènes</CardTitle>
-            <Button onClick={handleAddAllergen}>Ajouter</Button>
+            <Button onClick={handleAddAllergen} className="bg-primary hover:bg-primary/90">Ajouter</Button>
         </CardHeader>
         <CardContent>
             <div className="flex gap-2 mb-4">

@@ -18,9 +18,9 @@ export default function DynamicRecipeCostPage({ params }: { params: { dishId: st
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full bg-background">
       <AppHeader title="Fiche Technique de Recette">
-        <Button>
+        <Button className="bg-primary hover:bg-primary/90">
             <PlusCircle className="mr-2 h-4 w-4" />
             Mettre à jour la recette
         </Button>
