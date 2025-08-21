@@ -59,7 +59,7 @@ export function Combobox({ options, value, onSelect, placeholder, searchPlacehol
                   value={option.label} // Use label for filtering
                   onSelect={(currentLabel) => {
                     const selectedValue = options.find(o => o.label.toLowerCase() === currentLabel.toLowerCase())?.value || "";
-                    onSelect(selectedValue === value ? "" : selectedValue)
+                    onSelect(selectedValue)
                     setOpen(false)
                   }}
                 >
