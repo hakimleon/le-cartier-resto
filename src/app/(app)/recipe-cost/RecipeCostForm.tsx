@@ -94,7 +94,13 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
   };
   
   const handleSelectIngredient = (id: number, selectedStockId: string) => {
-    if (selectedStockId === "") {
+    const currentIngredient = ingredients.find(ing => ing.id === id);
+    if (!currentIngredient) return;
+
+    // Toggle logic: if the same item is selected again, clear the selection.
+    const newStockId = selectedStockId === currentIngredient.stockId ? "" : selectedStockId;
+    
+    if (newStockId === "") {
         setIngredients(
           ingredients.map((ing) =>
             ing.id === id ? { ...ing, stockId: "", name: "", category: "", unit: "", unitCost: 0 } : ing
@@ -103,7 +109,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
         return;
     }
 
-    const selectedStockItem = ingredientItems.find(item => item.id === selectedStockId);
+    const selectedStockItem = ingredientItems.find(item => item.id === newStockId);
     if (selectedStockItem) {
       setIngredients(
         ingredients.map((ing) =>
@@ -252,8 +258,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                         options={ingredientOptions}
                         value={ing.stockId}
                         onSelect={(currentValue) => {
-                          const selectedId = currentValue === ing.stockId ? "" : currentValue;
-                          handleSelectIngredient(ing.id, selectedId);
+                          handleSelectIngredient(ing.id, currentValue);
                         }}
                         placeholder="Choisir un ingrédient..."
                         searchPlaceholder="Rechercher..."
@@ -365,5 +370,3 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     </div>
   );
 }
-
-    
