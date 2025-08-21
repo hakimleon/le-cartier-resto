@@ -34,7 +34,7 @@ export const menuItems: MenuItem[] = [
     prepTime: 10,
     status: 'Actif',
     tags: [],
-    ingredients: [{ name: 'Oeuf', quantity: '1' }, { name: 'Huile', quantity: '50ml' }, { name: 'Moutarde', quantity: '10g' }],
+    ingredients: [{ name: 'Oeuf', quantity: '1256' }, { name: 'Huile', quantity: '50ml' }, { name: 'Moutarde', quantity: '10g' }],
     instructions: 'Cuire l\'oeuf, monter la mayonnaise et napper.',
     difficulty: 2,
     allergens: ['Oeuf'],

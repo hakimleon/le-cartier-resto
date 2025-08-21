@@ -93,8 +93,8 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     );
   };
   
-  const handleSelectIngredient = (id: number, stockId: string) => {
-    if (stockId === "") {
+  const handleSelectIngredient = (id: number, selectedStockId: string) => {
+    if (selectedStockId === "") {
         setIngredients(
           ingredients.map((ing) =>
             ing.id === id ? { ...ing, stockId: "", name: "", category: "", unit: "", unitCost: 0 } : ing
@@ -102,7 +102,8 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
         );
         return;
     }
-    const selectedStockItem = ingredientItems.find(item => item.id === stockId);
+
+    const selectedStockItem = ingredientItems.find(item => item.id === selectedStockId);
     if (selectedStockItem) {
       setIngredients(
         ingredients.map((ing) =>
@@ -250,7 +251,10 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                       <Combobox
                         options={ingredientOptions}
                         value={ing.stockId}
-                        onSelect={(currentValue) => handleSelectIngredient(ing.id, currentValue)}
+                        onSelect={(currentValue) => {
+                          const selectedId = currentValue === ing.stockId ? "" : currentValue;
+                          handleSelectIngredient(ing.id, selectedId);
+                        }}
                         placeholder="Choisir un ingrédient..."
                         searchPlaceholder="Rechercher..."
                         notFoundText="Aucun ingrédient trouvé."
@@ -361,3 +365,5 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     </div>
   );
 }
+
+    

@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -57,7 +58,7 @@ export function Combobox({ options, value, onSelect, placeholder, searchPlacehol
                   key={option.value}
                   value={option.value}
                   onSelect={(currentValue) => {
-                    onSelect(currentValue === value ? "" : currentValue)
+                    onSelect(currentValue)
                     setOpen(false)
                   }}
                 >
@@ -77,3 +78,5 @@ export function Combobox({ options, value, onSelect, placeholder, searchPlacehol
     </Popover>
   )
 }
+
+    
