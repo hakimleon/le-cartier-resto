@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ingredientItems as initialIngredientItems, IngredientItem, suppliers } from "@/data/mock-data";
+import { initialIngredientItems, IngredientItem, suppliers } from "@/data/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Edit, Package, Plus, Search } from "lucide-react";
