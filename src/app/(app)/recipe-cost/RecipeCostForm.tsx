@@ -351,5 +351,3 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     </div>
   );
 }
-
-    
