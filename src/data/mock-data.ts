@@ -5,35 +5,27 @@ export type MenuItem = {
   description: string;
   category: 'Entrées Froides – Fraîcheur et Élégance' | 'Entrées Chaudes – Gourmandise et Chaleur' | 'Plats et Grillades – Saveurs en Majesté' | 'Les Mets de chez Nous' | 'Symphonie de Pâtes – Évasion Italienne' | 'Nos Burgers Bistronomiques' | 'Douceurs Signature – Éclats Sucrés de l’Instant' | 'Élixirs & Rafraîchissements';
   
-  // Gestion
   price: number;
   cost: number;
   
-  // Présentation
   image: string;
   imageHint: string;
   
-  // Infos de préparation
-  prepTime: number; // in minutes
+  prepTime: number; 
   difficulty: 1 | 2 | 3 | 4 | 5;
   status: 'Actif' | 'Inactif' | 'Saisonnier';
   tags: ('Végétarien' | 'Épicé' | 'Sans gluten' | 'Spécialité locale' | 'Halal' | 'Nouveau' | 'Populaire')[];
   
-  // Portion & Nutrition
   portionSize?: string;
   calories?: number;
   
-  // Ingrédients détaillés
   ingredients: { name: string; quantity: string; unitCost?: number; totalCost?: number }[];
   
-  // Instructions
   instructions: string | string[];
   
-  // Allergènes & Notes
   allergens: string[];
   notes?: string;
   
-  // Argumentaire commercial
   argumentationCommerciale?: string;
 };
 
