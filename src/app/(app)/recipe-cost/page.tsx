@@ -1,4 +1,5 @@
 
+
 import { AppHeader } from "@/components/common/AppHeader";
 import { RecipeCostForm } from "./RecipeCostForm";
 
@@ -7,8 +8,10 @@ export default function RecipeCostPage() {
     <div className="flex flex-col h-full bg-background">
       <AppHeader title="Nouvelle Fiche Technique" />
       <main className="flex-1 p-4 lg:p-6">
-        <RecipeCostForm dish={null} />
+        <RecipeCostForm recipe={null} />
       </main>
     </div>
   );
 }
+
+    

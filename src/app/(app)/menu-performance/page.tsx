@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect, useMemo, ReactNode } from "react";
@@ -6,7 +7,7 @@ import { AppHeader } from "@/components/common/AppHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, LineChart, Line } from "recharts";
-import { menuItems, menuPerformanceData, MenuItem, PerformanceData, historicalPerformanceData, HistoricalPerformanceData } from "@/data/mock-data";
+import { recipes, menuPerformanceData, Recipe, PerformanceData, historicalPerformanceData, HistoricalPerformanceData } from "@/data/mock-data";
 import { Anchor, HelpCircle, Star, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -14,7 +15,7 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLe
 
 type MenuEngineeringCategory = 'Star' | 'Plowhorse' | 'Puzzle' | 'Dog';
 
-type AnalyzedMenuItem = MenuItem & {
+type AnalyzedMenuItem = Recipe & {
   performance: PerformanceData;
   profit: number;
   category: MenuEngineeringCategory;
@@ -64,7 +65,7 @@ export default function MenuPerformancePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const data = menuItems
+    const data = recipes
       .map(item => {
         const performance = menuPerformanceData.find(p => p.menuItemId === item.id);
         if (!performance) return null;
@@ -271,3 +272,5 @@ export default function MenuPerformancePage() {
     </div>
   );
 }
+
+    

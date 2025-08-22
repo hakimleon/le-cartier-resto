@@ -1,25 +1,28 @@
 
+
 "use client";
 
 import { AppHeader } from "@/components/common/AppHeader";
 import { RecipeCostForm } from "../RecipeCostForm";
-import { menuItems } from "@/data/mock-data";
+import { recipes } from "@/data/mock-data";
 import { notFound } from "next/navigation";
 
 export default function DynamicRecipeCostPage({ params }: { params: { dishId: string } }) {
   const { dishId } = params;
-  const dish = menuItems.find(item => item.id === dishId);
+  const recipe = recipes.find(item => item.id === dishId);
 
-  if (!dish) {
+  if (!recipe) {
     notFound();
   }
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <AppHeader title={`Fiche Technique: ${dish.name}`} />
+      <AppHeader title={`Fiche Technique: ${recipe.name}`} />
       <main className="flex-1 p-4 lg:p-6">
-        <RecipeCostForm dish={dish} />
+        <RecipeCostForm recipe={recipe} />
       </main>
     </div>
   );
 }
+
+    

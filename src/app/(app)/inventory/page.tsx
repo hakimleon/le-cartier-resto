@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { initialIngredientItems, IngredientItem } from "@/data/mock-data";
+import { ingredients as initialIngredients, Ingredient } from "@/data/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Edit, Package, Plus, Search } from "lucide-react";
@@ -24,7 +24,7 @@ const getStockStatus = (stock: number, lowStockThreshold: number) => {
 }
 
 export default function IngredientsPage() {
-  const [ingredients, setIngredients] = useState<IngredientItem[]>(initialIngredientItems);
+  const [ingredients, setIngredients] = useState<Ingredient[]>(initialIngredients);
   const [searchTerm, setSearchTerm] = useState("");
 
   const filteredIngredients = ingredients.filter(item =>
@@ -41,7 +41,6 @@ export default function IngredientsPage() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Rechercher..." className="pl-9 bg-background" />
             </div>
-            {/* User Profile will go here */}
         </div>
       </AppHeader>
       <main className="flex-1 p-4 lg:p-6">
@@ -81,7 +80,7 @@ export default function IngredientsPage() {
                   <TableHead>Nom</TableHead>
                   <TableHead>Catégorie</TableHead>
                   <TableHead>Prix unitaire</TableHead>
-                  <TableHead>Unité</TableHead>
+                  <TableHead>Unité d'achat</TableHead>
                   <TableHead>Stock actuel</TableHead>
                   <TableHead>Fournisseur</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
@@ -89,7 +88,7 @@ export default function IngredientsPage() {
               </TableHeader>
               <TableBody>
                 {filteredIngredients.map((item) => {
-                  const status = getStockStatus(item.stock, item.lowStockThreshold);
+                  const status = getStockStatus(item.stockQuantity, item.lowStockThreshold);
                   return (
                     <TableRow key={item.id}>
                       <TableCell className="font-medium">{item.name}</TableCell>
@@ -97,13 +96,13 @@ export default function IngredientsPage() {
                         <Badge variant="secondary" className="whitespace-nowrap">{item.category}</Badge>
                       </TableCell>
                        <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
-                      <TableCell>{item.unit}</TableCell>
+                      <TableCell>{item.unitPurchase}</TableCell>
                       <TableCell>
                           <span className={cn(
                               "font-medium",
-                              item.stock === 0 ? "text-red-600" : item.stock < item.lowStockThreshold ? "text-yellow-600" : "text-green-600"
+                              item.stockQuantity === 0 ? "text-red-600" : item.stockQuantity < item.lowStockThreshold ? "text-yellow-600" : "text-green-600"
                           )}>
-                              {item.stock} {item.unit}
+                              {item.stockQuantity} {item.unitPurchase}
                           </span>
                       </TableCell>
                       <TableCell>{item.supplier}</TableCell>
@@ -130,3 +129,5 @@ export default function IngredientsPage() {
     </div>
   );
 }
+
+    

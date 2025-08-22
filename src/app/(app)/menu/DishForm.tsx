@@ -1,8 +1,9 @@
+
 // src/app/(app)/menu/DishForm.tsx
 "use client";
 
 import { useState, useEffect, ChangeEvent } from "react";
-import { MenuItem, categories, tags as availableTags } from "@/data/mock-data";
+import { Recipe, categories, tags as availableTags } from "@/data/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,12 +17,12 @@ import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
 
 type DishFormProps = {
-  dish: MenuItem | null;
-  onSave: (dish: MenuItem) => void;
+  dish: Recipe | null;
+  onSave: (dish: Recipe) => void;
   onCancel: () => void;
 };
 
-const emptyDish: Omit<MenuItem, 'id'> = {
+const emptyDish: Omit<Recipe, 'id'> = {
   name: "",
   description: "",
   category: categories[0],
@@ -32,14 +33,13 @@ const emptyDish: Omit<MenuItem, 'id'> = {
   tags: [],
   image: "",
   imageHint: "",
-  ingredients: [{ name: "", quantity: "" }],
-  instructions: "",
+  procedure: { preparation: [], cuisson: [], service: [] },
   difficulty: 1,
   allergens: [],
 };
 
 export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
-  const [formData, setFormData] = useState<Omit<MenuItem, 'id'>>(dish || emptyDish);
+  const [formData, setFormData] = useState<Omit<Recipe, 'id'>>(dish || emptyDish);
   const [imagePreview, setImagePreview] = useState<string | null>(dish?.image || null);
 
   useEffect(() => {
@@ -80,7 +80,7 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalData: MenuItem = {
+    const finalData: Recipe = {
       ...formData,
       id: dish?.id || `new-${Date.now()}`
     };
@@ -100,7 +100,6 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
       <ScrollArea className="h-[70vh]">
         <div className="p-6 space-y-6">
           
-          {/* Image Upload */}
           <div className="space-y-2">
             <Label>Image du plat</Label>
             <div className="flex items-center gap-4">
@@ -128,7 +127,6 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
             </div>
           </div>
           
-          {/* Nom et Catégorie */}
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="name">Nom du plat *</Label>
@@ -145,13 +143,11 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
             </div>
           </div>
 
-          {/* Description */}
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
             <Textarea id="description" name="description" value={formData.description} onChange={handleChange} rows={3} />
           </div>
 
-          {/* Tags */}
           <div className="space-y-2">
             <Label>Tags</Label>
             <div className="flex flex-wrap gap-2">
@@ -173,7 +169,6 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
             </div>
           </div>
 
-          {/* Prix, Préparation, Difficulté */}
           <div className="grid grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label htmlFor="price">Prix (€) *</Label>
@@ -194,7 +189,6 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
             </div>
           </div>
           
-          {/* Disponibilité */}
           <div className="flex items-center space-x-2 pt-2">
              <Switch 
                 id="status" 

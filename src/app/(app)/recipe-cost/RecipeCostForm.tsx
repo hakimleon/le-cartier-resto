@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, ChangeEvent, KeyboardEvent, useEffect } from "react";
@@ -9,12 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Save, Trash2, X } from "lucide-react";
-import { categories as menuCategories, MenuItem, initialIngredientItems, IngredientItem as StockIngredient } from "@/data/mock-data";
+import { categories as menuCategories, Recipe, Ingredient as StockIngredient, ingredients as stockIngredients, recipeIngredients as allRecipeIngredients } from "@/data/mock-data";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-interface Ingredient {
+interface FormIngredient {
   id: number;
   stockId: string;
   category: string;
@@ -29,17 +30,17 @@ const formatCurrency = (value: number) => {
 };
 
 type RecipeCostFormProps = {
-  dish: MenuItem | null;
+  recipe: Recipe | null;
 };
 
-export function RecipeCostForm({ dish }: RecipeCostFormProps) {
+export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
   const { toast } = useToast();
   const [dishName, setDishName] = useState("");
   const [category, setCategory] = useState(menuCategories[0]);
   const [priceTTC, setPriceTTC] = useState(0);
   const [vatRate, setVatRate] = useState(19);
   const [portions, setPortions] = useState(1);
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
+  const [ingredients, setIngredients] = useState<FormIngredient[]>([]);
   
   const [preparation, setPreparation] = useState("");
   const [cooking, setCooking] = useState("");
@@ -52,30 +53,35 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
 
 
   useEffect(() => {
-    if (dish) {
-      setDishName(dish.name);
-      setCategory(dish.category);
-      setPriceTTC(dish.price);
+    if (recipe) {
+      setDishName(recipe.name);
+      setCategory(recipe.category);
+      setPriceTTC(recipe.price);
       setPortions(1); 
-      setIngredients(dish.ingredients.map((ing, index) => {
-        const stockItem = initialIngredientItems.find(item => item.name.toLowerCase() === ing.name.toLowerCase());
-        return {
-          id: Date.now() + index,
-          stockId: stockItem?.id || '',
-          category: stockItem?.category || '',
-          name: ing.name,
-          unit: stockItem?.unit || ing.quantity.toString().replace(/[0-9.]/g, '').trim(),
-          unitCost: stockItem?.unitPrice || 0,
-          quantity: parseFloat(ing.quantity.toString()) || 0,
-        }
-      }));
-      setPreparation(dish.procedure.preparation.join('\\n'));
-      setCooking(dish.procedure.cuisson.join('\\n'));
-      setService(dish.procedure.service.join('\\n'));
-      setAllergens(dish.allergens);
-      setSalesPitch(dish.argumentationCommerciale || '');
+      
+      const relatedIngredients = allRecipeIngredients
+        .filter(ri => ri.recipeId === recipe.id)
+        .map((ri, index) => {
+          const stockItem = stockIngredients.find(item => item.id === ri.ingredientId);
+          return {
+            id: Date.now() + index,
+            stockId: stockItem?.id || '',
+            category: stockItem?.category || '',
+            name: stockItem?.name || '',
+            unit: ri.unitUse,
+            unitCost: stockItem?.unitPrice || 0,
+            quantity: ri.quantity || 0,
+          }
+        });
+
+      setIngredients(relatedIngredients);
+      setPreparation(recipe.procedure.preparation.join('\\n'));
+      setCooking(recipe.procedure.cuisson.join('\\n'));
+      setService(recipe.procedure.service.join('\\n'));
+      setAllergens(recipe.allergens);
+      setSalesPitch(recipe.argumentationCommerciale || '');
     }
-  }, [dish]);
+  }, [recipe]);
 
 
   const handleAddIngredient = () => {
@@ -89,7 +95,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
     setIngredients(ingredients.filter((ing) => ing.id !== id));
   };
   
-  const handleIngredientChange = (id: number, field: keyof Ingredient, value: string | number) => {
+  const handleIngredientChange = (id: number, field: keyof FormIngredient, value: string | number) => {
     setIngredients(
       ingredients.map((ing) =>
         ing.id === id ? { ...ing, [field]: value } : ing
@@ -98,7 +104,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
   };
   
   const handleSelectIngredient = (ingredientRowId: number, selectedStockId: string) => {
-    const stockItem = initialIngredientItems.find(item => item.id === selectedStockId);
+    const stockItem = stockIngredients.find(item => item.id === selectedStockId);
 
     if (stockItem) {
         setIngredients(
@@ -109,7 +115,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
                         stockId: stockItem.id,
                         name: stockItem.name,
                         category: stockItem.category,
-                        unit: stockItem.unit,
+                        unit: stockItem.unitPurchase, // Default to purchase unit
                         unitCost: stockItem.unitPrice,
                       }
                     : ing
@@ -149,7 +155,7 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
   };
 
   const ingredientOptions = useMemo(() => {
-    return initialIngredientItems.map(item => ({
+    return stockIngredients.map(item => ({
       value: item.id,
       label: item.name,
     }));
@@ -376,10 +382,12 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
       <div className="flex justify-end mt-8">
         <Button type="submit" size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Save className="mr-2 h-5 w-5" />
-            {dish ? "Sauvegarder les modifications" : "Créer la fiche technique"}
+            {recipe ? "Sauvegarder les modifications" : "Créer la fiche technique"}
         </Button>
       </div>
 
     </form>
   );
 }
+
+    

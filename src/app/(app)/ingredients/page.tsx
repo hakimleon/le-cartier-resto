@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { initialIngredientItems, IngredientItem } from "@/data/mock-data";
+import { ingredients as initialIngredients, Ingredient } from "@/data/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Edit, Package, Plus, Search } from "lucide-react";
@@ -21,10 +21,10 @@ const formatCurrency = (value: number) => {
 };
 
 export default function IngredientsPage() {
-  const [ingredients, setIngredients] = useState<IngredientItem[]>(initialIngredientItems);
+  const [ingredients, setIngredients] = useState<Ingredient[]>(initialIngredients);
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [ingredientToEdit, setIngredientToEdit] = useState<IngredientItem | null>(null);
+  const [ingredientToEdit, setIngredientToEdit] = useState<Ingredient | null>(null);
   const { toast } = useToast();
 
   const filteredIngredients = ingredients.filter(item =>
@@ -38,12 +38,12 @@ export default function IngredientsPage() {
     setIsDialogOpen(true);
   };
 
-  const handleEdit = (ingredient: IngredientItem) => {
+  const handleEdit = (ingredient: Ingredient) => {
     setIngredientToEdit(ingredient);
     setIsDialogOpen(true);
   };
 
-  const handleSaveIngredient = (ingredientData: IngredientItem) => {
+  const handleSaveIngredient = (ingredientData: Ingredient) => {
     if (ingredientToEdit) {
       setIngredients(ingredients.map(item => item.id === ingredientData.id ? ingredientData : item));
       toast({ title: "Ingrédient mis à jour !", description: `L'ingrédient "${ingredientData.name}" a été modifié.` });
@@ -88,7 +88,7 @@ export default function IngredientsPage() {
                   <TableHead>Nom</TableHead>
                   <TableHead>Catégorie</TableHead>
                   <TableHead>Prix unitaire</TableHead>
-                  <TableHead>Unité</TableHead>
+                  <TableHead>Unité Achat</TableHead>
                   <TableHead>Stock actuel</TableHead>
                   <TableHead>Fournisseur</TableHead>
                   <TableHead className="text-center">Actions</TableHead>
@@ -102,13 +102,13 @@ export default function IngredientsPage() {
                         <Badge variant="secondary" className="whitespace-nowrap">{item.category}</Badge>
                       </TableCell>
                        <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
-                      <TableCell>{item.unit}</TableCell>
+                      <TableCell>{item.unitPurchase}</TableCell>
                       <TableCell>
                           <span className={cn(
                               "font-medium",
-                              item.stock === 0 ? "text-destructive" : item.stock < item.lowStockThreshold ? "text-orange-500" : "text-green-600"
+                              item.stockQuantity === 0 ? "text-destructive" : item.stockQuantity < item.lowStockThreshold ? "text-orange-500" : "text-green-600"
                           )}>
-                              {item.stock} {item.unit}
+                              {item.stockQuantity} {item.unitPurchase}
                           </span>
                       </TableCell>
                       <TableCell>{item.supplier}</TableCell>
@@ -150,3 +150,5 @@ export default function IngredientsPage() {
     </div>
   );
 }
+
+    

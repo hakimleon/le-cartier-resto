@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import { useState, useEffect, ChangeEvent } from "react";
-import { IngredientItem, suppliers } from "@/data/mock-data";
+import { Ingredient, suppliers } from "@/data/mock-data";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,17 +11,17 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 type IngredientFormProps = {
-  ingredient: IngredientItem | null;
-  onSave: (ingredient: IngredientItem) => void;
+  ingredient: Ingredient | null;
+  onSave: (ingredient: Ingredient) => void;
   onCancel: () => void;
 };
 
-const emptyIngredient: Omit<IngredientItem, 'id'> = {
+const emptyIngredient: Omit<Ingredient, 'id'> = {
   name: "",
   category: "",
   unitPrice: 0,
-  unit: "kg",
-  stock: 0,
+  unitPurchase: "kg",
+  stockQuantity: 0,
   supplier: "",
   lowStockThreshold: 10,
 };
@@ -34,7 +35,7 @@ const categories = [
 ];
 
 export function IngredientForm({ ingredient, onSave, onCancel }: IngredientFormProps) {
-  const [formData, setFormData] = useState<Omit<IngredientItem, 'id'>>(ingredient || emptyIngredient);
+  const [formData, setFormData] = useState<Omit<Ingredient, 'id'>>(ingredient || emptyIngredient);
 
   useEffect(() => {
     setFormData(ingredient || emptyIngredient);
@@ -51,7 +52,7 @@ export function IngredientForm({ ingredient, onSave, onCancel }: IngredientFormP
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalData: IngredientItem = {
+    const finalData: Ingredient = {
       ...formData,
       id: ingredient?.id || `new-${Date.now()}`
     };
@@ -67,8 +68,8 @@ export function IngredientForm({ ingredient, onSave, onCancel }: IngredientFormP
       
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="unit">Unité</Label>
-          <Select name="unit" value={formData.unit} onValueChange={(value) => handleSelectChange('unit', value)}>
+          <Label htmlFor="unitPurchase">Unité d'achat</Label>
+          <Select name="unitPurchase" value={formData.unitPurchase} onValueChange={(value) => handleSelectChange('unitPurchase', value)}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
               {units.map(unit => <SelectItem key={unit} value={unit}>{unit}</SelectItem>)}
@@ -110,3 +111,5 @@ export function IngredientForm({ ingredient, onSave, onCancel }: IngredientFormP
     </form>
   );
 }
+
+    

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import Image from "next/image";
@@ -7,7 +8,7 @@ import { AppHeader } from "@/components/common/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { menuItems as initialMenuItems, MenuItem, categories } from "@/data/mock-data";
+import { recipes as initialRecipes, Recipe, categories } from "@/data/mock-data";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search } from "lucide-react";
@@ -18,7 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 
-const getStatusClass = (status: MenuItem['status']) => {
+const getStatusClass = (status: Recipe['status']) => {
   switch (status) {
     case 'Actif': return "bg-green-500/10 text-green-400 border-green-500/20";
     case 'Saisonnier': return "bg-blue-500/10 text-blue-400 border-blue-500/20";
@@ -26,7 +27,7 @@ const getStatusClass = (status: MenuItem['status']) => {
   }
 };
 
-const getTagClass = (tag: MenuItem['tags'][number]) => {
+const getTagClass = (tag: Recipe['tags'][number]) => {
   switch (tag) {
     case 'Végétarien': return "bg-yellow-400/10 text-yellow-300 border-yellow-400/20";
     case 'Épicé': return "bg-orange-500/10 text-orange-400 border-orange-500/20";
@@ -38,7 +39,7 @@ const getTagClass = (tag: MenuItem['tags'][number]) => {
   }
 }
 
-const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, items: MenuItem[], onEdit: (dish: MenuItem) => void, onDelete: (dishId: string) => void }) => {
+const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, items: Recipe[], onEdit: (dish: Recipe) => void, onDelete: (dishId: string) => void }) => {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
@@ -113,9 +114,9 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, item
 };
 
 export default function MenuPage() {
-  const [menuItems, setMenuItems] = useState<MenuItem[]>(initialMenuItems);
+  const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [dishToEdit, setDishToEdit] = useState<MenuItem | null>(null);
+  const [dishToEdit, setDishToEdit] = useState<Recipe | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
@@ -124,17 +125,17 @@ export default function MenuPage() {
     setIsDialogOpen(true);
   };
 
-  const handleEdit = (dish: MenuItem) => {
+  const handleEdit = (dish: Recipe) => {
     setDishToEdit(dish);
     setIsDialogOpen(true);
   };
   
-  const handleSaveDish = (dishData: MenuItem) => {
+  const handleSaveDish = (dishData: Recipe) => {
     if (dishToEdit) {
-      setMenuItems(menuItems.map(item => item.id === dishData.id ? dishData : item));
+      setRecipes(recipes.map(item => item.id === dishData.id ? dishData : item));
       toast({ title: "Plat mis à jour !", description: `Le plat "${dishData.name}" a été modifié.` });
     } else {
-      setMenuItems([...menuItems, { ...dishData, id: `menu-${Date.now()}` }]);
+      setRecipes([...recipes, { ...dishData, id: `menu-${Date.now()}` }]);
       toast({ title: "Plat ajouté !", description: `Le plat "${dishData.name}" a été ajouté au menu.` });
     }
     setIsDialogOpen(false);
@@ -142,12 +143,12 @@ export default function MenuPage() {
   };
 
   const handleDelete = (dishId: string) => {
-    const dishName = menuItems.find(d => d.id === dishId)?.name;
-    setMenuItems(menuItems.filter(item => item.id !== dishId));
+    const dishName = recipes.find(d => d.id === dishId)?.name;
+    setRecipes(recipes.filter(item => item.id !== dishId));
     toast({ variant: "destructive", title: "Plat supprimé !", description: `Le plat "${dishName}" a été supprimé.` });
   };
   
-  const filteredMenuItems = menuItems.filter(item => 
+  const filteredRecipes = recipes.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
     item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -179,7 +180,7 @@ export default function MenuPage() {
         {isSearching ? (
             <MenuCategory 
                 title={`Résultats de la recherche pour "${searchTerm}"`}
-                items={filteredMenuItems} 
+                items={filteredRecipes} 
                 onEdit={handleEdit}
                 onDelete={handleDelete}
               />
@@ -195,7 +196,7 @@ export default function MenuPage() {
             {categories.map((category) => (
                 <TabsContent key={category} value={category}>
                 <MenuCategory 
-                    items={menuItems.filter(item => item.category === category)} 
+                    items={recipes.filter(item => item.category === category)} 
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                 />
@@ -223,3 +224,5 @@ export default function MenuPage() {
     </div>
   );
 }
+
+    
