@@ -69,7 +69,9 @@ export function RecipeCostForm({ dish }: RecipeCostFormProps) {
           quantity: parseFloat(ing.quantity.toString()) || 0,
         }
       }));
-      setPreparation(Array.isArray(dish.instructions) ? dish.instructions.join('\\n') : dish.instructions);
+      setPreparation(dish.procedure.preparation.join('\\n'));
+      setCooking(dish.procedure.cuisson.join('\\n'));
+      setService(dish.procedure.service.join('\\n'));
       setAllergens(dish.allergens);
       setSalesPitch(dish.argumentationCommerciale || '');
     }

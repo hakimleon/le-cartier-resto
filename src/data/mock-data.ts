@@ -20,6 +20,12 @@ type Servings = {
   unit: string;
 };
 
+type Procedure = {
+  preparation: string[];
+  cuisson: string[];
+  service: string[];
+}
+
 
 export type MenuItem = {
   id: string;
@@ -37,7 +43,7 @@ export type MenuItem = {
   portionSize?: string;
   calories?: number;
   ingredients: Ingredient[];
-  instructions: string | string[];
+  procedure: Procedure;
   allergens: string[];
   notes?: string | null;
   argumentationCommerciale?: string;
@@ -50,8 +56,8 @@ export const menuItems: MenuItem[] = [
   // Entrées Froides – Fraîcheur et Élégance
   {
     id: 'ef-1',
-    name: "Oeuf cremeux a la mayo maison au couleurs locales",
-    description: "oeuf dur nappe avec une mayonnaise onctueuse montee a la main",
+    name: "Oeuf cremeux a la mayo maison  'Ouefs mimosa'",
+    description: "oeuf dur nappe avec une mayonnaise onctueuse montee a la main, aux couleurs locales",
     price: 900,
     cost: 360,
     category: 'Entrées Froides – Fraîcheur et Élégance',
@@ -62,7 +68,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Oeuf', quantity: '1' }, { name: 'Huile', quantity: '50ml' }, { name: 'Moutarde de Dijon', quantity: '10g' }],
-    instructions: 'Faire cuire l\'oeuf pour qu\'il soit dur. Préparer une mayonnaise maison en montant l\'huile avec le jaune d\'oeuf et la moutarde. Napper généreusement l\'oeuf dur avec la mayonnaise.',
+    procedure: {
+        preparation: ["Préparer une mayonnaise maison en montant l'huile avec le jaune d'oeuf et la moutarde.", "Napper généreusement l'oeuf dur avec la mayonnaise."],
+        cuisson: ["Faire cuire l'oeuf pour qu'il soit dur."],
+        service: ["Servir frais."]
+    },
     allergens: ['Oeuf'],
   },
   {
@@ -85,12 +95,17 @@ export const menuItems: MenuItem[] = [
       { name: 'Mozzarella', quantity: '125g', unitCost: 2.2, totalCost: 250 },
       { name: 'Basilic frais', quantity: '1 botte (30g)', unitCost: 1, totalCost: 30 }
     ],
-    instructions: [
-      'Couper les tomates en rondelles régulières.',
-      'Alterner les tranches de tomate et de mozzarella sur une assiette.',
-      'Ajouter des feuilles de basilic frais.',
-      'Assaisonner d’un filet d’huile d’olive, sel et poivre.'
-    ],
+    procedure: {
+        preparation: [
+            'Couper les tomates en rondelles régulières.',
+            'Alterner les tranches de tomate et de mozzarella sur une assiette.',
+            'Ajouter des feuilles de basilic frais.'
+        ],
+        cuisson: [],
+        service: [
+            'Assaisonner d’un filet d’huile d’olive, sel et poivre.'
+        ]
+    },
     allergens: ['Lactose'],
     notes: 'Privilégier une mozzarella de bufflonne et des tomates bien mûres pour un goût optimal.',
     argumentationCommerciale: "Je vous conseille ce grand classique de la cuisine méditerranéenne : l’alliance des tomates mûres, de la mozzarella fondante et du basilic frais, relevée d’une touche d’huile d’olive. C’est une entrée fraîche, légère et pleine de soleil."
@@ -109,7 +124,18 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Salade verte (laitue)', quantity: '100g' }, { name: 'Filet de poulet', quantity: '150g' }, { name: 'Parmesan Reggiano', quantity: '30g' }],
-    instructions: 'Griller le filet de poulet et le couper en lamelles. Préparer la sauce César. Assembler la salade avec la laitue, le poulet, les croûtons et les copeaux de parmesan. Napper de sauce.',
+    procedure: {
+        preparation: [
+            'Préparer la sauce César.',
+            'Assembler la salade avec la laitue, le poulet, les croûtons et les copeaux de parmesan.'
+        ],
+        cuisson: [
+            'Griller le filet de poulet et le couper en lamelles.'
+        ],
+        service: [
+            'Napper de sauce.'
+        ]
+    },
     allergens: ['Lactose', 'Gluten'],
   },
   {
@@ -126,7 +152,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Filet de saumon', quantity: '100g' }, { name: 'Salade verte (laitue)', quantity: '50g' }, { name: 'Citron jaune', quantity: '0.5' }],
-    instructions: 'Mariner le saumon avec du jus de citron, de l\'aneth et de l\'huile d\'olive. Le disposer en éventail sur un lit de salade. Servir frais.',
+    procedure: {
+        preparation: ["Mariner le saumon avec du jus de citron, de l'aneth et de l'huile d'olive."],
+        cuisson: [],
+        service: ["Le disposer en éventail sur un lit de salade. Servir frais."]
+    },
     allergens: ['Poisson'],
   },
   {
@@ -143,7 +173,15 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Calamars frais', quantity: '150g' }, { name: 'Citron vert', quantity: '1' }, { name: 'Huile d\'olive extra vierge', quantity: '20ml' }],
-    instructions: 'Cuire le poulpe jusqu\'à ce qu\'il soit tendre. Le couper en morceaux et l\'assaisonner avec le jus des agrumes, l\'huile d\'olive, du persil frais, du sel et du poivre.',
+    procedure: {
+        preparation: [
+            "Couper le poulpe en morceaux et l'assaisonner avec le jus des agrumes, l'huile d'olive, du persil frais, du sel et du poivre."
+        ],
+        cuisson: [
+            "Cuire le poulpe jusqu'à ce qu'il soit tendre."
+        ],
+        service: []
+    },
     allergens: ['Mollusques'],
   },
    {
@@ -160,7 +198,15 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [{ name: 'Chèvre frais', quantity: '50g' }, { name: 'Comté AOP', quantity: '50g' }, { name: 'Brie de Meaux', quantity: '50g' }],
-    instructions: 'Disposer harmonieusement les fromages sur une planche. Accompagner de fruits secs (noix, figues) et de tranches de pain artisanal.',
+    procedure: {
+        preparation: [
+            "Disposer harmonieusement les fromages sur une planche."
+        ],
+        cuisson: [],
+        service: [
+            "Accompagner de fruits secs (noix, figues) et de tranches de pain artisanal."
+        ]
+    },
     allergens: ['Lactose', 'Gluten', 'Noix'],
   },
    {
@@ -177,7 +223,15 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Avocat', quantity: '1' }, { name: 'Crevettes décortiquées', quantity: '100g' }, { name: 'Filet de saumon', quantity: '50g' }],
-    instructions: 'Couper l\'avocat et la mangue en dés. Mélanger avec les crevettes et le saumon fumé. Assaisonner avec du jus de citron vert, sel et poivre.',
+    procedure: {
+        preparation: [
+            "Couper l'avocat et la mangue en dés.",
+            "Mélanger avec les crevettes et le saumon fumé.",
+            "Assaisonner avec du jus de citron vert, sel et poivre."
+        ],
+        cuisson: [],
+        service: []
+    },
     allergens: ['Crustacés', 'Poisson'],
   },
   {
@@ -194,7 +248,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: ['Végétarien'],
     ingredients: [{ name: 'Burrata', quantity: '1' }, { name: 'Grenade', quantity: '30g' }, { name: 'Roquette', quantity: '50g' }],
-    instructions: 'Déposer la burrata sur un lit de roquette. Parsemer de perles de grenade. Arroser d\'un filet d\'huile d\'olive et de vinaigre balsamique.',
+    procedure: {
+        preparation: ["Déposer la burrata sur un lit de roquette."],
+        cuisson: [],
+        service: ["Parsemer de perles de grenade.", "Arroser d'un filet d'huile d'olive et de vinaigre balsamique."]
+    },
     allergens: ['Lactose'],
   },
   {
@@ -211,7 +269,14 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Filet de bœuf', quantity: '100g' }, { name: 'Parmesan Reggiano', quantity: '30g' }, { name: 'Roquette', quantity: '50g' }],
-    instructions: 'Disposer finement les tranches de boeuf sur une assiette. Ajouter les copeaux de parmesan, la roquette, un filet d\'huile d\'olive, du sel et du poivre.',
+    procedure: {
+        preparation: [
+            "Disposer finement les tranches de boeuf sur une assiette.",
+            "Ajouter les copeaux de parmesan, la roquette, un filet d'huile d'olive, du sel et du poivre."
+        ],
+        cuisson: [],
+        service: []
+    },
     allergens: ['Lactose'],
   },
   {
@@ -228,7 +293,14 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Crevettes décortiquées', quantity: '80g' }, { name: 'Calamars frais', quantity: '70g' }],
-    instructions: 'Cuire et refroidir les fruits de mer. Les mélanger avec des herbes fraîches ciselées (persil, ciboulette), un filet de jus de citron et de l\'huile d\'olive.',
+    procedure: {
+        preparation: [
+            "Cuire et refroidir les fruits de mer.",
+            "Les mélanger avec des herbes fraîches ciselées (persil, ciboulette), un filet de jus de citron et de l'huile d'olive."
+        ],
+        cuisson: [],
+        service: []
+    },
     allergens: ['Crustacés', 'Mollusques'],
   },
   {
@@ -245,7 +317,15 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Filet de poulet', quantity: '150g' }, { name: 'Noix', quantity: '30g' }, { name: 'Avocat', quantity: '0.5' }],
-    instructions: 'Assembler la salade avec le poulet pané et coupé, les cerneaux de noix, les tranches d\'avocat et les quartiers d\'oeuf dur. Assaisonner avec une vinaigrette au balsamique.',
+    procedure: {
+        preparation: [
+            "Assembler la salade avec le poulet pané et coupé, les cerneaux de noix, les tranches d'avocat et les quartiers d'oeuf dur."
+        ],
+        cuisson: [],
+        service: [
+            "Assaisonner avec une vinaigrette au balsamique."
+        ]
+    },
     allergens: ['Gluten', 'Noix', 'Oeuf'],
   },
   {
@@ -262,7 +342,18 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: ['Végétarien'],
     ingredients: [{ name: 'Pain de campagne', quantity: '2 tranches' }, { name: 'Tomate', quantity: '50g' }, { name: 'Mozzarella di bufala', quantity: '50g' }],
-    instructions: 'Frotter les tranches de pain avec de l\'ail. Garnir de tomates confites et de mozzarella. Passer au four jusqu\'à ce que le fromage soit fondu. Napper de pesto.',
+    procedure: {
+        preparation: [
+            "Frotter les tranches de pain avec de l'ail.",
+            "Garnir de tomates confites et de mozzarella."
+        ],
+        cuisson: [
+            "Passer au four jusqu'à ce que le fromage soit fondu."
+        ],
+        service: [
+            "Napper de pesto."
+        ]
+    },
     allergens: ['Gluten', 'Lactose'],
   },
   {
@@ -279,7 +370,14 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: ['Végétarien'],
     ingredients: [{ name: 'Pain de campagne', quantity: '2 tranches' }, { name: 'Camembert', quantity: '50g' }, { name: 'Figue fraîche', quantity: '1' }],
-    instructions: 'Garnir les tranches de pain de camembert et de rondelles de figues. Napper de miel et passer au four. Parsemer de noix concassées.',
+    procedure: {
+        preparation: [
+            "Garnir les tranches de pain de camembert et de rondelles de figues.",
+            "Napper de miel."
+        ],
+        cuisson: ["Passer au four."],
+        service: ["Parsemer de noix concassées."]
+    },
     allergens: ['Gluten', 'Lactose', 'Noix'],
   },
   {
@@ -296,7 +394,14 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Pain de campagne', quantity: '2 tranches' }, { name: 'Filet de saumon', quantity: '50g' }, { name: 'Avocat', quantity: '0.5' }],
-    instructions: 'Tartiner le pain avec du fromage à l\'ail et fines herbes. Ajouter des tranches d\'avocat et du saumon fumé. Finir avec un zeste de citron.',
+    procedure: {
+        preparation: [
+            "Tartiner le pain avec du fromage à l'ail et fines herbes.",
+            "Ajouter des tranches d'avocat et du saumon fumé."
+        ],
+        cuisson: [],
+        service: ["Finir avec un zeste de citron."]
+    },
     allergens: ['Gluten', 'Lactose', 'Poisson'],
   },
   {
@@ -313,7 +418,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: ['Végétarien', 'Spécialité locale'],
     ingredients: [{ name: 'Tomate', quantity: '1' }, { name: 'Concombre', quantity: '0.5' }, { name: 'Poivron vert', quantity: '0.5' }],
-    instructions: 'Couper les légumes en petits dés. Assaisonner avec de l\'huile d\'olive, du sel, du poivre et des herbes fraîches comme la menthe et la coriandre.',
+    procedure: {
+        preparation: ["Couper les légumes en petits dés."],
+        cuisson: [],
+        service: ["Assaisonner avec de l'huile d'olive, du sel, du poivre et des herbes fraîches comme la menthe et la coriandre."]
+    },
     allergens: [],
   },
 
@@ -332,7 +441,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: ['Végétarien'],
     ingredients: [{ name: 'Camembert', quantity: '0.5' }, { name: 'Basilic frais', quantity: '20g' }, { name: 'Noix', quantity: '20g' }],
-    instructions: 'Enrober le camembert d\'un pesto maison et d\'éclats de noix. Passer au four jusqu\'à ce qu\'il soit fondant.',
+    procedure: {
+        preparation: ["Enrober le camembert d'un pesto maison et d'éclats de noix."],
+        cuisson: ["Passer au four jusqu'à ce qu'il soit fondant."],
+        service: []
+    },
     allergens: ['Lactose', 'Noix'],
   },
   {
@@ -349,7 +462,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: ['Végétarien'],
     ingredients: [{ name: 'Camembert', quantity: '0.5' }, { name: 'Miel', quantity: '30g' }, { name: 'Noix', quantity: '20g' }],
-    instructions: 'Paner le camembert (farine, oeuf, chapelure) et le frire jusqu\'à ce qu\'il soit doré. Napper de miel et de noix caramélisées.',
+    procedure: {
+        preparation: ["Paner le camembert (farine, oeuf, chapelure)."],
+        cuisson: ["Le frire jusqu'à ce qu'il soit doré."],
+        service: ["Napper de miel et de noix caramélisées."]
+    },
     allergens: ['Lactose', 'Noix', 'Gluten', 'Oeuf'],
   },
   {
@@ -366,7 +483,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Filet de poulet', quantity: '100g' }, { name: 'Champignons de Paris', quantity: '50g' }, { name: 'Emmental râpé', quantity: '30g' }],
-    instructions: 'Faire revenir le poulet émincé avec les champignons. Napper d\'une sauce béchamel, couvrir de fromage et gratiner au four.',
+    procedure: {
+        preparation: ["Faire revenir le poulet émincé avec les champignons.","Napper d'une sauce béchamel."],
+        cuisson: ["Couvrir de fromage et gratiner au four."],
+        service: []
+    },
     allergens: ['Lactose', 'Gluten'],
   },
   {
@@ -383,7 +504,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Crevettes décortiquées', quantity: '100g' }, { name: 'Crème fraîche épaisse 30%', quantity: '50ml' }, { name: 'Ail frais', quantity: '1 gousse' }],
-    instructions: 'Faire revenir les crevettes à l\'ail. Ajouter la crème, assaisonner. Verser dans un plat à gratin, couvrir de fromage et faire dorer.',
+    procedure: {
+        preparation: ["Faire revenir les crevettes à l'ail.", "Ajouter la crème, assaisonner.", "Verser dans un plat à gratin."],
+        cuisson: ["Couvrir de fromage et faire dorer."],
+        service: []
+    },
     allergens: ['Lactose', 'Crustacés', 'Gluten'],
   },
   {
@@ -400,7 +525,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: ['Végétarien'],
     ingredients: [{ name: 'Oeuf de poule', quantity: '3' }, { name: 'Emmental râpé', quantity: '30g' }, { name: 'Champignons de Paris', quantity: '30g' }],
-    instructions: 'Battre les oeufs avec les herbes ciselées. Verser dans une poêle chaude, ajouter les champignons sautés et le fromage. Replier et servir.',
+    procedure: {
+        preparation: ["Battre les oeufs avec les herbes ciselées."],
+        cuisson: ["Verser dans une poêle chaude, ajouter les champignons sautés et le fromage."],
+        service: ["Replier et servir."]
+    },
     allergens: ['Oeuf', 'Lactose'],
   },
   {
@@ -417,7 +546,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: ['Végétarien'],
     ingredients: [{ name: 'Légumes de saison', quantity: '200g' }],
-    instructions: 'Cuire les légumes de saison dans un bouillon. Mixer jusqu\'à obtenir une consistance veloutée. Servir chaud.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Cuire les légumes de saison dans un bouillon.", "Mixer jusqu'à obtenir une consistance veloutée."],
+        service: ["Servir chaud."]
+    },
     allergens: [],
   },
   {
@@ -434,7 +567,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Crevettes décortiquées', quantity: '150g' }, { name: 'Farine de tempura', quantity: '50g' }],
-    instructions: 'Préparer la pâte à tempura. Enrober les crevettes et les frire dans une huile chaude jusqu\'à ce qu\'elles soient dorées et croustillantes. Servir avec une sauce yuzu.',
+    procedure: {
+        preparation: ["Préparer la pâte à tempura.", "Enrober les crevettes."],
+        cuisson: ["Les frire dans une huile chaude jusqu'à ce qu'elles soient dorées et croustillantes."],
+        service: ["Servir avec une sauce yuzu."]
+    },
     allergens: ['Crustacés', 'Gluten'],
   },
   {
@@ -451,7 +588,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: ['Spécialité locale', 'Épicé'],
     ingredients: [{ name: 'Tomate', quantity: '2' }, { name: 'Poivron rouge', quantity: '1' }, { name: 'Chorizo doux', quantity: '50g' }],
-    instructions: 'Faire revenir les poivrons et les tomates en morceaux dans de l\'huile d\'olive. Ajouter le chorizo en rondelles et laisser mijoter jusqu\'à épaississement.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Faire revenir les poivrons et les tomates en morceaux dans de l'huile d'olive.", "Ajouter le chorizo en rondelles et laisser mijoter jusqu'à épaississement."],
+        service: []
+    },
     allergens: [],
   },
   {
@@ -468,7 +609,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: ['Spécialité locale', 'Épicé'],
     ingredients: [{ name: 'Tomate', quantity: '2' }, { name: 'Poivron rouge', quantity: '1' }, { name: 'Merguez fraîche', quantity: '100g' }],
-    instructions: 'Faire revenir les poivrons et les tomates. Faire griller les merguez à part, les couper en morceaux et les ajouter à la sauce. Laisser mijoter.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Faire revenir les poivrons et les tomates.", "Faire griller les merguez à part, les couper en morceaux et les ajouter à la sauce.", "Laisser mijoter."],
+        service: []
+    },
     allergens: [],
   },
 
@@ -487,7 +632,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Filet de poulet', quantity: '200g' }, { name: 'Emmental râpé', quantity: '50g' }, { name: 'Bacon fumé artisanal', quantity: '50g' }],
-    instructions: 'Aplatir le filet de poulet. Le farcir de fromage et de bacon. Le refermer, le paner et le cuire à la poêle.',
+    procedure: {
+        preparation: ["Aplatir le filet de poulet.", "Le farcir de fromage et de bacon.", "Le refermer, le paner."],
+        cuisson: ["Le cuire à la poêle."],
+        service: []
+    },
     allergens: ['Gluten', 'Lactose', 'Oeuf'],
   },
   {
@@ -504,7 +653,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Blanc de poulet', quantity: '200g' }],
-    instructions: 'Mariner le blanc de poulet dans une marinade à base d\'herbes, d\'ail et d\'huile d\'olive. Le griller au feu de bois ou au grill.',
+    procedure: {
+        preparation: ["Mariner le blanc de poulet dans une marinade à base d'herbes, d'ail et d'huile d'olive."],
+        cuisson: ["Le griller au feu de bois ou au grill."],
+        service: []
+    },
     allergens: [],
   },
   {
@@ -521,7 +674,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Blanc de poulet', quantity: '200g' }, { name: 'Crème liquide 30%', quantity: '100ml' }, { name: 'Curry en poudre', quantity: '10g' }],
-    instructions: 'Faire dorer le poulet émincé. Ajouter le curry et la crème, laisser mijoter jusqu\'à obtenir une sauce onctueuse.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Faire dorer le poulet émincé.", "Ajouter le curry et la crème, laisser mijoter jusqu'à obtenir une sauce onctueuse."],
+        service: []
+    },
     allergens: ['Lactose'],
   },
   {
@@ -538,7 +695,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Filet de poulet', quantity: '200g' }, { name: 'Chapelure', quantity: '50g' }],
-    instructions: 'Paner les filets de poulet et les frire jusqu\'à ce qu\'ils soient dorés et croustillants. Servir avec une sauce au choix.',
+    procedure: {
+        preparation: ["Paner les filets de poulet."],
+        cuisson: ["Les frire jusqu'à ce qu'ils soient dorés et croustillants."],
+        service: ["Servir avec une sauce au choix."]
+    },
     allergens: ['Gluten', 'Oeuf'],
   },
   {
@@ -555,7 +716,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: ['Épicé'],
     ingredients: [{ name: 'Blanc de poulet', quantity: '200g' }, { name: 'Poivron rouge', quantity: '100g' }, { name: 'Piment', quantity: '5g' }],
-    instructions: 'Mariner le poulet avec les épices mexicaines. Le faire sauter avec des lanières de poivrons et d\'oignons.',
+    procedure: {
+        preparation: ["Mariner le poulet avec les épices mexicaines."],
+        cuisson: ["Le faire sauter avec des lanières de poivrons et d'oignons."],
+        service: []
+    },
     allergens: [],
   },
   {
@@ -572,7 +737,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Cuisse de poulet', quantity: '1' }],
-    instructions: 'Mariner la cuisse de poulet dans une marinade signature pendant plusieurs heures. La rôtir au four jusqu\'à ce qu\'elle soit bien dorée.',
+    procedure: {
+        preparation: ["Mariner la cuisse de poulet dans une marinade signature pendant plusieurs heures."],
+        cuisson: ["La rôtir au four jusqu'à ce qu'elle soit bien dorée."],
+        service: []
+    },
     allergens: [],
   },
   {
@@ -589,7 +758,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Filet de poulet', quantity: '200g' }, { name: 'Emmental râpé', quantity: '50g' }, { name: 'Crème fraîche épaisse 30%', quantity: '50ml' }],
-    instructions: 'Paner l\'escalope et la cuire. Préparer une sauce fromagère onctueuse et napper l\'escalope.',
+    procedure: {
+        preparation: ["Préparer une sauce fromagère onctueuse."],
+        cuisson: ["Paner l'escalope et la cuire."],
+        service: ["Napper l'escalope de la sauce."]
+    },
     allergens: ['Gluten', 'Lactose', 'Oeuf'],
   },
   {
@@ -606,7 +779,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Blanc de poulet', quantity: '200g' }, { name: 'Champignons de Paris', quantity: '100g' }, { name: 'Crème fraîche épaisse 30%', quantity: '50ml' }],
-    instructions: 'Cuire le blanc de poulet. Préparer une sauce crémeuse aux champignons et à l\'ail. Napper le poulet de sauce.',
+    procedure: {
+        preparation: ["Préparer une sauce crémeuse aux champignons et à l'ail."],
+        cuisson: ["Cuire le blanc de poulet."],
+        service: ["Napper le poulet de sauce."]
+    },
     allergens: ['Lactose'],
   },
   {
@@ -623,7 +800,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Blanc de poulet', quantity: '200g' }, { name: 'Parmesan Reggiano', quantity: '30g' }, { name: 'Tomate', quantity: '50g' }],
-    instructions: 'Faire dorer le poulet. Ajouter la crème, le parmesan, les tomates confites et les pousses d\'épinards. La laisser mijoter.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Faire dorer le poulet.", "Ajouter la crème, le parmesan, les tomates confites et les pousses d'épinards.", "La laisser mijoter."],
+        service: []
+    },
     allergens: ['Lactose'],
   },
   {
@@ -640,7 +821,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 4,
     tags: [],
     ingredients: [{ name: 'Blanc de poulet', quantity: '200g' }, { name: 'Bœuf haché', quantity: '50g' }, { name: 'Emmental râpé', quantity: '30g' }],
-    instructions: 'Farcir le blanc de poulet avec la viande hachée et le fromage. Le cuire au four et napper d\'une sauce fromagère.',
+    procedure: {
+        preparation: ["Farcir le blanc de poulet avec la viande hachée et le fromage."],
+        cuisson: ["Le cuire au four."],
+        service: ["Napper d'une sauce fromagère."]
+    },
     allergens: ['Lactose'],
   },
   {
@@ -657,7 +842,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Blanc de poulet', quantity: '200g' }, { name: 'Jambon', quantity: '50g' }, { name: 'Bleu d’Auvergne', quantity: '50g' }],
-    instructions: 'Préparer un cordon bleu en remplaçant le fromage classique par du bleu. Servir avec une sauce crémeuse aux fromages.',
+    procedure: {
+        preparation: ["Préparer un cordon bleu en remplaçant le fromage classique par du bleu."],
+        cuisson: [],
+        service: ["Servir avec une sauce crémeuse aux fromages."]
+    },
     allergens: ['Gluten', 'Lactose', 'Oeuf'],
   },
   {
@@ -674,7 +863,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Bœuf haché', quantity: '200g' }, { name: 'Cheddar', quantity: '30g' }],
-    instructions: 'Former deux steaks hachés fins. Placer le fromage entre les deux et bien souder les bords. Griller à la cuisson désirée.',
+    procedure: {
+        preparation: ["Former deux steaks hachés fins.", "Placer le fromage entre les deux et bien souder les bords."],
+        cuisson: ["Griller à la cuisson désirée."],
+        service: []
+    },
     allergens: ['Lactose'],
   },
   {
@@ -691,7 +884,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: ['Épicé'],
     ingredients: [{ name: 'Bavette de bœuf', quantity: '200g' }, { name: 'Poivron rouge', quantity: '100g' }, { name: 'Piment', quantity: '5g' }],
-    instructions: 'Émincer le boeuf et le faire sauter avec des épices mexicaines, des poivrons et des oignons.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Émincer le boeuf et le faire sauter avec des épices mexicaines, des poivrons et des oignons."],
+        service: []
+    },
     allergens: [],
   },
   {
@@ -708,7 +905,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Entrecôte de bœuf', quantity: '250g' }],
-    instructions: 'Saisir l\'entrecôte sur un grill bien chaud. Laisser reposer quelques minutes avant de servir.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Saisir l'entrecôte sur un grill bien chaud."],
+        service: ["Laisser reposer quelques minutes avant de servir."]
+    },
     allergens: [],
   },
   {
@@ -725,7 +926,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 4,
     tags: [],
     ingredients: [{ name: 'Noisette d’agneau', quantity: '200g' }, { name: 'Herbes de Provence', quantity: '10g' }],
-    instructions: 'Mariner les noisettes d\'agneau avec les herbes et les griller à la cuisson rosée.',
+    procedure: {
+        preparation: ["Mariner les noisettes d'agneau avec les herbes."],
+        cuisson: ["Les griller à la cuisson rosée."],
+        service: []
+    },
     allergens: [],
   },
   {
@@ -742,7 +947,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 4,
     tags: [],
     ingredients: [{ name: 'Filet de bœuf', quantity: '200g' }, { name: 'Huile de truffe', quantity: '5ml' }],
-    instructions: 'Griller le filet de boeuf à la cuisson désirée. Servir avec un jus de viande réduit. Proposer une purée maison à l\'huile de truffe en accompagnement.',
+    procedure: {
+        preparation: ["Proposer une purée maison à l'huile de truffe en accompagnement."],
+        cuisson: ["Griller le filet de boeuf à la cuisson désirée."],
+        service: ["Servir avec un jus de viande réduit."]
+    },
     allergens: [],
   },
   {
@@ -759,7 +968,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 4,
     tags: ['Spécialité locale'],
     ingredients: [{ name: 'Épaule d’agneau', quantity: '300g' }, { name: 'Ras el hanout', quantity: '15g' }],
-    instructions: 'Cuire l\'épaule d\'agneau longuement à basse température avec des épices orientales jusqu\'à ce qu\'elle soit confite.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Cuire l'épaule d'agneau longuement à basse température avec des épices orientales jusqu'à ce qu'elle soit confite."],
+        service: []
+    },
     allergens: [],
   },
   {
@@ -776,7 +989,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 4,
     tags: [],
     ingredients: [{ name: 'Entrecôte de bœuf', quantity: '150g' }, { name: 'Noisette d’agneau', quantity: '100g' }, { name: 'Blanc de poulet', quantity: '100g' }],
-    instructions: 'Griller les différentes viandes à la perfection et les servir sur une même assiette.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Griller les différentes viandes à la perfection."],
+        service: ["Les servir sur une même assiette."]
+    },
     allergens: [],
   },
   {
@@ -793,7 +1010,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Poisson du jour', quantity: '300g' }],
-    instructions: 'Griller la sélection de poissons frais du jour et servir avec une sauce vierge.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Griller la sélection de poissons frais du jour."],
+        service: ["Servir avec une sauce vierge."]
+    },
     allergens: ['Poisson'],
   },
   {
@@ -810,7 +1031,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 4,
     tags: [],
     ingredients: [{ name: 'Riz arborio', quantity: '150g' }, { name: 'Crevettes décortiquées', quantity: '100g' }, { name: 'Moules fraîches', quantity: '70g' }],
-    instructions: 'Préparer un sofrito, ajouter le riz, le safran et le bouillon. Incorporer les fruits de mer et les légumes et laisser cuire.',
+    procedure: {
+        preparation: ["Préparer un sofrito."],
+        cuisson: ["Ajouter le riz, le safran et le bouillon.", "Incorporer les fruits de mer et les légumes et laisser cuire."],
+        service: []
+    },
     allergens: ['Crustacés', 'Mollusques'],
   },
 
@@ -829,7 +1054,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: ['Spécialité locale'],
     ingredients: [{ name: 'Foie de veau', quantity: '200g' }, { name: 'Ail frais', quantity: '2 gousses' }, { name: 'Persil frais', quantity: '1 botte' }],
-    instructions: 'Couper le foie de veau en fines tranches. Le saisir rapidement dans une poêle chaude avec de l\'ail et du persil hachés.',
+    procedure: {
+        preparation: ["Couper le foie de veau en fines tranches."],
+        cuisson: ["Le saisir rapidement dans une poêle chaude avec de l'ail et du persil hachés."],
+        service: []
+    },
     allergens: [],
   },
   {
@@ -846,7 +1075,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 4,
     tags: ['Spécialité locale'],
     ingredients: [{ name: 'Rechta (pâte algérienne)', quantity: '200g' }, { name: 'Cuisse de poulet', quantity: '1' }, { name: 'Cannelle en poudre', quantity: '5g' }],
-    instructions: 'Cuire la rechta à la vapeur. Préparer un bouillon avec le poulet, des légumes (courgettes, navets) et parfumé à la cannelle. Servir la rechta nappée de bouillon.',
+    procedure: {
+        preparation: ["Préparer un bouillon avec le poulet, des légumes (courgettes, navets) et parfumé à la cannelle."],
+        cuisson: ["Cuire la rechta à la vapeur."],
+        service: ["Servir la rechta nappée de bouillon."]
+    },
     allergens: ['Gluten'],
   },
   {
@@ -863,7 +1096,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: ['Spécialité locale'],
     ingredients: [{ name: 'Paleron de bœuf', quantity: '250g' }, { name: 'Carotte', quantity: '1' }, { name: 'Courgette', quantity: '1' }],
-    instructions: 'Faire mijoter longuement le boeuf en morceaux avec les légumes et un mélange d\'épices (ras el hanout, curcuma...).',
+    procedure: {
+        preparation: [],
+        cuisson: ["Faire mijoter longuement le boeuf en morceaux avec les légumes et un mélange d'épices (ras el hanout, curcuma...)."],
+        service: []
+    },
     allergens: [],
   },
   {
@@ -880,7 +1117,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: ['Spécialité locale'],
     ingredients: [{ name: 'Bœuf haché', quantity: '200g' }, { name: 'Coriandre fraîche', quantity: '1 botte' }, { name: 'Oeuf de poule', quantity: '2' }],
-    instructions: 'Former des boulettes de viande hachée (kefta) assaisonnées. Les faire mijoter dans une sauce tomate. Casser les oeufs sur le dessus et laisser cuire.',
+    procedure: {
+        preparation: ["Former des boulettes de viande hachée (kefta) assaisonnées."],
+        cuisson: ["Les faire mijoter dans une sauce tomate.", "Casser les oeufs sur le dessus et laisser cuire."],
+        service: []
+    },
     allergens: ['Oeuf'],
   },
   {
@@ -897,7 +1138,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: ['Spécialité locale'],
     ingredients: [{ name: 'Cuisse de poulet', quantity: '1' }, { name: 'Citron jaune', quantity: '0.25' }, { name: 'Olives vertes', quantity: '50g' }],
-    instructions: 'Faire mijoter le poulet avec du citron confit, des olives, du gingembre et des épices.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Faire mijoter le poulet avec du citron confit, des olives, du gingembre et des épices."],
+        service: []
+    },
     allergens: [],
   },
 
@@ -916,7 +1161,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: ['Végétarien', 'Épicé'],
     ingredients: [{ name: 'Pâtes penne', quantity: '150g' }, { name: 'Tomate', quantity: '200g' }, { name: 'Piment', quantity: '1' }],
-    instructions: 'Préparer une sauce tomate relevée avec de l\'ail et du piment. Cuire les penne al dente et les mélanger à la sauce. Saupoudrer de parmesan.',
+    procedure: {
+        preparation: ["Préparer une sauce tomate relevée avec de l'ail et du piment."],
+        cuisson: ["Cuire les penne al dente."],
+        service: ["Mélanger à la sauce.", "Saupoudrer de parmesan."]
+    },
     allergens: ['Gluten', 'Lactose'],
   },
   {
@@ -933,7 +1182,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Pâtes spaghetti', quantity: '150g' }, { name: 'Filet de poulet', quantity: '100g' }, { name: 'Oeuf de poule', quantity: '1' }],
-    instructions: 'Faire revenir le poulet fumé. Cuire les spaghetti. Mélanger le jaune d\'oeuf avec la crème et le parmesan. Hors du feu, mélanger le tout.',
+    procedure: {
+        preparation: ["Mélanger le jaune d'oeuf avec la crème et le parmesan."],
+        cuisson: ["Faire revenir le poulet fumé.", "Cuire les spaghetti."],
+        service: ["Hors du feu, mélanger le tout."]
+    },
     allergens: ['Gluten', 'Lactose', 'Oeuf'],
   },
   {
@@ -950,7 +1203,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: ['Végétarien'],
     ingredients: [{ name: 'Tagliatelles', quantity: '150g' }, { name: 'Cheddar', quantity: '30g' }, { name: 'Gruyère', quantity: '30g' }],
-    instructions: 'Faire fondre les quatre fromages dans de la crème liquide. Napper les tagliatelles cuites avec cette sauce onctueuse.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Faire fondre les quatre fromages dans de la crème liquide."],
+        service: ["Napper les tagliatelles cuites avec cette sauce onctueuse."]
+    },
     allergens: ['Gluten', 'Lactose'],
   },
   {
@@ -967,7 +1224,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Pâtes spaghetti', quantity: '150g' }, { name: 'Bœuf haché', quantity: '100g' }, { name: 'Tomate', quantity: '150g' }],
-    instructions: 'Préparer une sauce bolognaise en faisant mijoter la viande hachée avec une sauce tomate maison. Servir sur les spaghetti.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Préparer une sauce bolognaise en faisant mijoter la viande hachée avec une sauce tomate maison."],
+        service: ["Servir sur les spaghetti."]
+    },
     allergens: ['Gluten'],
   },
   {
@@ -984,7 +1245,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Pâtes penne', quantity: '150g' }, { name: 'Blanc de poulet', quantity: '100g' }, { name: 'Curry en poudre', quantity: '10g' }],
-    instructions: 'Faire une sauce crémeuse au curry avec des morceaux de poulet et des poivrons. Mélanger avec les penne cuites.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Faire une sauce crémeuse au curry avec des morceaux de poulet et des poivrons."],
+        service: ["Mélanger avec les penne cuites."]
+    },
     allergens: ['Gluten', 'Lactose'],
   },
   {
@@ -1001,7 +1266,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Tagliatelles', quantity: '150g' }, { name: 'Blanc de poulet', quantity: '100g' }, { name: 'Champignons de Paris', quantity: '50g' }],
-    instructions: 'Préparer une sauce Alfredo (crème, beurre, parmesan). Ajouter le poulet grillé et les champignons sautés. Mélanger avec les tagliatelles.',
+    procedure: {
+        preparation: ["Préparer une sauce Alfredo (crème, beurre, parmesan)."],
+        cuisson: ["Ajouter le poulet grillé et les champignons sautés."],
+        service: ["Mélanger avec les tagliatelles."]
+    },
     allergens: ['Gluten', 'Lactose'],
   },
   {
@@ -1018,7 +1287,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Tagliatelles', quantity: '150g' }, { name: 'Filet de saumon', quantity: '100g' }, { name: 'Crème liquide 30%', quantity: '50ml' }],
-    instructions: 'Préparer une sauce crémeuse. Ajouter des morceaux de saumon fumé. Napper les tagliatelles cuites.',
+    procedure: {
+        preparation: ["Préparer une sauce crémeuse."],
+        cuisson: [],
+        service: ["Ajouter des morceaux de saumon fumé.", "Napper les tagliatelles cuites."]
+    },
     allergens: ['Gluten', 'Lactose', 'Poisson'],
   },
   {
@@ -1035,7 +1308,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Linguines', quantity: '150g' }, { name: 'Crevettes décortiquées', quantity: '80g' }, { name: 'Moules fraîches', quantity: '70g' }],
-    instructions: 'Préparer une sauce tomate avec un assortiment de fruits de mer. Servir avec les linguines et saupoudrer de parmesan.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Préparer une sauce tomate avec un assortiment de fruits de mer."],
+        service: ["Servir avec les linguines et saupoudrer de parmesan."]
+    },
     allergens: ['Gluten', 'Lactose', 'Crustacés', 'Mollusques'],
   },
 
@@ -1054,7 +1331,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Bœuf haché', quantity: '180g' }, { name: 'Pain brioche burger', quantity: '1' }, { name: 'Tomate', quantity: '1 tranche' }],
-    instructions: 'Griller le steak haché à la cuisson désirée. Monter le burger dans le pain brioché avec de la laitue, une tranche de tomate et la sauce maison.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Griller le steak haché à la cuisson désirée."],
+        service: ["Monter le burger dans le pain brioché avec de la laitue, une tranche de tomate et la sauce maison."]
+    },
     allergens: ['Gluten', 'Lactose'],
   },
   {
@@ -1071,7 +1352,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Bœuf haché', quantity: '150g' }, { name: 'Pain brioche burger', quantity: '1' }, { name: 'Champignons pleurotes', quantity: '50g' }],
-    instructions: 'Cuire le steak. Garnir avec une poêlée de champignons sauvages, du comté fondu et des oignons confits.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Cuire le steak."],
+        service: ["Garnir avec une poêlée de champignons sauvages, du comté fondu et des oignons confits."]
+    },
     allergens: ['Gluten', 'Lactose'],
   },
   {
@@ -1088,7 +1373,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Bœuf haché', quantity: '180g' }, { name: 'Pain brioche burger', quantity: '1' }, { name: 'Bacon fumé artisanal', quantity: '2 tranches' }],
-    instructions: 'Cuire le steak. Ajouter du bacon grillé, du cheddar fondu et une sauce barbecue fumée.',
+    procedure: {
+        preparation: [],
+        cuisson: ["Cuire le steak.", "Ajouter du bacon grillé, du cheddar fondu et une sauce barbecue fumée."],
+        service: []
+    },
     allergens: ['Gluten', 'Lactose'],
   },
 
@@ -1107,7 +1396,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Chocolat noir pâtissier', quantity: '70g' }, { name: 'Beurre doux', quantity: '50g' }, { name: 'Oeuf de poule', quantity: '1' }],
-    instructions: 'Préparer la pâte à fondant. Remplir des moules individuels et cuire quelques minutes pour garder un coeur coulant. Servir tiède avec de la crème anglaise.',
+    procedure: {
+        preparation: ["Préparer la pâte à fondant.", "Remplir des moules individuels."],
+        cuisson: ["Cuire quelques minutes pour garder un coeur coulant."],
+        service: ["Servir tiède avec de la crème anglaise."]
+    },
     allergens: ['Gluten', 'Lactose', 'Oeuf'],
   },
   {
@@ -1124,7 +1417,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [{ name: 'Crème liquide 30%', quantity: '100ml' }, { name: 'Jaune d’œuf pasteurisé', quantity: '2' }, { name: 'Gousse de vanille', quantity: '1' }],
-    instructions: 'Préparer l\'appareil à crème brûlée. Le verser dans des ramequins et cuire au bain-marie. Laisser refroidir, puis caraméliser le dessus au chalumeau avant de servir.',
+    procedure: {
+        preparation: ["Préparer l'appareil à crème brûlée.", "Le verser dans des ramequins."],
+        cuisson: ["Cuire au bain-marie."],
+        service: ["Laisser refroidir, puis caraméliser le dessus au chalumeau avant de servir."]
+    },
     allergens: ['Lactose', 'Oeuf'],
   },
   {
@@ -1141,7 +1438,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Fromage blanc 40%', quantity: '100g' }, { name: 'Biscuit savoyard', quantity: '50g' }, { name: 'Citron jaune', quantity: '0.5' }],
-    instructions: 'Préparer la base biscuitée. Préparer la garniture au fromage frais et citron. Verser sur la base et laisser prendre au frais plusieurs heures.',
+    procedure: {
+        preparation: ["Préparer la base biscuitée.", "Préparer la garniture au fromage frais et citron.", "Verser sur la base et laisser prendre au frais plusieurs heures."],
+        cuisson: [],
+        service: []
+    },
     allergens: ['Gluten', 'Lactose', 'Oeuf'],
   },
   {
@@ -1158,7 +1459,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Mascarpone', quantity: '80g' }, { name: 'Biscuit savoyard', quantity: '4' }, { name: 'Café', quantity: '50ml' }],
-    instructions: 'Préparer la crème au mascarpone. Imbiber les biscuits dans du café froid. Monter le tiramisu en alternant les couches. Laisser reposer au frais.',
+    procedure: {
+        preparation: ["Préparer la crème au mascarpone.", "Imbiber les biscuits dans du café froid.", "Monter le tiramisu en alternant les couches.", "Laisser reposer au frais."],
+        cuisson: [],
+        service: []
+    },
     allergens: ['Gluten', 'Lactose', 'Oeuf'],
   },
   {
@@ -1175,7 +1480,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 3,
     tags: [],
     ingredients: [{ name: 'Blanc d\'oeuf', quantity: '2' }, { name: 'Sucre semoule', quantity: '100g' }, { name: 'Fraise', quantity: '100g' }],
-    instructions: 'Préparer et cuire la meringue. Monter une crème chantilly. Garnir la meringue de chantilly et de fruits rouges frais juste avant de servir.',
+    procedure: {
+        preparation: ["Monter une crème chantilly."],
+        cuisson: ["Préparer et cuire la meringue."],
+        service: ["Garnir la meringue de chantilly et de fruits rouges frais juste avant de servir."]
+    },
     allergens: ['Lactose', 'Oeuf'],
   },
   {
@@ -1192,7 +1501,11 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: ['Spécialité locale'],
     ingredients: [{ name: 'Amande', quantity: '50g' }, { name: 'Miel', quantity: '30g' }, { name: 'Feuille de brick', quantity: '2' }],
-    instructions: 'Assortiment de pâtisseries orientales maison, comme des cigares aux amandes ou des makrouts.',
+    procedure: {
+        preparation: ["Assortiment de pâtisseries orientales maison, comme des cigares aux amandes ou des makrouts."],
+        cuisson: [],
+        service: []
+    },
     allergens: ['Gluten', 'Noix'],
   },
 
@@ -1211,7 +1524,7 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: [],
+    procedure: { preparation: [], cuisson: [], service: [] },
     allergens: [],
   },
   {
@@ -1228,7 +1541,7 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: [],
+    procedure: { preparation: [], cuisson: [], service: [] },
     allergens: ['Lactose'],
   },
   {
@@ -1245,7 +1558,7 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: [],
+    procedure: { preparation: [], cuisson: [], service: [] },
     allergens: ['Lactose'],
   },
   {
@@ -1262,7 +1575,7 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: [],
+    procedure: { preparation: [], cuisson: [], service: [] },
     allergens: [],
   },
   {
@@ -1279,7 +1592,7 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: [],
+    procedure: { preparation: [], cuisson: [], service: [] },
     allergens: [],
   },
   {
@@ -1296,7 +1609,7 @@ export const menuItems: MenuItem[] = [
     difficulty: 2,
     tags: [],
     ingredients: [],
-    instructions: [],
+    procedure: { preparation: [], cuisson: [], service: [] },
     allergens: [],
   },
   {
@@ -1313,7 +1626,7 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: [],
+    procedure: { preparation: [], cuisson: [], service: [] },
     allergens: [],
   },
   {
@@ -1330,7 +1643,7 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: [],
+    procedure: { preparation: [], cuisson: [], service: [] },
     allergens: [],
   },
   {
@@ -1347,7 +1660,7 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: [],
+    procedure: { preparation: [], cuisson: [], service: [] },
     allergens: [],
   },
   {
@@ -1364,7 +1677,7 @@ export const menuItems: MenuItem[] = [
     difficulty: 1,
     tags: [],
     ingredients: [],
-    instructions: [],
+    procedure: { preparation: [], cuisson: [], service: [] },
     allergens: [],
   },
 ];
