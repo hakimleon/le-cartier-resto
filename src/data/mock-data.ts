@@ -1871,6 +1871,24 @@ export const recipeIngredients: RecipeIngredient[] = [
     { id: 'ri-4', recipeId: 'ef-2', ingredientId: 'ing-1', quantity: 0.15, unitUse: 'kg' },
     { id: 'ri-5', recipeId: 'ef-2', ingredientId: 'ing-2', quantity: 0.125, unitUse: 'kg' },
     { id: 'ri-6', recipeId: 'ef-2', ingredientId: 'ing-3', quantity: 0.1, unitUse: 'botte' },
+
+    { id: 'ri-7', recipeId: 'ef-3', ingredientId: 'ing-53', quantity: 0.1, unitUse: 'kg' },
+    { id: 'ri-8', recipeId: 'ef-3', ingredientId: 'ing-22', quantity: 0.15, unitUse: 'kg' },
+    { id: 'ri-9', recipeId: 'ef-3', ingredientId: 'ing-5', quantity: 0.03, unitUse: 'kg' },
+
+    { id: 'ri-10', recipeId: 'ef-4', ingredientId: 'ing-7', quantity: 0.1, unitUse: 'kg' },
+    { id: 'ri-11', recipeId: 'ef-4', ingredientId: 'ing-53', quantity: 0.05, unitUse: 'kg' },
+    { id: 'ri-12', recipeId: 'ef-4', ingredientId: 'ing-24', quantity: 0.05, unitUse: 'kg' },
+
+    { id: 'ri-13', recipeId: 'ef-5', ingredientId: 'ing-43', quantity: 0.15, unitUse: 'kg' },
+    { id: 'ri-14', recipeId: 'ef-5', ingredientId: 'ing-24', quantity: 0.05, unitUse: 'kg' },
+    { id: 'ri-15', recipeId: 'ef-5', ingredientId: 'ing-18', quantity: 0.02, unitUse: 'L' },
+
+    { id: 'ri-16', recipeId: 'pg-14', ingredientId: 'ing-72', quantity: 0.25, unitUse: 'kg' },
+    { id: 'ri-17', recipeId: 'pg-16', ingredientId: 'ing-4', quantity: 0.2, unitUse: 'kg' },
+    { id: 'ri-18', recipeId: 'des-1', ingredientId: 'ing-11', quantity: 0.07, unitUse: 'kg' },
+    { id: 'ri-19', recipeId: 'des-1', ingredientId: 'ing-25', quantity: 0.05, unitUse: 'kg' },
+    { id: 'ri-20', recipeId: 'des-1', ingredientId: 'ing-13', quantity: 1, unitUse: 'pièce' },
 ];
 
 
@@ -1926,3 +1944,5 @@ export const tables: Table[] = [
     { id: 5, seats: 4, status: 'available', shape: 'round' },
     { id: 6, seats: 8, status: 'occupied', shape: 'square' },
 ];
+
+    
