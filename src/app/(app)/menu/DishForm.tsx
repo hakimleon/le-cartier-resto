@@ -1,8 +1,9 @@
 
+
 "use client";
 
 import { useState, useEffect, ChangeEvent } from "react";
-import { Recipe, categories, tags as availableTags } from "@/data/mock-data";
+import { Recipe, categories, tags as availableTags } from "@/data/data-cache";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

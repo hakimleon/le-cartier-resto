@@ -1,4 +1,5 @@
 
+
 // src/data/mock-data.ts
 
 export type Recipe = {
@@ -1874,23 +1875,18 @@ export const recipeIngredients: RecipeIngredient[] = [
     { id: 'ri-1', recipeId: 'ef-1', ingredientId: 'ing-13', quantity: 1, unitUse: 'pièce' },
     { id: 'ri-2', recipeId: 'ef-1', ingredientId: 'ing-18', quantity: 50, unitUse: 'ml' },
     { id: 'ri-3', recipeId: 'ef-1', ingredientId: 'ing-51', quantity: 10, unitUse: 'g' },
-
     { id: 'ri-4', recipeId: 'ef-2', ingredientId: 'ing-1', quantity: 150, unitUse: 'g' },
     { id: 'ri-5', recipeId: 'ef-2', ingredientId: 'ing-2', quantity: 125, unitUse: 'g' },
     { id: 'ri-6', recipeId: 'ef-2', ingredientId: 'ing-3', quantity: 0.1, unitUse: 'botte' },
-
     { id: 'ri-7', recipeId: 'ef-3', ingredientId: 'ing-53', quantity: 100, unitUse: 'g' },
     { id: 'ri-8', recipeId: 'ef-3', ingredientId: 'ing-22', quantity: 150, unitUse: 'g' },
     { id: 'ri-9', recipeId: 'ef-3', ingredientId: 'ing-5', quantity: 30, unitUse: 'g' },
-
     { id: 'ri-10', recipeId: 'ef-4', ingredientId: 'ing-7', quantity: 100, unitUse: 'g' },
     { id: 'ri-11', recipeId: 'ef-4', ingredientId: 'ing-53', quantity: 50, unitUse: 'g' },
     { id: 'ri-12', recipeId: 'ef-4', ingredientId: 'ing-24', quantity: 50, unitUse: 'g' },
-
     { id: 'ri-13', recipeId: 'ef-5', ingredientId: 'ing-43', quantity: 150, unitUse: 'g' },
     { id: 'ri-14', recipeId: 'ef-5', ingredientId: 'ing-24', quantity: 50, unitUse: 'g' },
     { id: 'ri-15', recipeId: 'ef-5', ingredientId: 'ing-18', quantity: 20, unitUse: 'ml' },
-
     { id: 'ri-16', recipeId: 'pg-14', ingredientId: 'ing-72', quantity: 250, unitUse: 'g' },
     { id: 'ri-17', recipeId: 'pg-16', ingredientId: 'ing-4', quantity: 200, unitUse: 'g' },
     { id: 'ri-18', recipeId: 'des-1', ingredientId: 'ing-11', quantity: 70, unitUse: 'g' },

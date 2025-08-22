@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { tables, Table as TableType } from "@/data/mock-data";
+import { tables, Table as TableType } from "@/data/data-cache";
 
 export function TableMap() {
   const [selectedTable, setSelectedTable] = useState<number | null>(null);

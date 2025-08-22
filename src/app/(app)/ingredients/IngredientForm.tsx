@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect, ChangeEvent } from "react";
-import { Ingredient, suppliers } from "@/data/mock-data";
+import { Ingredient, suppliers } from "@/data/data-cache";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";

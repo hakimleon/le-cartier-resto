@@ -8,7 +8,7 @@ import { AppHeader } from "@/components/common/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { recipes as initialRecipes, Recipe, categories } from "@/data/mock-data";
+import { recipes as initialRecipes, Recipe, categories } from "@/data/data-cache";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search } from "lucide-react";

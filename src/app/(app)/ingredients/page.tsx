@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ingredients as initialIngredients, Ingredient } from "@/data/mock-data";
+import { ingredients as initialIngredients, Ingredient } from "@/data/data-cache";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Edit, Package, Plus, Search } from "lucide-react";

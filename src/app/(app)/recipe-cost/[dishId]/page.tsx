@@ -4,7 +4,7 @@
 
 import { AppHeader } from "@/components/common/AppHeader";
 import { RecipeCostForm } from "../RecipeCostForm";
-import { recipes } from "@/data/mock-data";
+import { recipes } from "@/data/data-cache";
 import { notFound } from "next/navigation";
 
 export default function DynamicRecipeCostPage({ params }: { params: { dishId: string } }) {

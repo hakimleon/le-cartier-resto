@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Save, Trash2, X } from "lucide-react";
-import { categories as menuCategories, Recipe, Ingredient as StockIngredient, ingredients as stockIngredients, recipeIngredients as allRecipeIngredients, conversions } from "@/data/mock-data";
+import { categories as menuCategories, Recipe, Ingredient as StockIngredient, ingredients as stockIngredients, recipeIngredients as allRecipeIngredients, conversions } from "@/data/data-cache";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
