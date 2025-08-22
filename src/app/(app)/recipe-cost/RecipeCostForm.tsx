@@ -378,16 +378,13 @@ export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
              <Textarea value={salesPitch} onChange={(e) => setSalesPitch(e.target.value)} placeholder="Ex: Un plat généreux et réconfortant, parfait avec notre vin rouge maison..." rows={4}/>
         </CardContent>
       </Card>
-
-      <div className="flex justify-end mt-8">
+      
+       <div className="flex justify-end mt-8">
         <Button type="submit" size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground">
             <Save className="mr-2 h-5 w-5" />
-            {recipe ? "Sauvegarder les modifications" : "Créer la fiche technique"}
+            Sauvegarder les modifications
         </Button>
       </div>
-
     </form>
   );
 }
-
-    

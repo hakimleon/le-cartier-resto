@@ -8,7 +8,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 type IngredientFormProps = {
   ingredient: Ingredient | null;
@@ -111,5 +110,3 @@ export function IngredientForm({ ingredient, onSave, onCancel }: IngredientFormP
     </form>
   );
 }
-
-    

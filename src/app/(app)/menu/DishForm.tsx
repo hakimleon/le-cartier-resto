@@ -1,5 +1,4 @@
 
-// src/app/(app)/menu/DishForm.tsx
 "use client";
 
 import { useState, useEffect, ChangeEvent } from "react";
@@ -209,5 +208,3 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
     </form>
   );
 }
-
-    
