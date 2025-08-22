@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Save, Trash2, X } from "lucide-react";
-import { categories as menuCategories, Recipe, Ingredient as StockIngredient, ingredients as stockIngredients, recipeIngredients as allRecipeIngredients } from "@/data/mock-data";
+import { categories as menuCategories, Recipe, Ingredient as StockIngredient, ingredients as stockIngredients, recipeIngredients as allRecipeIngredients, conversions } from "@/data/mock-data";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -18,16 +18,32 @@ import { useToast } from "@/hooks/use-toast";
 interface FormIngredient {
   id: number;
   stockId: string;
-  category: string;
   name: string;
-  unit: string;
-  unitCost: number;
+  unitUse: string;
+  unitCost: number; // Cost per purchase unit
+  unitPurchase: string;
   quantity: number;
 }
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("fr-DZ", { style: "currency", currency: "DZD" }).format(value).replace("DZD", "").trim() + " DA";
 };
+
+const calculateIngredientCost = (ing: FormIngredient) => {
+    if (ing.unitPurchase === ing.unitUse) {
+        return ing.unitCost * ing.quantity;
+    }
+
+    const conversion = conversions.find(c => c.fromUnit === ing.unitPurchase && c.toUnit === ing.unitUse);
+    if (conversion) {
+        const costPerUseUnit = ing.unitCost / conversion.factor;
+        return costPerUseUnit * ing.quantity;
+    }
+
+    // Fallback if no direct conversion is found (you might want to handle this more gracefully)
+    return 0;
+};
+
 
 type RecipeCostFormProps = {
   recipe: Recipe | null;
@@ -66,10 +82,10 @@ export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
           return {
             id: Date.now() + index,
             stockId: stockItem?.id || '',
-            category: stockItem?.category || '',
             name: stockItem?.name || '',
-            unit: ri.unitUse,
+            unitUse: ri.unitUse,
             unitCost: stockItem?.unitPrice || 0,
+            unitPurchase: stockItem?.unitPurchase || '',
             quantity: ri.quantity || 0,
           }
         });
@@ -87,7 +103,7 @@ export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
   const handleAddIngredient = () => {
     setIngredients([
       ...ingredients,
-      { id: Date.now(), stockId: "", category: "", name: "", unit: "", unitCost: 0, quantity: 0 },
+      { id: Date.now(), stockId: "", name: "", unitUse: "g", unitCost: 0, unitPurchase: 'kg', quantity: 0 },
     ]);
   };
 
@@ -114,9 +130,9 @@ export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
                         ...ing,
                         stockId: stockItem.id,
                         name: stockItem.name,
-                        category: stockItem.category,
-                        unit: stockItem.unitPurchase, // Default to purchase unit
+                        unitUse: ing.unitUse, // Keep user-defined unit of use
                         unitCost: stockItem.unitPrice,
+                        unitPurchase: stockItem.unitPurchase,
                       }
                     : ing
             )
@@ -125,7 +141,7 @@ export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
   };
   
   const totalIngredientCost = useMemo(() => {
-    return ingredients.reduce((total, ing) => total + ing.unitCost * ing.quantity, 0);
+    return ingredients.reduce((total, ing) => total + calculateIngredientCost(ing), 0);
   }, [ingredients]);
 
   const { priceHT, costPerPortion, unitMargin, costPercentage } = useMemo(() => {
@@ -248,10 +264,8 @@ export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-[250px]">Ingrédient</TableHead>
-                  <TableHead>Catégorie</TableHead>
-                  <TableHead>Unité</TableHead>
-                  <TableHead className="text-right">Coût Unitaire</TableHead>
-                  <TableHead className="w-[120px] text-right">Quantité</TableHead>
+                  <TableHead className="w-[120px]">Quantité</TableHead>
+                  <TableHead className="w-[120px]">Unité (Util.)</TableHead>
                   <TableHead className="text-right">Coût Total</TableHead>
                   <TableHead className="text-center w-[80px]">Actions</TableHead>
                 </TableRow>
@@ -274,15 +288,6 @@ export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="text-muted-foreground">
-                       {ing.category}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground">
-                      {ing.unit}
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {formatCurrency(ing.unitCost)}
-                    </TableCell>
                     <TableCell>
                       <Input
                         type="number"
@@ -291,8 +296,16 @@ export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
                         className="text-right"
                       />
                     </TableCell>
+                    <TableCell>
+                       <Input
+                        type="text"
+                        value={ing.unitUse}
+                        onChange={(e) => handleIngredientChange(ing.id, "unitUse", e.target.value)}
+                        placeholder="g, ml, pièce..."
+                      />
+                    </TableCell>
                     <TableCell className="text-right font-medium">
-                      {formatCurrency(ing.unitCost * ing.quantity)}
+                      {formatCurrency(calculateIngredientCost(ing))}
                     </TableCell>
                     <TableCell className="text-center">
                       <Button type="button" variant="ghost" size="icon" onClick={() => handleRemoveIngredient(ing.id)}>
@@ -303,7 +316,7 @@ export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
                 ))}
                 {ingredients.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-muted-foreground h-24">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
                       Aucun ingrédient ajouté.
                     </TableCell>
                   </TableRow>
