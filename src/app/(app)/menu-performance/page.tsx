@@ -18,7 +18,7 @@ type MenuEngineeringCategory = 'Star' | 'Plowhorse' | 'Puzzle' | 'Dog';
 type AnalyzedMenuItem = Recipe & {
   performance: PerformanceData;
   profit: number;
-  category: MenuEngineeringCategory;
+  categoryAnalysis: MenuEngineeringCategory;
 };
 
 const categoryConfig: Record<MenuEngineeringCategory, {
@@ -83,14 +83,14 @@ export default function MenuPerformancePage() {
     const categorizedData = data.map(item => {
       const isPopular = item.performance.totalSales > avgSales;
       const isProfitable = item.profit > avgProfit;
-      let category: MenuEngineeringCategory;
+      let categoryAnalysis: MenuEngineeringCategory;
 
-      if (isPopular && isProfitable) category = 'Star';
-      else if (isPopular && !isProfitable) category = 'Plowhorse';
-      else if (!isPopular && isProfitable) category = 'Puzzle';
-      else category = 'Dog';
+      if (isPopular && isProfitable) categoryAnalysis = 'Star';
+      else if (isPopular && !isProfitable) categoryAnalysis = 'Plowhorse';
+      else if (!isPopular && isProfitable) categoryAnalysis = 'Puzzle';
+      else categoryAnalysis = 'Dog';
 
-      return { ...item, category };
+      return { ...item, categoryAnalysis };
     });
 
     setAnalyzedData(categorizedData);
@@ -131,16 +131,16 @@ export default function MenuPerformancePage() {
                                     <TableRow key={item.id}>
                                         <TableCell className="font-medium">{item.name}</TableCell>
                                         <TableCell className="text-center">
-                                            <Badge variant="outline" className={cn("border-none", categoryConfig[item.category].className)}>
+                                            <Badge variant="outline" className={cn("border-none", categoryConfig[item.categoryAnalysis].className)}>
                                                 <div className="flex items-center gap-2">
-                                                    {categoryConfig[item.category].icon}
-                                                    <span>{item.category}</span>
+                                                    {categoryConfig[item.categoryAnalysis].icon}
+                                                    <span>{item.categoryAnalysis}</span>
                                                 </div>
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right">{item.performance.totalSales}</TableCell>
                                         <TableCell className="text-right">{item.profit.toFixed(2)}</TableCell>
-                                        <TableCell className="text-sm text-muted-foreground">{categoryConfig[item.category].recommendation}</TableCell>
+                                        <TableCell className="text-sm text-muted-foreground">{categoryConfig[item.categoryAnalysis].recommendation}</TableCell>
                                     </TableRow>
                                 ))}
                             </TableBody>
