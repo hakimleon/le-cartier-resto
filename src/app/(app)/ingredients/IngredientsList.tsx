@@ -10,9 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Ingredient } from "@/data/data-cache";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Edit, Package, Plus, Search } from "lucide-react";
+import { Edit, Package, Plus, Search, Database } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { IngredientForm } from "./IngredientForm";
+import { seedIngredients } from "./actions";
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("fr-DZ", { style: "currency", currency: "DZD" }).format(value).replace("DZD", "").trim() + " DZD";
@@ -27,6 +28,7 @@ export function IngredientsList({ initialIngredients }: IngredientsListProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [ingredientToEdit, setIngredientToEdit] = useState<Ingredient | null>(null);
+  const [isSeeding, setIsSeeding] = useState(false);
   const { toast } = useToast();
 
   const filteredIngredients = ingredients.filter(item =>
@@ -43,6 +45,27 @@ export function IngredientsList({ initialIngredients }: IngredientsListProps) {
   const handleEdit = (ingredient: Ingredient) => {
     setIngredientToEdit(ingredient);
     setIsDialogOpen(true);
+  };
+
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    const result = await seedIngredients();
+    if (result.success) {
+      toast({
+        title: "Base de données initialisée !",
+        description: result.message,
+      });
+      // The page will be revalidated by the server action, so new data will be passed as props.
+      // We update the local state to reflect this, though a full page reload might be better in a real app.
+      // For now, this avoids the need to re-fetch manually on the client.
+    } else {
+      toast({
+        variant: "destructive",
+        title: "Erreur",
+        description: result.message,
+      });
+    }
+    setIsSeeding(false);
   };
 
   const handleSaveIngredient = (ingredientData: Ingredient) => {
@@ -96,34 +119,43 @@ export function IngredientsList({ initialIngredients }: IngredientsListProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredIngredients.map((item) => (
-                    <TableRow key={item.id}>
-                      <TableCell className="font-medium">{item.name}</TableCell>
-                      <TableCell>
-                        <Badge variant="secondary" className="whitespace-nowrap">{item.category}</Badge>
-                      </TableCell>
-                       <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
-                      <TableCell>{item.unitPurchase}</TableCell>
-                      <TableCell>
-                          <span className={cn(
-                              "font-medium",
-                              item.stockQuantity === 0 ? "text-destructive" : item.stockQuantity < item.lowStockThreshold ? "text-orange-500" : "text-green-600"
-                          )}>
-                              {item.stockQuantity} {item.unitPurchase}
-                          </span>
-                      </TableCell>
-                      <TableCell>{item.supplier}</TableCell>
-                      <TableCell className="text-center">
-                        <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                            <Edit className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                ))}
-                 {filteredIngredients.length === 0 && (
+                {filteredIngredients.length > 0 ? (
+                  filteredIngredients.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">{item.name}</TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="whitespace-nowrap">{item.category}</Badge>
+                        </TableCell>
+                         <TableCell>{formatCurrency(item.unitPrice)}</TableCell>
+                        <TableCell>{item.unitPurchase}</TableCell>
+                        <TableCell>
+                            <span className={cn(
+                                "font-medium",
+                                item.stockQuantity === 0 ? "text-destructive" : item.stockQuantity < item.lowStockThreshold ? "text-orange-500" : "text-green-600"
+                            )}>
+                                {item.stockQuantity} {item.unitPurchase}
+                            </span>
+                        </TableCell>
+                        <TableCell>{item.supplier}</TableCell>
+                        <TableCell className="text-center">
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                              <Edit className="h-4 w-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                  ))
+                ) : (
                     <TableRow>
-                        <TableCell colSpan={7} className="text-center h-24 text-muted-foreground">
-                            Aucun ingrédient trouvé. Si votre base est vide, pensez à l'initialiser.
+                        <TableCell colSpan={7} className="text-center h-48 text-muted-foreground">
+                            <div className="flex flex-col items-center gap-4">
+                                <Package className="w-16 h-16 text-muted-foreground/50" />
+                                <p className="font-semibold">Votre inventaire est vide.</p>
+                                <p>Initialisez votre base de données pour commencer.</p>
+                                <Button onClick={handleSeedDatabase} disabled={isSeeding}>
+                                    <Database className="mr-2 h-4 w-4" />
+                                    {isSeeding ? "Initialisation en cours..." : "Initialiser la base de données"}
+                                </Button>
+                            </div>
                         </TableCell>
                     </TableRow>
                 )}
@@ -150,4 +182,3 @@ export function IngredientsList({ initialIngredients }: IngredientsListProps) {
     </>
   );
 }
-
