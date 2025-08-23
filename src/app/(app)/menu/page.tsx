@@ -17,8 +17,7 @@ import { DishForm } from "./DishForm";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { initialRecipes } from "@/data/data-cache";
 
 
 const getStatusClass = (status: Recipe['status']) => {
@@ -117,42 +116,13 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, item
 
 
 export default function MenuPage() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
+  const [isLoading, setIsLoading] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dishToEdit, setDishToEdit] = useState<Recipe | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   
-  useEffect(() => {
-    async function getRecipes() {
-      setIsLoading(true);
-      try {
-        const recipesCol = collection(db, "recipes");
-        const q = query(recipesCol, orderBy("name"));
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-          setRecipes([]);
-        } else {
-          const recipeList = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-          } as Recipe));
-          setRecipes(recipeList);
-        }
-      } catch(error) {
-        console.error("Error fetching recipes:", error);
-        toast({
-            variant: "destructive",
-            title: "Erreur de chargement",
-            description: "Impossible de charger les recettes depuis la base de données."
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    getRecipes();
-  }, [toast]);
 
   const handleAddNew = () => {
     setDishToEdit(null);
