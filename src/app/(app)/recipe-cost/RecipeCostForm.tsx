@@ -1,7 +1,8 @@
 
+
 "use client";
 
-import { useState, useMemo, ChangeEvent, KeyboardEvent, useEffect } from "react";
+import { useState, useMemo, ChangeEvent, KeyboardEvent, useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -77,7 +78,6 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
   const [salesPitch, setSalesPitch] = useState("");
 
   const [openComboboxes, setOpenComboboxes] = useState<{ [key: number]: boolean }>({});
-
 
   useEffect(() => {
     if (recipe) {
@@ -291,13 +291,13 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                                   aria-expanded={openComboboxes[ing.id]}
                                   className="w-full justify-between font-normal"
                               >
-                                  {ing.name ? ing.name : "Sélectionner un ingrédient..."}
+                                  {ing.name ? ing.name : "Sélectionner..."}
                                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                               </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-[300px] p-0">
                               <Command>
-                                  <CommandInput placeholder="Rechercher un ingrédient..." />
+                                  <CommandInput placeholder="Rechercher..." />
                                   <CommandList>
                                       <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
                                       <CommandGroup>
@@ -436,4 +436,6 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
       </div>
     </form>
   );
+}
 
+    
