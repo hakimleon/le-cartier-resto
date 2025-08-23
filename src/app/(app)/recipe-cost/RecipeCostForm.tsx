@@ -268,7 +268,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto relative">
             <Table>
               <TableHeader>
                 <TableRow>
