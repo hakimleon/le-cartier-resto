@@ -84,7 +84,6 @@ export function RecipeCostForm({
   const [dishName, setDishName] = React.useState(initialRecipe?.name || "");
   const [portions, setPortions] = React.useState(1);
   const [formIngredients, setFormIngredients] = React.useState<FormIngredient[]>([]);
-  const [openComboboxes, setOpenComboboxes] = React.useState<Record<number, boolean>>({});
 
   // Effect to load ingredients for an existing recipe
   React.useEffect(() => {
@@ -141,7 +140,23 @@ export function RecipeCostForm({
   
   const handleSelectIngredient = (index: number, ingredientId: string) => {
     const selected = stockIngredients.find(ing => ing.id === ingredientId);
-    if (!selected) return;
+    if (!selected) {
+        // Clear the row if no ingredient is selected
+        setFormIngredients(prev => {
+            const newIngredients = [...prev];
+            newIngredients[index] = {
+                ...newIngredients[index],
+                ingredientId: '',
+                name: '',
+                category: '',
+                unitPrice: 0,
+                unitPurchase: '',
+                totalCost: 0,
+            };
+            return newIngredients;
+        });
+        return;
+    }
 
     setFormIngredients(prev => {
       const newIngredients = [...prev];
@@ -154,13 +169,11 @@ export function RecipeCostForm({
         category: selected.category,
         unitPrice: selected.unitPrice,
         unitPurchase: selected.unitPurchase,
-        // Recalculate cost with the new ingredient's data
         totalCost: calculateIngredientCost(current.quantity, current.unitUse, selected),
       };
       
       return newIngredients;
     });
-    setOpenComboboxes(prev => ({ ...prev, [index]: false }));
   };
 
   const updateIngredientField = (index: number, field: keyof FormIngredient, value: any) => {
@@ -229,51 +242,18 @@ export function RecipeCostForm({
                             {formIngredients.map((ing, index) => (
                                 <tr key={ing.id} className="border-b">
                                     <td className="p-2">
-                                        <Popover open={openComboboxes[index]} onOpenChange={(open) => setOpenComboboxes(prev => ({...prev, [index]: open}))}>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              variant="outline"
-                                              role="combobox"
-                                              className="w-full justify-between font-normal"
-                                            >
-                                              {ing.ingredientId
-                                                ? stockIngredients.find((si) => si.id === ing.ingredientId)?.name
-                                                : "Sélectionner..."}
-                                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-[300px] p-0">
-                                            <Command
-                                              // This is a workaround for the value not updating correctly in cmdk
-                                              // It forces a re-render of the component to update the filter
-                                              key={ing.ingredientId}
-                                            >
-                                              <CommandInput placeholder="Rechercher un ingrédient..." />
-                                              <CommandList>
-                                                <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
-                                                <CommandGroup>
-                                                  {stockIngredients.map((stockIng) => (
-                                                    <CommandItem
-                                                      key={stockIng.id}
-                                                      value={stockIng.id}
-                                                      onSelect={(currentValue) => {
-                                                        handleSelectIngredient(index, currentValue);
-                                                      }}
-                                                    >
-                                                      <Check
-                                                        className={cn(
-                                                          "mr-2 h-4 w-4",
-                                                          ing.ingredientId === stockIng.id ? "opacity-100" : "opacity-0"
-                                                        )}
-                                                      />
-                                                      {stockIng.name}
-                                                    </CommandItem>
-                                                  ))}
-                                                </CommandGroup>
-                                              </CommandList>
-                                            </Command>
-                                          </PopoverContent>
-                                        </Popover>
+                                        <select
+                                            value={ing.ingredientId}
+                                            onChange={(e) => handleSelectIngredient(index, e.target.value)}
+                                            className="w-full p-2 border border-input bg-background rounded-md text-sm"
+                                        >
+                                            <option value="">Sélectionner...</option>
+                                            {stockIngredients.map((stockIng) => (
+                                                <option key={stockIng.id} value={stockIng.id}>
+                                                    {stockIng.name}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </td>
                                     <td className="p-2">
                                         <Input
@@ -281,12 +261,14 @@ export function RecipeCostForm({
                                           value={ing.quantity}
                                           onChange={(e) => updateIngredientField(index, 'quantity', Number(e.target.value))}
                                           className="w-24"
+                                          disabled={!ing.ingredientId}
                                         />
                                     </td>
                                     <td className="p-2">
                                         <Select
                                             value={ing.unitUse}
                                             onValueChange={(value) => updateIngredientField(index, 'unitUse', value)}
+                                            disabled={!ing.ingredientId}
                                         >
                                             <SelectTrigger className="w-28">
                                                 <SelectValue/>
