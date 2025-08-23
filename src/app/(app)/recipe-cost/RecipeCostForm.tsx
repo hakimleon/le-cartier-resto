@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useState, useMemo, ChangeEvent, KeyboardEvent, useEffect } from "react";
@@ -284,7 +283,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                 {ingredients.map((ing) => (
                   <TableRow key={ing.id}>
                     <TableCell>
-                      <Popover open={openComboboxes[ing.id]} onOpenChange={(open) => setOpenComboboxes(prev => ({...prev, [ing.id]: open}))}>
+                      <Popover open={openComboboxes[ing.id] || false} onOpenChange={(open) => setOpenComboboxes(prev => ({...prev, [ing.id]: open}))}>
                           <PopoverTrigger asChild>
                               <Button
                                   variant="outline"
@@ -435,4 +434,5 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
       </div>
     </form>
   );
-}
+
+    
