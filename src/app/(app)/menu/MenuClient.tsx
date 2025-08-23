@@ -1,4 +1,3 @@
-
 "use client";
 
 import Image from "next/image";
@@ -10,13 +9,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Recipe, categories } from "@/data/definitions";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search, Package } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DishForm } from "./DishForm";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 const getStatusClass = (status: Recipe['status']) => {
@@ -43,8 +44,8 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, item
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
-          <p className="text-lg font-semibold">Aucun plat trouvé</p>
-          <p className="text-sm">Essayez d'affiner votre recherche ou de sélectionner une autre catégorie.</p>
+          <p className="text-lg font-semibold">Aucun plat dans cette catégorie</p>
+          <p className="text-sm">Essayez d'affiner votre recherche ou d'ajouter un nouveau plat.</p>
       </div>
     )
   }
@@ -113,16 +114,44 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, item
   )
 };
 
-export function MenuClient({ initialRecipes }: { initialRecipes: Recipe[] }) {
-  const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
+
+export default function MenuPage() {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dishToEdit, setDishToEdit] = useState<Recipe | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   
   useEffect(() => {
-    setRecipes(initialRecipes);
-  }, [initialRecipes]);
+    async function getRecipes() {
+      setIsLoading(true);
+      try {
+        const recipesCol = collection(db, "recipes");
+        const q = query(recipesCol, orderBy("name"));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+          setRecipes([]);
+        } else {
+          const recipeList = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+          } as Recipe));
+          setRecipes(recipeList);
+        }
+      } catch(error) {
+        console.error("Error fetching recipes:", error);
+        toast({
+            variant: "destructive",
+            title: "Erreur de chargement",
+            description: "Impossible de charger les recettes depuis la base de données."
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    getRecipes();
+  }, [toast]);
 
   const handleAddNew = () => {
     setDishToEdit(null);
@@ -164,7 +193,7 @@ export function MenuClient({ initialRecipes }: { initialRecipes: Recipe[] }) {
   const isSearching = searchTerm.length > 0;
 
   return (
-    <>
+    <div className="flex flex-col h-full bg-background text-foreground">
       <AppHeader title="Gestion du Menu">
         <Button onClick={handleAddNew} className="bg-primary hover:bg-primary/90 text-primary-foreground">
           <PlusCircle className="mr-2" />
@@ -184,7 +213,17 @@ export function MenuClient({ initialRecipes }: { initialRecipes: Recipe[] }) {
             </div>
         </div>
 
-        {isSearching ? (
+        {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+                <p>Chargement du menu...</p>
+            </div>
+        ) : recipes.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
+                <Package className="w-16 h-16 text-muted-foreground/50" />
+                <p className="text-lg font-semibold mt-4">Votre menu est vide.</p>
+                <p className="text-sm">Cliquez sur "Ajouter un plat" pour commencer à créer votre menu.</p>
+            </div>
+        ) : isSearching ? (
             <MenuCategory 
                 title={`Résultats de la recherche pour "${searchTerm}"`}
                 items={filteredRecipes} 
@@ -228,6 +267,6 @@ export function MenuClient({ initialRecipes }: { initialRecipes: Recipe[] }) {
           />
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   );
 }
