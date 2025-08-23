@@ -105,7 +105,7 @@ const IngredientSearch = ({
         placeholder="Rechercher un ingrédient..."
       />
       {showSuggestions && searchTerm && (
-        <ul className="absolute z-10 w-full bg-card border border-border mt-1 max-h-60 overflow-y-auto rounded-md shadow-lg">
+        <ul className="absolute z-50 w-full bg-card border border-border mt-1 max-h-60 overflow-y-auto rounded-md shadow-lg">
           {filteredIngredients.length > 0 ? (
             filteredIngredients.map((ing) => (
               <li
