@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -25,6 +25,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 const formatCurrency = (value: number) => {
@@ -42,6 +44,21 @@ export function IngredientsList({ initialIngredients }: IngredientsListProps) {
   const [ingredientToEdit, setIngredientToEdit] = useState<Ingredient | null>(null);
   const [isSeeding, setIsSeeding] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    setIngredients(initialIngredients);
+  }, [initialIngredients]);
+
+  const fetchIngredients = async () => {
+    const ingredientsCol = collection(db, "ingredients");
+    const q = query(ingredientsCol, orderBy("name"));
+    const ingredientsSnapshot = await getDocs(q);
+    const ingredientsList = ingredientsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+    } as Ingredient));
+    setIngredients(ingredientsList);
+  }
 
   const filteredIngredients = ingredients.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -67,9 +84,8 @@ export function IngredientsList({ initialIngredients }: IngredientsListProps) {
         title: "Base de données initialisée !",
         description: result.message,
       });
-      // The page will be revalidated by the server action, so new data will be passed as props.
-      // We update the local state to reflect this, though a full page reload might be better in a real app.
-      // For now, this avoids the need to re-fetch manually on the client.
+      // Re-fetch ingredients from firestore
+      await fetchIngredients();
     } else {
       toast({
         variant: "destructive",
@@ -218,3 +234,5 @@ export function IngredientsList({ initialIngredients }: IngredientsListProps) {
     </>
   );
 }
+
+    
