@@ -470,4 +470,3 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
     </form>
   );
 }
-
