@@ -121,9 +121,11 @@ export default function MenuPage() {
   const [dishToEdit, setDishToEdit] = useState<Recipe | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function fetchRecipes() {
+      setIsLoading(true);
       const recipesCol = collection(db, "recipes");
       const q = query(recipesCol, orderBy("name"));
       const snapshot = await getDocs(q);
@@ -132,6 +134,7 @@ export default function MenuPage() {
         ...doc.data()
       } as Recipe));
       setRecipes(recipeList);
+      setIsLoading(false);
     }
     fetchRecipes();
   }, []);
@@ -147,6 +150,8 @@ export default function MenuPage() {
   };
   
   const handleSaveDish = (dishData: Recipe) => {
+    // In a real app, you'd save this to Firestore.
+    // For now, we'll just update the local state.
     if (dishToEdit) {
       setRecipes(recipes.map(item => item.id === dishData.id ? dishData : item));
       toast({ title: "Plat mis à jour !", description: `Le plat "${dishData.name}" a été modifié.` });
@@ -159,6 +164,7 @@ export default function MenuPage() {
   };
 
   const handleDelete = (dishId: string) => {
+    // In a real app, you'd delete this from Firestore.
     const dishName = recipes.find(d => d.id === dishId)?.name;
     setRecipes(recipes.filter(item => item.id !== dishId));
     toast({ variant: "destructive", title: "Plat supprimé !", description: `Le plat "${dishName}" a été supprimé.` });
@@ -193,7 +199,9 @@ export default function MenuPage() {
             </div>
         </div>
 
-        {isSearching ? (
+        {isLoading ? (
+            <div className="text-center p-12 text-muted-foreground">Chargement des recettes...</div>
+        ) : isSearching ? (
             <MenuCategory 
                 title={`Résultats de la recherche pour "${searchTerm}"`}
                 items={filteredRecipes} 
