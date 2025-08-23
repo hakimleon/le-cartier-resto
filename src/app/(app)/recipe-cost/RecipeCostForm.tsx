@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -21,16 +22,11 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
 import { Ingredient, Recipe, RecipeIngredient, units as availableUnits, conversions } from "@/data/definitions"
-import { useToast } from "@/hooks/use-toast"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 
 // --- Helper Functions ---
-
-// Function to convert between units
 const convertUnits = (quantity: number, fromUnit: string, toUnit: string): number => {
     if (fromUnit === toUnit) return quantity;
     const conversion = conversions.find(c => c.fromUnit === fromUnit && c.toUnit === toUnit);
@@ -38,10 +34,9 @@ const convertUnits = (quantity: number, fromUnit: string, toUnit: string): numbe
     const reverseConversion = conversions.find(c => c.fromUnit === toUnit && c.toUnit === fromUnit);
     if (reverseConversion) return quantity / reverseConversion.factor;
     console.warn(`No conversion found from ${fromUnit} to ${toUnit}`);
-    return quantity; // Return original quantity if no conversion found
+    return quantity;
 };
 
-// Function to calculate the cost of an ingredient for a given quantity and usage unit
 const calculateIngredientCost = (
     quantity: number, 
     unitUse: string, 
@@ -77,15 +72,12 @@ export function RecipeCostForm({
   ingredients: stockIngredients,
   recipeIngredients: allRecipeIngredients,
 }: RecipeCostFormProps) {
-  const { toast } = useToast();
-  
-  // --- State Management ---
   
   const [dishName, setDishName] = React.useState(initialRecipe?.name || "");
   const [portions, setPortions] = React.useState(1);
   const [formIngredients, setFormIngredients] = React.useState<FormIngredient[]>([]);
+  const [openComboboxes, setOpenComboboxes] = React.useState<Record<number, boolean>>({});
 
-  // Effect to load ingredients for an existing recipe
   React.useEffect(() => {
     if (initialRecipe) {
       const existingIngredients = allRecipeIngredients
@@ -118,8 +110,6 @@ export function RecipeCostForm({
   }, [initialRecipe, allRecipeIngredients, stockIngredients]);
 
 
-  // --- Event Handlers ---
-
   const addIngredientRow = () => {
     setFormIngredients(prev => [...prev, {
       id: `new-${Date.now()}`,
@@ -138,42 +128,31 @@ export function RecipeCostForm({
     setFormIngredients(prev => prev.filter((_, i) => i !== index));
   };
   
-  const handleSelectIngredient = (index: number, ingredientId: string) => {
+  const handleSelectIngredient = (rowIndex: number, ingredientId: string) => {
     const selected = stockIngredients.find(ing => ing.id === ingredientId);
-    if (!selected) {
-        // Clear the row if no ingredient is selected
-        setFormIngredients(prev => {
-            const newIngredients = [...prev];
-            newIngredients[index] = {
-                ...newIngredients[index],
-                ingredientId: '',
-                name: '',
-                category: '',
-                unitPrice: 0,
-                unitPurchase: '',
-                totalCost: 0,
-            };
-            return newIngredients;
-        });
-        return;
-    }
+    if (!selected) return;
 
     setFormIngredients(prev => {
       const newIngredients = [...prev];
-      const current = newIngredients[index];
+      const current = newIngredients[rowIndex];
+      if (!current) return prev;
 
-      newIngredients[index] = {
+      const newCost = calculateIngredientCost(current.quantity, current.unitUse, selected);
+
+      newIngredients[rowIndex] = {
         ...current,
         ingredientId: selected.id,
         name: selected.name,
         category: selected.category,
         unitPrice: selected.unitPrice,
         unitPurchase: selected.unitPurchase,
-        totalCost: calculateIngredientCost(current.quantity, current.unitUse, selected),
+        totalCost: newCost,
       };
       
       return newIngredients;
     });
+
+    setOpenComboboxes(prev => ({ ...prev, [rowIndex]: false }));
   };
 
   const updateIngredientField = (index: number, field: keyof FormIngredient, value: any) => {
@@ -181,12 +160,9 @@ export function RecipeCostForm({
         const newIngredients = [...prev];
         const ingredient = { ...newIngredients[index], [field]: value };
 
-        // Recalculate total cost if quantity or unit changes
-        if (field === 'quantity' || field === 'unitUse') {
-            const stockIng = stockIngredients.find(si => si.id === ingredient.ingredientId);
-            if (stockIng) {
-                ingredient.totalCost = calculateIngredientCost(ingredient.quantity, ingredient.unitUse, stockIng);
-            }
+        const stockIng = stockIngredients.find(si => si.id === ingredient.ingredientId);
+        if (stockIng) {
+            ingredient.totalCost = calculateIngredientCost(ingredient.quantity, ingredient.unitUse, stockIng);
         }
         
         newIngredients[index] = ingredient;
@@ -194,12 +170,8 @@ export function RecipeCostForm({
     });
   };
 
-  // --- Calculations ---
-
   const totalCost = formIngredients.reduce((acc, ing) => acc + ing.totalCost, 0);
   const costPerPortion = portions > 0 ? totalCost / portions : 0;
-
-  // --- Render ---
 
   return (
     <div className="space-y-6">
@@ -242,18 +214,46 @@ export function RecipeCostForm({
                             {formIngredients.map((ing, index) => (
                                 <tr key={ing.id} className="border-b">
                                     <td className="p-2">
-                                        <select
-                                            value={ing.ingredientId}
-                                            onChange={(e) => handleSelectIngredient(index, e.target.value)}
-                                            className="w-full p-2 border border-input bg-background rounded-md text-sm"
-                                        >
-                                            <option value="">Sélectionner...</option>
-                                            {stockIngredients.map((stockIng) => (
-                                                <option key={stockIng.id} value={stockIng.id}>
-                                                    {stockIng.name}
-                                                </option>
-                                            ))}
-                                        </select>
+                                       <Popover open={openComboboxes[index]} onOpenChange={(open) => setOpenComboboxes(prev => ({...prev, [index]: open}))}>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              variant="outline"
+                                              role="combobox"
+                                              aria-expanded={openComboboxes[index]}
+                                              className="w-[200px] justify-between font-normal"
+                                            >
+                                              {ing.ingredientId
+                                                ? stockIngredients.find((stockIng) => stockIng.id === ing.ingredientId)?.name
+                                                : "Sélectionner..."}
+                                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-[200px] p-0">
+                                            <Command>
+                                              <CommandInput placeholder="Rechercher ingrédient..." />
+                                              <CommandList>
+                                                <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                                <CommandGroup>
+                                                  {stockIngredients.map((stockIng) => (
+                                                    <CommandItem
+                                                      key={stockIng.id}
+                                                      value={stockIng.name}
+                                                      onSelect={() => handleSelectIngredient(index, stockIng.id)}
+                                                    >
+                                                      <Check
+                                                        className={cn(
+                                                          "mr-2 h-4 w-4",
+                                                          ing.ingredientId === stockIng.id ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                      />
+                                                      {stockIng.name}
+                                                    </CommandItem>
+                                                  ))}
+                                                </CommandGroup>
+                                              </CommandList>
+                                            </Command>
+                                          </PopoverContent>
+                                        </Popover>
                                     </td>
                                     <td className="p-2">
                                         <Input
