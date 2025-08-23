@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import * as React from "react"
@@ -128,32 +129,33 @@ export function RecipeCostForm({
   const removeIngredientRow = (index: number) => {
     setFormIngredients(prev => prev.filter((_, i) => i !== index));
   };
-  
-  const handleSelectIngredient = (rowIndex: number, ingredientId: string) => {
+
+  const handleSelectIngredient = (index: number, ingredientId: string) => {
     const selected = stockIngredients.find(ing => ing.id === ingredientId);
     if (!selected) return;
 
     setFormIngredients(prev => {
-      const newIngredients = [...prev];
-      const current = newIngredients[rowIndex];
-      if (!current) return prev;
+        const newIngredients = [...prev];
+        const current = newIngredients[index];
+        if (!current) return prev;
 
-      const newCost = calculateIngredientCost(current.quantity, current.unitUse, selected);
+        const newCost = calculateIngredientCost(current.quantity, current.unitUse, selected);
 
-      newIngredients[rowIndex] = {
-        ...current,
-        ingredientId: selected.id,
-        name: selected.name,
-        category: selected.category,
-        unitPrice: selected.unitPrice,
-        unitPurchase: selected.unitPurchase,
-        totalCost: newCost,
-        unitUse: 'g' // Default to 'g' on new selection
-      };
-      
-      return newIngredients;
+        newIngredients[index] = {
+            ...current,
+            ingredientId: selected.id,
+            name: selected.name,
+            category: selected.category,
+            unitPrice: selected.unitPrice,
+            unitPurchase: selected.unitPurchase,
+            totalCost: newCost,
+            unitUse: 'g' // Default to 'g' on new selection
+        };
+        
+        return newIngredients;
     });
-  };
+};
+
 
   const updateIngredientField = (index: number, field: keyof FormIngredient, value: any) => {
     setFormIngredients(prev => {
@@ -238,11 +240,8 @@ export function RecipeCostForm({
                                                     <CommandItem
                                                       key={stockIng.id}
                                                       value={stockIng.name}
-                                                      onSelect={(currentValue) => {
-                                                        const selected = stockIngredients.find(s => s.name.toLowerCase() === currentValue.toLowerCase());
-                                                        if (selected) {
-                                                            handleSelectIngredient(index, selected.id)
-                                                        }
+                                                      onSelect={() => {
+                                                        handleSelectIngredient(index, stockIng.id)
                                                         setOpenComboboxes(prev => ({ ...prev, [index]: false }))
                                                       }}
                                                     >
@@ -312,5 +311,3 @@ export function RecipeCostForm({
     </div>
   );
 }
-
-    
