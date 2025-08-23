@@ -1,3 +1,4 @@
+
 "use client";
 
 import Image from "next/image";
@@ -9,15 +10,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Recipe, categories } from "@/data/definitions";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search, Package } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search, Package, Loader } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DishForm } from "./DishForm";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
-import { collection, getDocs, orderBy, query } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 
 const getStatusClass = (status: Recipe['status']) => {
@@ -114,44 +113,21 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, item
   )
 };
 
+type MenuClientProps = {
+    initialRecipes: Recipe[];
+    isLoading: boolean;
+}
 
-export default function MenuPage() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+export default function MenuClient({ initialRecipes, isLoading }: MenuClientProps) {
+  const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dishToEdit, setDishToEdit] = useState<Recipe | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
   
   useEffect(() => {
-    async function getRecipes() {
-      setIsLoading(true);
-      try {
-        const recipesCol = collection(db, "recipes");
-        const q = query(recipesCol, orderBy("name"));
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-          setRecipes([]);
-        } else {
-          const recipeList = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-          } as Recipe));
-          setRecipes(recipeList);
-        }
-      } catch(error) {
-        console.error("Error fetching recipes:", error);
-        toast({
-            variant: "destructive",
-            title: "Erreur de chargement",
-            description: "Impossible de charger les recettes depuis la base de données."
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    getRecipes();
-  }, [toast]);
+    setRecipes(initialRecipes);
+  }, [initialRecipes]);
 
   const handleAddNew = () => {
     setDishToEdit(null);
@@ -214,14 +190,15 @@ export default function MenuPage() {
         </div>
 
         {isLoading ? (
-            <div className="flex justify-center items-center h-64">
+            <div className="flex justify-center items-center h-64 gap-2">
+                <Loader className="h-5 w-5 animate-spin" />
                 <p>Chargement du menu...</p>
             </div>
         ) : recipes.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
                 <Package className="w-16 h-16 text-muted-foreground/50" />
                 <p className="text-lg font-semibold mt-4">Votre menu est vide.</p>
-                <p className="text-sm">Cliquez sur "Ajouter un plat" pour commencer à créer votre menu.</p>
+                <p className="text-sm">Cliquez sur "Ajouter un plat" ou initialisez la base de données depuis la page Ingrédients.</p>
             </div>
         ) : isSearching ? (
             <MenuCategory 
