@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -42,6 +41,7 @@ const calculateIngredientCost = (
     unitUse: string, 
     ingredient: { unitPurchase: string; unitPrice: number },
 ): number => {
+    if (!ingredient || !ingredient.unitPurchase || !ingredient.unitPrice) return 0;
     const quantityInPurchaseUnits = convertUnits(quantity, unitUse, ingredient.unitPurchase);
     return quantityInPurchaseUnits * ingredient.unitPrice;
 };
@@ -147,12 +147,11 @@ export function RecipeCostForm({
         unitPrice: selected.unitPrice,
         unitPurchase: selected.unitPurchase,
         totalCost: newCost,
+        unitUse: 'g' // Default to 'g' on new selection
       };
       
       return newIngredients;
     });
-
-    setOpenComboboxes(prev => ({ ...prev, [rowIndex]: false }));
   };
 
   const updateIngredientField = (index: number, field: keyof FormIngredient, value: any) => {
@@ -238,7 +237,10 @@ export function RecipeCostForm({
                                                     <CommandItem
                                                       key={stockIng.id}
                                                       value={stockIng.name}
-                                                      onSelect={() => handleSelectIngredient(index, stockIng.id)}
+                                                      onSelect={() => {
+                                                        handleSelectIngredient(index, stockIng.id)
+                                                        setOpenComboboxes(prev => ({ ...prev, [index]: false }))
+                                                      }}
                                                     >
                                                       <Check
                                                         className={cn(
