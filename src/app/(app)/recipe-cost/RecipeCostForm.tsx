@@ -15,7 +15,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { cn } from "@/lib/utils";
 
 
@@ -71,6 +71,7 @@ const IngredientCombobox = ({
   onSelect: (stockId: string) => void;
 }) => {
   const [open, setOpen] = useState(false);
+  const currentIngredient = stockIngredients.find((i) => i.id === value);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -81,36 +82,36 @@ const IngredientCombobox = ({
           aria-expanded={open}
           className="w-full justify-between"
         >
-          {value
-            ? stockIngredients.find((i) => i.id === value)?.name
-            : "Choisir un ingrédient..."}
+          {currentIngredient ? currentIngredient.name : "Choisir un ingrédient..."}
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-[250px] p-0">
+      <PopoverContent className="w-[300px] p-0">
         <Command>
           <CommandInput placeholder="Rechercher un ingrédient..." />
-          <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
-          <CommandGroup>
-            {stockIngredients.map((ingredient) => (
-              <CommandItem
-                key={ingredient.id}
-                value={ingredient.id}
-                onSelect={(currentValue) => {
-                  onSelect(currentValue === value ? "" : currentValue);
-                  setOpen(false);
-                }}
-              >
-                <Check
-                  className={cn(
-                    "mr-2 h-4 w-4",
-                    value === ingredient.id ? "opacity-100" : "opacity-0"
-                  )}
-                />
-                {ingredient.name}
-              </CommandItem>
-            ))}
-          </CommandGroup>
+          <CommandList>
+            <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+            <CommandGroup>
+              {stockIngredients.map((ingredient) => (
+                <CommandItem
+                  key={ingredient.id}
+                  value={ingredient.name} 
+                  onSelect={() => {
+                    onSelect(ingredient.id);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      "mr-2 h-4 w-4",
+                      value === ingredient.id ? "opacity-100" : "opacity-0"
+                    )}
+                  />
+                  {ingredient.name}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
@@ -335,7 +336,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[250px]">Ingrédient</TableHead>
+                  <TableHead className="w-[300px]">Ingrédient</TableHead>
                   <TableHead className="w-[120px]">Quantité</TableHead>
                   <TableHead className="w-[120px]">Unité (Util.)</TableHead>
                   <TableHead className="text-right">Coût Total</TableHead>
