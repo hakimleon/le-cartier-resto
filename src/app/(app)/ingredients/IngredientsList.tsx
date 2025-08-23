@@ -58,7 +58,7 @@ export function IngredientsList({ initialIngredients }: IngredientsListProps) {
         ...doc.data()
     } as Ingredient));
     setIngredients(ingredientsList);
-  }
+  };
 
   const filteredIngredients = ingredients.filter(item =>
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -78,22 +78,31 @@ export function IngredientsList({ initialIngredients }: IngredientsListProps) {
 
   const handleSeedDatabase = async () => {
     setIsSeeding(true);
-    const result = await seedIngredients();
-    if (result.success) {
-      toast({
-        title: "Base de données initialisée !",
-        description: result.message,
-      });
-      // Re-fetch ingredients from firestore
-      await fetchIngredients();
-    } else {
-      toast({
-        variant: "destructive",
-        title: "Erreur",
-        description: result.message,
-      });
+    try {
+      const result = await seedIngredients();
+      if (result.success) {
+        toast({
+          title: "Base de données initialisée !",
+          description: result.message,
+        });
+        // Re-fetch ingredients from firestore
+        await fetchIngredients();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: result.message,
+        });
+      }
+    } catch (error) {
+       toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Une erreur inattendue est survenue.",
+        });
+    } finally {
+        setIsSeeding(false);
     }
-    setIsSeeding(false);
   };
 
   const handleSaveIngredient = (ingredientData: Ingredient) => {
@@ -234,5 +243,3 @@ export function IngredientsList({ initialIngredients }: IngredientsListProps) {
     </>
   );
 }
-
-    
