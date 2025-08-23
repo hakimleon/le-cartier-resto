@@ -57,11 +57,12 @@ type RecipeCostFormProps = {
   recipeIngredients: RecipeIngredient[];
 };
 
+// This is the new, robust ingredient search component
 const IngredientSearch = ({
   stockIngredients,
   onSelect,
   ingredientRow,
-  onNameChange
+  onNameChange,
 }: {
   stockIngredients: StockIngredient[];
   onSelect: (ingredientRowId: number, stockId: string) => void;
@@ -75,7 +76,7 @@ const IngredientSearch = ({
     (ingredient) =>
       ingredient.name.toLowerCase().includes(ingredientRow.name.toLowerCase())
   );
-  
+
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
@@ -99,34 +100,29 @@ const IngredientSearch = ({
         type="text"
         value={ingredientRow.name}
         onChange={(e) => {
-            onNameChange(ingredientRow.id, e.target.value);
-            if(!showSuggestions) setShowSuggestions(true);
+          onNameChange(ingredientRow.id, e.target.value);
+          if (!showSuggestions) setShowSuggestions(true);
         }}
         onFocus={() => setShowSuggestions(true)}
         placeholder="Rechercher un ingrédient..."
         autoComplete="off"
       />
-      {showSuggestions && ingredientRow.name && (
+      {showSuggestions && ingredientRow.name && filteredIngredients.length > 0 && (
         <ul className="absolute z-50 w-full bg-card border border-border mt-1 max-h-60 overflow-y-auto rounded-md shadow-lg">
-          {filteredIngredients.length > 0 ? (
-            filteredIngredients.map((ing) => (
-              <li
-                key={ing.id}
-                className="cursor-pointer p-2 hover:bg-muted"
-                onClick={() => handleSelect(ing)}
-              >
-                {ing.name}
-              </li>
-            ))
-          ) : (
-            <li className="p-2 text-muted-foreground">Aucun ingrédient trouvé</li>
-          )}
+          {filteredIngredients.map((ing) => (
+            <li
+              key={ing.id}
+              className="cursor-pointer p-2 hover:bg-muted"
+              onClick={() => handleSelect(ing)}
+            >
+              {ing.name}
+            </li>
+          ))}
         </ul>
       )}
     </div>
   );
 };
-
 
 export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients, recipeIngredients: allRecipeIngredients }: RecipeCostFormProps) {
   const { toast } = useToast();
@@ -145,7 +141,6 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
   const [allergens, setAllergens] = useState<string[]>([]);
   
   const [salesPitch, setSalesPitch] = useState("");
-
 
   useEffect(() => {
     if (recipe) {
