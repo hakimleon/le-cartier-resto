@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -20,17 +19,23 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Ingredient, Recipe, RecipeIngredient } from "@/data/definitions"
 
-// We use a simple hardcoded list for this first step, just like the shadcn example.
-const frameworks = [
-  { value: "tomate", label: "Tomate" },
-  { value: "mozzarella", label: "Mozzarella" },
-  { value: "basilic", label: "Basilic" },
-  { value: "filet-de-boeuf", label: "Filet de Boeuf" },
-  { value: "parmesan", label: "Parmesan" },
-]
+// We use the actual ingredients data now for a more realistic test case.
+// This is passed from the parent page component.
+interface RecipeCostFormProps {
+  recipe: Recipe | null
+  recipes: Recipe[]
+  ingredients: Ingredient[]
+  recipeIngredients: RecipeIngredient[]
+}
 
-export function RecipeCostForm() {
+export function RecipeCostForm({
+  recipe: initialRecipe,
+  recipes: allRecipes,
+  ingredients: stockIngredients,
+  recipeIngredients: allRecipeIngredients,
+}: RecipeCostFormProps) {
   const [open, setOpen] = React.useState(false)
   const [value, setValue] = React.useState("")
 
@@ -41,7 +46,7 @@ export function RecipeCostForm() {
       </CardHeader>
       <CardContent>
         <p className="mb-4 text-muted-foreground">
-          Ceci est un exemple de base pour nous assurer que la sélection dans la liste déroulante fonctionne parfaitement avant de reconstruire le formulaire complet.
+          Ceci est un exemple de base utilisant les vrais ingrédients pour nous assurer que la sélection fonctionne.
         </p>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
@@ -52,7 +57,7 @@ export function RecipeCostForm() {
               className="w-[250px] justify-between"
             >
               {value
-                ? frameworks.find((framework) => framework.value === value)?.label
+                ? stockIngredients.find((ingredient) => ingredient.id.toLowerCase() === value.toLowerCase())?.name
                 : "Sélectionner un ingrédient..."}
               <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
             </Button>
@@ -63,10 +68,10 @@ export function RecipeCostForm() {
               <CommandList>
                 <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
                 <CommandGroup>
-                  {frameworks.map((framework) => (
+                  {stockIngredients.map((ingredient) => (
                     <CommandItem
-                      key={framework.value}
-                      value={framework.value}
+                      key={ingredient.id}
+                      value={ingredient.id}
                       onSelect={(currentValue) => {
                         setValue(currentValue === value ? "" : currentValue)
                         setOpen(false)
@@ -75,10 +80,10 @@ export function RecipeCostForm() {
                       <Check
                         className={cn(
                           "mr-2 h-4 w-4",
-                          value === framework.value ? "opacity-100" : "opacity-0"
+                          value.toLowerCase() === ingredient.id.toLowerCase() ? "opacity-100" : "opacity-0"
                         )}
                       />
-                      {framework.label}
+                      {ingredient.name}
                     </CommandItem>
                   ))}
                 </CommandGroup>
@@ -87,7 +92,7 @@ export function RecipeCostForm() {
           </PopoverContent>
         </Popover>
 
-        {value && <p className="mt-4">Vous avez sélectionné : <span className="font-bold">{value}</span></p>}
+        {value && <p className="mt-4">ID de l'ingrédient sélectionné : <span className="font-bold">{value}</span></p>}
       </CardContent>
     </Card>
   )
