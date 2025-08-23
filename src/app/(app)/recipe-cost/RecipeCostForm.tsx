@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useMemo, ChangeEvent, KeyboardEvent, useEffect, useRef } from "react";
@@ -59,19 +60,20 @@ type RecipeCostFormProps = {
 const IngredientSearch = ({
   stockIngredients,
   onSelect,
-  ingredientRow
+  ingredientRow,
+  onNameChange
 }: {
   stockIngredients: StockIngredient[];
   onSelect: (ingredientRowId: number, stockId: string) => void;
   ingredientRow: FormIngredient;
+  onNameChange: (id: number, newName: string) => void;
 }) => {
-  const [searchTerm, setSearchTerm] = useState(ingredientRow.name || "");
   const [showSuggestions, setShowSuggestions] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const filteredIngredients = stockIngredients.filter(
     (ingredient) =>
-      ingredient.name.toLowerCase().includes(searchTerm.toLowerCase())
+      ingredient.name.toLowerCase().includes(ingredientRow.name.toLowerCase())
   );
   
   useEffect(() => {
@@ -87,7 +89,6 @@ const IngredientSearch = ({
   }, [wrapperRef]);
 
   const handleSelect = (stockItem: StockIngredient) => {
-    setSearchTerm(stockItem.name);
     onSelect(ingredientRow.id, stockItem.id);
     setShowSuggestions(false);
   };
@@ -96,15 +97,16 @@ const IngredientSearch = ({
     <div ref={wrapperRef} className="relative">
       <Input
         type="text"
-        value={searchTerm}
+        value={ingredientRow.name}
         onChange={(e) => {
-          setSearchTerm(e.target.value);
-          if(!showSuggestions) setShowSuggestions(true);
+            onNameChange(ingredientRow.id, e.target.value);
+            if(!showSuggestions) setShowSuggestions(true);
         }}
         onFocus={() => setShowSuggestions(true)}
         placeholder="Rechercher un ingrédient..."
+        autoComplete="off"
       />
-      {showSuggestions && searchTerm && (
+      {showSuggestions && ingredientRow.name && (
         <ul className="absolute z-50 w-full bg-card border border-border mt-1 max-h-60 overflow-y-auto rounded-md shadow-lg">
           {filteredIngredients.length > 0 ? (
             filteredIngredients.map((ing) => (
@@ -352,6 +354,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                         stockIngredients={stockIngredients}
                         onSelect={handleSelectIngredient}
                         ingredientRow={ing}
+                        onNameChange={(id, newName) => handleIngredientChange(id, "name", newName)}
                       />
                     </TableCell>
                     <TableCell>
