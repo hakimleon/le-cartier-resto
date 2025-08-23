@@ -132,8 +132,8 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
     );
 };
   
-  const handleSelectIngredient = (ingredientRowId: number, selectedStockId: string) => {
-    const stockItem = stockIngredients.find(item => item.id === selectedStockId);
+  const handleSelectIngredient = (ingredientRowId: number, selectedStockName: string) => {
+    const stockItem = stockIngredients.find(item => item.name.toLowerCase() === selectedStockName.toLowerCase());
     if (stockItem) {
         const conversion = conversions.find(c => c.fromUnit.toLowerCase() === stockItem.unitPurchase.toLowerCase());
         const defaultUseUnit = conversion ? conversion.toUnit : stockItem.unitPurchase;
@@ -304,7 +304,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                                           {stockIngredients.map((stockIng) => (
                                               <CommandItem
                                                   key={stockIng.id}
-                                                  value={stockIng.id}
+                                                  value={stockIng.name}
                                                   onSelect={(currentValue) => {
                                                     handleSelectIngredient(ing.id, currentValue);
                                                   }}
@@ -437,5 +437,3 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
     </form>
   );
 }
-
-    
