@@ -1,3 +1,4 @@
+
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
@@ -5,12 +6,12 @@ import { getFirestore } from "firebase/firestore";
 // Your web app's Firebase configuration
 // IMPORTANT: This is a public-facing config object, and security is enforced via Firestore Security Rules.
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_AUTH_DOMAIN",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_STORAGE_BUCKET",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  projectId: "le-singulier-ai",
+  appId: "1:160628171290:web:332eeec20941d04cf9a7a3",
+  storageBucket: "le-singulier-ai.firebasestorage.app",
+  apiKey: "AIzaSyB11kYlG3sbDZj0yEBncQ9n7PHYO4EyCmg",
+  authDomain: "le-singulier-ai.firebaseapp.com",
+  messagingSenderId: "160628171290"
 };
 
 // Initialize Firebase
