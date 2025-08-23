@@ -12,8 +12,23 @@ export async function seedRecipes() {
 
     const recipesCollection = collection(db, "recipes");
     mockRecipes.forEach((recipe) => {
-      // Create a new object excluding cost and argumentationCommerciale before setting
-      const { ...recipeToStore } = recipe;
+      // Create a new object excluding fields we don't want in Firestore
+      const {
+        cost,
+        imageAltText,
+        cookTime,
+        totalTime,
+        servings,
+        portionDescription,
+        nutritionalInfo,
+        instructions,
+        marketingDescription,
+        equipment,
+        chef,
+        createdAt,
+        updatedAt,
+        ...recipeToStore
+      } = recipe;
       const docRef = doc(recipesCollection, recipe.id);
       batch.set(docRef, recipeToStore);
     });
