@@ -71,7 +71,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
   const [cooking, setCooking] = useState("");
   const [service, setService] = useState("");
   
-  const [openComboboxes, setOpenComboboxes] = useState<{ [key: number]: boolean }>({});
+  const [openComboboxes, setOpenComboboxes] = useState<Record<number, boolean>>({});
 
   useEffect(() => {
     if (recipe) {
@@ -122,31 +122,6 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
             ing.id === id ? { ...ing, [field]: value } : ing
         )
     );
-  };
-  
-  const handleSelectIngredient = (ingredientRowId: number, selectedValue: string) => {
-    const stockItem = stockIngredients.find(item => item.name.toLowerCase() === selectedValue.toLowerCase());
-    if (stockItem) {
-        const conversion = conversions.find(c => c.fromUnit.toLowerCase() === stockItem.unitPurchase.toLowerCase());
-        const defaultUseUnit = conversion ? conversion.toUnit : stockItem.unitPurchase;
-
-        setFormIngredients(
-            formIngredients.map(ing =>
-                ing.id === ingredientRowId
-                    ? {
-                        ...ing,
-                        stockId: stockItem.id,
-                        name: stockItem.name,
-                        category: stockItem.category,
-                        unitCost: stockItem.unitPrice,
-                        unitPurchase: stockItem.unitPurchase,
-                        unitUse: defaultUseUnit,
-                      }
-                    : ing
-            )
-        );
-    }
-    setOpenComboboxes(prev => ({...prev, [ingredientRowId]: false}));
   };
   
   const totalIngredientCost = useMemo(() => {
@@ -258,7 +233,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                       <Input value={ing.category} readOnly className="bg-muted/50 border-none" />
                     </TableCell>
                     <TableCell>
-                      <Popover open={openComboboxes[ing.id] || false} onOpenChange={(open) => setOpenComboboxes(prev => ({...prev, [ing.id]: open}))}>
+                      <Popover open={openComboboxes[ing.id]} onOpenChange={(open) => setOpenComboboxes(prev => ({...prev, [ing.id]: open}))}>
                           <PopoverTrigger asChild>
                               <Button
                                   variant="outline"
@@ -281,7 +256,27 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                                                   key={stockIng.id}
                                                   value={stockIng.name}
                                                   onSelect={(currentValue) => {
-                                                    handleSelectIngredient(ing.id, currentValue);
+                                                    const selected = stockIngredients.find(
+                                                      (item) => item.name.toLowerCase() === currentValue
+                                                    );
+                                                    if (selected) {
+                                                      setFormIngredients((prev) =>
+                                                        prev.map((item) =>
+                                                          item.id === ing.id
+                                                            ? {
+                                                                ...item,
+                                                                stockId: selected.id,
+                                                                name: selected.name,
+                                                                category: selected.category,
+                                                                unitCost: selected.unitPrice,
+                                                                unitPurchase: selected.unitPurchase,
+                                                                unitUse: conversions.find(c => c.fromUnit.toLowerCase() === selected.unitPurchase.toLowerCase())?.toUnit || selected.unitPurchase,
+                                                              }
+                                                            : item
+                                                        )
+                                                      );
+                                                    }
+                                                    setOpenComboboxes(prev => ({...prev, [ing.id]: false}));
                                                   }}
                                               >
                                                   <Check
@@ -373,5 +368,3 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
     </form>
   );
 }
-
-    
