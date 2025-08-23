@@ -63,7 +63,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
   const [dishName, setDishName] = useState("");
   const [category, setCategory] = useState(menuCategories[0]);
   const [priceTTC, setPriceTTC] = useState(0);
-  const [vatRate, setVatRate] = useState(10); // Changed from 19 to 10 based on screenshot
+  const [vatRate, setVatRate] = useState(10);
   const [portions, setPortions] = useState(1);
   const [formIngredients, setFormIngredients] = useState<FormIngredient[]>([]);
   
@@ -287,7 +287,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                                                   <Check
                                                       className={cn(
                                                           "mr-2 h-4 w-4",
-                                                          ing.stockId === stockIng.id ? "opacity-100" : "opacity-0"
+                                                          ing.name.toLowerCase() === stockIng.name.toLowerCase() ? "opacity-100" : "opacity-0"
                                                       )}
                                                   />
                                                   {stockIng.name}
@@ -373,3 +373,5 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
     </form>
   );
 }
+
+    
