@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -237,8 +238,11 @@ export function RecipeCostForm({
                                                     <CommandItem
                                                       key={stockIng.id}
                                                       value={stockIng.name}
-                                                      onSelect={() => {
-                                                        handleSelectIngredient(index, stockIng.id)
+                                                      onSelect={(currentValue) => {
+                                                        const selected = stockIngredients.find(s => s.name.toLowerCase() === currentValue.toLowerCase());
+                                                        if (selected) {
+                                                            handleSelectIngredient(index, selected.id)
+                                                        }
                                                         setOpenComboboxes(prev => ({ ...prev, [index]: false }))
                                                       }}
                                                     >
@@ -308,3 +312,5 @@ export function RecipeCostForm({
     </div>
   );
 }
+
+    
