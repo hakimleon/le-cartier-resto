@@ -131,8 +131,10 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
   
   const handleSelectIngredient = (ingredientRowId: number, selectedStockId: string) => {
     const stockItem = stockIngredients.find(item => item.id === selectedStockId);
-
     if (stockItem) {
+        const conversion = conversions.find(c => c.fromUnit.toLowerCase() === stockItem.unitPurchase.toLowerCase());
+        const defaultUseUnit = conversion ? conversion.toUnit : stockItem.unitPurchase;
+
         setIngredients(
             ingredients.map(ing =>
                 ing.id === ingredientRowId
@@ -142,6 +144,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                         name: stockItem.name,
                         unitCost: stockItem.unitPrice,
                         unitPurchase: stockItem.unitPurchase,
+                        unitUse: defaultUseUnit,
                       }
                     : ing
             )
