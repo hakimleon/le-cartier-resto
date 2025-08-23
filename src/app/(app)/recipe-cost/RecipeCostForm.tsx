@@ -10,10 +10,12 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Save, Trash2, X } from "lucide-react";
-import { categories as menuCategories, Recipe, Ingredient as StockIngredient, ingredients as stockIngredients, recipeIngredients as allRecipeIngredients, conversions } from "@/data/data-cache";
+import { categories as menuCategories, Recipe, Ingredient as StockIngredient, conversions } from "@/data/definitions";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 interface FormIngredient {
   id: number;
@@ -47,9 +49,12 @@ const calculateIngredientCost = (ing: FormIngredient) => {
 
 type RecipeCostFormProps = {
   recipe: Recipe | null;
+  recipes: Recipe[];
+  ingredients: StockIngredient[];
+  recipeIngredients: any[]; // Adjust type as needed
 };
 
-export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
+export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients, recipeIngredients: allRecipeIngredients }: RecipeCostFormProps) {
   const { toast } = useToast();
   const [dishName, setDishName] = useState("");
   const [category, setCategory] = useState(menuCategories[0]);
@@ -97,7 +102,7 @@ export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
       setAllergens(recipe.allergens);
       setSalesPitch(recipe.argumentationCommerciale || '');
     }
-  }, [recipe]);
+  }, [recipe, allRecipeIngredients, stockIngredients]);
 
 
   const handleAddIngredient = () => {
@@ -175,7 +180,7 @@ export function RecipeCostForm({ recipe }: RecipeCostFormProps) {
       value: item.id,
       label: item.name,
     }));
-  }, []);
+  }, [stockIngredients]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

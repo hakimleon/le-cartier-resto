@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Ingredient } from "@/data/data-cache";
+import { Ingredient } from "@/data/definitions";
 import { IngredientsList } from "./IngredientsList";
 
 async function getIngredients(): Promise<Ingredient[]> {

@@ -7,13 +7,55 @@ import { AppHeader } from "@/components/common/AppHeader";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis, LineChart, Line } from "recharts";
-import { recipes, menuPerformanceData, Recipe, PerformanceData, historicalPerformanceData, HistoricalPerformanceData } from "@/data/data-cache";
+import { Recipe } from "@/data/definitions";
 import { Anchor, HelpCircle, Star, TrendingDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { ChartContainer, ChartTooltip, ChartTooltipContent, ChartLegend, ChartLegendContent, type ChartConfig } from "@/components/ui/chart";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 type MenuEngineeringCategory = 'Star' | 'Plowhorse' | 'Puzzle' | 'Dog';
+
+// This would also come from Firestore in a real app
+type PerformanceData = {
+  menuItemId: string;
+  totalSales: number;
+  averageRating: number;
+};
+
+// This would also come from Firestore in a real app
+export const menuPerformanceData: PerformanceData[] = [
+  { menuItemId: "ef-2", totalSales: 150, averageRating: 4.8 },
+  { menuItemId: "ef-3", totalSales: 120, averageRating: 4.5 },
+  { menuItemId: "pg-16", totalSales: 200, averageRating: 4.9 },
+  { menuItemId: "des-1", totalSales: 180, averageRating: 4.7 },
+  { menuItemId: "burg-1", totalSales: 250, averageRating: 4.6 },
+  { menuItemId: 'lmdcn-2', totalSales: 90, averageRating: 4.9 },
+  { menuItemId: 'ec-2', totalSales: 70, averageRating: 4.2 },
+  { menuItemId: 'sp-7', totalSales: 110, averageRating: 4.5 },
+  { menuItemId: 'pg-14', totalSales: 130, averageRating: 4.8 },
+  { menuItemId: 'ef-9', totalSales: 60, averageRating: 3.9 },
+];
+
+export type HistoricalPerformanceData = {
+    month: string;
+    'pg-16': number;
+    'des-1': number;
+    'burg-1': number;
+    'lmdcn-2': number;
+}
+
+// This would also come from Firestore in a real app
+export const historicalPerformanceData: HistoricalPerformanceData[] = [
+  { month: "Janvier", "pg-16": 186, "des-1": 80, "burg-1": 210, "lmdcn-2": 70 },
+  { month: "Février", "pg-16": 305, "des-1": 200, "burg-1": 250, "lmdcn-2": 120 },
+  { month: "Mars", "pg-16": 237, "des-1": 120, "burg-1": 300, "lmdcn-2": 150 },
+  { month: "Avril", "pg-16": 73, "des-1": 190, "burg-1": 280, "lmdcn-2": 110 },
+  { month: "Mai", "pg-16": 209, "des-1": 130, "burg-1": 320, "lmdcn-2": 160 },
+  { month: "Juin", "pg-16": 214, "des-1": 140, "burg-1": 350, "lmdcn-2": 180 },
+];
+
 
 type AnalyzedMenuItem = Recipe & {
   performance: PerformanceData;
@@ -65,36 +107,44 @@ export default function MenuPerformancePage() {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const data = recipes
-      .map(item => {
-        const performance = menuPerformanceData.find(p => p.menuItemId === item.id);
-        if (!performance) return null;
+    async function fetchData() {
+        setIsLoading(true);
+        const recipesSnapshot = await getDocs(collection(db, 'recipes'));
+        const recipes = recipesSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe));
 
-        const profit = (item.price - item.cost) / 100;
-        return { ...item, performance, profit };
-      })
-      .filter((item): item is NonNullable<typeof item> => item !== null);
+        const data = recipes
+        .map(item => {
+            const performance = menuPerformanceData.find(p => p.menuItemId === item.id);
+            if (!performance) return null;
 
-    const totalSales = data.reduce((acc, item) => acc + item.performance.totalSales, 0);
-    const totalProfit = data.reduce((acc, item) => acc + (item.profit * item.performance.totalSales), 0);
-    const avgSales = totalSales / data.length;
-    const avgProfit = totalProfit / totalSales;
+            const profit = (item.price - item.cost) / 100;
+            return { ...item, performance, profit };
+        })
+        .filter((item): item is NonNullable<typeof item> => item !== null);
 
-    const categorizedData = data.map(item => {
-      const isPopular = item.performance.totalSales > avgSales;
-      const isProfitable = item.profit > avgProfit;
-      let categoryAnalysis: MenuEngineeringCategory;
+        const totalSales = data.reduce((acc, item) => acc + item.performance.totalSales, 0);
+        const totalProfit = data.reduce((acc, item) => acc + (item.profit * item.performance.totalSales), 0);
+        const avgSales = totalSales / data.length;
+        const avgProfit = totalProfit / totalSales;
 
-      if (isPopular && isProfitable) categoryAnalysis = 'Star';
-      else if (isPopular && !isProfitable) categoryAnalysis = 'Plowhorse';
-      else if (!isPopular && isProfitable) categoryAnalysis = 'Puzzle';
-      else categoryAnalysis = 'Dog';
+        const categorizedData = data.map(item => {
+        let categoryAnalysis: MenuEngineeringCategory;
 
-      return { ...item, categoryAnalysis };
-    });
+        const isPopular = item.performance.totalSales > avgSales;
+        const isProfitable = item.profit > avgProfit;
 
-    setAnalyzedData(categorizedData);
-    setIsLoading(false);
+        if (isPopular && isProfitable) categoryAnalysis = 'Star';
+        else if (isPopular && !isProfitable) categoryAnalysis = 'Plowhorse';
+        else if (!isPopular && isProfitable) categoryAnalysis = 'Puzzle';
+        else categoryAnalysis = 'Dog';
+
+        return { ...item, categoryAnalysis };
+        });
+
+        setAnalyzedData(categorizedData);
+        setIsLoading(false);
+    }
+    fetchData();
   }, []);
 
   const topPerformingItems = useMemo(() => {

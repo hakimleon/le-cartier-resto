@@ -1,0 +1,80 @@
+
+// src/data/definitions.ts
+
+export type Recipe = {
+  id: string;
+  name: string;
+  description: string;
+  category: 'Entrées Froides – Fraîcheur et Élégance' | 'Entrées Chaudes – Gourmandise et Chaleur' | 'Plats et Grillades – Saveurs en Majesté' | 'Les Mets de chez Nous' | 'Symphonie de Pâtes – Évasion Italienne' | 'Nos Burgers Bistronomiques' | 'Douceurs Signature – Éclats Sucrés de l’Instant' | 'Élixirs & Rafraîchissements';
+  price: number;
+  cost: number; // This will be calculated from RecipeIngredients
+  image: string;
+  imageHint: string;
+  prepTime: number;
+  difficulty: 1 | 2 | 3 | 4 | 5;
+  status: 'Actif' | 'Inactif' | 'Saisonnier';
+  tags: string[];
+  portionSize?: string;
+  calories?: number;
+  procedure: {
+    preparation: string[];
+    cuisson: string[];
+    service: string[];
+  };
+  allergens: string[];
+  notes?: string | null;
+  argumentationCommerciale?: string;
+};
+
+export type Ingredient = {
+  id: string;
+  name: string;
+  category: string;
+  unitPurchase: string;
+  unitPrice: number;
+  stockQuantity: number;
+  supplier: string;
+  lowStockThreshold: number;
+};
+
+export type RecipeIngredient = {
+  id: string;
+  recipeId: string;
+  ingredientId: string;
+  quantity: number;
+  unitUse: string;
+};
+
+export type Conversion = {
+  fromUnit: string;
+  toUnit: string;
+  factor: number;
+};
+
+export const categories: ('Entrées Froides – Fraîcheur et Élégance' | 'Entrées Chaudes – Gourmandise et Chaleur' | 'Plats et Grillades – Saveurs en Majesté' | 'Les Mets de chez Nous' | 'Symphonie de Pâtes – Évasion Italienne' | 'Nos Burgers Bistronomiques' | 'Douceurs Signature – Éclats Sucrés de l’Instant' | 'Élixirs & Rafraîchissements')[] = ['Entrées Froides – Fraîcheur et Élégance', 'Entrées Chaudes – Gourmandise et Chaleur', 'Plats et Grillades – Saveurs en Majesté', 'Les Mets de chez Nous', 'Symphonie de Pâtes – Évasion Italienne', 'Nos Burgers Bistronomiques', 'Douceurs Signature – Éclats Sucrés de l’Instant', 'Élixirs & Rafraîchissements'];
+export const tags: ('Végétarien' | 'Épicé' | 'Sans gluten' | 'Spécialité locale' | 'Halal' | 'Nouveau' | 'Populaire')[] = ['Végétarien', 'Épicé', 'Sans gluten', 'Spécialité locale', 'Halal', 'Nouveau', 'Populaire'];
+
+export const suppliers = {
+    METRO: "Metro Cash & Carry",
+    FRUITS_LEGUMES_ALGER: "Fruits & Légumes d'Alger Centre",
+    BOUCHERIE_MODERNE: "Boucherie Moderne El Biar",
+    POISSONNERIE_LA_SIRENE: "Poissonnerie La Sirène",
+    EPICES_DU_MONDE: "Épices du Monde Bab Ezzouar",
+};
+
+export const units = ["kg", "g", "L", "ml", "pièce", "botte", "boîte"];
+export const ingredientCategories = [
+    "Fruits", "Fruits secs", "Légumes", "Herbes aromatiques", "Épices",
+    "Viandes et volailles", "Poissons et fruits de mer", "Produits laitiers",
+    "Fromages", "Œufs", "Céréales", "Boulangerie", "Desserts", "Boissons",
+    "Condiments", "Huiles"
+];
+
+export const conversions: Conversion[] = [
+    { fromUnit: "kg", toUnit: "g", factor: 1000 },
+    { fromUnit: "L", toUnit: "ml", factor: 1000 },
+    { fromUnit: "bouteille", toUnit: "ml", factor: 750 },
+    { fromUnit: "botte", toUnit: "g", factor: 50 }, // Example, can be adjusted
+    { fromUnit: "pièce", toUnit: "pièce", factor: 1 },
+    { fromUnit: "paquet", toUnit: "pièce", factor: 10 }, // Example for brick pastry
+];

@@ -1,19 +1,38 @@
+
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { tables, Table as TableType } from "@/data/data-cache";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+
+export type Table = {
+    id: number;
+    seats: number;
+    status: 'available' | 'occupied' | 'reserved';
+    shape: 'round' | 'square';
+}
 
 export function TableMap() {
   const [selectedTable, setSelectedTable] = useState<number | null>(null);
+  const [tables, setTables] = useState<Table[]>([]);
 
-  const handleTableSelect = (table: TableType) => {
+  useEffect(() => {
+    async function fetchTables() {
+        const tablesSnapshot = await getDocs(collection(db, "tables"));
+        const tablesList = tablesSnapshot.docs.map(doc => ({ ...doc.data(), id: parseInt(doc.id) } as Table));
+        setTables(tablesList.sort((a, b) => a.id - b.id));
+    }
+    fetchTables();
+  }, []);
+
+  const handleTableSelect = (table: Table) => {
     if (table.status === 'available') {
       setSelectedTable(table.id === selectedTable ? null : table.id);
     }
   };
 
-  const getStatusColor = (status: TableType['status']) => {
+  const getStatusColor = (status: Table['status']) => {
     switch (status) {
       case 'available':
         return 'bg-green-200 border-green-400 hover:bg-green-300';

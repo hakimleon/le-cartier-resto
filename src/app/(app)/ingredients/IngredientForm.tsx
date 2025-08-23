@@ -3,7 +3,7 @@
 "use client";
 
 import { useState, useEffect, ChangeEvent } from "react";
-import { Ingredient, suppliers } from "@/data/data-cache";
+import { Ingredient, suppliers, units, ingredientCategories } from "@/data/definitions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,14 +24,6 @@ const emptyIngredient: Omit<Ingredient, 'id'> = {
   supplier: "",
   lowStockThreshold: 10,
 };
-
-const units = ["kg", "g", "L", "ml", "pièce", "botte", "boîte"];
-const categories = [
-    "Fruits", "Fruits secs", "Légumes", "Herbes aromatiques", "Épices",
-    "Viandes et volailles", "Poissons et fruits de mer", "Produits laitiers",
-    "Fromages", "Œufs", "Céréales", "Boulangerie", "Desserts", "Boissons",
-    "Condiments", "Huiles"
-];
 
 export function IngredientForm({ ingredient, onSave, onCancel }: IngredientFormProps) {
   const [formData, setFormData] = useState<Omit<Ingredient, 'id'>>(ingredient || emptyIngredient);
@@ -86,7 +78,7 @@ export function IngredientForm({ ingredient, onSave, onCancel }: IngredientFormP
         <Select name="category" value={formData.category} onValueChange={(value) => handleSelectChange('category', value)}>
           <SelectTrigger><SelectValue placeholder="Choisir une catégorie..." /></SelectTrigger>
           <SelectContent>
-            {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+            {ingredientCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

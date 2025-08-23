@@ -3,12 +3,12 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AppHeader } from "@/components/common/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { recipes as initialRecipes, Recipe, categories } from "@/data/data-cache";
+import { Recipe, categories } from "@/data/definitions";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search } from "lucide-react";
@@ -18,6 +18,8 @@ import { DishForm } from "./DishForm";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const getStatusClass = (status: Recipe['status']) => {
   switch (status) {
@@ -114,11 +116,25 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, item
 };
 
 export default function MenuPage() {
-  const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dishToEdit, setDishToEdit] = useState<Recipe | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+
+  useEffect(() => {
+    async function fetchRecipes() {
+      const recipesCol = collection(db, "recipes");
+      const q = query(recipesCol, orderBy("name"));
+      const snapshot = await getDocs(q);
+      const recipeList = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Recipe));
+      setRecipes(recipeList);
+    }
+    fetchRecipes();
+  }, []);
 
   const handleAddNew = () => {
     setDishToEdit(null);
