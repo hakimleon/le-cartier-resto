@@ -10,13 +10,14 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Recipe, categories } from "@/data/definitions";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search, Package, Loader } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search, Package, Loader, Database } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DishForm } from "./DishForm";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { seedRecipes } from "./actions";
 
 
 const getStatusClass = (status: Recipe['status']) => {
@@ -116,13 +117,15 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, item
 type MenuClientProps = {
     initialRecipes: Recipe[];
     isLoading: boolean;
+    onRefresh: () => void;
 }
 
-export default function MenuClient({ initialRecipes, isLoading }: MenuClientProps) {
+export default function MenuClient({ initialRecipes, isLoading, onRefresh }: MenuClientProps) {
   const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dishToEdit, setDishToEdit] = useState<Recipe | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSeeding, setIsSeeding] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -160,6 +163,34 @@ export default function MenuClient({ initialRecipes, isLoading }: MenuClientProp
     toast({ variant: "destructive", title: "Plat supprimé !", description: `Le plat "${dishName}" a été supprimé.` });
   };
   
+  const handleSeedDatabase = async () => {
+    setIsSeeding(true);
+    try {
+      const result = await seedRecipes();
+      if (result.success) {
+        toast({
+          title: "Menu initialisé !",
+          description: result.message,
+        });
+        onRefresh();
+      } else {
+        toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: result.message,
+        });
+      }
+    } catch (error) {
+       toast({
+          variant: "destructive",
+          title: "Erreur",
+          description: "Une erreur inattendue est survenue.",
+        });
+    } finally {
+        setIsSeeding(false);
+    }
+  };
+
   const filteredRecipes = recipes.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -198,7 +229,11 @@ export default function MenuClient({ initialRecipes, isLoading }: MenuClientProp
             <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
                 <Package className="w-16 h-16 text-muted-foreground/50" />
                 <p className="text-lg font-semibold mt-4">Votre menu est vide.</p>
-                <p className="text-sm">Cliquez sur "Ajouter un plat" ou initialisez la base de données depuis la page Ingrédients.</p>
+                <p className="text-sm">Cliquez sur le bouton ci-dessous pour initialiser votre menu avec des plats de démonstration.</p>
+                <Button onClick={handleSeedDatabase} disabled={isSeeding} className="mt-4">
+                    <Database className="mr-2 h-4 w-4" />
+                    {isSeeding ? "Initialisation en cours..." : "Initialiser le menu"}
+                </Button>
             </div>
         ) : isSearching ? (
             <MenuCategory 
