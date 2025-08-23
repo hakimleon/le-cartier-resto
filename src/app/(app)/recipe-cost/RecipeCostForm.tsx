@@ -44,6 +44,7 @@ const calculateIngredientCost = (ing: FormIngredient) => {
     }
 
     // Fallback if no direct conversion is found
+    console.warn(`Aucune conversion trouvée pour: ${ing.unitPurchase} -> ${ing.unitUse}`);
     return 0;
 };
 
