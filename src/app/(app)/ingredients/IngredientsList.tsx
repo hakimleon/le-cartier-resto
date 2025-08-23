@@ -10,10 +10,22 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Ingredient } from "@/data/definitions";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Edit, Package, Plus, Search, Database } from "lucide-react";
+import { Edit, Package, Plus, Search, Database, RefreshCw } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { IngredientForm } from "./IngredientForm";
 import { seedIngredients } from "./actions";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("fr-DZ", { style: "currency", currency: "DZD" }).format(value).replace("DZD", "").trim() + " DZD";
@@ -95,10 +107,34 @@ export function IngredientsList({ initialIngredients }: IngredientsListProps) {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-            <Button onClick={handleAddNew} className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                <Plus className="mr-2 h-4 w-4" />
-                Ajouter un ingrédient
-            </Button>
+            <div className="flex items-center gap-2">
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                     <Button variant="outline" disabled={isSeeding}>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        {isSeeding ? "Réinitialisation..." : "Réinitialiser les données"}
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Cette action va effacer toutes les données actuelles (ingrédients, recettes, etc.) et les remplacer par les données de démonstration. Cette opération est irréversible.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Annuler</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleSeedDatabase} disabled={isSeeding}>
+                        Confirmer la réinitialisation
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+                <Button onClick={handleAddNew} className="bg-primary hover:bg-primary/90 text-primary-foreground">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Ajouter un ingrédient
+                </Button>
+            </div>
         </div>
         
         <Card className="shadow-lg">
@@ -150,7 +186,7 @@ export function IngredientsList({ initialIngredients }: IngredientsListProps) {
                             <div className="flex flex-col items-center gap-4">
                                 <Package className="w-16 h-16 text-muted-foreground/50" />
                                 <p className="font-semibold">Votre inventaire est vide.</p>
-                                <p>Initialisez votre base de données pour commencer.</p>
+                                <p>Cliquez sur le bouton ci-dessous pour initialiser votre base de données avec des données de démonstration.</p>
                                 <Button onClick={handleSeedDatabase} disabled={isSeeding}>
                                     <Database className="mr-2 h-4 w-4" />
                                     {isSeeding ? "Initialisation en cours..." : "Initialiser la base de données"}
