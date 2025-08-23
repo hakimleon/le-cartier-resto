@@ -8,12 +8,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Save, Trash2, X } from "lucide-react";
+import { PlusCircle, Save, Trash2, X, ChevronsUpDown, Check } from "lucide-react";
 import { categories as menuCategories, Recipe, Ingredient as StockIngredient, conversions, RecipeIngredient } from "@/data/definitions";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 
 
 interface FormIngredient {
@@ -61,64 +63,55 @@ type RecipeCostFormProps = {
 const IngredientSearch = ({
   stockIngredients,
   onSelect,
-  initialName = ''
+  value
 }: {
   stockIngredients: StockIngredient[];
   onSelect: (stockId: string) => void;
-  initialName?: string;
+  value: string;
 }) => {
-  const [searchTerm, setSearchTerm] = useState(initialName);
-  const [showSuggestions, setShowSuggestions] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  const filteredIngredients = stockIngredients.filter(i =>
-    i.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-  
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, []);
-
-  const handleSelect = (stockId: string) => {
-    const selected = stockIngredients.find(i => i.id === stockId);
-    if(selected) {
-      setSearchTerm(selected.name);
-    }
-    onSelect(stockId);
-    setShowSuggestions(false);
-  };
+  const [open, setOpen] = useState(false)
+  const selectedIngredientName = stockIngredients.find(i => i.id === value)?.name || "Sélectionner un ingrédient...";
 
   return (
-    <div className="relative" ref={containerRef}>
-      <Input
-        type="text"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        onFocus={() => setShowSuggestions(true)}
-        placeholder="Rechercher un ingrédient..."
-      />
-      {showSuggestions && searchTerm && filteredIngredients.length > 0 && (
-        <ul className="absolute z-10 w-full bg-card border border-border mt-1 rounded-md shadow-lg max-h-60 overflow-y-auto">
-          {filteredIngredients.map(ing => (
-            <li
-              key={ing.id}
-              className="p-2 hover:bg-muted cursor-pointer text-sm"
-              onClick={() => handleSelect(ing.id)}
-            >
-              {ing.name}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+        >
+          {selectedIngredientName}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0">
+        <Command>
+          <CommandInput placeholder="Rechercher un ingrédient..." />
+          <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+          <CommandGroup>
+            {stockIngredients.map((ingredient) => (
+              <CommandItem
+                key={ingredient.id}
+                value={ingredient.name}
+                onSelect={() => {
+                  onSelect(ingredient.id);
+                  setOpen(false);
+                }}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    value === ingredient.id ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {ingredient.name}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 };
 
@@ -348,7 +341,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                        <IngredientSearch
                         stockIngredients={stockIngredients}
                         onSelect={(stockId) => handleSelectIngredient(ing.id, stockId)}
-                        initialName={ing.name}
+                        value={ing.stockId}
                       />
                     </TableCell>
                     <TableCell>
