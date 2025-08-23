@@ -9,11 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Save, Trash2, X } from "lucide-react";
+import { PlusCircle, Save, Trash2, X, Check, ChevronsUpDown } from "lucide-react";
 import { categories as menuCategories, Recipe, Ingredient as StockIngredient, conversions, RecipeIngredient } from "@/data/definitions";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
+import { cn } from "@/lib/utils";
+
 
 interface FormIngredient {
   id: number;
@@ -55,6 +59,62 @@ type RecipeCostFormProps = {
   recipes: Recipe[];
   ingredients: StockIngredient[];
   recipeIngredients: RecipeIngredient[];
+};
+
+const IngredientCombobox = ({
+  stockIngredients,
+  value,
+  onSelect,
+}: {
+  stockIngredients: StockIngredient[];
+  value: string;
+  onSelect: (stockId: string) => void;
+}) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className="w-full justify-between"
+        >
+          {value
+            ? stockIngredients.find((i) => i.id === value)?.name
+            : "Choisir un ingrédient..."}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[250px] p-0">
+        <Command>
+          <CommandInput placeholder="Rechercher un ingrédient..." />
+          <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+          <CommandGroup>
+            {stockIngredients.map((ingredient) => (
+              <CommandItem
+                key={ingredient.id}
+                value={ingredient.id}
+                onSelect={(currentValue) => {
+                  onSelect(currentValue === value ? "" : currentValue);
+                  setOpen(false);
+                }}
+              >
+                <Check
+                  className={cn(
+                    "mr-2 h-4 w-4",
+                    value === ingredient.id ? "opacity-100" : "opacity-0"
+                  )}
+                />
+                {ingredient.name}
+              </CommandItem>
+            ))}
+          </CommandGroup>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
 };
 
 export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients, recipeIngredients: allRecipeIngredients }: RecipeCostFormProps) {
@@ -286,19 +346,11 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                 {ingredients.map((ing) => (
                   <TableRow key={ing.id}>
                     <TableCell>
-                       <Select 
-                          value={ing.stockId} 
-                          onValueChange={(value) => handleSelectIngredient(ing.id, value)}
-                        >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choisir un ingrédient..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ingredientOptions.map(option => (
-                            <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <IngredientCombobox
+                        stockIngredients={stockIngredients}
+                        value={ing.stockId}
+                        onSelect={(stockId) => handleSelectIngredient(ing.id, stockId)}
+                      />
                     </TableCell>
                     <TableCell>
                       <Input
