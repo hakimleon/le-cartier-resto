@@ -14,8 +14,6 @@ import { categories as menuCategories, Recipe, Ingredient as StockIngredient, co
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 
 interface FormIngredient {
   id: number;
@@ -32,17 +30,20 @@ const formatCurrency = (value: number) => {
 };
 
 const calculateIngredientCost = (ing: FormIngredient) => {
-    if (ing.unitPurchase === ing.unitUse) {
+    if (!ing.unitPurchase || !ing.unitUse || !ing.unitCost || !ing.quantity) return 0;
+    
+    if (ing.unitPurchase.toLowerCase() === ing.unitUse.toLowerCase()) {
         return ing.unitCost * ing.quantity;
     }
 
-    const conversion = conversions.find(c => c.fromUnit === ing.unitPurchase && c.toUnit === ing.unitUse);
+    const conversion = conversions.find(c => c.fromUnit.toLowerCase() === ing.unitPurchase.toLowerCase() && c.toUnit.toLowerCase() === ing.unitUse.toLowerCase());
+    
     if (conversion) {
         const costPerUseUnit = ing.unitCost / conversion.factor;
         return costPerUseUnit * ing.quantity;
     }
 
-    // Fallback if no direct conversion is found (you might want to handle this more gracefully)
+    // Fallback if no direct conversion is found
     return 0;
 };
 
