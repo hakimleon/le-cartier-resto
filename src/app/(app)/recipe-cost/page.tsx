@@ -1,6 +1,5 @@
 
-
-"use client"
+"use client";
 
 import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/common/AppHeader";
@@ -8,6 +7,7 @@ import { RecipeCostForm } from "./RecipeCostForm";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Recipe, Ingredient, RecipeIngredient } from "@/data/definitions";
+import { FileText } from "lucide-react";
 
 export default function RecipeCostPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -39,8 +39,8 @@ export default function RecipeCostPage() {
     return (
       <div className="flex flex-col h-full bg-background">
         <AppHeader title="Chargement..." />
-        <main className="flex-1 p-4 lg:p-6">
-          <p>Chargement...</p>
+        <main className="flex-1 p-4 lg:p-6 text-center">
+          <p>Chargement des données...</p>
         </main>
       </div>
     )
@@ -48,7 +48,15 @@ export default function RecipeCostPage() {
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <AppHeader title="Nouvelle Fiche Technique" />
+      <header className="flex items-center justify-center p-4 lg:px-6 border-b">
+         <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2">
+                <FileText className="h-6 w-6 text-primary" />
+                <h1 className="text-2xl font-bold font-headline">Nouvelle Fiche Technique</h1>
+            </div>
+            <p className="text-muted-foreground">Créez une nouvelle fiche de coût pour un plat</p>
+         </div>
+      </header>
       <main className="flex-1 p-4 lg:p-6">
         <RecipeCostForm 
             recipe={null} 

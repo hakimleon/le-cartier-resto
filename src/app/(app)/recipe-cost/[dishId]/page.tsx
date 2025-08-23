@@ -1,17 +1,20 @@
 
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/common/AppHeader";
 import { RecipeCostForm } from "../RecipeCostForm";
-import { notFound } from "next/navigation";
+import { notFound, useRouter } from "next/navigation";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Recipe, Ingredient, RecipeIngredient } from "@/data/definitions";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, FileText } from "lucide-react";
+import Link from "next/link";
 
 export default function DynamicRecipeCostPage({ params }: { params: { dishId: string } }) {
   const { dishId } = params;
+  const router = useRouter();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -50,12 +53,14 @@ export default function DynamicRecipeCostPage({ params }: { params: { dishId: st
     fetchData();
   }, [dishId]);
 
+  const pageTitle = recipe ? `Fiche pour ${recipe.name}` : "Fiche Technique";
+
   if (loading) {
     return (
       <div className="flex flex-col h-full bg-background">
         <AppHeader title="Chargement de la Fiche Technique..." />
-        <main className="flex-1 p-4 lg:p-6">
-          <p>Chargement...</p>
+        <main className="flex-1 p-4 lg:p-6 text-center">
+          <p>Chargement des données...</p>
         </main>
       </div>
     );
@@ -67,7 +72,23 @@ export default function DynamicRecipeCostPage({ params }: { params: { dishId: st
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <AppHeader title={`Fiche Technique: ${recipe.name}`} />
+      <header className="flex items-center justify-between p-4 lg:px-6 border-b">
+         <Button variant="outline" asChild>
+            <Link href="/menu">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Retour au menu
+            </Link>
+         </Button>
+         <div className="flex flex-col items-center">
+            <div className="flex items-center gap-2">
+                <FileText className="h-6 w-6 text-primary" />
+                <h1 className="text-2xl font-bold font-headline">Fiche Technique d'Envoi</h1>
+            </div>
+            <p className="text-muted-foreground">{pageTitle}</p>
+         </div>
+         {/* Placeholder to balance the flex layout */}
+         <div className="w-[160px]"></div> 
+      </header>
       <main className="flex-1 p-4 lg:p-6">
         <RecipeCostForm 
           recipe={recipe} 

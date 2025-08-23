@@ -1,18 +1,16 @@
 
-
 "use client";
 
-import { useState, useMemo, ChangeEvent, KeyboardEvent, useEffect, useRef } from "react";
+import { useState, useMemo, ChangeEvent, KeyboardEvent, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { PlusCircle, Save, Trash2, X, Check, ChevronsUpDown } from "lucide-react";
+import { PlusCircle, Save, Trash2, Check, ChevronsUpDown } from "lucide-react";
 import { categories as menuCategories, Recipe, Ingredient as StockIngredient, conversions, RecipeIngredient } from "@/data/definitions";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -22,14 +20,15 @@ interface FormIngredient {
   id: number;
   stockId: string;
   name: string;
+  category: string;
   unitUse: string;
-  unitCost: number; // Cost per purchase unit
+  unitCost: number;
   unitPurchase: string;
   quantity: number;
 }
 
 const formatCurrency = (value: number) => {
-  return new Intl.NumberFormat("fr-DZ", { style: "currency", currency: "DZD" }).format(value).replace("DZD", "").trim() + " DA";
+  return new Intl.NumberFormat("fr-DZ", { style: "currency", currency: "DZD" }).format(value).replace("DZD", "").trim() + " DZD";
 };
 
 const calculateIngredientCost = (ing: FormIngredient): number => {
@@ -49,7 +48,7 @@ const calculateIngredientCost = (ing: FormIngredient): number => {
     }
     
     console.warn(`Aucune conversion trouvée pour: ${ing.unitPurchase} -> ${ing.unitUse}`);
-    return 0; // Return 0 if no conversion is found
+    return 0;
 };
 
 type RecipeCostFormProps = {
@@ -64,19 +63,14 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
   const [dishName, setDishName] = useState("");
   const [category, setCategory] = useState(menuCategories[0]);
   const [priceTTC, setPriceTTC] = useState(0);
-  const [vatRate, setVatRate] = useState(19);
+  const [vatRate, setVatRate] = useState(10); // Changed from 19 to 10 based on screenshot
   const [portions, setPortions] = useState(1);
-  const [ingredients, setIngredients] = useState<FormIngredient[]>([]);
+  const [formIngredients, setFormIngredients] = useState<FormIngredient[]>([]);
   
   const [preparation, setPreparation] = useState("");
   const [cooking, setCooking] = useState("");
   const [service, setService] = useState("");
   
-  const [allergenInput, setAllergenInput] = useState("");
-  const [allergens, setAllergens] = useState<string[]>([]);
-  
-  const [salesPitch, setSalesPitch] = useState("");
-
   const [openComboboxes, setOpenComboboxes] = useState<{ [key: number]: boolean }>({});
 
   useEffect(() => {
@@ -94,6 +88,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
             id: Date.now() + index,
             stockId: stockItem?.id || '',
             name: stockItem?.name || 'Ingrédient non trouvé',
+            category: stockItem?.category || '',
             unitUse: ri.unitUse,
             unitCost: stockItem?.unitPrice || 0,
             unitPurchase: stockItem?.unitPurchase || '',
@@ -101,50 +96,48 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
           }
         });
 
-      setIngredients(relatedIngredients);
+      setFormIngredients(relatedIngredients);
       if (recipe.procedure) {
-        setPreparation(recipe.procedure.preparation.join('\\n'));
-        setCooking(recipe.procedure.cuisson.join('\\n'));
-        setService(recipe.procedure.service.join('\\n'));
+        setPreparation(recipe.procedure.preparation.join('\n'));
+        setCooking(recipe.procedure.cuisson.join('\n'));
+        setService(recipe.procedure.service.join('\n'));
       }
-      setAllergens(recipe.allergens || []);
-      setSalesPitch(recipe.argumentationCommerciale || '');
     }
   }, [recipe, allRecipeIngredients, stockIngredients]);
 
-
   const handleAddIngredient = () => {
-    setIngredients([
-      ...ingredients,
-      { id: Date.now(), stockId: "", name: "", unitUse: "g", unitCost: 0, unitPurchase: 'kg', quantity: 0 },
+    setFormIngredients([
+      ...formIngredients,
+      { id: Date.now(), stockId: "", name: "", category: "", unitUse: "g", unitCost: 0, unitPurchase: 'kg', quantity: 0 },
     ]);
   };
 
   const handleRemoveIngredient = (id: number) => {
-    setIngredients(ingredients.filter((ing) => ing.id !== id));
+    setFormIngredients(formIngredients.filter((ing) => ing.id !== id));
   };
   
   const handleIngredientChange = (id: number, field: keyof FormIngredient, value: string | number) => {
-    setIngredients((currentIngredients) =>
+    setFormIngredients((currentIngredients) =>
         currentIngredients.map((ing) =>
             ing.id === id ? { ...ing, [field]: value } : ing
         )
     );
-};
+  };
   
-  const handleSelectIngredient = (ingredientRowId: number, selectedStockName: string) => {
-    const stockItem = stockIngredients.find(item => item.name.toLowerCase() === selectedStockName.toLowerCase());
+  const handleSelectIngredient = (ingredientRowId: number, selectedValue: string) => {
+    const stockItem = stockIngredients.find(item => item.name.toLowerCase() === selectedValue.toLowerCase());
     if (stockItem) {
         const conversion = conversions.find(c => c.fromUnit.toLowerCase() === stockItem.unitPurchase.toLowerCase());
         const defaultUseUnit = conversion ? conversion.toUnit : stockItem.unitPurchase;
 
-        setIngredients(
-            ingredients.map(ing =>
+        setFormIngredients(
+            formIngredients.map(ing =>
                 ing.id === ingredientRowId
                     ? {
                         ...ing,
                         stockId: stockItem.id,
                         name: stockItem.name,
+                        category: stockItem.category,
                         unitCost: stockItem.unitPrice,
                         unitPurchase: stockItem.unitPurchase,
                         unitUse: defaultUseUnit,
@@ -157,8 +150,8 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
   };
   
   const totalIngredientCost = useMemo(() => {
-    return ingredients.reduce((total, ing) => total + calculateIngredientCost(ing), 0);
-  }, [ingredients]);
+    return formIngredients.reduce((total, ing) => total + calculateIngredientCost(ing), 0);
+  }, [formIngredients]);
 
   const { priceHT, costPerPortion, unitMargin, costPercentage } = useMemo(() => {
     const priceHT = priceTTC / (1 + vatRate / 100);
@@ -168,24 +161,6 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
     return { priceHT, costPerPortion, unitMargin, costPercentage };
   }, [priceTTC, vatRate, portions, totalIngredientCost]);
 
-  const handleAddAllergen = () => {
-    if (allergenInput.trim() && !allergens.includes(allergenInput.trim())) {
-      setAllergens([...allergens, allergenInput.trim()]);
-      setAllergenInput("");
-    }
-  };
-
-  const handleAllergenKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleAddAllergen();
-    }
-  };
-  
-  const handleRemoveAllergen = (allergenToRemove: string) => {
-    setAllergens(allergens.filter(allergen => allergen !== allergenToRemove));
-  };
-
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     toast({
@@ -193,7 +168,6 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
       description: `Les informations pour "${dishName}" ont été mises à jour.`,
     });
   };
-
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
@@ -219,7 +193,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="priceTTC">Prix TTC (DA)</Label>
+              <Label htmlFor="priceTTC">Prix TTC (DZD)</Label>
               <Input id="priceTTC" type="number" value={priceTTC} onChange={(e: ChangeEvent<HTMLInputElement>) => setPriceTTC(Number(e.target.value))} />
             </div>
             <div className="space-y-2">
@@ -231,7 +205,7 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
               <Input id="portions" type="number" value={portions} onChange={(e: ChangeEvent<HTMLInputElement>) => setPortions(Number(e.target.value))} min="1"/>
             </div>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 rounded-lg bg-secondary">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 p-4 rounded-lg bg-muted/50">
             <div className="text-center">
               <div className="text-sm text-muted-foreground">Prix HT</div>
               <div className="font-bold text-lg text-foreground">{formatCurrency(priceHT)}</div>
@@ -245,11 +219,11 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
               <div className="font-bold text-lg text-green-600">{formatCurrency(unitMargin)}</div>
             </div>
             <div className="text-center">
-              <div className="text-sm text-muted-foreground">Ratio Coût</div>
+              <div className="text-sm text-muted-foreground">Coût %</div>
               <div className="font-bold text-lg text-foreground">{costPercentage.toFixed(1)}%</div>
             </div>
-             <div className="text-center">
-              <div className="text-sm text-muted-foreground">Total Coût Recette</div>
+            <div className="text-center">
+              <div className="text-sm text-muted-foreground">Total Coût</div>
               <div className="font-bold text-lg text-primary">{formatCurrency(totalIngredientCost)}</div>
             </div>
           </div>
@@ -258,30 +232,31 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
       
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Ingrédients & Coûts</CardTitle>
-            <CardDescription>Ajoutez les ingrédients pour calculer le coût de la recette.</CardDescription>
-          </div>
-          <Button type="button" onClick={handleAddIngredient}>
+          <CardTitle>Ingrédients & Coûts</CardTitle>
+          <Button type="button" onClick={handleAddIngredient} className="bg-orange-500 hover:bg-orange-600 text-white">
             <PlusCircle className="mr-2 h-4 w-4" />
             Ajouter un ingrédient
           </Button>
         </CardHeader>
         <CardContent>
-          <div className="overflow-x-auto relative">
+          <div className="overflow-x-auto relative border rounded-lg">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[300px]">Ingrédient</TableHead>
-                  <TableHead className="w-[120px]">Quantité</TableHead>
-                  <TableHead className="w-[120px]">Unité (Util.)</TableHead>
+                  <TableHead className="w-[200px]">Catégorie</TableHead>
+                  <TableHead className="w-[250px]">Ingrédient</TableHead>
+                  <TableHead className="w-[180px]">Unité Usage</TableHead>
+                  <TableHead className="w-[150px]">Quantité</TableHead>
                   <TableHead className="text-right">Coût Total</TableHead>
                   <TableHead className="text-center w-[80px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {ingredients.map((ing) => (
+                {formIngredients.map((ing) => (
                   <TableRow key={ing.id}>
+                    <TableCell>
+                      <Input value={ing.category} readOnly className="bg-muted/50 border-none" />
+                    </TableCell>
                     <TableCell>
                       <Popover open={openComboboxes[ing.id] || false} onOpenChange={(open) => setOpenComboboxes(prev => ({...prev, [ing.id]: open}))}>
                           <PopoverTrigger asChild>
@@ -325,19 +300,18 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                       </Popover>
                     </TableCell>
                     <TableCell>
-                      <Input
-                        type="number"
-                        value={ing.quantity}
-                        onChange={(e) => handleIngredientChange(ing.id, "quantity", Number(e.target.value))}
-                        className="text-right"
-                      />
-                    </TableCell>
-                    <TableCell>
                        <Input
                         type="text"
                         value={ing.unitUse}
                         onChange={(e) => handleIngredientChange(ing.id, "unitUse", e.target.value)}
                         placeholder="g, ml, pièce..."
+                      />
+                    </TableCell>
+                     <TableCell>
+                      <Input
+                        type="number"
+                        value={ing.quantity}
+                        onChange={(e) => handleIngredientChange(ing.id, "quantity", Number(e.target.value))}
                       />
                     </TableCell>
                     <TableCell className="text-right font-medium">
@@ -350,9 +324,9 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                     </TableCell>
                   </TableRow>
                 ))}
-                {ingredients.length === 0 && (
+                {formIngredients.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
+                    <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
                       Aucun ingrédient ajouté.
                     </TableCell>
                   </TableRow>
@@ -360,10 +334,10 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
               </TableBody>
             </Table>
           </div>
-          <div className="flex justify-end mt-4 p-4 rounded-lg bg-muted">
-            <div className="text-right">
-              <div className="text-lg font-semibold text-muted-foreground">Coût Total des Ingrédients</div>
-              <div className="text-2xl font-bold text-primary">{formatCurrency(totalIngredientCost)}</div>
+          <div className="flex justify-end mt-4 p-4 rounded-lg bg-orange-100/50 border border-orange-200">
+            <div className="flex items-center gap-4">
+              <div className="text-lg font-semibold text-muted-foreground">Grand Total</div>
+              <div className="text-2xl font-bold text-orange-600">{formatCurrency(totalIngredientCost)}</div>
             </div>
           </div>
         </CardContent>
@@ -387,44 +361,6 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
             <Label htmlFor="service">Service / Dressage</Label>
             <Textarea id="service" value={service} onChange={(e) => setService(e.target.value)} placeholder="Instructions de dressage..." />
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-            <CardTitle>Allergènes & Régimes Spéciaux</CardTitle>
-            <CardDescription>Listez les allergènes présents et les régimes compatibles.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <div className="flex gap-2 mb-4">
-                <Input 
-                    value={allergenInput} 
-                    onChange={(e) => setAllergenInput(e.target.value)}
-                    onKeyDown={handleAllergenKeyDown}
-                    placeholder="Ajouter un allergène (ex: Gluten, Lactose...)"
-                />
-                 <Button type="button" onClick={handleAddAllergen}>Ajouter</Button>
-            </div>
-            <div className="flex flex-wrap gap-2">
-                {allergens.map(allergen => (
-                    <Badge key={allergen} variant="secondary" className="text-base py-1 px-3">
-                        {allergen}
-                        <button type="button" onClick={() => handleRemoveAllergen(allergen)} className="ml-2 rounded-full hover:bg-destructive/20 p-0.5">
-                            <X className="h-3 w-3" />
-                        </button>
-                    </Badge>
-                ))}
-            </div>
-        </CardContent>
-      </Card>
-
-       <Card>
-        <CardHeader>
-            <CardTitle>Argumentation Commerciale</CardTitle>
-            <CardDescription>Rédigez un texte pour aider le personnel de salle à vendre ce plat.</CardDescription>
-        </CardHeader>
-        <CardContent>
-             <Textarea value={salesPitch} onChange={(e) => setSalesPitch(e.target.value)} placeholder="Ex: Un plat généreux et réconfortant, parfait avec notre vin rouge maison..." rows={4}/>
         </CardContent>
       </Card>
       
