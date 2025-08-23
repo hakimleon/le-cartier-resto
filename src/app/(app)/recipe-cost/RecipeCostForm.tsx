@@ -304,8 +304,10 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                                           {stockIngredients.map((stockIng) => (
                                               <CommandItem
                                                   key={stockIng.id}
-                                                  value={stockIng.name}
-                                                  onSelect={() => handleSelectIngredient(ing.id, stockIng.id)}
+                                                  value={stockIng.id}
+                                                  onSelect={(currentValue) => {
+                                                    handleSelectIngredient(ing.id, currentValue);
+                                                  }}
                                               >
                                                   <Check
                                                       className={cn(
@@ -435,4 +437,3 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
     </form>
   );
 
-    
