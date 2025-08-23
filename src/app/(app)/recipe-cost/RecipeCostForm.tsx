@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlusCircle, Save, Trash2, X } from "lucide-react";
-import { categories as menuCategories, Recipe, Ingredient as StockIngredient, conversions } from "@/data/definitions";
+import { categories as menuCategories, Recipe, Ingredient as StockIngredient, conversions, RecipeIngredient } from "@/data/definitions";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
@@ -29,8 +29,10 @@ const formatCurrency = (value: number) => {
   return new Intl.NumberFormat("fr-DZ", { style: "currency", currency: "DZD" }).format(value).replace("DZD", "").trim() + " DA";
 };
 
-const calculateIngredientCost = (ing: FormIngredient) => {
-    if (!ing.unitPurchase || !ing.unitUse || !ing.unitCost || !ing.quantity) return 0;
+const calculateIngredientCost = (ing: FormIngredient): number => {
+    if (!ing.unitPurchase || !ing.unitUse || !ing.unitCost || !ing.quantity) {
+        return 0;
+    }
     
     if (ing.unitPurchase.toLowerCase() === ing.unitUse.toLowerCase()) {
         return ing.unitCost * ing.quantity;
@@ -42,10 +44,9 @@ const calculateIngredientCost = (ing: FormIngredient) => {
         const costPerUseUnit = ing.unitCost / conversion.factor;
         return costPerUseUnit * ing.quantity;
     }
-
-    // Fallback if no direct conversion is found
+    
     console.warn(`Aucune conversion trouvée pour: ${ing.unitPurchase} -> ${ing.unitUse}`);
-    return 0;
+    return 0; // Return 0 if no conversion is found
 };
 
 
@@ -53,7 +54,7 @@ type RecipeCostFormProps = {
   recipe: Recipe | null;
   recipes: Recipe[];
   ingredients: StockIngredient[];
-  recipeIngredients: any[]; // Adjust type as needed
+  recipeIngredients: RecipeIngredient[];
 };
 
 export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients, recipeIngredients: allRecipeIngredients }: RecipeCostFormProps) {
@@ -98,10 +99,12 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
         });
 
       setIngredients(relatedIngredients);
-      setPreparation(recipe.procedure.preparation.join('\\n'));
-      setCooking(recipe.procedure.cuisson.join('\\n'));
-      setService(recipe.procedure.service.join('\\n'));
-      setAllergens(recipe.allergens);
+      if (recipe.procedure) {
+        setPreparation(recipe.procedure.preparation.join('\\n'));
+        setCooking(recipe.procedure.cuisson.join('\\n'));
+        setService(recipe.procedure.service.join('\\n'));
+      }
+      setAllergens(recipe.allergens || []);
       setSalesPitch(recipe.argumentationCommerciale || '');
     }
   }, [recipe, allRecipeIngredients, stockIngredients]);
@@ -119,12 +122,12 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
   };
   
   const handleIngredientChange = (id: number, field: keyof FormIngredient, value: string | number) => {
-    setIngredients(
-      ingredients.map((ing) =>
-        ing.id === id ? { ...ing, [field]: value } : ing
-      )
+    setIngredients((currentIngredients) =>
+        currentIngredients.map((ing) =>
+            ing.id === id ? { ...ing, [field]: value } : ing
+        )
     );
-  };
+};
   
   const handleSelectIngredient = (ingredientRowId: number, selectedStockId: string) => {
     const stockItem = stockIngredients.find(item => item.id === selectedStockId);
@@ -137,7 +140,6 @@ export function RecipeCostForm({ recipe, recipes, ingredients: stockIngredients,
                         ...ing,
                         stockId: stockItem.id,
                         name: stockItem.name,
-                        unitUse: ing.unitUse, // Keep user-defined unit of use
                         unitCost: stockItem.unitPrice,
                         unitPurchase: stockItem.unitPurchase,
                       }
