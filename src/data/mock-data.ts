@@ -1,4 +1,3 @@
-
 // src/data/mock-data.ts
 import { Recipe, RecipeIngredient } from './definitions';
 

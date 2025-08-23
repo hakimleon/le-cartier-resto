@@ -2,36 +2,9 @@
 "use server";
 
 import { db } from "@/lib/firebase";
-import { collection, writeBatch, doc, getDocs } from "firebase/firestore";
+import { collection, writeBatch, doc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 import { mockRecipes, mockRecipeIngredients } from "@/data/mock-data";
-import { Recipe } from "@/data/definitions";
-
-// Function to get the full recipes with a calculated cost
-async function getFullRecipesWithCost(): Promise<Recipe[]> {
-    const ingredientsSnapshot = await getDocs(collection(db, "ingredients"));
-    const ingredients = ingredientsSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-    const fullRecipes = mockRecipes.map(recipe => {
-        const relatedIngredients = mockRecipeIngredients.filter(ri => ri.recipeId === recipe.id);
-        const cost = relatedIngredients.reduce((acc, ri) => {
-            const ingredient = ingredients.find(ing => ing.id === ri.ingredientId);
-            if (!ingredient) return acc;
-            // Simplified cost calculation, assumes unitUse is 'g' and unitPurchase is 'kg' for cost calculation
-            // In a real app, this would be more robust with unit conversions
-            const costPerGram = ingredient.unitPrice / 1000;
-            return acc + (costPerGram * ri.quantity);
-        }, 0);
-        return {
-            ...recipe,
-            cost: cost, // Calculated cost
-            argumentationCommerciale: recipe.name // Placeholder
-        };
-    });
-
-    return fullRecipes;
-}
-
 
 export async function seedRecipes() {
   try {
