@@ -129,6 +129,7 @@ export default function MenuClient() {
     setIsLoading(true);
     try {
       const recipesCol = collection(db, "recipes");
+      // Try to fetch with ordering first
       const q = query(recipesCol, orderBy("name"));
       const snapshot = await getDocs(q);
       const recipeList = snapshot.docs.map(doc => ({
@@ -137,11 +138,11 @@ export default function MenuClient() {
       } as Recipe));
       setRecipes(recipeList);
     } catch(error) {
-      console.error("Error fetching recipes:", error);
+      console.error("Error fetching ordered recipes (this is expected if the index is not created):", error);
       toast({
-        variant: "destructive",
-        title: "Erreur de chargement",
-        description: "Impossible de charger les recettes. L'index Firestore requis est peut-être manquant.",
+        variant: "default",
+        title: "Note d'information",
+        description: "L'index de tri des recettes n'est pas configuré. L'affichage peut être non trié.",
       });
       // Fallback: fetch without ordering if ordering fails
       try {
@@ -154,6 +155,11 @@ export default function MenuClient() {
           setRecipes(recipeList);
       } catch (e) {
           console.error("Error fetching recipes without ordering:", e);
+           toast({
+            variant: "destructive",
+            title: "Erreur de chargement",
+            description: "Impossible de charger les recettes depuis Firestore.",
+          });
           setRecipes([]); // Set to empty array on error
       }
     } finally {
@@ -366,5 +372,3 @@ export default function MenuClient() {
     </div>
   );
 }
-
-    
