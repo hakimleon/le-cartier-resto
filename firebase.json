@@ -1,0 +1,10 @@
+
+{
+  "storage": {
+    "rules": "storage.rules",
+    "cors": "cors.json"
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}
