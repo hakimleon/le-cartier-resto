@@ -11,7 +11,7 @@ export default function MenuPageLoader() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   // This key is used to force a re-render of the client component
-  const [key, setKey] = useState(Date.now()); 
+  const [refreshKey, setRefreshKey] = useState(0); 
 
   const getRecipes = useCallback(async () => {
     setIsLoading(true);
@@ -38,10 +38,10 @@ export default function MenuPageLoader() {
 
   useEffect(() => {
     getRecipes();
-  }, [getRecipes, key]);
+  }, [getRecipes, refreshKey]);
 
   const handleRefresh = () => {
-    setKey(Date.now());
+    setRefreshKey(oldKey => oldKey + 1);
   };
 
   return <MenuClient initialRecipes={recipes} isLoading={isLoading} onRefresh={handleRefresh} />;
