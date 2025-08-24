@@ -7,7 +7,7 @@ import { collection, doc, setDoc, writeBatch, deleteDoc } from "firebase/firesto
 import { revalidatePath } from "next/cache";
 import { mockRecipes, mockRecipeIngredients } from "@/data/mock-data";
 import { Recipe } from "@/data/definitions";
-import { generateDishImage, type GenerateDishImageInput, type GenerateDishImageOutput } from "@/ai/flows/generate-dish-image";
+import { generateDishImage, type GenerateDishImageInput } from "@/ai/flows/generate-dish-image";
 import { z } from "zod";
 
 export async function saveDish(formData: FormData) {
@@ -111,7 +111,7 @@ const GenerateImageSchema = z.object({
   imageHint: z.string().min(1, "La description pour l'IA est requise."),
 });
 
-export async function generateDishImageAction(formData: FormData) {
+export async function generateDishImageAction(formData: FormData): Promise<{ success: boolean; data?: any; message: string; }> {
   const rawData = Object.fromEntries(formData.entries());
   const validatedFields = GenerateImageSchema.safeParse({
     imageHint: rawData.imageHint,
@@ -128,7 +128,12 @@ export async function generateDishImageAction(formData: FormData) {
 
     const result = await generateDishImage(generationInput);
     
-    return { success: true, data: result, message: "Image générée avec succès." };
+    // The AI flow now returns an object { imageUrl: "data:..." }. We need to adapt.
+    // Let's wrap it in an array to maintain compatibility with the multi-image modal,
+    // even though we only expect one image now.
+    const imageUrls = result.imageUrl ? [result.imageUrl] : [];
+
+    return { success: true, data: imageUrls, message: "Image générée avec succès." };
 
   } catch (error) {
     console.error("Error in generateDishImageAction:", error);

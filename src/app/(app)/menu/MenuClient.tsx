@@ -10,8 +10,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Recipe, categories } from "@/data/definitions";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search, Package, Loader, Database } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search, Package, Loader, Database, CheckCircle2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DishForm } from "./DishForm";
 import { useToast } from "@/hooks/use-toast";
@@ -37,7 +37,7 @@ const getTagClass = (tag: Recipe['tags'][number]) => {
     case 'Épicé': return "bg-orange-500/10 text-orange-400 border-orange-500/20";
     case 'Sans gluten': return "bg-purple-400/10 text-purple-300 border-purple-400/20";
     case 'Nouveau': return "bg-teal-400/10 text-teal-300 border-teal-400/20";
-    case 'Populaire': return "bg-pink-500/10 text-pink-400 border-pink-400/20";
+    case 'Populaire': return "bg-pink-500/10 text-pink-400 border-pink-500/20";
     case 'Halal': return "bg-blue-400/10 text-blue-300 border-blue-400/20";
     default: return "bg-secondary/10 text-secondary-foreground border-secondary/20";
   }
@@ -114,6 +114,65 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title: string, items
   )
 };
 
+const ImageSelectionModal = ({
+  images,
+  isOpen,
+  onClose,
+  onSelect,
+}: {
+  images: string[];
+  isOpen: boolean;
+  onClose: () => void;
+  onSelect: (imageUrl: string) => void;
+}) => {
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+
+  const handleSelect = () => {
+    if (selectedImage) {
+      onSelect(selectedImage);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-4xl">
+        <DialogHeader>
+          <DialogTitle>Choisissez votre image préférée</DialogTitle>
+          <DialogDescription>
+            Sélectionnez l'image générée par l'IA que vous souhaitez utiliser pour ce plat.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto">
+          {images.map((imgSrc, index) => (
+            <div
+              key={index}
+              className={cn(
+                "relative rounded-lg overflow-hidden cursor-pointer border-4",
+                selectedImage === imgSrc ? "border-primary" : "border-transparent"
+              )}
+              onClick={() => setSelectedImage(imgSrc)}
+            >
+              <Image src={imgSrc} alt={`Generated image ${index + 1}`} width={400} height={400} className="object-cover aspect-square" />
+              {selectedImage === imgSrc && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <CheckCircle2 className="w-16 h-16 text-white" />
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Annuler</Button>
+          <Button onClick={handleSelect} disabled={!selectedImage}>
+            Confirmer la sélection
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+
 export default function MenuClient() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -123,45 +182,49 @@ export default function MenuClient() {
   const [isSeeding, setIsSeeding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const { toast } = useToast();
 
-  const fetchRecipes = async () => {
+  const fetchRecipes = useCallback(async () => {
     setIsLoading(true);
     try {
       const recipesCol = collection(db, "recipes");
-      let snapshot;
-      try {
-        // Try to fetch with ordering first
-        const q = query(recipesCol, orderBy("name"));
-        snapshot = await getDocs(q);
-      } catch (error) {
-        console.error("Firebase orderBy index error (expected on first run). Fetching without order.", error);
-        // Fallback: fetch without ordering if ordering fails (e.g., index not created yet)
-        snapshot = await getDocs(recipesCol);
-      }
-      
+      const q = query(recipesCol, orderBy("name"));
+      const snapshot = await getDocs(q);
       const recipeList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as Recipe));
       setRecipes(recipeList);
-
-    } catch (e) {
-      console.error("Error fetching recipes from Firestore:", e);
-      toast({
-        variant: "destructive",
-        title: "Erreur de chargement",
-        description: "Impossible de charger les recettes. Vérifiez la console pour les erreurs.",
-      });
-      setRecipes([]); // Set to empty array on error
+    } catch (error: any) {
+      console.error("Error fetching sorted recipes, likely missing index:", error.message);
+      try {
+        console.log("Retrying without sorting...");
+        const recipesCol = collection(db, "recipes");
+        const snapshot = await getDocs(recipesCol);
+        const recipeList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Recipe));
+        setRecipes(recipeList);
+      } catch (retryError) {
+        console.error("Error fetching recipes on retry:", retryError);
+        toast({
+          variant: "destructive",
+          title: "Erreur de chargement",
+          description: "Impossible de charger les recettes depuis la base de données.",
+        });
+        setRecipes([]);
+      }
     } finally {
       setIsLoading(false);
     }
-  };
-
+  }, [toast]);
+  
   useEffect(() => {
     fetchRecipes();
-  }, []);
+  }, [fetchRecipes]);
 
 
   const handleAddNew = () => {
@@ -245,13 +308,19 @@ export default function MenuClient() {
     }
   };
 
-  const handleGenerateImage = async (formData: FormData) => {
+  const handleGenerateImages = async (formData: FormData) => {
     setIsGenerating(true);
     try {
       const result = await generateDishImageAction(formData);
       if (result.success && result.data) {
-        formData.set('image', result.data.imageUrl);
-        await handleSaveDish(formData); // This will also close the dialog and refresh
+        if (result.data.length === 1) {
+            // If only one image, save directly without modal
+            formData.set('image', result.data[0]);
+            await handleSaveDish(formData);
+        } else {
+            setGeneratedImages(result.data);
+            setIsImageModalOpen(true);
+        }
       } else {
         throw new Error(result.message);
       }
@@ -265,7 +334,28 @@ export default function MenuClient() {
       setIsGenerating(false);
     }
   };
-  
+
+  const handleImageSelected = async (imageUrl: string) => {
+    // This assumes the form data is still available or can be retrieved
+    // A more robust solution might store the form data in state before opening the modal.
+    // For now, we find the form in the DOM - this is not ideal but works for this structure.
+    const form = document.querySelector('form');
+    if (form) {
+      const formData = new FormData(form);
+      formData.set('image', imageUrl);
+      
+      // We need to re-append other necessary fields that are not standard inputs
+      formData.append('id', dishToEdit?.id || '');
+      const statusSwitch = document.getElementById('status') as HTMLButtonElement | null;
+      formData.set('status', statusSwitch?.dataset.state === 'checked' ? 'Actif' : 'Inactif');
+      // ... other fields as needed ...
+
+      await handleSaveDish(formData);
+    }
+    setIsImageModalOpen(false);
+    setGeneratedImages([]);
+  };
+
   const filteredRecipes = recipes.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -273,6 +363,29 @@ export default function MenuClient() {
   );
 
   const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center items-center h-64 gap-2">
+            <Loader className="h-5 w-5 animate-spin" />
+            <p>Chargement du menu...</p>
+        </div>
+      );
+    }
+
+    if (recipes.length === 0 && !searchTerm) {
+      return (
+        <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
+            <Package className="w-16 h-16 text-muted-foreground/50" />
+            <p className="text-lg font-semibold mt-4">Votre menu est vide.</p>
+            <p className="text-sm">Cliquez sur le bouton ci-dessous pour initialiser votre menu avec des plats de démonstration.</p>
+            <Button onClick={handleSeedDatabase} disabled={isSeeding} className="mt-4">
+                <Database className="mr-2 h-4 w-4" />
+                {isSeeding ? "Initialisation en cours..." : "Initialiser le menu"}
+            </Button>
+        </div>
+      );
+    }
+    
     if (filteredRecipes.length === 0 && searchTerm.length > 0) {
       return (
         <div className="text-center py-10">
@@ -323,24 +436,8 @@ export default function MenuClient() {
             </div>
         </div>
 
-        {isLoading ? (
-            <div className="flex justify-center items-center h-64 gap-2">
-                <Loader className="h-5 w-5 animate-spin" />
-                <p>Chargement du menu...</p>
-            </div>
-        ) : recipes.length === 0 && !searchTerm ? (
-            <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
-                <Package className="w-16 h-16 text-muted-foreground/50" />
-                <p className="text-lg font-semibold mt-4">Votre menu est vide.</p>
-                <p className="text-sm">Cliquez sur le bouton ci-dessous pour initialiser votre menu avec des plats de démonstration.</p>
-                <Button onClick={handleSeedDatabase} disabled={isSeeding} className="mt-4">
-                    <Database className="mr-2 h-4 w-4" />
-                    {isSeeding ? "Initialisation en cours..." : "Initialiser le menu"}
-                </Button>
-            </div>
-        ) : (
-            renderContent()
-        )}
+        {renderContent()}
+
       </main>
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => { if (!open) setDishToEdit(null); setIsDialogOpen(open); }}>
@@ -356,11 +453,19 @@ export default function MenuClient() {
             onSave={handleSaveDish}
             onCancel={() => setIsDialogOpen(false)}
             isSaving={isSaving}
-            onGenerate={handleGenerateImage}
+            onGenerate={handleGenerateImages}
             isGenerating={isGenerating}
           />
         </DialogContent>
       </Dialog>
+      
+      <ImageSelectionModal 
+        images={generatedImages}
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+        onSelect={handleImageSelected}
+      />
+
     </div>
   );
 }
