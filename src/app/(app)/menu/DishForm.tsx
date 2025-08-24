@@ -44,8 +44,9 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
   const [imagePreview, setImagePreview] = useState<string | null>(dish?.image || null);
 
   useEffect(() => {
-    setFormData(dish || emptyDish);
-    setImagePreview(dish?.image || null);
+    const initialData = dish || emptyDish;
+    setFormData(initialData);
+    setImagePreview(initialData.image || null);
   }, [dish]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -79,6 +80,7 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
     submissionData.append('status', formData.status);
     submissionData.append('difficulty', String(formData.difficulty));
     submissionData.append('tags', JSON.stringify(formData.tags));
+    submissionData.append('image', formData.image);
     
     onSave(submissionData);
   };
@@ -116,11 +118,11 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="name">Nom du plat *</Label>
-              <Input id="name" name="name" defaultValue={formData.name} required />
+              <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Catégorie *</Label>
-              <Select name="category" defaultValue={formData.category} onValueChange={(value) => handleSelectChange('category', value)}>
+              <Select name="category" value={formData.category} onValueChange={(value) => handleSelectChange('category', value)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
@@ -131,7 +133,7 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" defaultValue={formData.description} rows={3} />
+            <Textarea id="description" name="description" value={formData.description} onChange={handleChange} rows={3} />
           </div>
 
            <div className="space-y-2">
@@ -158,15 +160,15 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
           <div className="grid grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label htmlFor="price">Prix (€) *</Label>
-              <Input id="price" name="price" type="number" defaultValue={formData.price} step="0.01" required />
+              <Input id="price" name="price" type="number" value={formData.price} onChange={handleChange} step="0.01" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="prepTime">Temps de préparation (min) *</Label>
-              <Input id="prepTime" name="prepTime" type="number" defaultValue={formData.prepTime} required />
+              <Input id="prepTime" name="prepTime" type="number" value={formData.prepTime} onChange={handleChange} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="difficulty">Difficulté *</Label>
-              <Select defaultValue={String(formData.difficulty)} onValueChange={(value) => handleSelectChange('difficulty', parseInt(value))}>
+              <Select value={String(formData.difficulty)} onValueChange={(value) => handleSelectChange('difficulty', parseInt(value))}>
                 <SelectTrigger id="difficulty"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {difficultyLevels.map(level => <SelectItem key={level.value} value={String(level.value)}>{level.label}</SelectItem>)}
