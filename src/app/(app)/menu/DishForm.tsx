@@ -10,7 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Upload, Image as ImageIcon } from "lucide-react";
+import { Upload, Image as ImageIcon, Wand2 } from "lucide-react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -51,7 +51,9 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
-    setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
+    const newFormData = { ...formData, [name]: type === 'number' ? parseFloat(value) || 0 : value };
+    setFormData(newFormData);
+
     if (name === 'image') {
         setImagePreview(value);
     }
@@ -80,8 +82,10 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
     submissionData.append('status', formData.status);
     submissionData.append('difficulty', String(formData.difficulty));
     submissionData.append('tags', JSON.stringify(formData.tags));
-    submissionData.append('image', formData.image);
     
+    // Make sure latest imageHint is on the form data
+    submissionData.set('imageHint', formData.imageHint);
+
     onSave(submissionData);
   };
   
@@ -100,7 +104,7 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
           
           <div className="space-y-2">
             <Label>Image du plat</Label>
-            <div className="flex items-center gap-4">
+            <div className="flex items-start gap-4">
               <div className="w-24 h-24 border-2 border-dashed border-border/50 rounded-md flex items-center justify-center bg-background/50 overflow-hidden relative">
                 {imagePreview ? (
                   <Image src={imagePreview} alt="Aperçu" width={96} height={96} className="object-cover" />
@@ -108,9 +112,25 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
                   <ImageIcon className="w-10 h-10 text-muted-foreground" />
                 )}
               </div>
-              <div className="flex-1 space-y-2">
-                <Label htmlFor="image-url">URL de l'image</Label>
-                <Input id="image-url" name="image" value={formData.image} onChange={handleChange} placeholder="https://placehold.co/600x400.png" />
+              <div className="flex-1 space-y-4">
+                <div>
+                  <Label htmlFor="imageHint" className="flex items-center gap-2 mb-1">
+                    <Wand2 className="text-accent" />
+                    Suggestion d'image par IA
+                  </Label>
+                  <Input 
+                    id="imageHint" 
+                    name="imageHint" 
+                    value={formData.imageHint} 
+                    onChange={handleChange} 
+                    placeholder="Ex: Burger gourmet sur planche en bois, frites dorées..."
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Décrivez l'image à générer. Laisser vide pour ne pas générer de nouvelle image.</p>
+                </div>
+                 <div>
+                  <Label htmlFor="image-url">Ou URL de l'image manuelle</Label>
+                  <Input id="image-url" name="image" value={formData.image} onChange={handleChange} placeholder="https://placehold.co/600x400.png" />
+                </div>
               </div>
             </div>
           </div>
