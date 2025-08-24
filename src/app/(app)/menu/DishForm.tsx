@@ -42,17 +42,18 @@ const emptyDish: Omit<Recipe, 'id'> = {
 export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
   const [formData, setFormData] = useState<Omit<Recipe, 'id'>>(dish || emptyDish);
   const [imagePreview, setImagePreview] = useState<string | null>(dish?.image || null);
-  const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     setFormData(dish || emptyDish);
     setImagePreview(dish?.image || null);
-    setImageFile(null);
   }, [dish]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value, type } = e.target;
     setFormData(prev => ({ ...prev, [name]: type === 'number' ? parseFloat(value) || 0 : value }));
+    if (name === 'image') {
+        setImagePreview(value);
+    }
   };
 
   const handleSelectChange = (name: string, value: string | number) => {
@@ -68,18 +69,6 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
     });
   };
 
-  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setImageFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const formEl = e.target as HTMLFormElement;
@@ -90,11 +79,6 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
     submissionData.append('status', formData.status);
     submissionData.append('difficulty', String(formData.difficulty));
     submissionData.append('tags', JSON.stringify(formData.tags));
-    submissionData.append('image', formData.image); // The existing image URL
-
-    if (imageFile) {
-        submissionData.append('imageFile', imageFile);
-    }
     
     onSave(submissionData);
   };
@@ -117,26 +101,15 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
             <div className="flex items-center gap-4">
               <div className="w-24 h-24 border-2 border-dashed border-border/50 rounded-md flex items-center justify-center bg-background/50 overflow-hidden relative">
                 {imagePreview ? (
-                  <>
-                    <Image src={imagePreview} alt="Aperçu" width={96} height={96} className="object-cover" />
-                    <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 rounded-full" onClick={() => {
-                        setImagePreview(null);
-                        setFormData(prev => ({ ...prev, image: "" }));
-                        setImageFile(null);
-                    }}>
-                        <ImageIcon className="w-4 h-4" />
-                    </Button>
-                  </>
+                  <Image src={imagePreview} alt="Aperçu" width={96} height={96} className="object-cover" />
                 ) : (
                   <ImageIcon className="w-10 h-10 text-muted-foreground" />
                 )}
               </div>
-              <Button type="button" asChild variant="outline">
-                <Label htmlFor="image-upload" className="cursor-pointer">
-                  <Upload className="mr-2" /> Télécharger une image
-                </Label>
-              </Button>
-              <Input id="image-upload" name="imageFile" type="file" className="hidden" onChange={handleImageChange} accept="image/*" />
+              <div className="flex-1 space-y-2">
+                <Label htmlFor="image-url">URL de l'image</Label>
+                <Input id="image-url" name="image" value={formData.image} onChange={handleChange} placeholder="https://placehold.co/600x400.png" />
+              </div>
             </div>
           </div>
           
