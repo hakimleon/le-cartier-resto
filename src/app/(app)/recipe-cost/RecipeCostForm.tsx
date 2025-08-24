@@ -1,17 +1,17 @@
 
-
 "use client"
 
 import * as React from "react"
 import { Plus, Trash2 } from "lucide-react"
 
-import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Ingredient, Recipe, RecipeIngredient, units as availableUnits, conversions } from "@/data/definitions"
 import { Textarea } from "@/components/ui/textarea"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 
 // --- Helper Functions ---
 const convertUnits = (quantity: number, fromUnit: string, toUnit: string): number => {
@@ -20,8 +20,8 @@ const convertUnits = (quantity: number, fromUnit: string, toUnit: string): numbe
     if (conversion) return quantity * conversion.factor;
     const reverseConversion = conversions.find(c => c.fromUnit === toUnit && c.toUnit === fromUnit);
     if (reverseConversion) return quantity / reverseConversion.factor;
-    console.warn(`No conversion found from ${fromUnit} to ${toUnit}`);
-    return quantity;
+    // console.warn(`No conversion found from ${fromUnit} to ${toUnit}`);
+    return quantity; // Return original quantity if no conversion is found to avoid breaking calculations
 };
 
 const calculateIngredientCost = (
@@ -37,10 +37,10 @@ const calculateIngredientCost = (
 // --- Types ---
 interface FormIngredient extends Omit<RecipeIngredient, 'recipeId'> {
   category: string;
-  unitPrice: number; // Price per purchase unit
+  unitPrice: number;
   unitPurchase: string;
   totalCost: number;
-  name: string; // Name of the ingredient
+  name: string;
 }
 
 // --- Component ---
@@ -58,6 +58,8 @@ export function RecipeCostForm({
   recipeIngredients: allRecipeIngredients,
 }: RecipeCostFormProps) {
   
+  const router = useRouter();
+  const { toast } = useToast();
   const [dishName, setDishName] = React.useState(initialRecipe?.name || "");
   const [portions, setPortions] = React.useState(1);
   const [formIngredients, setFormIngredients] = React.useState<FormIngredient[]>([]);
@@ -90,6 +92,10 @@ export function RecipeCostForm({
         .filter((i): i is FormIngredient => i !== null);
       
       setFormIngredients(existingIngredients);
+      setDishName(initialRecipe.name);
+      // Assuming portions would be stored in the recipe or technical sheet object
+      // For now, we default to 1
+      setPortions(1);
     }
   }, [initialRecipe, allRecipeIngredients, stockIngredients]);
 
@@ -118,12 +124,11 @@ export function RecipeCostForm({
         // Reset if "Sélectionner..." is chosen
         setFormIngredients(prev => {
             const newIngredients = [...prev];
+            const current = newIngredients[index];
             newIngredients[index] = {
-              id: newIngredients[index].id,
+              ...current,
               ingredientId: '',
               name: '',
-              quantity: 0,
-              unitUse: 'g',
               category: '',
               unitPrice: 0,
               unitPurchase: '',
@@ -149,7 +154,7 @@ export function RecipeCostForm({
             unitPrice: selected.unitPrice,
             unitPurchase: selected.unitPurchase,
             totalCost: newCost,
-            unitUse: 'g' // Default to 'g' on new selection
+            unitUse: selected.unitPurchase, // Default to purchase unit for simplicity
         };
         
         return newIngredients;
@@ -160,20 +165,45 @@ export function RecipeCostForm({
   const updateIngredientField = (index: number, field: keyof FormIngredient, value: any) => {
     setFormIngredients(prev => {
         const newIngredients = [...prev];
-        const ingredient = { ...newIngredients[index], [field]: value };
-
-        const stockIng = stockIngredients.find(si => si.id === ingredient.ingredientId);
-        if (stockIng) {
-            ingredient.totalCost = calculateIngredientCost(ingredient.quantity, ingredient.unitUse, stockIng);
-        }
+        const ingredientToUpdate = newIngredients[index];
         
-        newIngredients[index] = ingredient;
+        if (ingredientToUpdate) {
+            (ingredientToUpdate as any)[field] = value;
+            
+            const stockIng = stockIngredients.find(si => si.id === ingredientToUpdate.ingredientId);
+            if (stockIng) {
+                ingredientToUpdate.totalCost = calculateIngredientCost(ingredientToUpdate.quantity, ingredientToUpdate.unitUse, stockIng);
+            }
+            newIngredients[index] = ingredientToUpdate;
+        }
+
         return newIngredients;
     });
   };
 
   const totalCost = formIngredients.reduce((acc, ing) => acc + ing.totalCost, 0);
   const costPerPortion = portions > 0 ? totalCost / portions : 0;
+  
+  const handleSave = () => {
+    // In a real application, you would send this data to your backend/database
+    console.log("Données à sauvegarder :", {
+        dishName,
+        portions,
+        ingredients: formIngredients,
+        totalCost,
+        costPerPortion,
+    });
+
+    toast({
+      title: "Fiche technique sauvegardée !",
+      description: `La fiche pour "${dishName}" a été enregistrée avec succès.`,
+    });
+    router.push('/menu');
+  };
+
+  const handleCancel = () => {
+    router.back();
+  };
 
   return (
     <div className="space-y-6">
@@ -221,10 +251,10 @@ export function RecipeCostForm({
                                             onChange={(e) => handleSelectIngredient(index, e.target.value)}
                                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
-                                            <option value="">Sélectionner...</option>
+                                            <option value="">Sélectionner un ingrédient...</option>
                                             {stockIngredients.map((stockIng) => (
                                                 <option key={stockIng.id} value={stockIng.id}>
-                                                    {stockIng.name}
+                                                    {stockIng.name} ({stockIng.unitPrice} DZD/{stockIng.unitPurchase})
                                                 </option>
                                             ))}
                                         </select>
@@ -233,7 +263,7 @@ export function RecipeCostForm({
                                         <Input
                                           type="number"
                                           value={ing.quantity}
-                                          onChange={(e) => updateIngredientField(index, 'quantity', Number(e.target.value))}
+                                          onChange={(e) => updateIngredientField(index, 'quantity', parseFloat(e.target.value) || 0)}
                                           className="w-24"
                                           disabled={!ing.ingredientId}
                                         />
@@ -274,7 +304,6 @@ export function RecipeCostForm({
             </CardContent>
         </Card>
         
-        {/* Placeholder for other sections */}
         <Card>
             <CardHeader><CardTitle>Procédure</CardTitle></CardHeader>
             <CardContent className="space-y-4">
@@ -294,8 +323,8 @@ export function RecipeCostForm({
         </Card>
         
         <div className="flex justify-end gap-2 pt-4">
-            <Button variant="ghost">Annuler</Button>
-            <Button>Sauvegarder</Button>
+            <Button variant="ghost" onClick={handleCancel}>Annuler</Button>
+            <Button onClick={handleSave}>Sauvegarder</Button>
         </div>
     </div>
   );
