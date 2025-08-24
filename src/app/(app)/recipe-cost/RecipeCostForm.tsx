@@ -14,6 +14,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { saveRecipeSheet } from "./actions"
+import { FoodCostGauge } from "@/components/common/FoodCostGauge"
+
 
 // --- Helper Functions ---
 const convertUnits = (quantity: number, fromUnit: string, toUnit: string): number => {
@@ -160,7 +162,7 @@ export function RecipeCostForm({
   const handleProcedureChange = (field: 'preparation' | 'cuisson' | 'service', value: string) => {
     setProcedure(prev => ({
         ...prev,
-        [field]: value.split('\n')
+        [field]: value.split('\\n')
     }));
   };
 
@@ -250,13 +252,15 @@ export function RecipeCostForm({
                         <Input id="portions" type="number" value={portions} onChange={(e) => setPortions(Number(e.target.value))} min="1" />
                     </div>
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 pt-2">
-                   <FinancialInfo label="Prix Vente (TTC)" value={`${sellingPriceTTC.toFixed(2)} DZD`} />
-                   <FinancialInfo label="Prix Vente (HT)" value={`${sellingPriceHT.toFixed(2)} DZD`} />
-                   <FinancialInfo label="Marge Brute (HT)" value={`${grossMarginValue.toFixed(2)} DZD`} className="text-green-600" />
-                   <FinancialInfo label="Marge Brute (%)" value={`${grossMarginPercent.toFixed(1)} %`} className="text-green-600" />
-                   <FinancialInfo label="Food Cost (%)" value={`${foodCost.toFixed(1)} %`} className="text-purple-600" />
-                   <FinancialInfo label="Coeff. Multiplicateur" value={`x ${coefficient.toFixed(2)}`} className="text-blue-600" />
+                 <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 pt-2">
+                   <FoodCostGauge percentage={foodCost} />
+                   <div className="grid col-span-2 lg:col-span-4 xl:col-span-6 grid-cols-2 lg:grid-cols-3 gap-4">
+                       <FinancialInfo label="Prix Vente (TTC)" value={`${sellingPriceTTC.toFixed(2)} DZD`} />
+                       <FinancialInfo label="Prix Vente (HT)" value={`${sellingPriceHT.toFixed(2)} DZD`} />
+                       <FinancialInfo label="Coeff. Multiplicateur" value={`x ${coefficient.toFixed(2)}`} className="text-blue-600" />
+                       <FinancialInfo label="Marge Brute (HT)" value={`${grossMarginValue.toFixed(2)} DZD`} className="text-green-600" />
+                       <FinancialInfo label="Marge Brute (%)" value={`${grossMarginPercent.toFixed(1)} %`} className="text-green-600" />
+                   </div>
                 </div>
             </CardContent>
         </Card>
