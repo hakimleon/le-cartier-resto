@@ -227,7 +227,7 @@ export function RecipeCostForm({
   };
   
   const FinancialInfo = ({ label, value, className }: { label: string, value: string, className?: string }) => (
-    <div className="flex flex-col gap-1 p-3 bg-muted/50 rounded-md">
+    <div className="flex flex-col gap-1 p-3 bg-muted/50 rounded-md text-center">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className={`text-lg font-bold ${className}`}>{value}</p>
     </div>
@@ -240,25 +240,26 @@ export function RecipeCostForm({
                 <CardTitle>Détails de la recette</CardTitle>
                 <CardDescription>Informations générales et financières du plat.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <div className="space-y-1 md:col-span-2">
                         <Label htmlFor="dishName">Nom du plat</Label>
-                        <Input id="dishName" value={dishName} readOnly disabled className="border-none p-0 h-auto text-base font-semibold" />
+                        <Input id="dishName" value={dishName} readOnly disabled className="border-none p-0 h-auto text-base font-semibold bg-transparent" />
                     </div>
                     <div className="space-y-1">
                         <Label htmlFor="portions">Nombre de portions</Label>
                         <Input id="portions" type="number" value={portions} onChange={(e) => setPortions(Number(e.target.value))} min="1" />
                     </div>
                 </div>
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
                    <FoodCostGauge percentage={foodCost} />
-                   <div className="grid md:col-span-2 grid-cols-2 lg:grid-cols-3 gap-4">
+                   <div className="grid grid-cols-2 lg:col-span-2 gap-4">
                        <FinancialInfo label="Prix Vente (TTC)" value={`${sellingPriceTTC.toFixed(2)} DZD`} />
                        <FinancialInfo label="Prix Vente (HT)" value={`${sellingPriceHT.toFixed(2)} DZD`} />
-                       <FinancialInfo label="Coeff. Multiplicateur" value={`x ${coefficient.toFixed(2)}`} className="text-blue-600" />
-                       <FinancialInfo label="Marge Brute (HT)" value={`${grossMarginValue.toFixed(2)} DZD`} className="text-green-600" />
+                       <FinancialInfo label="Marge Brute (€)" value={`${grossMarginValue.toFixed(2)} DZD`} className="text-green-600" />
                        <FinancialInfo label="Marge Brute (%)" value={`${grossMarginPercent.toFixed(1)} %`} className="text-green-600" />
+                       <FinancialInfo label="Coeff. Multiplicateur" value={`x ${coefficient.toFixed(2)}`} className="text-blue-600" />
+                       <FinancialInfo label="Coût / Portion" value={`${costPerPortion.toFixed(2)} DZD`} className="text-orange-500" />
                    </div>
                 </div>
             </CardContent>
@@ -266,7 +267,10 @@ export function RecipeCostForm({
 
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
-              <CardTitle>Ingrédients & Coûts</CardTitle>
+              <div>
+                <CardTitle>Ingrédients & Coûts</CardTitle>
+                <CardDescription>Composez la recette et analysez les coûts en temps réel.</CardDescription>
+              </div>
               <Button onClick={addIngredientRow} size="sm" disabled={isSaving}>
                 <Plus className="mr-2 h-4 w-4" /> Ajouter un ingrédient
               </Button>
