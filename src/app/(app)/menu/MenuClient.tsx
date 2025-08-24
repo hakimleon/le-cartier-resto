@@ -7,7 +7,6 @@ import { useState, useEffect, useCallback } from "react";
 import { AppHeader } from "@/components/common/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Recipe, categories } from "@/data/definitions";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -54,7 +53,7 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, item
   }
 
   return (
-    <div>
+    <div className="space-y-6">
         {title && <h2 className="text-2xl font-bold font-headline mb-4 text-foreground">{title}</h2>}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {items.map((item) => (
@@ -362,7 +361,47 @@ export default function MenuClient() {
     item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const groupedRecipes = filteredRecipes.reduce((acc, recipe) => {
+    const { category } = recipe;
+    if (!acc[category]) {
+      acc[category] = [];
+    }
+    acc[category].push(recipe);
+    return acc;
+  }, {} as Record<string, Recipe[]>);
+
   const isSearching = searchTerm.length > 0;
+
+  const renderMenuContent = () => {
+    if (isSearching) {
+      return (
+        <MenuCategory 
+          title={`Résultats de la recherche pour "${searchTerm}"`}
+          items={filteredRecipes} 
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      );
+    }
+
+    return (
+        <div className="space-y-12">
+            {categories.map((category) => {
+                const items = groupedRecipes[category] || [];
+                if (items.length === 0) return null;
+                return (
+                    <MenuCategory
+                        key={category}
+                        title={category}
+                        items={items}
+                        onEdit={handleEdit}
+                        onDelete={handleDelete}
+                    />
+                );
+            })}
+        </div>
+    );
+  };
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
@@ -400,32 +439,8 @@ export default function MenuClient() {
                     {isSeeding ? "Initialisation en cours..." : "Initialiser le menu"}
                 </Button>
             </div>
-        ) : isSearching ? (
-            <MenuCategory 
-                title={`Résultats de la recherche pour "${searchTerm}"`}
-                items={filteredRecipes} 
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
         ) : (
-            <Tabs defaultValue={categories[0]} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 mb-6 h-auto gap-2 bg-transparent p-0">
-                {categories.map((category) => (
-                <TabsTrigger key={category} value={category} className="whitespace-normal h-auto bg-card text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-md rounded-md transition-all">
-                    {category}
-                </TabsTrigger>
-                ))}
-            </TabsList>
-            {categories.map((category) => (
-                <TabsContent key={category} value={category}>
-                <MenuCategory 
-                    items={recipes.filter(item => item.category === category)} 
-                    onEdit={handleEdit}
-                    onDelete={handleDelete}
-                />
-                </TabsContent>
-            ))}
-            </Tabs>
+            renderMenuContent()
         )}
       </main>
 
@@ -458,4 +473,3 @@ export default function MenuClient() {
     </div>
   );
 }
-
