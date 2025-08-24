@@ -14,23 +14,29 @@ export function FoodCostGauge({ percentage }: FoodCostGaugeProps) {
   const offset = GAUGE_CIRCUMFERENCE * (1 - Math.min(value, 100) / 100);
 
   const colorClass = 
+    value < 25 ? "text-teal-500" :
     value <= 30 ? "text-green-500" :
-    value <= 35 ? "text-orange-500" :
+    value <= 35 ? "text-yellow-500" :
+    value <= 40 ? "text-orange-500" :
     "text-red-500";
   
   const bgColorClass = 
+    value < 25 ? "stroke-teal-500/20" :
     value <= 30 ? "stroke-green-500/20" :
-    value <= 35 ? "stroke-orange-500/20" :
+    value <= 35 ? "stroke-yellow-500/20" :
+    value <= 40 ? "stroke-orange-500/20" :
     "stroke-red-500/20";
     
   const textDescription =
-    value <= 30 ? "Excellent" :
-    value <= 35 ? "Correct" :
-    "Élevé";
+    value < 25 ? "⭐ Exceptionnel" :
+    value <= 30 ? "🟢 Excellent" :
+    value <= 35 ? "🟡 Bon" :
+    value <= 40 ? "🟠 Moyen" :
+    "🔴 Mauvais";
 
 
   return (
-    <div className="relative flex flex-col items-center justify-center p-3 bg-muted/50 rounded-md col-span-2">
+    <div className="relative flex flex-col items-center justify-center p-3 bg-muted/50 rounded-md col-span-2 md:col-span-1">
       <svg viewBox="0 0 100 57" className="w-48 h-auto -mb-2">
         {/* Background Arc */}
         <path
@@ -60,7 +66,7 @@ export function FoodCostGauge({ percentage }: FoodCostGaugeProps) {
         </span>
         <p className="text-xs text-muted-foreground">Food Cost</p>
       </div>
-       <p className={cn("text-xs font-semibold mt-2", colorClass)}>
+       <p className={cn("text-sm font-semibold mt-2", colorClass)}>
         {textDescription}
       </p>
     </div>
