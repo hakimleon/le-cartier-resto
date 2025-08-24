@@ -211,11 +211,16 @@ export default function MenuClient() {
       }
     } catch(error) {
       console.error("Error fetching recipes:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur de chargement",
+        description: "Impossible de charger les recettes depuis la base de données.",
+      });
       setRecipes([]); // Set to empty array on error
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [toast]);
 
   useEffect(() => {
     getRecipes();
@@ -385,7 +390,7 @@ export default function MenuClient() {
                 <Loader className="h-5 w-5 animate-spin" />
                 <p>Chargement du menu...</p>
             </div>
-        ) : recipes.length === 0 ? (
+        ) : recipes.length === 0 && !isSearching ? (
             <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
                 <Package className="w-16 h-16 text-muted-foreground/50" />
                 <p className="text-lg font-semibold mt-4">Votre menu est vide.</p>
@@ -453,3 +458,4 @@ export default function MenuClient() {
     </div>
   );
 }
+
