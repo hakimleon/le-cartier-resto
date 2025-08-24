@@ -7,28 +7,28 @@ import { revalidatePath } from "next/cache";
 import { mockRecipes, mockRecipeIngredients } from "@/data/mock-data";
 import { Recipe } from "@/data/definitions";
 import { generateDishImage } from "@/ai/flows/generate-dish-image";
-import fs from "fs/promises";
-import path from "path";
-import {v4 as uuidv4} from 'uuid';
+import { v2 as cloudinary } from 'cloudinary';
 
-async function saveImageLocally(imageDataUri: string): Promise<string> {
-    const imageId = `${uuidv4()}.png`;
-    const imagePath = path.join(process.cwd(), 'imagedata', imageId);
-    
-    // Ensure the directory exists
-    await fs.mkdir(path.dirname(imagePath), { recursive: true });
+// Configure Cloudinary
+cloudinary.config({ 
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
+  api_key: process.env.CLOUDINARY_API_KEY, 
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+  secure: true
+});
 
-    // Extract base64 data
-    const base64Data = imageDataUri.split(';base64,').pop();
-    if (!base64Data) {
-        throw new Error("Invalid Data URI");
+async function uploadToCloudinary(imageDataUri: string, dishName: string): Promise<string> {
+    try {
+        const result = await cloudinary.uploader.upload(imageDataUri, {
+            folder: "le-singulier-ai",
+            public_id: dishName.toLowerCase().replace(/\s+/g, '-'),
+            overwrite: true,
+        });
+        return result.secure_url;
+    } catch (error) {
+        console.error("Cloudinary Upload Error:", error);
+        throw new Error("Failed to upload image to Cloudinary.");
     }
-    
-    // Write file
-    await fs.writeFile(imagePath, base64Data, 'base64');
-    
-    // Return the public URL
-    return `/api/images/${imageId}`;
 }
 
 
@@ -36,9 +36,10 @@ export async function saveDish(formData: FormData) {
     const id = formData.get('id') as string;
     const imageHint = formData.get('imageHint') as string;
     let imageUrl = formData.get('image') as string;
+    const dishName = formData.get('name') as string;
 
     const dishData: Omit<Recipe, 'id' | 'tags' | 'procedure' | 'allergens' | 'image'> = {
-        name: formData.get('name') as string,
+        name: dishName,
         description: formData.get('description') as string,
         category: formData.get('category') as string,
         price: parseFloat(formData.get('price') as string),
@@ -63,8 +64,8 @@ export async function saveDish(formData: FormData) {
         if (imageHint) {
             console.log(`Generating image for: ${imageHint}`);
             const generatedDataUri = await generateDishImage({ prompt: imageHint });
-            imageUrl = await saveImageLocally(generatedDataUri);
-            console.log(`Image generated and stored at ${imageUrl}`);
+            imageUrl = await uploadToCloudinary(generatedDataUri, dishName);
+            console.log(`Image generated and uploaded to Cloudinary: ${imageUrl}`);
         }
         
         const finalData: Omit<Recipe, 'id'> = {
