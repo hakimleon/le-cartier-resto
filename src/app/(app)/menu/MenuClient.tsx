@@ -17,6 +17,7 @@ import { DishForm } from "./DishForm";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { seedRecipes, saveDish, deleteDish, generateDishImagesAction } from "./actions";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -42,7 +43,7 @@ const getTagClass = (tag: Recipe['tags'][number]) => {
   }
 }
 
-const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, items: Recipe[], onEdit: (dish: Recipe) => void, onDelete: (dishId: string) => void }) => {
+const MenuCategory = ({ title, items, onEdit, onDelete }: { title: string, items: Recipe[], onEdit: (dish: Recipe) => void, onDelete: (dishId: string) => void }) => {
   if (items.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
@@ -53,65 +54,62 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, item
   }
 
   return (
-    <div className="space-y-6">
-        {title && <h2 className="text-2xl font-bold font-headline mb-4 text-foreground">{title}</h2>}
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {items.map((item) => (
-            <Card key={item.id} className="flex flex-col overflow-hidden bg-card shadow-lg hover:shadow-primary/20 transition-all duration-300 border-border/10 rounded-xl group hover:border-primary/30">
-            <div className="relative w-full h-48">
-                <Image
-                src={item.image || 'https://placehold.co/600x400.png'}
-                alt={item.name}
-                fill
-                className="object-cover transition-transform duration-300 group-hover:scale-105"
-                data-ai-hint={item.imageHint}
-                />
-                <Badge className={cn("absolute top-3 right-3 text-xs font-semibold", getStatusClass(item.status))}>{item.status}</Badge>
-            </div>
-            <CardHeader className="p-4">
-                <CardTitle className="font-headline text-xl text-foreground">{item.name}</CardTitle>
-                <div className="flex items-center text-xs text-muted-foreground gap-4 pt-1">
-                <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-accent"/> {item.prepTime} min</span>
-                <span className="flex items-center gap-1"><Star className="w-3 h-3 text-accent"/> Diff {item.difficulty}/5</span>
-                </div>
-            </CardHeader>
-            <CardContent className="flex-grow p-4 pt-0 space-y-4">
-                <CardDescription className="text-sm">{item.description}</CardDescription>
-                <div className="flex flex-wrap gap-2">
-                {item.tags.map(tag => <Badge key={tag} className={cn("text-xs font-medium", getTagClass(tag))}>{tag}</Badge>)}
-                </div>
-            </CardContent>
-            <CardFooter className="flex justify-between items-center p-4 bg-card/50 mt-auto">
-                <p className="text-lg font-bold text-primary font-code">{item.price.toFixed(2).replace('.', ',')} €</p>
-                <div className="flex gap-1">
-                <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-green-500" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
-                    <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce plat ?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            Cette action est irréversible. Le plat "{item.name}" sera définitivement supprimé.
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                        <AlertDialogAction onClick={() => onDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                    </AlertDialog>
-                    <Button asChild variant="ghost" size="icon" className="text-muted-foreground hover:text-secondary">
-                    <Link href={`/recipe-cost/${item.id}`}>
-                        <FileText className="h-4 w-4" />
-                    </Link>
-                    </Button>
-                </div>
-            </CardFooter>
-            </Card>
-        ))}
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    {items.map((item) => (
+        <Card key={item.id} className="flex flex-col overflow-hidden bg-card shadow-lg hover:shadow-primary/20 transition-all duration-300 border-border/10 rounded-xl group hover:border-primary/30">
+        <div className="relative w-full h-48">
+            <Image
+            src={item.image || 'https://placehold.co/600x400.png'}
+            alt={item.name}
+            fill
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
+            data-ai-hint={item.imageHint}
+            />
+            <Badge className={cn("absolute top-3 right-3 text-xs font-semibold", getStatusClass(item.status))}>{item.status}</Badge>
         </div>
+        <CardHeader className="p-4">
+            <CardTitle className="font-headline text-xl text-foreground">{item.name}</CardTitle>
+            <div className="flex items-center text-xs text-muted-foreground gap-4 pt-1">
+            <span className="flex items-center gap-1"><Clock className="w-3 h-3 text-accent"/> {item.prepTime} min</span>
+            <span className="flex items-center gap-1"><Star className="w-3 h-3 text-accent"/> Diff {item.difficulty}/5</span>
+            </div>
+        </CardHeader>
+        <CardContent className="flex-grow p-4 pt-0 space-y-4">
+            <CardDescription className="text-sm">{item.description}</CardDescription>
+            <div className="flex flex-wrap gap-2">
+            {item.tags.map(tag => <Badge key={tag} className={cn("text-xs font-medium", getTagClass(tag))}>{tag}</Badge>)}
+            </div>
+        </CardContent>
+        <CardFooter className="flex justify-between items-center p-4 bg-card/50 mt-auto">
+            <p className="text-lg font-bold text-primary font-code">{item.price.toFixed(2).replace('.', ',')} €</p>
+            <div className="flex gap-1">
+            <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-green-500" onClick={() => onEdit(item)}><Edit className="h-4 w-4" /></Button>
+                <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer ce plat ?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        Cette action est irréversible. Le plat "{item.name}" sera définitivement supprimé.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogAction onClick={() => onDelete(item.id)} className="bg-destructive hover:bg-destructive/90">Supprimer</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+                </AlertDialog>
+                <Button asChild variant="ghost" size="icon" className="text-muted-foreground hover:text-secondary">
+                <Link href={`/recipe-cost/${item.id}`}>
+                    <FileText className="h-4 w-4" />
+                </Link>
+                </Button>
+            </div>
+        </CardFooter>
+        </Card>
+    ))}
     </div>
   )
 };
@@ -361,45 +359,33 @@ export default function MenuClient() {
     item.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
-  const groupedRecipes = filteredRecipes.reduce((acc, recipe) => {
-    const { category } = recipe;
-    if (!acc[category]) {
-      acc[category] = [];
-    }
-    acc[category].push(recipe);
-    return acc;
-  }, {} as Record<string, Recipe[]>);
-
-  const isSearching = searchTerm.length > 0;
-
-  const renderMenuContent = () => {
-    if (isSearching) {
+  const renderContent = () => {
+    if (filteredRecipes.length === 0 && searchTerm.length > 0) {
       return (
-        <MenuCategory 
-          title={`Résultats de la recherche pour "${searchTerm}"`}
-          items={filteredRecipes} 
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-        />
-      );
+        <div className="text-center py-10">
+          <p>Aucun plat trouvé pour "{searchTerm}".</p>
+        </div>
+      )
     }
 
     return (
-        <div className="space-y-12">
-            {categories.map((category) => {
-                const items = groupedRecipes[category] || [];
-                if (items.length === 0) return null;
-                return (
-                    <MenuCategory
-                        key={category}
-                        title={category}
-                        items={items}
-                        onEdit={handleEdit}
-                        onDelete={handleDelete}
-                    />
-                );
-            })}
+      <Tabs defaultValue={categories[0]} className="flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+            <TabsList className="overflow-x-auto overflow-y-hidden h-auto">
+            {categories.map((category) => (
+                <TabsTrigger key={category} value={category} className="whitespace-nowrap">{category}</TabsTrigger>
+            ))}
+            </TabsList>
         </div>
+        {categories.map((category) => {
+          const items = filteredRecipes.filter(item => item.category === category);
+          return (
+            <TabsContent key={category} value={category}>
+                <MenuCategory title="" items={items} onEdit={handleEdit} onDelete={handleDelete} />
+            </TabsContent>
+          )
+        })}
+      </Tabs>
     );
   };
 
@@ -429,7 +415,7 @@ export default function MenuClient() {
                 <Loader className="h-5 w-5 animate-spin" />
                 <p>Chargement du menu...</p>
             </div>
-        ) : recipes.length === 0 && !isSearching ? (
+        ) : recipes.length === 0 && !searchTerm ? (
             <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
                 <Package className="w-16 h-16 text-muted-foreground/50" />
                 <p className="text-lg font-semibold mt-4">Votre menu est vide.</p>
@@ -440,7 +426,7 @@ export default function MenuClient() {
                 </Button>
             </div>
         ) : (
-            renderMenuContent()
+            renderContent()
         )}
       </main>
 
