@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { notFound, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Recipe, Ingredient, RecipeIngredient } from "@/data/definitions";
@@ -16,25 +16,26 @@ export default function DynamicRecipeCostPage({ params }: { params: { dishId: st
   const { dishId } = params;
   const router = useRouter();
   const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
-      if (!dishId) return;
+      if (!dishId) {
+        setLoading(false);
+        setNotFound(true);
+        return;
+      }
 
       try {
         const recipeDoc = await getDoc(doc(db, "recipes", dishId));
         if (!recipeDoc.exists()) {
-          notFound();
+          setNotFound(true);
           return;
         }
         setRecipe({ id: recipeDoc.id, ...recipeDoc.data() } as Recipe);
-
-        const recipesSnapshot = await getDocs(collection(db, "recipes"));
-        setRecipes(recipesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Recipe)));
 
         const ingredientsSnapshot = await getDocs(collection(db, "ingredients"));
         setIngredients(ingredientsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Ingredient)));
@@ -44,8 +45,7 @@ export default function DynamicRecipeCostPage({ params }: { params: { dishId: st
 
       } catch (error) {
         console.error("Error fetching data:", error);
-        setLoading(false);
-        notFound();
+        setNotFound(true);
       } finally {
         setLoading(false);
       }
@@ -82,7 +82,7 @@ export default function DynamicRecipeCostPage({ params }: { params: { dishId: st
                 <Skeleton className="h-64 w-full" />
                 <Skeleton className="h-48 w-full" />
             </div>
-        ) : !recipe ? (
+        ) : notFound || !recipe ? (
             <div className="text-center py-10">
                 <p>Recette non trouvée.</p>
                 <Button asChild variant="link">
@@ -92,7 +92,6 @@ export default function DynamicRecipeCostPage({ params }: { params: { dishId: st
         ) : (
             <RecipeCostForm 
               recipe={recipe} 
-              recipes={recipes} 
               ingredients={ingredients} 
               recipeIngredients={recipeIngredients} 
             />
