@@ -1,5 +1,4 @@
 
-
 "use client"
 
 import * as React from "react"
@@ -252,9 +251,9 @@ export function RecipeCostForm({
                         <Input id="portions" type="number" value={portions} onChange={(e) => setPortions(Number(e.target.value))} min="1" />
                     </div>
                 </div>
-                 <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-4 pt-2">
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                    <FoodCostGauge percentage={foodCost} />
-                   <div className="grid col-span-2 lg:col-span-4 xl:col-span-6 grid-cols-2 lg:grid-cols-3 gap-4">
+                   <div className="grid md:col-span-2 grid-cols-2 lg:grid-cols-3 gap-4">
                        <FinancialInfo label="Prix Vente (TTC)" value={`${sellingPriceTTC.toFixed(2)} DZD`} />
                        <FinancialInfo label="Prix Vente (HT)" value={`${sellingPriceHT.toFixed(2)} DZD`} />
                        <FinancialInfo label="Coeff. Multiplicateur" value={`x ${coefficient.toFixed(2)}`} className="text-blue-600" />
