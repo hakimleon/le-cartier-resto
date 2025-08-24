@@ -10,17 +10,21 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Upload, Image as ImageIcon, Wand2 } from "lucide-react";
+import { Image as ImageIcon, Wand2 } from "lucide-react";
 import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
+import { StyleOptions } from "@/ai/flows/generate-dish-image";
+
 
 type DishFormProps = {
   dish: Recipe | null;
   onSave: (formData: FormData) => void;
   onCancel: () => void;
   isSaving: boolean;
+  onGenerate: (formData: FormData) => void;
+  isGenerating: boolean;
 };
 
 const emptyDish: Omit<Recipe, 'id'> = {
@@ -39,7 +43,7 @@ const emptyDish: Omit<Recipe, 'id'> = {
   allergens: [],
 };
 
-export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
+export function DishForm({ dish, onSave, onCancel, isSaving, onGenerate, isGenerating }: DishFormProps) {
   const [formData, setFormData] = useState<Omit<Recipe, 'id'>>(dish || emptyDish);
   const [imagePreview, setImagePreview] = useState<string | null>(dish?.image || null);
 
@@ -72,26 +76,29 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const formEl = e.target as HTMLFormElement;
+  const createFormData = (formEl: HTMLFormElement): FormData => {
     const submissionData = new FormData(formEl);
-
-    // Append non-input fields manually
     submissionData.append('id', dish?.id || '');
     submissionData.append('status', formData.status);
     submissionData.append('difficulty', String(formData.difficulty));
     submissionData.append('tags', JSON.stringify(formData.tags));
-    
-    // Make sure latest imageHint is on the form data
     submissionData.set('imageHint', formData.imageHint);
-    // Make sure latest image url is on the form data
-    submissionData.set('image', formData.image);
-
-
+    submissionData.set('image', imagePreview || '');
+    return submissionData;
+  };
+  
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const submissionData = createFormData(e.target as HTMLFormElement);
     onSave(submissionData);
   };
   
+  const handleGenerateClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const submissionData = createFormData(e.currentTarget.form as HTMLFormElement);
+    onGenerate(submissionData);
+  }
+
   const difficultyLevels = [
     { value: 1, label: "Facile" },
     { value: 2, label: "Moyen" },
@@ -115,27 +122,60 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
                   <ImageIcon className="w-10 h-10 text-muted-foreground" />
                 )}
               </div>
+              <input type="hidden" name="image" value={imagePreview || ''} />
+
               <div className="flex-1 space-y-4">
-                <div>
-                  <Label htmlFor="imageHint" className="flex items-center gap-2 mb-1 text-primary">
+                <div className="p-4 rounded-lg bg-muted/30 border border-dashed">
+                  <Label className="flex items-center gap-2 mb-2 text-primary">
                     <Wand2 />
                     Générer une image par IA
                   </Label>
-                  <Input 
+                  <Textarea 
                     id="imageHint" 
                     name="imageHint" 
                     value={formData.imageHint} 
                     onChange={handleChange} 
                     placeholder="Ex: Burger gourmet sur planche en bois, frites dorées..."
+                    rows={2}
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Décrivez l'image à générer. Laissez vide pour ne pas générer de nouvelle image.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Décrivez l'image à générer.</p>
+                  <div className="grid grid-cols-2 gap-4 mt-2">
+                    <div className="space-y-1">
+                      <Label htmlFor="style" className="text-xs">Style</Label>
+                       <Select name="style" defaultValue={StyleOptions.enum.Photographie}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {StyleOptions.options.map(option => (
+                            <SelectItem key={option} value={option}>{option}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                     <div className="space-y-1">
+                      <Label htmlFor="quantity" className="text-xs">Quantité</Label>
+                       <Select name="quantity" defaultValue="1">
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {[1, 2, 3, 4].map(q => <SelectItem key={q} value={String(q)}>{q}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                   <Button onClick={handleGenerateClick} variant="secondary" className="w-full mt-3" disabled={isGenerating || !formData.imageHint}>
+                    {isGenerating ? 'Génération en cours...' : "Générer"}
+                  </Button>
                 </div>
                  <div>
-                  <Label htmlFor="image" className="flex items-center gap-2 mb-1">
+                  <Label htmlFor="imageUrl" className="flex items-center gap-2 mb-1">
                      <ImageIcon/>
                     Ou coller une URL d'image manuelle
                   </Label>
-                  <Input id="image" name="image" value={formData.image} onChange={handleChange} placeholder="https://placehold.co/600x400.png" />
+                  <Input 
+                    id="imageUrl" 
+                    name="imageUrl" 
+                    value={imagePreview || ''} 
+                    onChange={(e) => setImagePreview(e.target.value)} 
+                    placeholder="https://placehold.co/600x400.png" />
                 </div>
               </div>
             </div>
@@ -216,12 +256,10 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
       </ScrollArea>
       <div className="flex justify-end gap-2 p-4 border-t border-border/20">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={isSaving}>Annuler</Button>
-        <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving}>
+        <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving || isGenerating}>
           {isSaving ? "Sauvegarde en cours..." : (dish ? "Mettre à jour" : "Ajouter le plat")}
         </Button>
       </div>
     </form>
   );
 }
-
-    
