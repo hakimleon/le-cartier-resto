@@ -1,3 +1,4 @@
+
 // src/data/definitions.ts
 
 export type Recipe = {
@@ -6,7 +7,7 @@ export type Recipe = {
   description: string;
   category: string;
   price: number;
-  // cost is now calculated on the fly
+  cost: number; // cost is now calculated and stored
   image: string;
   imageHint: string;
   prepTime: number;

@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import * as React from "react"
@@ -10,7 +11,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Ingredient, Recipe, RecipeIngredient, units as availableUnits, conversions } from "@/data/definitions"
 import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { useToast } from "@/hooks/use-toast"
 import { saveRecipeSheet } from "./actions"
 
@@ -21,7 +22,9 @@ const convertUnits = (quantity: number, fromUnit: string, toUnit: string): numbe
     if (conversion) return quantity * conversion.factor;
     const reverseConversion = conversions.find(c => c.fromUnit === toUnit && c.toUnit === fromUnit);
     if (reverseConversion) return quantity / reverseConversion.factor;
-    return quantity;
+    // Fallback if no direct or reverse conversion is found (e.g. g to L)
+    console.warn(`No conversion factor found between ${fromUnit} and ${toUnit}. Returning original quantity.`);
+    return quantity; 
 };
 
 const calculateIngredientCost = (
@@ -165,7 +168,10 @@ export function RecipeCostForm({
 
   const totalCost = formIngredients.reduce((acc, ing) => acc + ing.totalCost, 0);
   const costPerPortion = portions > 0 ? totalCost / portions : 0;
-  
+  const sellingPrice = initialRecipe?.price || 0;
+  const margin = sellingPrice - costPerPortion;
+  const costRatio = sellingPrice > 0 ? (costPerPortion / sellingPrice) * 100 : 0;
+
   const handleSave = async () => {
     if (!initialRecipe) {
         toast({ title: "Erreur", description: "Impossible de sauvegarder une fiche sans plat associé.", variant: "destructive"});
@@ -176,7 +182,9 @@ export function RecipeCostForm({
     
     const dataToSave = {
         recipeId: initialRecipe.id,
-        cost: costPerPortion, // Storing cost per portion in the recipe
+        // The cost is calculated from ingredients, but we pass the per-portion cost
+        // for potential storage in the recipe document if the model changes.
+        cost: costPerPortion,
         procedure: procedure,
         ingredients: formIngredients.map(ing => ({
             id: ing.id,
@@ -184,7 +192,7 @@ export function RecipeCostForm({
             ingredientId: ing.ingredientId,
             quantity: ing.quantity,
             unitUse: ing.unitUse,
-        })),
+        })).filter(ing => ing.ingredientId), // Filter out empty rows
     };
 
     try {
@@ -213,21 +221,37 @@ export function RecipeCostForm({
   const handleCancel = () => {
     router.back();
   };
+  
+  const FinancialInfo = ({ label, value, className }: { label: string, value: string, className?: string }) => (
+    <div className="flex flex-col gap-1 p-3 bg-muted/50 rounded-md">
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className={`text-lg font-bold ${className}`}>{value}</p>
+    </div>
+  );
 
   return (
     <div className="space-y-6">
         <Card>
             <CardHeader>
                 <CardTitle>Détails de la recette</CardTitle>
+                <CardDescription>Informations générales et financières du plat.</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                    <Label htmlFor="dishName">Nom du plat</Label>
-                    <Input id="dishName" value={dishName} readOnly disabled />
+            <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <Label htmlFor="dishName">Nom du plat</Label>
+                        <Input id="dishName" value={dishName} readOnly disabled className="border-none p-0 h-auto text-base font-semibold" />
+                    </div>
+                    <div className="space-y-1">
+                        <Label htmlFor="portions">Nombre de portions</Label>
+                        <Input id="portions" type="number" value={portions} onChange={(e) => setPortions(Number(e.target.value))} min="1" />
+                    </div>
                 </div>
-                <div className="space-y-1">
-                    <Label htmlFor="portions">Nombre de portions</Label>
-                    <Input id="portions" type="number" value={portions} onChange={(e) => setPortions(Number(e.target.value))} min="1" />
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
+                   <FinancialInfo label="Prix de Vente" value={`${sellingPrice.toFixed(2)} DZD`} className="text-blue-600" />
+                   <FinancialInfo label="Coût / Portion" value={`${costPerPortion.toFixed(2)} DZD`} className="text-orange-600" />
+                   <FinancialInfo label="Marge Brute" value={`${margin.toFixed(2)} DZD`} className="text-green-600" />
+                   <FinancialInfo label="Ratio Coût" value={`${costRatio.toFixed(1)} %`} className="text-purple-600" />
                 </div>
             </CardContent>
         </Card>
@@ -241,14 +265,14 @@ export function RecipeCostForm({
             </CardHeader>
             <CardContent>
                 <div className="overflow-x-auto">
-                    <table className="w-full">
-                        <thead className="text-sm text-muted-foreground">
+                    <table className="w-full text-sm text-left">
+                        <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left font-medium min-w-[250px]">Ingrédient</th>
-                                <th className="p-2 text-left font-medium">Quantité</th>
-                                <th className="p-2 text-left font-medium">Unité</th>
-                                <th className="p-2 text-right font-medium">Coût Total</th>
-                                <th className="p-2 text-center font-medium">Actions</th>
+                                <th className="p-2 font-medium text-muted-foreground min-w-[250px]">Ingrédient</th>
+                                <th className="p-2 font-medium text-muted-foreground">Quantité</th>
+                                <th className="p-2 font-medium text-muted-foreground">Unité</th>
+                                <th className="p-2 font-medium text-muted-foreground text-right">Coût Total</th>
+                                <th className="p-2 font-medium text-muted-foreground text-center w-[50px]">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -258,7 +282,7 @@ export function RecipeCostForm({
                                        <select
                                             value={ing.ingredientId}
                                             onChange={(e) => handleSelectIngredient(index, e.target.value)}
-                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="w-full bg-background border border-input rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                                             disabled={isSaving}
                                         >
                                             <option value="">Sélectionner un ingrédient...</option>
@@ -283,7 +307,7 @@ export function RecipeCostForm({
                                             value={ing.unitUse}
                                             onChange={(e) => updateIngredientField(index, 'unitUse', e.target.value)}
                                             disabled={!ing.ingredientId || isSaving}
-                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            className="w-full bg-background border border-input rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                                         >
                                             {availableUnits.map(unit => (
                                                 <option key={unit} value={unit}>{unit}</option>
@@ -303,12 +327,8 @@ export function RecipeCostForm({
                 </div>
                 <div className="mt-4 flex justify-end gap-8 p-4 bg-muted rounded-lg">
                     <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Coût Total</p>
-                        <p className="text-lg font-bold">{totalCost.toFixed(2)} DZD</p>
-                    </div>
-                     <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Coût / Portion</p>
-                        <p className="text-lg font-bold text-primary">{costPerPortion.toFixed(2)} DZD</p>
+                        <p className="text-sm text-muted-foreground">Coût Total Recette</p>
+                        <p className="text-xl font-bold">{totalCost.toFixed(2)} DZD</p>
                     </div>
                 </div>
             </CardContent>
@@ -325,6 +345,7 @@ export function RecipeCostForm({
                         value={Array.isArray(procedure.preparation) ? procedure.preparation.join('\n') : ''}
                         onChange={(e) => handleProcedureChange('preparation', e.target.value)}
                         disabled={isSaving}
+                        rows={5}
                     />
                 </div>
                 <div>
@@ -335,6 +356,7 @@ export function RecipeCostForm({
                         value={Array.isArray(procedure.cuisson) ? procedure.cuisson.join('\n') : ''}
                         onChange={(e) => handleProcedureChange('cuisson', e.target.value)}
                         disabled={isSaving}
+                        rows={5}
                     />
                 </div>
                 <div>
@@ -345,6 +367,7 @@ export function RecipeCostForm({
                         value={Array.isArray(procedure.service) ? procedure.service.join('\n') : ''}
                         onChange={(e) => handleProcedureChange('service', e.target.value)}
                         disabled={isSaving}
+                        rows={3}
                     />
                 </div>
             </CardContent>
@@ -359,5 +382,3 @@ export function RecipeCostForm({
     </div>
   );
 }
-
-    

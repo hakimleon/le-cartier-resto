@@ -1,4 +1,5 @@
 
+
 "use server";
 
 import { db } from "@/lib/firebase";
@@ -16,7 +17,7 @@ type SaveRecipeSheetData = {
     recipeId: string;
     cost: number;
     procedure: Procedure;
-    ingredients: RecipeIngredient[];
+    ingredients: Omit<RecipeIngredient, 'id'>[];
 }
 
 export async function saveRecipeSheet(data: SaveRecipeSheetData) {
@@ -26,7 +27,11 @@ export async function saveRecipeSheet(data: SaveRecipeSheetData) {
     // 1. Update the recipe document with the new cost and procedure
     const recipeRef = doc(db, "recipes", data.recipeId);
     batch.update(recipeRef, { 
-        // cost: data.cost,  // Cost is not in the model, let's not add it for now.
+        // Firestore security rules might prevent writing top-level fields
+        // that are not in the initial object. We will update `cost` in a sub-collection
+        // or a dedicated field if the data model allows. For now, we update procedure.
+        // We also add the cost to the recipe document itself for easier access.
+        cost: data.cost,
         procedure: data.procedure 
     });
 
@@ -41,9 +46,10 @@ export async function saveRecipeSheet(data: SaveRecipeSheetData) {
 
     // 3. Add the new ingredients
     data.ingredients.forEach((ingredient) => {
-        if (ingredient.ingredientId) { // Ensure we have an ingredient selected
-            const docId = ingredient.id.startsWith('new-') ? doc(recipeIngredientsCollection).id : ingredient.id;
-            const newIngredientRef = doc(recipeIngredientsCollection, docId);
+        // Ensure we have an ingredient selected and quantity is valid
+        if (ingredient.ingredientId && ingredient.quantity > 0) { 
+            // Always create a new document ID for the recipe ingredient entry
+            const newIngredientRef = doc(recipeIngredientsCollection);
             batch.set(newIngredientRef, {
                 recipeId: data.recipeId,
                 ingredientId: ingredient.ingredientId,
@@ -55,8 +61,10 @@ export async function saveRecipeSheet(data: SaveRecipeSheetData) {
 
     await batch.commit();
     
+    // Revalidate paths to reflect changes
     revalidatePath("/menu");
     revalidatePath(`/recipe-cost/${data.recipeId}`);
+    revalidatePath("/menu-performance"); // Performance data depends on cost
 
     return { success: true, message: `Fiche technique pour la recette ${data.recipeId} sauvegardée.` };
   } catch (error) {
@@ -65,5 +73,3 @@ export async function saveRecipeSheet(data: SaveRecipeSheetData) {
     return { success: false, message: `Erreur lors de la sauvegarde : ${errorMessage}` };
   }
 }
-
-    
