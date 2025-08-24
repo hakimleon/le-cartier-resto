@@ -85,6 +85,9 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
     
     // Make sure latest imageHint is on the form data
     submissionData.set('imageHint', formData.imageHint);
+    // Make sure latest image url is on the form data
+    submissionData.set('image', formData.image);
+
 
     onSave(submissionData);
   };
@@ -128,8 +131,8 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
                   <p className="text-xs text-muted-foreground mt-1">Décrivez l'image à générer. Laisser vide pour ne pas générer de nouvelle image.</p>
                 </div>
                  <div>
-                  <Label htmlFor="image-url">Ou URL de l'image manuelle</Label>
-                  <Input id="image-url" name="image" value={formData.image} onChange={handleChange} placeholder="https://placehold.co/600x400.png" />
+                  <Label htmlFor="image">Ou URL de l'image manuelle</Label>
+                  <Input id="image" name="image" value={formData.image} onChange={handleChange} placeholder="https://placehold.co/600x400.png" />
                 </div>
               </div>
             </div>
