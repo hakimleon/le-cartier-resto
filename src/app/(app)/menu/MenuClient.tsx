@@ -37,7 +37,7 @@ const getTagClass = (tag: Recipe['tags'][number]) => {
     case 'Épicé': return "bg-orange-500/10 text-orange-400 border-orange-500/20";
     case 'Sans gluten': return "bg-purple-400/10 text-purple-300 border-purple-400/20";
     case 'Nouveau': return "bg-teal-400/10 text-teal-300 border-teal-400/20";
-    case 'Populaire': return "bg-pink-500/10 text-pink-400 border-pink-500/20";
+    case 'Populaire': return "bg-pink-500/10 text-pink-400 border-pink-400/20";
     case 'Halal': return "bg-blue-400/10 text-blue-300 border-blue-400/20";
     default: return "bg-secondary/10 text-secondary-foreground border-secondary/20";
   }
@@ -125,51 +125,43 @@ export default function MenuClient() {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
-  const fetchRecipes = useCallback(async () => {
+  const fetchRecipes = async () => {
     setIsLoading(true);
     try {
       const recipesCol = collection(db, "recipes");
-      // Try to fetch with ordering first
-      const q = query(recipesCol, orderBy("name"));
-      const snapshot = await getDocs(q);
+      let snapshot;
+      try {
+        // Try to fetch with ordering first
+        const q = query(recipesCol, orderBy("name"));
+        snapshot = await getDocs(q);
+      } catch (error) {
+        console.error("Firebase orderBy index error (expected on first run). Fetching without order.", error);
+        // Fallback: fetch without ordering if ordering fails (e.g., index not created yet)
+        snapshot = await getDocs(recipesCol);
+      }
+      
       const recipeList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       } as Recipe));
       setRecipes(recipeList);
-    } catch(error) {
-      console.error("Error fetching ordered recipes (this is expected if the index is not created):", error);
+
+    } catch (e) {
+      console.error("Error fetching recipes from Firestore:", e);
       toast({
-        variant: "default",
-        title: "Note d'information",
-        description: "L'index de tri des recettes n'est pas configuré. L'affichage peut être non trié.",
+        variant: "destructive",
+        title: "Erreur de chargement",
+        description: "Impossible de charger les recettes. Vérifiez la console pour les erreurs.",
       });
-      // Fallback: fetch without ordering if ordering fails
-      try {
-          const recipesCol = collection(db, "recipes");
-          const snapshot = await getDocs(recipesCol);
-           const recipeList = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          } as Recipe));
-          setRecipes(recipeList);
-      } catch (e) {
-          console.error("Error fetching recipes without ordering:", e);
-           toast({
-            variant: "destructive",
-            title: "Erreur de chargement",
-            description: "Impossible de charger les recettes depuis Firestore.",
-          });
-          setRecipes([]); // Set to empty array on error
-      }
+      setRecipes([]); // Set to empty array on error
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
-  
+  };
+
   useEffect(() => {
     fetchRecipes();
-  }, [fetchRecipes]);
+  }, []);
 
 
   const handleAddNew = () => {
