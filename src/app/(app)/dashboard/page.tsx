@@ -80,7 +80,7 @@ const notifications = [
 ];
 
 export default function DashboardPage() {
-  const [currentDate, setCurrentDate] = useState("");
+  const [currentDate, setCurrentDate] = useState<string | null>(null);
 
   useEffect(() => {
     const updateDate = () => {
@@ -100,7 +100,7 @@ export default function DashboardPage() {
           <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M12 2.69l4.95 1.65-1.65 4.95L12 7.64 8.7 9.29l-1.65-4.95L12 2.69zM3 14.31l1.65-4.95 4.95 1.65L7.95 16 3 14.31zM16.05 16l-1.65-4.95 4.95-1.65L21 14.31l-4.95 1.69zM12 21.31l-4.95-1.65 1.65-4.95L12 16.36l3.3-1.65 1.65 4.95L12 21.31z"/></svg>
           <h1 className="text-2xl font-bold font-headline">Le Singulier</h1>
         </div>
-        <p className="text-muted-foreground">{currentDate}</p>
+        <p className="text-muted-foreground">{currentDate ?? ''}</p>
       </header>
 
       <main className="flex-1 space-y-8">
@@ -224,5 +224,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
-    
