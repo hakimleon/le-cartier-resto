@@ -2,7 +2,7 @@
 "use server";
 
 import { db } from "@/lib/firebase";
-import { collection, doc, setDoc, writeBatch } from "firebase/firestore";
+import { collection, doc, setDoc, writeBatch, deleteDoc } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 import { mockRecipes, mockRecipeIngredients } from "@/data/mock-data";
 import { Recipe } from "@/data/definitions";
