@@ -52,7 +52,7 @@ export type Conversion = {
   factor: number;
 };
 
-export const categories: string[] = ['Entrées Froides – Fraîcheur et Élégance', 'Entrées Chaudes – Gourmandise et Chaleur', 'Plats et Grillades – Saveurs en Majesté', 'Les Mets de chez Nous', 'Symphonie de Pâtes – Évasion Italienne', 'Nos Burgers Bistronomiques', 'Douceurs Signature – Éclats Sucrés de l’Instant', 'Élixirs & Rafraîchissements'];
+export const categories: string[] = ['Entrées', 'Plats', 'Desserts', 'Boissons', 'Burgers'];
 export const tags: ('Végétarien' | 'Épicé' | 'Sans gluten' | 'Spécialité locale' | 'Halal' | 'Nouveau' | 'Populaire')[] = ['Végétarien', 'Épicé', 'Sans gluten', 'Spécialité locale', 'Halal', 'Nouveau', 'Populaire'];
 
 export const suppliers = {
