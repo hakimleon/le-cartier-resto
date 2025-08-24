@@ -22,7 +22,6 @@ const convertUnits = (quantity: number, fromUnit: string, toUnit: string): numbe
     if (conversion) return quantity * conversion.factor;
     const reverseConversion = conversions.find(c => c.fromUnit === toUnit && c.toUnit === fromUnit);
     if (reverseConversion) return quantity / reverseConversion.factor;
-    // Fallback if no direct or reverse conversion is found (e.g. g to L)
     console.warn(`No conversion factor found between ${fromUnit} and ${toUnit}. Returning original quantity.`);
     return quantity; 
 };
@@ -86,7 +85,6 @@ export function RecipeCostForm({
       setFormIngredients(existingIngredients);
       setDishName(initialRecipe.name);
       setProcedure(initialRecipe.procedure || { preparation: [], cuisson: [], service: [] });
-      // This would ideally be stored in the recipe object
       setPortions(1); 
     }
   }, [initialRecipe, allRecipeIngredients, stockIngredients]);
@@ -167,14 +165,17 @@ export function RecipeCostForm({
   };
 
   // --- Financial Calculations ---
+  const VAT_RATE = 0.19;
   const totalCost = formIngredients.reduce((acc, ing) => acc + ing.totalCost, 0);
   const costPerPortion = portions > 0 ? totalCost / portions : 0;
-  const sellingPrice = initialRecipe?.price || 0;
   
-  const foodCost = sellingPrice > 0 ? (costPerPortion / sellingPrice) * 100 : 0;
-  const coefficient = costPerPortion > 0 ? sellingPrice / costPerPortion : 0;
-  const grossMarginValue = sellingPrice - costPerPortion;
-  const grossMarginPercent = sellingPrice > 0 ? (grossMarginValue / sellingPrice) * 100 : 0;
+  const sellingPriceTTC = initialRecipe?.price || 0;
+  const sellingPriceHT = sellingPriceTTC / (1 + VAT_RATE);
+
+  const foodCost = sellingPriceHT > 0 ? (costPerPortion / sellingPriceHT) * 100 : 0;
+  const coefficient = costPerPortion > 0 ? sellingPriceHT / costPerPortion : 0;
+  const grossMarginValue = sellingPriceHT - costPerPortion;
+  const grossMarginPercent = sellingPriceHT > 0 ? (grossMarginValue / sellingPriceHT) * 100 : 0;
 
   const handleSave = async () => {
     if (!initialRecipe) {
@@ -249,8 +250,10 @@ export function RecipeCostForm({
                         <Input id="portions" type="number" value={portions} onChange={(e) => setPortions(Number(e.target.value))} min="1" />
                     </div>
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-                   <FinancialInfo label="Marge Brute" value={`${grossMarginValue.toFixed(2)} DZD`} className="text-green-600" />
+                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 pt-2">
+                   <FinancialInfo label="Prix Vente (TTC)" value={`${sellingPriceTTC.toFixed(2)} DZD`} />
+                   <FinancialInfo label="Prix Vente (HT)" value={`${sellingPriceHT.toFixed(2)} DZD`} />
+                   <FinancialInfo label="Marge Brute (HT)" value={`${grossMarginValue.toFixed(2)} DZD`} className="text-green-600" />
                    <FinancialInfo label="Marge Brute (%)" value={`${grossMarginPercent.toFixed(1)} %`} className="text-green-600" />
                    <FinancialInfo label="Food Cost (%)" value={`${foodCost.toFixed(1)} %`} className="text-purple-600" />
                    <FinancialInfo label="Coeff. Multiplicateur" value={`x ${coefficient.toFixed(2)}`} className="text-blue-600" />
@@ -388,5 +391,3 @@ export function RecipeCostForm({
     </div>
   );
 }
-
-    
