@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview AI-powered dish image generator with customizable options.
@@ -6,19 +7,12 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'genkit';
 
-export const StyleOptions = z.enum([
-    'Photographie', 
-    'Aquarelle',
-    'Dessin au fusain', 
-    'Art numérique',
-    'Style bande dessinée'
-]);
-export type StyleOptions = z.infer<typeof StyleOptions>;
-
+// The StyleOptions enum has been moved to DishForm.tsx to avoid exporting it from a "use server" file.
+// We will receive the style as a simple string here.
 const GenerateDishImageInputSchema = z.object({
   prompt: z.string().describe('A detailed prompt to generate the dish image, e.g., "A gourmet burger with a glossy brioche bun..."'),
   quantity: z.coerce.number().min(1).max(4).default(1).describe('The number of images to generate (1-4).'),
-  style: StyleOptions.default('Photographie').describe('The artistic style of the generated image.'),
+  style: z.string().default('Photographie').describe('The artistic style of the generated image.'),
 });
 export type GenerateDishImageInput = z.infer<typeof GenerateDishImageInputSchema>;
 
@@ -30,7 +24,7 @@ export async function generateDishImage(input: GenerateDishImageInput): Promise<
   return generateDishImageFlow(input);
 }
 
-const stylePrompts: Record<StyleOptions, string> = {
+const stylePrompts: Record<string, string> = {
     'Photographie': "food photography, professional, high-quality, photorealistic, delicious, appetizing",
     'Aquarelle': "watercolor painting, vibrant, artistic, gentle wash, soft edges",
     'Dessin au fusain': "charcoal drawing, black and white, dramatic lighting, textured, artistic",

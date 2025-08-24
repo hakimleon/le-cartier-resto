@@ -148,7 +148,7 @@ export async function seedRecipes() {
 const GenerateImageSchema = z.object({
   imageHint: z.string().min(1, "La description pour l'IA est requise."),
   quantity: z.coerce.number().min(1).max(4),
-  style: z.string(), // We can use z.enum if we import StyleOptions from the flow
+  style: z.string(),
 });
 
 export async function generateDishImagesAction(formData: FormData) {
@@ -168,7 +168,7 @@ export async function generateDishImagesAction(formData: FormData) {
     const generationInput: GenerateDishImageInput = {
         prompt: validatedFields.data.imageHint,
         quantity: validatedFields.data.quantity,
-        style: validatedFields.data.style as any, // Cast because we can't import the enum here
+        style: validatedFields.data.style,
     };
 
     console.log(`Generating ${generationInput.quantity} image(s) for: ${generationInput.prompt}`);

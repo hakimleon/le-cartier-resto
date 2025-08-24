@@ -15,7 +15,7 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
-import { StyleOptions } from "@/ai/flows/generate-dish-image";
+import { z } from "zod";
 
 
 type DishFormProps = {
@@ -43,6 +43,14 @@ const emptyDish: Omit<Recipe, 'id'> = {
   allergens: [],
 };
 
+const StyleOptions = z.enum([
+    'Photographie', 
+    'Aquarelle',
+    'Dessin au fusain', 
+    'Art numérique',
+    'Style bande dessinée'
+]);
+
 export function DishForm({ dish, onSave, onCancel, isSaving, onGenerate, isGenerating }: DishFormProps) {
   const [formData, setFormData] = useState<Omit<Recipe, 'id'>>(dish || emptyDish);
   const [imagePreview, setImagePreview] = useState<string | null>(dish?.image || null);
@@ -58,7 +66,7 @@ export function DishForm({ dish, onSave, onCancel, isSaving, onGenerate, isGener
     const newFormData = { ...formData, [name]: type === 'number' ? parseFloat(value) || 0 : value };
     setFormData(newFormData);
 
-    if (name === 'image') {
+    if (name === 'imageUrl') {
         setImagePreview(value);
     }
   };
@@ -174,7 +182,7 @@ export function DishForm({ dish, onSave, onCancel, isSaving, onGenerate, isGener
                     id="imageUrl" 
                     name="imageUrl" 
                     value={imagePreview || ''} 
-                    onChange={(e) => setImagePreview(e.target.value)} 
+                    onChange={handleChange} 
                     placeholder="https://placehold.co/600x400.png" />
                 </div>
               </div>
