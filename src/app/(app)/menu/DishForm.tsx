@@ -117,9 +117,9 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
               </div>
               <div className="flex-1 space-y-4">
                 <div>
-                  <Label htmlFor="imageHint" className="flex items-center gap-2 mb-1">
-                    <Wand2 className="text-accent" />
-                    Suggestion d'image par IA
+                  <Label htmlFor="imageHint" className="flex items-center gap-2 mb-1 text-primary">
+                    <Wand2 />
+                    Générer une image par IA
                   </Label>
                   <Input 
                     id="imageHint" 
@@ -128,10 +128,13 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
                     onChange={handleChange} 
                     placeholder="Ex: Burger gourmet sur planche en bois, frites dorées..."
                   />
-                  <p className="text-xs text-muted-foreground mt-1">Décrivez l'image à générer. Laisser vide pour ne pas générer de nouvelle image.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Décrivez l'image à générer. Laissez vide pour ne pas générer de nouvelle image.</p>
                 </div>
                  <div>
-                  <Label htmlFor="image">Ou URL de l'image manuelle</Label>
+                  <Label htmlFor="image" className="flex items-center gap-2 mb-1">
+                     <ImageIcon/>
+                    Ou coller une URL d'image manuelle
+                  </Label>
                   <Input id="image" name="image" value={formData.image} onChange={handleChange} placeholder="https://placehold.co/600x400.png" />
                 </div>
               </div>
@@ -220,3 +223,5 @@ export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
     </form>
   );
 }
+
+    
