@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { collection, getDocs, query } from "firebase/firestore";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { collection, getDocs, query, orderBy } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Recipe } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -36,45 +36,55 @@ export default function MenuClient() {
   const [selectedDish, setSelectedDish] = useState<Recipe | null>(null);
   const { toast } = useToast();
 
-  useEffect(() => {
-    const fetchRecipes = async () => {
-      setIsLoading(true);
-      try {
-        const recipesCol = collection(db, "recipes");
-        const q = query(recipesCol);
-        const querySnapshot = await getDocs(q);
-        const recipesData = querySnapshot.docs.map(
-          (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
-        );
-        setRecipes(recipesData);
-      } catch (error) {
-        console.error("Error fetching recipes: ", error);
-        toast({
-          title: "Erreur",
-          description:
-            "Impossible de charger le menu. Veuillez réessayer.",
-          variant: "destructive",
-        });
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchRecipes();
-  }, [toast]);
-
-  const handleSeed = async () => {
-    setIsSeeding(true);
+  const fetchRecipes = useCallback(async () => {
+    setIsLoading(true);
     try {
-      await seedRecipes();
-      // We need to refetch after seeding
+      // Try fetching with ordering first
       const recipesCol = collection(db, "recipes");
-      const q = query(recipesCol);
+      const q = query(recipesCol, orderBy("name"));
       const querySnapshot = await getDocs(q);
       const recipesData = querySnapshot.docs.map(
         (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
       );
       setRecipes(recipesData);
+    } catch (error) {
+      console.error("Error fetching sorted recipes, trying without sorting:", error);
+      try {
+        // Fallback to fetching without ordering
+        const recipesCol = collection(db, "recipes");
+        const querySnapshot = await getDocs(recipesCol);
+        const recipesData = querySnapshot.docs.map(
+          (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
+        );
+        setRecipes(recipesData);
+         toast({
+          title: "Avertissement",
+          description:
+            "Le tri des plats est désactivé. Pour l'activer, un index composé est nécessaire dans Firestore.",
+          variant: "default",
+        });
+      } catch (fallbackError) {
+         console.error("Error fetching recipes: ", fallbackError);
+         toast({
+           title: "Erreur",
+           description: "Impossible de charger le menu. Veuillez réessayer.",
+           variant: "destructive",
+         });
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
+
+  useEffect(() => {
+    fetchRecipes();
+  }, [fetchRecipes]);
+
+  const handleSeed = async () => {
+    setIsSeeding(true);
+    try {
+      await seedRecipes();
+      await fetchRecipes(); // Refetch after seeding
       toast({
         title: "Succès",
         description: "Le menu de démonstration a été ajouté.",
@@ -90,21 +100,11 @@ export default function MenuClient() {
       setIsSeeding(false);
     }
   };
-  
-  const refetchRecipes = async () => {
-      const recipesCol = collection(db, "recipes");
-      const q = query(recipesCol);
-      const querySnapshot = await getDocs(q);
-      const recipesData = querySnapshot.docs.map(
-        (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
-      );
-      setRecipes(recipesData);
-  }
 
   const handleDelete = async (id: string) => {
     try {
       await deleteDish(id);
-      await refetchRecipes(); // Refresh the list
+      await fetchRecipes(); // Refresh the list
       toast({
         title: "Plat supprimé",
         description: "Le plat a été supprimé avec succès.",
@@ -215,7 +215,7 @@ export default function MenuClient() {
             dish={selectedDish}
             onSuccess={() => {
               setDialogOpen(false);
-              refetchRecipes();
+              fetchRecipes();
             }}
           />
         </DialogContent>
