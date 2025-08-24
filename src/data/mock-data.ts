@@ -1774,3 +1774,5 @@ export const mockRecipeIngredients: RecipeIngredient[] = [
     { id: 'ri-des5-2', recipeId: 'des-5', ingredientId: 'ing-15', quantity: 100, unitUse: 'g' },
     { id: 'ri-des6-1', recipeId: 'des-6', ingredientId: 'ing-15', quantity: 2, unitUse: 'pièce' },
 ];
+
+    
