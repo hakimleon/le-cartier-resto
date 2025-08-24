@@ -8,6 +8,7 @@ import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Recipe, Ingredient, RecipeIngredient } from "@/data/definitions";
 import { FileText } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function RecipeCostPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -35,17 +36,6 @@ export default function RecipeCostPage() {
     fetchData();
   }, []);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col h-full bg-background">
-        <AppHeader title="Chargement..." />
-        <main className="flex-1 p-4 lg:p-6 text-center">
-          <p>Chargement des données...</p>
-        </main>
-      </div>
-    )
-  }
-
   return (
     <div className="flex flex-col h-full bg-background">
       <header className="flex items-center justify-center p-4 lg:px-6 border-b">
@@ -58,15 +48,21 @@ export default function RecipeCostPage() {
          </div>
       </header>
       <main className="flex-1 p-4 lg:p-6">
-        <RecipeCostForm 
-            recipe={null} 
-            recipes={recipes} 
-            ingredients={ingredients} 
-            recipeIngredients={recipeIngredients} 
-        />
+        {loading ? (
+            <div className="space-y-6">
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-48 w-full" />
+            </div>
+        ) : (
+            <RecipeCostForm 
+                recipe={null} 
+                recipes={recipes} 
+                ingredients={ingredients} 
+                recipeIngredients={recipeIngredients} 
+            />
+        )}
       </main>
     </div>
   );
 }
-
-    

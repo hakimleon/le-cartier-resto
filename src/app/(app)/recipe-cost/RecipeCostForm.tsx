@@ -7,10 +7,11 @@ import { Plus, Trash2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Ingredient, Recipe, RecipeIngredient, units as availableUnits, conversions } from "@/data/definitions"
+import { Textarea } from "@/components/ui/textarea"
 
 // --- Helper Functions ---
 const convertUnits = (quantity: number, fromUnit: string, toUnit: string): number => {
@@ -202,13 +203,13 @@ export function RecipeCostForm({
             <CardContent>
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead>
+                        <thead className="text-sm text-muted-foreground">
                             <tr className="border-b">
-                                <th className="p-2 text-left text-sm font-medium text-muted-foreground min-w-[250px]">Ingrédient</th>
-                                <th className="p-2 text-left text-sm font-medium text-muted-foreground">Quantité</th>
-                                <th className="p-2 text-left text-sm font-medium text-muted-foreground">Unité</th>
-                                <th className="p-2 text-right text-sm font-medium text-muted-foreground">Coût Total</th>
-                                <th className="p-2 text-center text-sm font-medium text-muted-foreground">Actions</th>
+                                <th className="p-2 text-left font-medium min-w-[250px]">Ingrédient</th>
+                                <th className="p-2 text-left font-medium">Quantité</th>
+                                <th className="p-2 text-left font-medium">Unité</th>
+                                <th className="p-2 text-right font-medium">Coût Total</th>
+                                <th className="p-2 text-center font-medium">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -272,8 +273,30 @@ export function RecipeCostForm({
                 </div>
             </CardContent>
         </Card>
+        
+        {/* Placeholder for other sections */}
+        <Card>
+            <CardHeader><CardTitle>Procédure</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+                <div>
+                    <Label htmlFor="preparation">Préparation</Label>
+                    <Textarea id="preparation" placeholder="Étapes de préparation..."></Textarea>
+                </div>
+                <div>
+                    <Label htmlFor="cuisson">Cuisson</Label>
+                    <Textarea id="cuisson" placeholder="Instructions de cuisson..."></Textarea>
+                </div>
+                <div>
+                    <Label htmlFor="service">Service</Label>
+                    <Textarea id="service" placeholder="Instructions de service..."></Textarea>
+                </div>
+            </CardContent>
+        </Card>
+        
+        <div className="flex justify-end gap-2 pt-4">
+            <Button variant="ghost">Annuler</Button>
+            <Button>Sauvegarder</Button>
+        </div>
     </div>
   );
 }
-
-    

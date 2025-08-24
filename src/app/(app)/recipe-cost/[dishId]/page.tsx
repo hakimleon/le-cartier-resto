@@ -2,8 +2,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AppHeader } from "@/components/common/AppHeader";
-import { RecipeCostForm } from "../RecipeCostForm";
 import { notFound, useRouter } from "next/navigation";
 import { collection, getDocs, doc, getDoc } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -11,6 +9,8 @@ import { Recipe, Ingredient, RecipeIngredient } from "@/data/definitions";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, FileText } from "lucide-react";
 import Link from "next/link";
+import { RecipeCostForm } from "../RecipeCostForm";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function DynamicRecipeCostPage({ params }: { params: { dishId: string } }) {
   const { dishId } = params;
@@ -44,7 +44,8 @@ export default function DynamicRecipeCostPage({ params }: { params: { dishId: st
 
       } catch (error) {
         console.error("Error fetching data:", error);
-        // Handle error appropriately
+        setLoading(false);
+        notFound();
       } finally {
         setLoading(false);
       }
@@ -54,21 +55,6 @@ export default function DynamicRecipeCostPage({ params }: { params: { dishId: st
   }, [dishId]);
 
   const pageTitle = recipe ? `Fiche pour ${recipe.name}` : "Fiche Technique";
-
-  if (loading) {
-    return (
-      <div className="flex flex-col h-full bg-background">
-        <AppHeader title="Chargement de la Fiche Technique..." />
-        <main className="flex-1 p-4 lg:p-6 text-center">
-          <p>Chargement des données...</p>
-        </main>
-      </div>
-    );
-  }
-
-  if (!recipe) {
-    return notFound();
-  }
 
   return (
     <div className="flex flex-col h-full bg-background">
@@ -84,21 +70,34 @@ export default function DynamicRecipeCostPage({ params }: { params: { dishId: st
                 <FileText className="h-6 w-6 text-primary" />
                 <h1 className="text-2xl font-bold font-headline">Fiche Technique d'Envoi</h1>
             </div>
-            <p className="text-muted-foreground">{pageTitle}</p>
+            <p className="text-muted-foreground">{loading ? 'Chargement...' : pageTitle}</p>
          </div>
          {/* Placeholder to balance the flex layout */}
          <div className="w-[160px]"></div> 
       </header>
       <main className="flex-1 p-4 lg:p-6">
-        <RecipeCostForm 
-          recipe={recipe} 
-          recipes={recipes} 
-          ingredients={ingredients} 
-          recipeIngredients={recipeIngredients} 
-        />
+        {loading ? (
+             <div className="space-y-6">
+                <Skeleton className="h-24 w-full" />
+                <Skeleton className="h-64 w-full" />
+                <Skeleton className="h-48 w-full" />
+            </div>
+        ) : !recipe ? (
+            <div className="text-center py-10">
+                <p>Recette non trouvée.</p>
+                <Button asChild variant="link">
+                    <Link href="/menu">Retourner au menu</Link>
+                </Button>
+            </div>
+        ) : (
+            <RecipeCostForm 
+              recipe={recipe} 
+              recipes={recipes} 
+              ingredients={ingredients} 
+              recipeIngredients={recipeIngredients} 
+            />
+        )}
       </main>
     </div>
   );
 }
-
-    
