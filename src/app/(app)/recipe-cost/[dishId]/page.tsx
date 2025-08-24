@@ -100,3 +100,5 @@ export default function DynamicRecipeCostPage({ params }: { params: { dishId: st
     </div>
   );
 }
+
+    
