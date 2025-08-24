@@ -15,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { useToast } from "@/hooks/use-toast"
 import { saveRecipeSheet } from "./actions"
 import { FoodCostGauge } from "@/components/common/FoodCostGauge"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 
 // --- Helper Functions ---
@@ -60,13 +61,14 @@ export function RecipeCostForm({
   const router = useRouter();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = React.useState(false);
-  const [dishName, setDishName] = React.useState(initialRecipe?.name || "");
+  const [selectedRecipe, setSelectedRecipe] = React.useState<Recipe | null>(initialRecipe);
   const [portions, setPortions] = React.useState(1);
   const [procedure, setProcedure] = React.useState(initialRecipe?.procedure || { preparation: [], cuisson: [], service: [] });
   const [formIngredients, setFormIngredients] = React.useState<FormIngredient[]>([]);
 
   React.useEffect(() => {
     if (initialRecipe) {
+        setSelectedRecipe(initialRecipe);
       const existingIngredients = allRecipeIngredients
         .filter(ri => ri.recipeId === initialRecipe.id)
         .map(ri => {
@@ -85,7 +87,6 @@ export function RecipeCostForm({
         .filter((i): i is FormIngredient => i !== null);
       
       setFormIngredients(existingIngredients);
-      setDishName(initialRecipe.name);
       setProcedure(initialRecipe.procedure || { preparation: [], cuisson: [], service: [] });
       setPortions(1); 
     }
@@ -171,27 +172,27 @@ export function RecipeCostForm({
   const totalCost = formIngredients.reduce((acc, ing) => acc + ing.totalCost, 0);
   const costPerPortion = portions > 0 ? totalCost / portions : 0;
   
-  const sellingPriceTTC = initialRecipe?.price || 0;
+  const sellingPriceTTC = selectedRecipe?.price || 0;
   const sellingPriceHT = sellingPriceTTC / (1 + VAT_RATE);
 
   const foodCost = sellingPriceHT > 0 ? (costPerPortion / sellingPriceHT) * 100 : 0;
   const grossMarginValue = sellingPriceHT - costPerPortion;
 
   const handleSave = async () => {
-    if (!initialRecipe) {
-        toast({ title: "Erreur", description: "Impossible de sauvegarder une fiche sans plat associé.", variant: "destructive"});
+    if (!selectedRecipe) {
+        toast({ title: "Erreur", description: "Veuillez d'abord sélectionner un plat.", variant: "destructive"});
         return;
     }
     
     setIsSaving(true);
     
     const dataToSave = {
-        recipeId: initialRecipe.id,
+        recipeId: selectedRecipe.id,
         cost: costPerPortion,
         procedure: procedure,
         ingredients: formIngredients.map(ing => ({
             id: ing.id,
-            recipeId: initialRecipe.id,
+            recipeId: selectedRecipe.id,
             ingredientId: ing.ingredientId,
             quantity: ing.quantity,
             unitUse: ing.unitUse,
@@ -203,7 +204,7 @@ export function RecipeCostForm({
         if (result.success) {
             toast({
               title: "Fiche technique sauvegardée !",
-              description: `La fiche pour "${dishName}" a été mise à jour avec succès.`,
+              description: `La fiche pour "${selectedRecipe.name}" a été mise à jour avec succès.`,
             });
             router.push('/menu');
         } else {
@@ -231,6 +232,19 @@ export function RecipeCostForm({
       <p className={`text-lg font-bold ${className}`}>{value}</p>
     </div>
   );
+  
+  const [allRecipes, setAllRecipes] = React.useState<Recipe[]>([]);
+  React.useEffect(() => {
+    const fetchRecipes = async () => {
+        const querySnapshot = await getDocs(collection(db, "recipes"));
+        const recipesList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Recipe));
+        setAllRecipes(recipesList);
+    };
+    if (!initialRecipe) { // Only fetch if we are creating a new sheet
+        fetchRecipes();
+    }
+  }, [initialRecipe]);
+
 
   return (
     <div className="space-y-6">
@@ -238,161 +252,190 @@ export function RecipeCostForm({
             <CardHeader>
                  <div className="flex items-baseline justify-between">
                     <div className="flex items-baseline gap-4">
-                        <CardTitle>Détails de la recette :</CardTitle>
-                        <p className="text-2xl font-bold text-primary">{dishName}</p>
+                        <CardTitle>Détails de la recette</CardTitle>
                     </div>
                     <CardDescription>Informations générales et financières du plat.</CardDescription>
                  </div>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
-                   <div className="lg:col-span-1">
-                     <FoodCostGauge percentage={foodCost} />
-                   </div>
-                   <div className="grid grid-cols-2 lg:grid-cols-4 lg:col-span-2 gap-4">
-                       <FinancialInfo label="Prix Vente (TTC)" value={`${sellingPriceTTC.toFixed(2)} DZD`} />
-                       <FinancialInfo label="Prix Vente (HT)" value={`${sellingPriceHT.toFixed(2)} DZD`} />
-                       <FinancialInfo label="Coût / Portion" value={`${costPerPortion.toFixed(2)} DZD`} className="text-orange-500" />
-                       <FinancialInfo label="Marge Brute (€)" value={`${grossMarginValue.toFixed(2)} DZD`} className="text-green-600" />
-                   </div>
-                </div>
-                 <div className="space-y-1 max-w-xs">
-                    <Label htmlFor="portions">Nombre de portions</Label>
-                    <Input id="portions" type="number" value={portions} onChange={(e) => setPortions(Number(e.target.value))} min="1" />
-                </div>
+                {!initialRecipe && (
+                     <div className="space-y-2 max-w-sm">
+                        <Label>Sélectionner un plat existant</Label>
+                        <Select 
+                            onValueChange={(recipeId) => {
+                                const recipe = allRecipes.find(r => r.id === recipeId);
+                                if (recipe) setSelectedRecipe(recipe);
+                            }}
+                            disabled={isSaving}
+                        >
+                            <SelectTrigger>
+                                <SelectValue placeholder="Choisir un plat..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {allRecipes.map(r => (
+                                    <SelectItem key={r.id} value={r.id}>{r.name}</SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+                )}
+                {selectedRecipe && (
+                    <>
+                    <p className="text-2xl font-bold text-primary">{selectedRecipe.name}</p>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
+                       <div className="lg:col-span-1">
+                         <FoodCostGauge percentage={foodCost} />
+                       </div>
+                       <div className="grid grid-cols-2 lg:grid-cols-4 lg:col-span-2 gap-4">
+                           <FinancialInfo label="Prix Vente (TTC)" value={`${sellingPriceTTC.toFixed(2)} DZD`} />
+                           <FinancialInfo label="Prix Vente (HT)" value={`${sellingPriceHT.toFixed(2)} DZD`} />
+                           <FinancialInfo label="Coût / Portion" value={`${costPerPortion.toFixed(2)} DZD`} className="text-orange-500" />
+                           <FinancialInfo label="Marge Brute (€)" value={`${grossMarginValue.toFixed(2)} DZD`} className="text-green-600" />
+                       </div>
+                    </div>
+                     <div className="space-y-1 max-w-xs">
+                        <Label htmlFor="portions">Nombre de portions</Label>
+                        <Input id="portions" type="number" value={portions} onChange={(e) => setPortions(Number(e.target.value))} min="1" />
+                    </div>
+                    </>
+                )}
             </CardContent>
         </Card>
-
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-              <div>
-                <CardTitle>Ingrédients & Coûts</CardTitle>
-                <CardDescription>Composez la recette et analysez les coûts en temps réel.</CardDescription>
-              </div>
-              <Button onClick={addIngredientRow} size="sm" disabled={isSaving}>
-                <Plus className="mr-2 h-4 w-4" /> Ajouter un ingrédient
-              </Button>
-            </CardHeader>
-            <CardContent>
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead>
-                            <tr className="border-b">
-                                <th className="p-2 font-medium text-muted-foreground min-w-[250px]">Ingrédient</th>
-                                <th className="p-2 font-medium text-muted-foreground">Quantité</th>
-                                <th className="p-2 font-medium text-muted-foreground">Unité</th>
-                                <th className="p-2 font-medium text-muted-foreground text-right">Coût Total</th>
-                                <th className="p-2 font-medium text-muted-foreground text-center w-[50px]">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {formIngredients.map((ing, index) => (
-                                <tr key={ing.id} className="border-b">
-                                    <td className="p-2">
-                                       <select
-                                            value={ing.ingredientId}
-                                            onChange={(e) => handleSelectIngredient(index, e.target.value)}
-                                            className="w-full bg-background border border-input rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                                            disabled={isSaving}
-                                        >
-                                            <option value="">Sélectionner un ingrédient...</option>
-                                            {stockIngredients.map((stockIng) => (
-                                                <option key={stockIng.id} value={stockIng.id}>
-                                                    {stockIng.name}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </td>
-                                    <td className="p-2">
-                                        <Input
-                                          type="number"
-                                          value={ing.quantity}
-                                          onChange={(e) => updateIngredientField(index, 'quantity', e.target.value)}
-                                          className="w-24"
-                                          disabled={!ing.ingredientId || isSaving}
-                                        />
-                                    </td>
-                                    <td className="p-2">
-                                        <select
-                                            value={ing.unitUse}
-                                            onChange={(e) => updateIngredientField(index, 'unitUse', e.target.value)}
-                                            disabled={!ing.ingredientId || isSaving}
-                                            className="w-full bg-background border border-input rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                                        >
-                                            {availableUnits.map(unit => (
-                                                <option key={unit} value={unit}>{unit}</option>
-                                            ))}
-                                        </select>
-                                    </td>
-                                    <td className="p-2 text-right font-mono">{ing.totalCost.toFixed(2)} DZD</td>
-                                    <td className="p-2 text-center">
-                                        <Button variant="ghost" size="icon" onClick={() => removeIngredientRow(index)} disabled={isSaving}>
-                                            <Trash2 className="h-4 w-4 text-destructive" />
-                                        </Button>
-                                    </td>
+        
+        {selectedRecipe && (
+            <>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <div>
+                    <CardTitle>Ingrédients & Coûts</CardTitle>
+                    <CardDescription>Composez la recette et analysez les coûts en temps réel.</CardDescription>
+                  </div>
+                  <Button onClick={addIngredientRow} size="sm" disabled={isSaving}>
+                    <Plus className="mr-2 h-4 w-4" /> Ajouter un ingrédient
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-sm text-left">
+                            <thead>
+                                <tr className="border-b">
+                                    <th className="p-2 font-medium text-muted-foreground min-w-[250px]">Ingrédient</th>
+                                    <th className="p-2 font-medium text-muted-foreground">Quantité</th>
+                                    <th className="p-2 font-medium text-muted-foreground">Unité</th>
+                                    <th className="p-2 font-medium text-muted-foreground text-right">Coût Total</th>
+                                    <th className="p-2 font-medium text-muted-foreground text-center w-[50px]">Actions</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                <div className="mt-4 flex justify-end gap-8 p-4 bg-muted rounded-lg">
-                    <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Coût Total Recette</p>
-                        <p className="text-xl font-bold">{totalCost.toFixed(2)} DZD</p>
+                            </thead>
+                            <tbody>
+                                {formIngredients.map((ing, index) => (
+                                    <tr key={ing.id} className="border-b">
+                                        <td className="p-2">
+                                           <select
+                                                value={ing.ingredientId}
+                                                onChange={(e) => handleSelectIngredient(index, e.target.value)}
+                                                className="w-full bg-background border border-input rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                                disabled={isSaving}
+                                            >
+                                                <option value="">Sélectionner un ingrédient...</option>
+                                                {stockIngredients.map((stockIng) => (
+                                                    <option key={stockIng.id} value={stockIng.id}>
+                                                        {stockIng.name}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                        <td className="p-2">
+                                            <Input
+                                              type="number"
+                                              value={ing.quantity}
+                                              onChange={(e) => updateIngredientField(index, 'quantity', e.target.value)}
+                                              className="w-24"
+                                              disabled={!ing.ingredientId || isSaving}
+                                            />
+                                        </td>
+                                        <td className="p-2">
+                                            <select
+                                                value={ing.unitUse}
+                                                onChange={(e) => updateIngredientField(index, 'unitUse', e.target.value)}
+                                                disabled={!ing.ingredientId || isSaving}
+                                                className="w-full bg-background border border-input rounded-md p-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                                            >
+                                                {availableUnits.map(unit => (
+                                                    <option key={unit} value={unit}>{unit}</option>
+                                                ))}
+                                            </select>
+                                        </td>
+                                        <td className="p-2 text-right font-mono">{ing.totalCost.toFixed(2)} DZD</td>
+                                        <td className="p-2 text-center">
+                                            <Button variant="ghost" size="icon" onClick={() => removeIngredientRow(index)} disabled={isSaving}>
+                                                <Trash2 className="h-4 w-4 text-destructive" />
+                                            </Button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                     <div className="text-right">
-                        <p className="text-sm text-muted-foreground">Coût / Portion</p>
-                        <p className="text-xl font-bold">{costPerPortion.toFixed(2)} DZD</p>
+                    <div className="mt-4 flex justify-end gap-8 p-4 bg-muted rounded-lg">
+                        <div className="text-right">
+                            <p className="text-sm text-muted-foreground">Coût Total Recette</p>
+                            <p className="text-xl font-bold">{totalCost.toFixed(2)} DZD</p>
+                        </div>
+                         <div className="text-right">
+                            <p className="text-sm text-muted-foreground">Coût / Portion</p>
+                            <p className="text-xl font-bold">{costPerPortion.toFixed(2)} DZD</p>
+                        </div>
                     </div>
-                </div>
-            </CardContent>
-        </Card>
-        
-        <Card>
-            <CardHeader><CardTitle>Procédure</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-                <div>
-                    <Label htmlFor="preparation">Préparation</Label>
-                    <Textarea 
-                        id="preparation" 
-                        placeholder="Étapes de préparation..." 
-                        value={Array.isArray(procedure.preparation) ? procedure.preparation.join('\\n') : ''}
-                        onChange={(e) => handleProcedureChange('preparation', e.target.value)}
-                        disabled={isSaving}
-                        rows={5}
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="cuisson">Cuisson</Label>
-                    <Textarea 
-                        id="cuisson" 
-                        placeholder="Instructions de cuisson..."
-                        value={Array.isArray(procedure.cuisson) ? procedure.cuisson.join('\\n') : ''}
-                        onChange={(e) => handleProcedureChange('cuisson', e.target.value)}
-                        disabled={isSaving}
-                        rows={5}
-                    />
-                </div>
-                <div>
-                    <Label htmlFor="service">Service</Label>
-                    <Textarea 
-                        id="service" 
-                        placeholder="Instructions de service..."
-                        value={Array.isArray(procedure.service) ? procedure.service.join('\\n') : ''}
-                        onChange={(e) => handleProcedureChange('service', e.target.value)}
-                        disabled={isSaving}
-                        rows={3}
-                    />
-                </div>
-            </CardContent>
-        </Card>
-        
-        <div className="flex justify-end gap-2 pt-4">
-            <Button variant="ghost" onClick={handleCancel} disabled={isSaving}>Annuler</Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? 'Sauvegarde en cours...' : 'Sauvegarder'}
-            </Button>
-        </div>
+                </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader><CardTitle>Procédure</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                    <div>
+                        <Label htmlFor="preparation">Préparation</Label>
+                        <Textarea 
+                            id="preparation" 
+                            placeholder="Étapes de préparation..." 
+                            value={Array.isArray(procedure.preparation) ? procedure.preparation.join('\\n') : ''}
+                            onChange={(e) => handleProcedureChange('preparation', e.target.value)}
+                            disabled={isSaving}
+                            rows={5}
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="cuisson">Cuisson</Label>
+                        <Textarea 
+                            id="cuisson" 
+                            placeholder="Instructions de cuisson..."
+                            value={Array.isArray(procedure.cuisson) ? procedure.cuisson.join('\\n') : ''}
+                            onChange={(e) => handleProcedureChange('cuisson', e.target.value)}
+                            disabled={isSaving}
+                            rows={5}
+                        />
+                    </div>
+                    <div>
+                        <Label htmlFor="service">Service</Label>
+                        <Textarea 
+                            id="service" 
+                            placeholder="Instructions de service..."
+                            value={Array.isArray(procedure.service) ? procedure.service.join('\\n') : ''}
+                            onChange={(e) => handleProcedureChange('service', e.target.value)}
+                            disabled={isSaving}
+                            rows={3}
+                        />
+                    </div>
+                </CardContent>
+            </Card>
+            
+            <div className="flex justify-end gap-2 pt-4">
+                <Button variant="ghost" onClick={handleCancel} disabled={isSaving}>Annuler</Button>
+                <Button onClick={handleSave} disabled={isSaving}>
+                    {isSaving ? 'Sauvegarde en cours...' : 'Sauvegarder'}
+                </Button>
+            </div>
+            </>
+        )}
     </div>
   );
 }

@@ -1,32 +1,31 @@
 
+
 "use client";
 
 import { useEffect, useState } from "react";
 import { AppHeader } from "@/components/common/AppHeader";
-import { RecipeCostForm } from "./RecipeCostForm";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import { Recipe, Ingredient, RecipeIngredient } from "@/data/definitions";
-import { FileText } from "lucide-react";
+import { Recipe } from "@/data/definitions";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { FileText, PlusCircle } from "lucide-react";
+import Link from "next/link";
+import { Input } from "@/components/ui/input";
+import Image from "next/image";
 
-export default function RecipeCostPage() {
+export default function RecipeCostListPage() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [ingredients, setIngredients] = useState<Ingredient[]>([]);
-  const [recipeIngredients, setRecipeIngredients] = useState<RecipeIngredient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     async function fetchData() {
+      setLoading(true);
       try {
-        const recipesSnapshot = await getDocs(collection(db, "recipes"));
+        const recipesSnapshot = await getDocs(query(collection(db, "recipes"), orderBy("name")));
         setRecipes(recipesSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Recipe)));
-
-        const ingredientsSnapshot = await getDocs(collection(db, "ingredients"));
-        setIngredients(ingredientsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as Ingredient)));
-        
-        const recipeIngredientsSnapshot = await getDocs(collection(db, "recipeIngredients"));
-        setRecipeIngredients(recipeIngredientsSnapshot.docs.map(d => ({ id: d.id, ...d.data() } as RecipeIngredient)));
       } catch (error) {
         console.error("Error fetching data:", error);
       } finally {
@@ -35,33 +34,62 @@ export default function RecipeCostPage() {
     }
     fetchData();
   }, []);
+  
+  const filteredRecipes = recipes.filter(r => r.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
   return (
     <div className="flex flex-col h-full bg-background">
-      <header className="flex items-center justify-center p-4 lg:px-6 border-b">
-         <div className="flex flex-col items-center">
-            <div className="flex items-center gap-2">
-                <FileText className="h-6 w-6 text-primary" />
-                <h1 className="text-2xl font-bold font-headline">Nouvelle Fiche Technique</h1>
-            </div>
-            <p className="text-muted-foreground">Créez une nouvelle fiche de coût pour un plat</p>
-         </div>
-      </header>
+       <AppHeader title="Fiches Techniques">
+        <Button asChild>
+            <Link href="/recipe-cost/new">
+                <PlusCircle className="mr-2" />
+                Créer une fiche vierge
+            </Link>
+        </Button>
+      </AppHeader>
       <main className="flex-1 p-4 lg:p-6">
-        {loading ? (
-            <div className="space-y-6">
-                <Skeleton className="h-24 w-full" />
-                <Skeleton className="h-64 w-full" />
-                <Skeleton className="h-48 w-full" />
-            </div>
-        ) : (
-            <RecipeCostForm 
-                recipe={null} 
-                recipes={recipes} 
-                ingredients={ingredients} 
-                recipeIngredients={recipeIngredients} 
-            />
-        )}
+        <Card>
+            <CardHeader>
+                <CardTitle>Sélectionner un plat</CardTitle>
+                <CardDescription>Choisissez un plat pour consulter ou modifier sa fiche technique d'envoi.</CardDescription>
+                <div className="pt-2">
+                    <Input 
+                        placeholder="Rechercher un plat..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="max-w-sm"
+                    />
+                </div>
+            </CardHeader>
+            <CardContent>
+                {loading ? (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-24 w-full" />)}
+                    </div>
+                ) : (
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                        {filteredRecipes.map(recipe => (
+                             <Link key={recipe.id} href={`/recipe-cost/${recipe.id}`} className="block">
+                                <div className="p-4 border rounded-lg hover:bg-muted/50 transition-colors flex items-center gap-4">
+                                     <Image src={recipe.image || "https://placehold.co/600x400.png"} alt={recipe.name} width={64} height={64} className="rounded-md object-cover aspect-square" />
+                                    <div className="flex-1">
+                                        <p className="font-semibold">{recipe.name}</p>
+                                        <p className="text-sm text-muted-foreground">{recipe.category}</p>
+                                    </div>
+                                    <FileText className="h-5 w-5 text-muted-foreground" />
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
+                )}
+
+                 {!loading && filteredRecipes.length === 0 && (
+                    <div className="text-center py-10 text-muted-foreground">
+                        <p>Aucun plat trouvé pour "{searchTerm}".</p>
+                    </div>
+                 )}
+            </CardContent>
+        </Card>
       </main>
     </div>
   );
