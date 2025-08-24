@@ -2,7 +2,7 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { AppHeader } from "@/components/common/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,8 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { seedRecipes, saveDish, deleteDish } from "./actions";
+import { collection, getDocs, orderBy, query } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 
 const getStatusClass = (status: Recipe['status']) => {
@@ -114,24 +116,48 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, item
   )
 };
 
-type MenuClientProps = {
-    initialRecipes: Recipe[];
-    isLoading: boolean;
-    onRefresh: () => void;
-}
-
-export default function MenuClient({ initialRecipes, isLoading, onRefresh }: MenuClientProps) {
-  const [recipes, setRecipes] = useState<Recipe[]>(initialRecipes);
+export default function MenuClient() {
+  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dishToEdit, setDishToEdit] = useState<Recipe | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSeeding, setIsSeeding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  const onRefresh = () => {
+    setRefreshKey(oldKey => oldKey + 1);
+  };
   
+  const getRecipes = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const recipesCol = collection(db, "recipes");
+      const q = query(recipesCol, orderBy("name"));
+      const snapshot = await getDocs(q);
+      if (snapshot.empty) {
+        setRecipes([]);
+      } else {
+        const recipeList = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+        } as Recipe));
+        setRecipes(recipeList);
+      }
+    } catch(error) {
+      console.error("Error fetching recipes:", error);
+      setRecipes([]); // Set to empty array on error
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    setRecipes(initialRecipes);
-  }, [initialRecipes]);
+    getRecipes();
+  }, [getRecipes, refreshKey]);
+
 
   const handleAddNew = () => {
     setDishToEdit(null);
