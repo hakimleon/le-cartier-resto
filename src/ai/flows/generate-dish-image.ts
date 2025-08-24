@@ -38,11 +38,11 @@ const generateDishImageFlow = ai.defineFlow(
       },
     });
 
-    if (!media.url) {
+    if (!media?.url) {
       throw new Error('Image generation failed to return a media URL.');
     }
 
     // The URL is already a base64 data URI
-    return media.url;
+    return media?.url;
   }
 );
