@@ -10,15 +10,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Recipe, categories } from "@/data/definitions";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search, Package, Loader, Database, CheckCircle2 } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search, Package, Loader, Database } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DishForm } from "./DishForm";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { seedRecipes, saveDish, deleteDish, generateDishImagesAction } from "./actions";
+import { seedRecipes, saveDish, deleteDish, generateDishImageAction } from "./actions";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -114,65 +114,6 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title: string, items
   )
 };
 
-const ImageSelectionModal = ({
-  images,
-  isOpen,
-  onClose,
-  onSelect,
-}: {
-  images: string[];
-  isOpen: boolean;
-  onClose: () => void;
-  onSelect: (imageUrl: string) => void;
-}) => {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-
-  const handleSelect = () => {
-    if (selectedImage) {
-      onSelect(selectedImage);
-    }
-  };
-
-  return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader>
-          <DialogTitle>Choisissez votre image préférée</DialogTitle>
-          <DialogDescription>
-            Sélectionnez l'image générée par l'IA que vous souhaitez utiliser pour ce plat.
-          </DialogDescription>
-        </DialogHeader>
-        <div className="grid grid-cols-2 gap-4 py-4 max-h-[60vh] overflow-y-auto">
-          {images.map((imgSrc, index) => (
-            <div
-              key={index}
-              className={cn(
-                "relative rounded-lg overflow-hidden cursor-pointer border-4",
-                selectedImage === imgSrc ? "border-primary" : "border-transparent"
-              )}
-              onClick={() => setSelectedImage(imgSrc)}
-            >
-              <Image src={imgSrc} alt={`Generated image ${index + 1}`} width={400} height={400} className="object-cover aspect-square" />
-              {selectedImage === imgSrc && (
-                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                  <CheckCircle2 className="w-16 h-16 text-white" />
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-        <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Annuler</Button>
-          <Button onClick={handleSelect} disabled={!selectedImage}>
-            Confirmer la sélection
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-
 export default function MenuClient() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -182,17 +123,14 @@ export default function MenuClient() {
   const [isSeeding, setIsSeeding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<string[]>([]);
-  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const { toast } = useToast();
 
   const fetchRecipes = useCallback(async () => {
     setIsLoading(true);
     try {
       const recipesCol = collection(db, "recipes");
-      // Firestore requires an index for orderBy. Removing it simplifies the query and avoids console errors if the index is not created.
-      // The data can be sorted client-side if needed.
-      const snapshot = await getDocs(recipesCol);
+      const q = query(recipesCol, orderBy("name"));
+      const snapshot = await getDocs(q);
       const recipeList = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
@@ -203,9 +141,21 @@ export default function MenuClient() {
       toast({
         variant: "destructive",
         title: "Erreur de chargement",
-        description: "Impossible de charger les recettes depuis la base de données.",
+        description: "Impossible de charger les recettes. L'index Firestore requis est peut-être manquant.",
       });
-      setRecipes([]); // Set to empty array on error
+      // Fallback: fetch without ordering if ordering fails
+      try {
+          const recipesCol = collection(db, "recipes");
+          const snapshot = await getDocs(recipesCol);
+           const recipeList = snapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          } as Recipe));
+          setRecipes(recipeList);
+      } catch (e) {
+          console.error("Error fetching recipes without ordering:", e);
+          setRecipes([]); // Set to empty array on error
+      }
     } finally {
       setIsLoading(false);
     }
@@ -297,19 +247,13 @@ export default function MenuClient() {
     }
   };
 
-  const handleGenerateImages = async (formData: FormData) => {
+  const handleGenerateImage = async (formData: FormData) => {
     setIsGenerating(true);
     try {
-      const result = await generateDishImagesAction(formData);
+      const result = await generateDishImageAction(formData);
       if (result.success && result.data) {
-        if (result.data.length === 1) {
-            // If only one image, save directly without modal
-            formData.set('image', result.data[0]);
-            await handleSaveDish(formData);
-        } else {
-            setGeneratedImages(result.data);
-            setIsImageModalOpen(true);
-        }
+        formData.set('image', result.data.imageUrl);
+        await handleSaveDish(formData); // This will also close the dialog and refresh
       } else {
         throw new Error(result.message);
       }
@@ -323,28 +267,7 @@ export default function MenuClient() {
       setIsGenerating(false);
     }
   };
-
-  const handleImageSelected = async (imageUrl: string) => {
-    // This assumes the form data is still available or can be retrieved
-    // A more robust solution might store the form data in state before opening the modal.
-    // For now, we find the form in the DOM - this is not ideal but works for this structure.
-    const form = document.querySelector('form');
-    if (form) {
-      const formData = new FormData(form);
-      formData.set('image', imageUrl);
-      
-      // We need to re-append other necessary fields that are not standard inputs
-      formData.append('id', dishToEdit?.id || '');
-      const statusSwitch = document.getElementById('status') as HTMLButtonElement | null;
-      formData.set('status', statusSwitch?.dataset.state === 'checked' ? 'Actif' : 'Inactif');
-      // ... other fields as needed ...
-
-      await handleSaveDish(formData);
-    }
-    setIsImageModalOpen(false);
-    setGeneratedImages([]);
-  };
-
+  
   const filteredRecipes = recipes.filter(item => 
     item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase())) ||
@@ -435,19 +358,11 @@ export default function MenuClient() {
             onSave={handleSaveDish}
             onCancel={() => setIsDialogOpen(false)}
             isSaving={isSaving}
-            onGenerate={handleGenerateImages}
+            onGenerate={handleGenerateImage}
             isGenerating={isGenerating}
           />
         </DialogContent>
       </Dialog>
-      
-      <ImageSelectionModal 
-        images={generatedImages}
-        isOpen={isImageModalOpen}
-        onClose={() => setIsImageModalOpen(false)}
-        onSelect={handleImageSelected}
-      />
-
     </div>
   );
 }

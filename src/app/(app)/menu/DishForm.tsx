@@ -15,7 +15,6 @@ import Image from "next/image";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { Switch } from "@/components/ui/switch";
-import { z } from "zod";
 
 
 type DishFormProps = {
@@ -42,14 +41,6 @@ const emptyDish: Omit<Recipe, 'id'> = {
   difficulty: 1,
   allergens: [],
 };
-
-const StyleOptions = z.enum([
-    'Photographie', 
-    'Aquarelle',
-    'Dessin au fusain', 
-    'Art numérique',
-    'Style bande dessinée'
-]);
 
 export function DishForm({ dish, onSave, onCancel, isSaving, onGenerate, isGenerating }: DishFormProps) {
   const [formData, setFormData] = useState<Omit<Recipe, 'id'>>(dish || emptyDish);
@@ -147,28 +138,6 @@ export function DishForm({ dish, onSave, onCancel, isSaving, onGenerate, isGener
                     rows={2}
                   />
                   <p className="text-xs text-muted-foreground mt-1">Décrivez l'image à générer.</p>
-                  <div className="grid grid-cols-2 gap-4 mt-2">
-                    <div className="space-y-1">
-                      <Label htmlFor="style" className="text-xs">Style</Label>
-                       <Select name="style" defaultValue={StyleOptions.enum.Photographie}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {StyleOptions.options.map(option => (
-                            <SelectItem key={option} value={option}>{option}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                     <div className="space-y-1">
-                      <Label htmlFor="quantity" className="text-xs">Quantité</Label>
-                       <Select name="quantity" defaultValue="1">
-                        <SelectTrigger><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          {[1, 2, 3, 4].map(q => <SelectItem key={q} value={String(q)}>{q}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
                    <Button onClick={handleGenerateClick} variant="secondary" className="w-full mt-3" disabled={isGenerating || !formData.imageHint}>
                     {isGenerating ? 'Génération en cours...' : "Générer"}
                   </Button>

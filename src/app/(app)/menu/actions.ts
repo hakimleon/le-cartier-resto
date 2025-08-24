@@ -7,31 +7,8 @@ import { collection, doc, setDoc, writeBatch, deleteDoc } from "firebase/firesto
 import { revalidatePath } from "next/cache";
 import { mockRecipes, mockRecipeIngredients } from "@/data/mock-data";
 import { Recipe } from "@/data/definitions";
-import { generateDishImage, type GenerateDishImageInput } from "@/ai/flows/generate-dish-image";
-import { v2 as cloudinary } from 'cloudinary';
+import { generateDishImage, type GenerateDishImageInput, type GenerateDishImageOutput } from "@/ai/flows/generate-dish-image";
 import { z } from "zod";
-
-// Configure Cloudinary
-cloudinary.config({ 
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME, 
-  api_key: process.env.CLOUDINARY_API_KEY, 
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-  secure: true
-});
-
-async function uploadToCloudinary(imageDataUri: string, dishName: string): Promise<string> {
-    try {
-        const result = await cloudinary.uploader.upload(imageDataUri, {
-            folder: "le-singulier-ai",
-            public_id: `${dishName.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`,
-            overwrite: true,
-        });
-        return result.secure_url;
-    } catch (error) {
-        console.error("Cloudinary Upload Error:", error);
-        throw new Error("Failed to upload image to Cloudinary.");
-    }
-}
 
 export async function saveDish(formData: FormData) {
     const id = formData.get('id') as string;
@@ -132,16 +109,12 @@ export async function seedRecipes() {
 
 const GenerateImageSchema = z.object({
   imageHint: z.string().min(1, "La description pour l'IA est requise."),
-  quantity: z.coerce.number().min(1).max(4),
-  style: z.string(),
 });
 
-export async function generateDishImagesAction(formData: FormData) {
+export async function generateDishImageAction(formData: FormData) {
   const rawData = Object.fromEntries(formData.entries());
   const validatedFields = GenerateImageSchema.safeParse({
     imageHint: rawData.imageHint,
-    quantity: rawData.quantity,
-    style: rawData.style,
   });
 
   if (!validatedFields.success) {
@@ -149,24 +122,16 @@ export async function generateDishImagesAction(formData: FormData) {
   }
 
   try {
-    const dishName = formData.get('name') as string || 'plat-inconnu';
     const generationInput: GenerateDishImageInput = {
         prompt: validatedFields.data.imageHint,
-        quantity: validatedFields.data.quantity,
-        style: validatedFields.data.style,
     };
 
-    console.log(`Generating ${generationInput.quantity} image(s) for: ${generationInput.prompt}`);
-    const generatedDataUris = await generateDishImage(generationInput);
+    const result = await generateDishImage(generationInput);
     
-    const uploadPromises = generatedDataUris.map(dataUri => uploadToCloudinary(dataUri, dishName));
-    const imageUrls = await Promise.all(uploadPromises);
-
-    console.log(`Images generated and uploaded to Cloudinary:`, imageUrls);
-    return { success: true, data: imageUrls, message: "Images générées avec succès." };
+    return { success: true, data: result, message: "Image générée avec succès." };
 
   } catch (error) {
-    console.error("Error in generateDishImagesAction:", error);
+    console.error("Error in generateDishImageAction:", error);
     const errorMessage = error instanceof Error ? error.message : String(error);
     return { success: false, message: `Erreur lors de la génération d'images : ${errorMessage}` };
   }
