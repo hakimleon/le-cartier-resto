@@ -185,43 +185,34 @@ export default function MenuClient() {
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const { toast } = useToast();
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  const onRefresh = () => {
-    setRefreshKey(oldKey => oldKey + 1);
-  };
+  const fetchRecipes = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const recipesCol = collection(db, "recipes");
+      const q = query(recipesCol, orderBy("name"));
+      const snapshot = await getDocs(q);
+      const recipeList = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+      } as Recipe));
+      setRecipes(recipeList);
+    } catch(error) {
+      console.error("Error fetching recipes:", error);
+      toast({
+        variant: "destructive",
+        title: "Erreur de chargement",
+        description: "Impossible de charger les recettes depuis la base de données.",
+      });
+      setRecipes([]); // Set to empty array on error
+    } finally {
+      setIsLoading(false);
+    }
+  }, [toast]);
   
   useEffect(() => {
-    async function getRecipes() {
-      setIsLoading(true);
-      try {
-        const recipesCol = collection(db, "recipes");
-        const q = query(recipesCol, orderBy("name"));
-        const snapshot = await getDocs(q);
-        if (snapshot.empty) {
-          setRecipes([]);
-        } else {
-          const recipeList = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-          } as Recipe));
-          setRecipes(recipeList);
-        }
-      } catch(error) {
-        console.error("Error fetching recipes:", error);
-        toast({
-          variant: "destructive",
-          title: "Erreur de chargement",
-          description: "Impossible de charger les recettes depuis la base de données.",
-        });
-        setRecipes([]); // Set to empty array on error
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    getRecipes();
-  }, [refreshKey, toast]);
+    fetchRecipes();
+  }, [fetchRecipes]);
 
 
   const handleAddNew = () => {
@@ -243,7 +234,7 @@ export default function MenuClient() {
             toast({ title: "Succès !", description: `Le plat "${dishName}" a été sauvegardé.` });
             setIsDialogOpen(false);
             setDishToEdit(null);
-            onRefresh(); // Refresh the list
+            fetchRecipes(); // Refresh the list
         } else {
             throw new Error(result.message);
         }
@@ -264,7 +255,7 @@ export default function MenuClient() {
         const result = await deleteDish(dishId);
         if (result.success) {
             toast({ variant: "destructive", title: "Plat supprimé !", description: `Le plat "${dishName}" a été supprimé.` });
-            onRefresh();
+            fetchRecipes();
         } else {
             throw new Error(result.message);
         }
@@ -286,7 +277,7 @@ export default function MenuClient() {
           title: "Menu initialisé !",
           description: result.message,
         });
-        onRefresh();
+        fetchRecipes();
       } else {
         toast({
           variant: "destructive",

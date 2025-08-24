@@ -98,28 +98,13 @@ export async function seedRecipes() {
 
     const recipesCollection = collection(db, "recipes");
     mockRecipes.forEach((recipe) => {
-      const {
-        id,
-        cost: mockCost,
-        imageAltText,
-        cookTime,
-        totalTime,
-        servings,
-        portionDescription,
-        nutritionalInfo,
-        instructions,
-        marketingDescription,
-        equipment,
-        chef,
-        createdAt,
-        updatedAt,
-        ...recipeToStore
-      } = recipe;
-
+      // The id is used for the document reference, but should not be in the document data itself.
+      const { id, ...recipeData } = recipe;
+      
       const docData: Omit<Recipe, 'id'> = {
-          ...recipeToStore,
-          cost: 0,
-          image: `https://placehold.co/600x400.png?text=${encodeURIComponent(recipe.name)}`
+          ...recipeData,
+          cost: recipeData.cost || 0, // Ensure cost is a number, default to 0
+          image: recipeData.image || `https://placehold.co/600x400.png?text=${encodeURIComponent(recipeData.name)}`,
       };
 
       const docRef = doc(recipesCollection, id);

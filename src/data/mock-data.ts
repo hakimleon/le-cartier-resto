@@ -2,7 +2,9 @@
 // src/data/mock-data.ts
 import { Recipe, RecipeIngredient } from './definitions';
 
-export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = [
+// The Omit type was incorrect. The mock data should conform to the Recipe type as much as possible.
+// Fields like 'cost' will be calculated later, so they can be optional or have a default value here.
+export const mockRecipes: Recipe[] = [
   // --- Entrées ---
   {
     id: 'ef-1',
@@ -10,6 +12,7 @@ export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = 
     description: "oeuf dur nappe avec une mayonnaise onctueuse montee a la main",
     category: 'Entrées',
     price: 900,
+    cost: 0,
     image: 'https://placehold.co/600x400.png',
     imageHint: 'creamy egg',
     prepTime: 10,
@@ -34,6 +37,7 @@ export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = 
     description: 'Duo de tomate et mozzarella aux herbes fraîches',
     category: 'Entrées',
     price: 1200,
+    cost: 0,
     image: 'https://placehold.co/600x400.png',
     imageHint: 'caprese salad',
     prepTime: 10,
@@ -59,6 +63,7 @@ export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = 
     description: 'Camembert grillé, pesto frais et éclats de noix',
     category: 'Entrées',
     price: 950,
+    cost: 0,
     image: 'https://placehold.co/600x400.png',
     imageHint: 'baked camembert',
     prepTime: 15,
@@ -82,6 +87,7 @@ export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = 
     description: 'Champignons sautés à l\'ail et au persil sur pain grillé',
     category: 'Entrées',
     price: 1150,
+    cost: 0,
     image: 'https://placehold.co/600x400.png',
     imageHint: 'bruschetta mushroom',
     prepTime: 12,
@@ -105,6 +111,7 @@ export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = 
     description: 'Entrecôte juteuse grillée à la perfection',
     category: 'Plats',
     price: 2600,
+    cost: 0,
     image: 'https://placehold.co/600x400.png',
     imageHint: 'ribeye steak',
     prepTime: 20,
@@ -128,6 +135,7 @@ export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = 
     description: 'Filet de bœuf grillé au jus réduit, purée truffée en option',
     category: 'Plats',
     price: 3200,
+    cost: 0,
     image: 'https://placehold.co/600x400.png',
     imageHint: 'beef fillet',
     prepTime: 30,
@@ -152,6 +160,7 @@ export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = 
     description: 'Rechta de pate fraiche avec poulet parfumée à la cannelle',
     category: 'Plats',
     price: 2400,
+    cost: 0,
     image: 'https://placehold.co/600x400.png',
     imageHint: 'rechta chicken',
     prepTime: 35,
@@ -176,6 +185,7 @@ export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = 
     description: 'Tagliatelles fondantes, saumon fumé, crème légère au parmesan',
     category: 'Plats',
     price: 2200,
+    cost: 0,
     image: 'https://placehold.co/600x400.png',
     imageHint: 'salmon pasta',
     prepTime: 20,
@@ -201,6 +211,7 @@ export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = 
     description: 'Patty de boeuf haché de 180 gr, pain brioche maison, tomate et laitue romane.',
     category: 'Burgers',
     price: 1800,
+    cost: 0,
     image: 'https://placehold.co/600x400.png',
     imageHint: 'gourmet burger',
     prepTime: 15,
@@ -225,6 +236,7 @@ export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = 
     description: 'Fondant cœur coulant, servi tiède avec son voile de crème anglaise',
     category: 'Desserts',
     price: 1400,
+    cost: 0,
     image: 'https://placehold.co/600x400.png',
     imageHint: 'chocolate fondant',
     prepTime: 15,
@@ -250,6 +262,7 @@ export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = 
     description: 'Mélange de fruits frais, touche florale',
     category: 'Boissons',
     price: 1200,
+    cost: 0,
     image: 'https://placehold.co/600x400.png',
     imageHint: 'fruit mocktail',
     prepTime: 5,
