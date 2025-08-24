@@ -3,9 +3,8 @@ rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Permet la lecture et l'écriture sur n'importe quel document
-    // pour les besoins du développement.
-    // ATTENTION : Ne pas utiliser en production sans authentification !
+    // This rule allows anyone to read and write to any document in your database.
+    // This is insecure and should only be used for initial development and debugging.
     match /{document=**} {
       allow read, write: if true;
     }
