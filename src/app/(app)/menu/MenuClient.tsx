@@ -35,36 +35,43 @@ export default function MenuClient() {
   const [selectedDish, setSelectedDish] = useState<Recipe | null>(null);
   const { toast } = useToast();
 
-  const fetchRecipes = async () => {
-    setIsLoading(true);
+  useEffect(() => {
+    const fetchRecipes = async () => {
+      setIsLoading(true);
+      try {
+        const recipesCol = collection(db, "recipes");
+        const querySnapshot = await getDocs(recipesCol);
+        const recipesData = querySnapshot.docs.map(
+          (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
+        );
+        setRecipes(recipesData);
+      } catch (error) {
+         console.error("Error fetching recipes: ", error);
+         toast({
+           title: "Erreur",
+           description: "Impossible de charger le menu. Vérifiez la configuration Firebase et les règles de sécurité Firestore.",
+           variant: "destructive",
+         });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchRecipes();
+  }, [toast]);
+
+  const handleSeed = async () => {
+    setIsSeeding(true);
     try {
+      await seedRecipes();
+      // Manually trigger a refetch by calling the effect's logic again
       const recipesCol = collection(db, "recipes");
       const querySnapshot = await getDocs(recipesCol);
       const recipesData = querySnapshot.docs.map(
         (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
       );
       setRecipes(recipesData);
-    } catch (error) {
-       console.error("Error fetching recipes: ", error);
-       toast({
-         title: "Erreur",
-         description: "Impossible de charger le menu. Veuillez réessayer.",
-         variant: "destructive",
-       });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
-  useEffect(() => {
-    fetchRecipes();
-  }, []);
-
-  const handleSeed = async () => {
-    setIsSeeding(true);
-    try {
-      await seedRecipes();
-      await fetchRecipes(); // Refetch after seeding
       toast({
         title: "Succès",
         description: "Le menu de démonstration a été ajouté.",
@@ -82,9 +89,10 @@ export default function MenuClient() {
   };
 
   const handleDelete = async (id: string) => {
+    if (!id) return;
     try {
       await deleteDish(id);
-      await fetchRecipes(); // Refresh the list
+      setRecipes(recipes.filter(r => r.id !== id));
       toast({
         title: "Plat supprimé",
         description: "Le plat a été supprimé avec succès.",
@@ -97,6 +105,20 @@ export default function MenuClient() {
         variant: "destructive",
       });
     }
+  };
+  
+  const handleSuccess = () => {
+    setDialogOpen(false);
+    // Manually trigger a refetch by calling the effect's logic again
+    const fetchRecipes = async () => {
+      const recipesCol = collection(db, "recipes");
+      const querySnapshot = await getDocs(recipesCol);
+      const recipesData = querySnapshot.docs.map(
+        (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
+      );
+      setRecipes(recipesData);
+    };
+    fetchRecipes();
   };
 
   const openEditDialog = (dish: Recipe) => {
@@ -193,10 +215,7 @@ export default function MenuClient() {
           </DialogHeader>
           <DishForm
             dish={selectedDish}
-            onSuccess={() => {
-              setDialogOpen(false);
-              fetchRecipes();
-            }}
+            onSuccess={handleSuccess}
           />
         </DialogContent>
     </Dialog>
