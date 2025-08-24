@@ -2,11 +2,35 @@
 "use server";
 
 import { db } from "@/lib/firebase";
-import { collection, doc, addDoc, updateDoc, deleteDoc, setDoc } from "firebase/firestore";
+import { collection, doc, setDoc, writeBatch } from "firebase/firestore";
 import { revalidatePath } from "next/cache";
 import { mockRecipes, mockRecipeIngredients } from "@/data/mock-data";
 import { Recipe } from "@/data/definitions";
 import { generateDishImage } from "@/ai/flows/generate-dish-image";
+import fs from "fs/promises";
+import path from "path";
+import {v4 as uuidv4} from 'uuid';
+
+async function saveImageLocally(imageDataUri: string): Promise<string> {
+    const imageId = `${uuidv4()}.png`;
+    const imagePath = path.join(process.cwd(), 'imagedata', imageId);
+    
+    // Ensure the directory exists
+    await fs.mkdir(path.dirname(imagePath), { recursive: true });
+
+    // Extract base64 data
+    const base64Data = imageDataUri.split(';base64,').pop();
+    if (!base64Data) {
+        throw new Error("Invalid Data URI");
+    }
+    
+    // Write file
+    await fs.writeFile(imagePath, base64Data, 'base64');
+    
+    // Return the public URL
+    return `/api/images/${imageId}`;
+}
+
 
 export async function saveDish(formData: FormData) {
     const id = formData.get('id') as string;
@@ -33,16 +57,14 @@ export async function saveDish(formData: FormData) {
         if (id) {
             docRef = doc(db, "recipes", id);
         } else {
-            // Create a new document reference if no ID is provided
             docRef = doc(collection(db, "recipes"));
         }
         
-        // If there's an image hint, generate a new image and use its data URI
         if (imageHint) {
             console.log(`Generating image for: ${imageHint}`);
             const generatedDataUri = await generateDishImage({ prompt: imageHint });
-            imageUrl = generatedDataUri; // The generated image is a data URI
-            console.log(`Image generated and stored as data URI.`);
+            imageUrl = await saveImageLocally(generatedDataUri);
+            console.log(`Image generated and stored at ${imageUrl}`);
         }
         
         const finalData: Omit<Recipe, 'id'> = {
@@ -50,8 +72,6 @@ export async function saveDish(formData: FormData) {
             image: imageUrl || 'https://placehold.co/600x400.png',
         };
 
-        // Use setDoc to either create a new document or overwrite an existing one.
-        // This is safer than addDoc/updateDoc when the doc might not exist.
         await setDoc(docRef, finalData);
 
         revalidatePath("/menu");
@@ -87,6 +107,7 @@ export async function seedRecipes() {
     const recipesCollection = collection(db, "recipes");
     mockRecipes.forEach((recipe) => {
       const {
+        id,
         cost: mockCost,
         imageAltText,
         cookTime,
@@ -109,7 +130,7 @@ export async function seedRecipes() {
           image: `https://placehold.co/600x400.png?text=${encodeURIComponent(recipe.name)}`
       };
 
-      const docRef = doc(recipesCollection, recipe.id);
+      const docRef = doc(recipesCollection, id);
       batch.set(docRef, docData);
     });
 
