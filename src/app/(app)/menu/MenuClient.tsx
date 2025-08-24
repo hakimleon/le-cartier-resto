@@ -3,14 +3,14 @@
 "use client";
 
 import Image from "next/image";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { AppHeader } from "@/components/common/AppHeader";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Recipe, categories } from "@/data/definitions";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search, Package, Loader, Database, CheckCircle2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, Clock, Star, FileText, Search, Package, Loader, CheckCircle2 } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { DishForm } from "./DishForm";
@@ -18,7 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { seedRecipes, saveDish, deleteDish, generateDishImageAction } from "./actions";
+import { saveDish, deleteDish, generateDishImageAction } from "./actions";
 import { collection, getDocs, orderBy, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -179,16 +179,16 @@ export default function MenuClient() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [dishToEdit, setDishToEdit] = useState<Recipe | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isSeeding, setIsSeeding] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<string[]>([]);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const { toast } = useToast();
 
-  const fetchRecipes = useCallback(async () => {
+  const fetchRecipes = async () => {
     setIsLoading(true);
     try {
+      // First, try to fetch with sorting.
       const recipesCol = collection(db, "recipes");
       const q = query(recipesCol, orderBy("name"));
       const snapshot = await getDocs(q);
@@ -198,9 +198,9 @@ export default function MenuClient() {
       } as Recipe));
       setRecipes(recipeList);
     } catch (error: any) {
-      console.error("Error fetching sorted recipes, likely missing index:", error.message);
+      // If sorting fails (likely due to missing index), fetch without sorting.
+      console.warn("Failed to fetch with sorting, retrying without. Consider creating a Firestore index on 'name'. Error:", error.message);
       try {
-        console.log("Retrying without sorting...");
         const recipesCol = collection(db, "recipes");
         const snapshot = await getDocs(recipesCol);
         const recipeList = snapshot.docs.map(doc => ({
@@ -220,11 +220,11 @@ export default function MenuClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
-  
+  };
+
   useEffect(() => {
     fetchRecipes();
-  }, [fetchRecipes]);
+  }, []);
 
 
   const handleAddNew = () => {
@@ -280,35 +280,7 @@ export default function MenuClient() {
     }
   };
   
-  const handleSeedDatabase = async () => {
-    setIsSeeding(true);
-    try {
-      const result = await seedRecipes();
-      if (result.success) {
-        toast({
-          title: "Menu initialisé !",
-          description: result.message,
-        });
-        fetchRecipes();
-      } else {
-        toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: result.message,
-        });
-      }
-    } catch (error) {
-       toast({
-          variant: "destructive",
-          title: "Erreur",
-          description: "Une erreur inattendue est survenue.",
-        });
-    } finally {
-        setIsSeeding(false);
-    }
-  };
-
-  const handleGenerateImages = async (formData: FormData) => {
+  const handleGenerateImage = async (formData: FormData) => {
     setIsGenerating(true);
     try {
       const result = await generateDishImageAction(formData);
@@ -368,20 +340,6 @@ export default function MenuClient() {
         <div className="flex justify-center items-center h-64 gap-2">
             <Loader className="h-5 w-5 animate-spin" />
             <p>Chargement du menu...</p>
-        </div>
-      );
-    }
-
-    if (recipes.length === 0 && !searchTerm) {
-      return (
-        <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground bg-card/50 rounded-xl border border-dashed">
-            <Package className="w-16 h-16 text-muted-foreground/50" />
-            <p className="text-lg font-semibold mt-4">Votre menu est vide.</p>
-            <p className="text-sm">Cliquez sur le bouton ci-dessous pour initialiser votre menu avec des plats de démonstration.</p>
-            <Button onClick={handleSeedDatabase} disabled={isSeeding} className="mt-4">
-                <Database className="mr-2 h-4 w-4" />
-                {isSeeding ? "Initialisation en cours..." : "Initialiser le menu"}
-            </Button>
         </div>
       );
     }
@@ -453,7 +411,7 @@ export default function MenuClient() {
             onSave={handleSaveDish}
             onCancel={() => setIsDialogOpen(false)}
             isSaving={isSaving}
-            onGenerate={handleGenerateImages}
+            onGenerate={handleGenerateImage}
             isGenerating={isGenerating}
           />
         </DialogContent>
