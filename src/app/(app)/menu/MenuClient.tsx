@@ -190,11 +190,12 @@ export default function MenuClient() {
     setIsLoading(true);
     try {
       const recipesCol = collection(db, "recipes");
-      const q = query(recipesCol, orderBy("name"));
-      const snapshot = await getDocs(q);
+      // Firestore requires an index for orderBy. Removing it simplifies the query and avoids console errors if the index is not created.
+      // The data can be sorted client-side if needed.
+      const snapshot = await getDocs(recipesCol);
       const recipeList = snapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
+        id: doc.id,
+        ...doc.data()
       } as Recipe));
       setRecipes(recipeList);
     } catch(error) {
@@ -450,3 +451,5 @@ export default function MenuClient() {
     </div>
   );
 }
+
+    
