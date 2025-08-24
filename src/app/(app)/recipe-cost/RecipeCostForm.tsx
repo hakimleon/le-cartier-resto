@@ -166,11 +166,15 @@ export function RecipeCostForm({
     }));
   };
 
+  // --- Financial Calculations ---
   const totalCost = formIngredients.reduce((acc, ing) => acc + ing.totalCost, 0);
   const costPerPortion = portions > 0 ? totalCost / portions : 0;
   const sellingPrice = initialRecipe?.price || 0;
-  const margin = sellingPrice - costPerPortion;
-  const costRatio = sellingPrice > 0 ? (costPerPortion / sellingPrice) * 100 : 0;
+  
+  const foodCost = sellingPrice > 0 ? (costPerPortion / sellingPrice) * 100 : 0;
+  const coefficient = costPerPortion > 0 ? sellingPrice / costPerPortion : 0;
+  const grossMarginValue = sellingPrice - costPerPortion;
+  const grossMarginPercent = sellingPrice > 0 ? (grossMarginValue / sellingPrice) * 100 : 0;
 
   const handleSave = async () => {
     if (!initialRecipe) {
@@ -182,8 +186,6 @@ export function RecipeCostForm({
     
     const dataToSave = {
         recipeId: initialRecipe.id,
-        // The cost is calculated from ingredients, but we pass the per-portion cost
-        // for potential storage in the recipe document if the model changes.
         cost: costPerPortion,
         procedure: procedure,
         ingredients: formIngredients.map(ing => ({
@@ -237,8 +239,8 @@ export function RecipeCostForm({
                 <CardDescription>Informations générales et financières du plat.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-1">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="space-y-1 md:col-span-2">
                         <Label htmlFor="dishName">Nom du plat</Label>
                         <Input id="dishName" value={dishName} readOnly disabled className="border-none p-0 h-auto text-base font-semibold" />
                     </div>
@@ -248,10 +250,10 @@ export function RecipeCostForm({
                     </div>
                 </div>
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 pt-2">
-                   <FinancialInfo label="Prix de Vente" value={`${sellingPrice.toFixed(2)} DZD`} className="text-blue-600" />
-                   <FinancialInfo label="Coût / Portion" value={`${costPerPortion.toFixed(2)} DZD`} className="text-orange-600" />
-                   <FinancialInfo label="Marge Brute" value={`${margin.toFixed(2)} DZD`} className="text-green-600" />
-                   <FinancialInfo label="Ratio Coût" value={`${costRatio.toFixed(1)} %`} className="text-purple-600" />
+                   <FinancialInfo label="Marge Brute" value={`${grossMarginValue.toFixed(2)} DZD`} className="text-green-600" />
+                   <FinancialInfo label="Marge Brute (%)" value={`${grossMarginPercent.toFixed(1)} %`} className="text-green-600" />
+                   <FinancialInfo label="Food Cost (%)" value={`${foodCost.toFixed(1)} %`} className="text-purple-600" />
+                   <FinancialInfo label="Coeff. Multiplicateur" value={`x ${coefficient.toFixed(2)}`} className="text-blue-600" />
                 </div>
             </CardContent>
         </Card>
@@ -330,6 +332,10 @@ export function RecipeCostForm({
                         <p className="text-sm text-muted-foreground">Coût Total Recette</p>
                         <p className="text-xl font-bold">{totalCost.toFixed(2)} DZD</p>
                     </div>
+                     <div className="text-right">
+                        <p className="text-sm text-muted-foreground">Coût / Portion</p>
+                        <p className="text-xl font-bold">{costPerPortion.toFixed(2)} DZD</p>
+                    </div>
                 </div>
             </CardContent>
         </Card>
@@ -342,7 +348,7 @@ export function RecipeCostForm({
                     <Textarea 
                         id="preparation" 
                         placeholder="Étapes de préparation..." 
-                        value={Array.isArray(procedure.preparation) ? procedure.preparation.join('\n') : ''}
+                        value={Array.isArray(procedure.preparation) ? procedure.preparation.join('\\n') : ''}
                         onChange={(e) => handleProcedureChange('preparation', e.target.value)}
                         disabled={isSaving}
                         rows={5}
@@ -353,7 +359,7 @@ export function RecipeCostForm({
                     <Textarea 
                         id="cuisson" 
                         placeholder="Instructions de cuisson..."
-                        value={Array.isArray(procedure.cuisson) ? procedure.cuisson.join('\n') : ''}
+                        value={Array.isArray(procedure.cuisson) ? procedure.cuisson.join('\\n') : ''}
                         onChange={(e) => handleProcedureChange('cuisson', e.target.value)}
                         disabled={isSaving}
                         rows={5}
@@ -364,7 +370,7 @@ export function RecipeCostForm({
                     <Textarea 
                         id="service" 
                         placeholder="Instructions de service..."
-                        value={Array.isArray(procedure.service) ? procedure.service.join('\n') : ''}
+                        value={Array.isArray(procedure.service) ? procedure.service.join('\\n') : ''}
                         onChange={(e) => handleProcedureChange('service', e.target.value)}
                         disabled={isSaving}
                         rows={3}
@@ -382,3 +388,5 @@ export function RecipeCostForm({
     </div>
   );
 }
+
+    
