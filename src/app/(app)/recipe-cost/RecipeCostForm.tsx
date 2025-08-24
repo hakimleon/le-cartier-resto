@@ -1,31 +1,15 @@
 
-
 "use client"
 
 import * as React from "react"
-import { Check, ChevronsUpDown, Plus, Trash2 } from "lucide-react"
+import { Plus, Trash2 } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Ingredient, Recipe, RecipeIngredient, units as availableUnits, conversions } from "@/data/definitions"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
 
 // --- Helper Functions ---
 const convertUnits = (quantity: number, fromUnit: string, toUnit: string): number => {
@@ -48,9 +32,7 @@ const calculateIngredientCost = (
     return quantityInPurchaseUnits * ingredient.unitPrice;
 };
 
-
 // --- Types ---
-
 interface FormIngredient extends Omit<RecipeIngredient, 'recipeId'> {
   category: string;
   unitPrice: number; // Price per purchase unit
@@ -60,7 +42,6 @@ interface FormIngredient extends Omit<RecipeIngredient, 'recipeId'> {
 }
 
 // --- Component ---
-
 interface RecipeCostFormProps {
   recipe: Recipe | null
   recipes: Recipe[]
@@ -78,7 +59,6 @@ export function RecipeCostForm({
   const [dishName, setDishName] = React.useState(initialRecipe?.name || "");
   const [portions, setPortions] = React.useState(1);
   const [formIngredients, setFormIngredients] = React.useState<FormIngredient[]>([]);
-  const [openComboboxes, setOpenComboboxes] = React.useState<Record<number, boolean>>({});
 
   React.useEffect(() => {
     if (initialRecipe) {
@@ -132,7 +112,25 @@ export function RecipeCostForm({
 
   const handleSelectIngredient = (index: number, ingredientId: string) => {
     const selected = stockIngredients.find(ing => ing.id === ingredientId);
-    if (!selected) return;
+    if (!selected) {
+        // Reset if "Sélectionner..." is chosen
+        setFormIngredients(prev => {
+            const newIngredients = [...prev];
+            newIngredients[index] = {
+              id: newIngredients[index].id,
+              ingredientId: '',
+              name: '',
+              quantity: 0,
+              unitUse: 'g',
+              category: '',
+              unitPrice: 0,
+              unitPurchase: '',
+              totalCost: 0,
+            };
+            return newIngredients;
+        });
+        return;
+    };
 
     setFormIngredients(prev => {
         const newIngredients = [...prev];
@@ -205,60 +203,29 @@ export function RecipeCostForm({
                     <table className="w-full">
                         <thead>
                             <tr className="border-b">
-                                <th className="p-2 text-left min-w-[250px]">Ingrédient</th>
-                                <th className="p-2 text-left">Quantité</th>
-                                <th className="p-2 text-left">Unité</th>
-                                <th className="p-2 text-right">Coût Total</th>
-                                <th className="p-2 text-center">Actions</th>
+                                <th className="p-2 text-left text-sm font-medium text-muted-foreground min-w-[250px]">Ingrédient</th>
+                                <th className="p-2 text-left text-sm font-medium text-muted-foreground">Quantité</th>
+                                <th className="p-2 text-left text-sm font-medium text-muted-foreground">Unité</th>
+                                <th className="p-2 text-right text-sm font-medium text-muted-foreground">Coût Total</th>
+                                <th className="p-2 text-center text-sm font-medium text-muted-foreground">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {formIngredients.map((ing, index) => (
                                 <tr key={ing.id} className="border-b">
                                     <td className="p-2">
-                                       <Popover open={openComboboxes[index]} onOpenChange={(open) => setOpenComboboxes(prev => ({...prev, [index]: open}))}>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              variant="outline"
-                                              role="combobox"
-                                              aria-expanded={openComboboxes[index]}
-                                              className="w-[200px] justify-between font-normal"
-                                            >
-                                              {ing.ingredientId
-                                                ? stockIngredients.find((stockIng) => stockIng.id === ing.ingredientId)?.name
-                                                : "Sélectionner..."}
-                                              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-[200px] p-0">
-                                            <Command>
-                                              <CommandInput placeholder="Rechercher ingrédient..." />
-                                              <CommandList>
-                                                <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
-                                                <CommandGroup>
-                                                  {stockIngredients.map((stockIng) => (
-                                                    <CommandItem
-                                                      key={stockIng.id}
-                                                      value={stockIng.name}
-                                                      onSelect={() => {
-                                                        handleSelectIngredient(index, stockIng.id)
-                                                        setOpenComboboxes(prev => ({ ...prev, [index]: false }))
-                                                      }}
-                                                    >
-                                                      <Check
-                                                        className={cn(
-                                                          "mr-2 h-4 w-4",
-                                                          ing.ingredientId === stockIng.id ? "opacity-100" : "opacity-0"
-                                                        )}
-                                                      />
-                                                      {stockIng.name}
-                                                    </CommandItem>
-                                                  ))}
-                                                </CommandGroup>
-                                              </CommandList>
-                                            </Command>
-                                          </PopoverContent>
-                                        </Popover>
+                                       <select
+                                            value={ing.ingredientId}
+                                            onChange={(e) => handleSelectIngredient(index, e.target.value)}
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                        >
+                                            <option value="">Sélectionner...</option>
+                                            {stockIngredients.map((stockIng) => (
+                                                <option key={stockIng.id} value={stockIng.id}>
+                                                    {stockIng.name}
+                                                </option>
+                                            ))}
+                                        </select>
                                     </td>
                                     <td className="p-2">
                                         <Input
@@ -270,22 +237,18 @@ export function RecipeCostForm({
                                         />
                                     </td>
                                     <td className="p-2">
-                                        <Select
+                                        <select
                                             value={ing.unitUse}
-                                            onValueChange={(value) => updateIngredientField(index, 'unitUse', value)}
+                                            onChange={(e) => updateIngredientField(index, 'unitUse', e.target.value)}
                                             disabled={!ing.ingredientId}
+                                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
-                                            <SelectTrigger className="w-28">
-                                                <SelectValue/>
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {availableUnits.map(unit => (
-                                                  <SelectItem key={unit} value={unit}>{unit}</SelectItem>
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                            {availableUnits.map(unit => (
+                                                <option key={unit} value={unit}>{unit}</option>
+                                            ))}
+                                        </select>
                                     </td>
-                                    <td className="p-2 text-right">{ing.totalCost.toFixed(2)} DZD</td>
+                                    <td className="p-2 text-right font-mono">{ing.totalCost.toFixed(2)} DZD</td>
                                     <td className="p-2 text-center">
                                         <Button variant="ghost" size="icon" onClick={() => removeIngredientRow(index)}>
                                             <Trash2 className="h-4 w-4 text-destructive" />
