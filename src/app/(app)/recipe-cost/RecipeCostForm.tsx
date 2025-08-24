@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import * as React from "react"
@@ -174,9 +175,7 @@ export function RecipeCostForm({
   const sellingPriceHT = sellingPriceTTC / (1 + VAT_RATE);
 
   const foodCost = sellingPriceHT > 0 ? (costPerPortion / sellingPriceHT) * 100 : 0;
-  const coefficient = costPerPortion > 0 ? sellingPriceHT / costPerPortion : 0;
   const grossMarginValue = sellingPriceHT - costPerPortion;
-  const grossMarginPercent = sellingPriceHT > 0 ? (grossMarginValue / sellingPriceHT) * 100 : 0;
 
   const handleSave = async () => {
     if (!initialRecipe) {
@@ -251,15 +250,15 @@ export function RecipeCostForm({
                         <Input id="portions" type="number" value={portions} onChange={(e) => setPortions(Number(e.target.value))} min="1" />
                     </div>
                 </div>
-                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-                   <FoodCostGauge percentage={foodCost} />
+                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-center">
+                   <div className="lg:col-span-1">
+                     <FoodCostGauge percentage={foodCost} />
+                   </div>
                    <div className="grid grid-cols-2 lg:col-span-2 gap-4">
                        <FinancialInfo label="Prix Vente (TTC)" value={`${sellingPriceTTC.toFixed(2)} DZD`} />
                        <FinancialInfo label="Prix Vente (HT)" value={`${sellingPriceHT.toFixed(2)} DZD`} />
-                       <FinancialInfo label="Marge Brute (€)" value={`${grossMarginValue.toFixed(2)} DZD`} className="text-green-600" />
-                       <FinancialInfo label="Marge Brute (%)" value={`${grossMarginPercent.toFixed(1)} %`} className="text-green-600" />
-                       <FinancialInfo label="Coeff. Multiplicateur" value={`x ${coefficient.toFixed(2)}`} className="text-blue-600" />
                        <FinancialInfo label="Coût / Portion" value={`${costPerPortion.toFixed(2)} DZD`} className="text-orange-500" />
+                       <FinancialInfo label="Marge Brute (€)" value={`${grossMarginValue.toFixed(2)} DZD`} className="text-green-600" />
                    </div>
                 </div>
             </CardContent>
