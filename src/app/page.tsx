@@ -7,7 +7,7 @@ export default function HomePage() {
           Bienvenue sur votre nouvelle application
         </h1>
         <p className="mt-6 text-lg leading-8 text-gray-600">
-          Commencez par modifier ce fichier dans <code className="font-mono bg-gray-200 p-1 rounded">src/app/page.tsx</code>
+          Commencez par me dire ce que vous voulez construire.
         </p>
       </div>
     </main>
