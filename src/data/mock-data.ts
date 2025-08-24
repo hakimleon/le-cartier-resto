@@ -1,3 +1,4 @@
+
 // src/data/mock-data.ts
 import { Recipe, RecipeIngredient } from './definitions';
 
@@ -314,6 +315,28 @@ export const mockRecipes: Omit<Recipe, 'cost' | 'argumentationCommerciale'>[] = 
       ]
     },
     allergens: ['Gluten', 'Lactose', 'Noix']
+  },
+    {
+    id: 'ef-16',
+    name: 'Bruschetta aux Champignons',
+    description: 'Champignons sautés à l\'ail et au persil sur pain grillé',
+    category: 'Entrées Froides – Fraîcheur et Élégance',
+    price: 1150,
+    image: 'https://placehold.co/600x400.png',
+    imageHint: 'bruschetta mushroom',
+    prepTime: 12,
+    difficulty: 2,
+    status: 'Actif',
+    tags: ['Végétarien', 'Frais', 'Léger'],
+    procedure: {
+      preparation: [
+        'Sauter les champignons avec de l\'ail et du persil.',
+        'Garnir le pain grillé.'
+      ],
+      cuisson: [],
+      service: []
+    },
+    allergens: ['Gluten']
   },
   {
     id: 'ef-14',
