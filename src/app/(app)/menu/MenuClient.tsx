@@ -191,37 +191,37 @@ export default function MenuClient() {
     setRefreshKey(oldKey => oldKey + 1);
   };
   
-  const getRecipes = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const recipesCol = collection(db, "recipes");
-      const q = query(recipesCol, orderBy("name"));
-      const snapshot = await getDocs(q);
-      if (snapshot.empty) {
-        setRecipes([]);
-      } else {
-        const recipeList = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as Recipe));
-        setRecipes(recipeList);
-      }
-    } catch(error) {
-      console.error("Error fetching recipes:", error);
-      toast({
-        variant: "destructive",
-        title: "Erreur de chargement",
-        description: "Impossible de charger les recettes depuis la base de données.",
-      });
-      setRecipes([]); // Set to empty array on error
-    } finally {
-      setIsLoading(false);
-    }
-  }, [toast]);
-
   useEffect(() => {
+    async function getRecipes() {
+      setIsLoading(true);
+      try {
+        const recipesCol = collection(db, "recipes");
+        const q = query(recipesCol, orderBy("name"));
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+          setRecipes([]);
+        } else {
+          const recipeList = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+          } as Recipe));
+          setRecipes(recipeList);
+        }
+      } catch(error) {
+        console.error("Error fetching recipes:", error);
+        toast({
+          variant: "destructive",
+          title: "Erreur de chargement",
+          description: "Impossible de charger les recettes depuis la base de données.",
+        });
+        setRecipes([]); // Set to empty array on error
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
     getRecipes();
-  }, [getRecipes, refreshKey]);
+  }, [refreshKey, toast]);
 
 
   const handleAddNew = () => {
