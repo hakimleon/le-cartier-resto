@@ -17,7 +17,7 @@ import { DishForm } from "./DishForm";
 import { useToast } from "@/hooks/use-toast";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
-import { seedRecipes } from "./actions";
+import { seedRecipes, saveDish, deleteDish } from "./actions";
 
 
 const getStatusClass = (status: Recipe['status']) => {
@@ -58,7 +58,7 @@ const MenuCategory = ({ title, items, onEdit, onDelete }: { title?: string, item
             <Card key={item.id} className="flex flex-col overflow-hidden bg-card shadow-lg hover:shadow-primary/20 transition-all duration-300 border-border/10 rounded-xl group hover:border-primary/30">
             <div className="relative w-full h-48">
                 <Image
-                src={item.image}
+                src={item.image || 'https://placehold.co/600x400.png'}
                 alt={item.name}
                 fill
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -126,6 +126,7 @@ export default function MenuClient({ initialRecipes, isLoading, onRefresh }: Men
   const [dishToEdit, setDishToEdit] = useState<Recipe | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [isSeeding, setIsSeeding] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
   
   useEffect(() => {
@@ -142,25 +143,47 @@ export default function MenuClient({ initialRecipes, isLoading, onRefresh }: Men
     setIsDialogOpen(true);
   };
   
-  const handleSaveDish = (dishData: Recipe) => {
-    // In a real app, you'd save this to Firestore.
-    // For now, we'll just update the local state.
-    if (dishToEdit) {
-      setRecipes(recipes.map(item => item.id === dishData.id ? dishData : item));
-      toast({ title: "Plat mis à jour !", description: `Le plat "${dishData.name}" a été modifié.` });
-    } else {
-      setRecipes([...recipes, { ...dishData, id: `menu-${Date.now()}` }]);
-      toast({ title: "Plat ajouté !", description: `Le plat "${dishData.name}" a été ajouté au menu.` });
+  const handleSaveDish = async (formData: FormData) => {
+    setIsSaving(true);
+    const dishName = formData.get('name') as string;
+    try {
+        const result = await saveDish(formData);
+        if (result.success) {
+            toast({ title: "Succès !", description: `Le plat "${dishName}" a été sauvegardé.` });
+            setIsDialogOpen(false);
+            setDishToEdit(null);
+            onRefresh(); // Refresh the list
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        toast({
+            variant: "destructive",
+            title: "Erreur lors de la sauvegarde",
+            description: error instanceof Error ? error.message : "Une erreur inconnue est survenue.",
+        });
+    } finally {
+        setIsSaving(false);
     }
-    setIsDialogOpen(false);
-    setDishToEdit(null);
   };
 
-  const handleDelete = (dishId: string) => {
-    // In a real app, you'd delete this from Firestore.
+  const handleDelete = async (dishId: string) => {
     const dishName = recipes.find(d => d.id === dishId)?.name;
-    setRecipes(recipes.filter(item => item.id !== dishId));
-    toast({ variant: "destructive", title: "Plat supprimé !", description: `Le plat "${dishName}" a été supprimé.` });
+    try {
+        const result = await deleteDish(dishId);
+        if (result.success) {
+            toast({ variant: "destructive", title: "Plat supprimé !", description: `Le plat "${dishName}" a été supprimé.` });
+            onRefresh();
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+         toast({
+            variant: "destructive",
+            title: "Erreur lors de la suppression",
+            description: error instanceof Error ? error.message : "Une erreur inconnue est survenue.",
+        });
+    }
   };
   
   const handleSeedDatabase = async () => {
@@ -276,6 +299,7 @@ export default function MenuClient({ initialRecipes, isLoading, onRefresh }: Men
             dish={dishToEdit}
             onSave={handleSaveDish}
             onCancel={() => setIsDialogOpen(false)}
+            isSaving={isSaving}
           />
         </DialogContent>
       </Dialog>

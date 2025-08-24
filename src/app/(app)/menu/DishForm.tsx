@@ -18,8 +18,9 @@ import { Switch } from "@/components/ui/switch";
 
 type DishFormProps = {
   dish: Recipe | null;
-  onSave: (dish: Recipe) => void;
+  onSave: (formData: FormData) => void;
   onCancel: () => void;
+  isSaving: boolean;
 };
 
 const emptyDish: Omit<Recipe, 'id'> = {
@@ -38,13 +39,15 @@ const emptyDish: Omit<Recipe, 'id'> = {
   allergens: [],
 };
 
-export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
+export function DishForm({ dish, onSave, onCancel, isSaving }: DishFormProps) {
   const [formData, setFormData] = useState<Omit<Recipe, 'id'>>(dish || emptyDish);
   const [imagePreview, setImagePreview] = useState<string | null>(dish?.image || null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   useEffect(() => {
     setFormData(dish || emptyDish);
     setImagePreview(dish?.image || null);
+    setImageFile(null);
   }, [dish]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -68,11 +71,10 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
-        const dataUrl = reader.result as string;
-        setImagePreview(dataUrl);
-        setFormData(prev => ({ ...prev, image: dataUrl }));
+        setImagePreview(reader.result as string);
       };
       reader.readAsDataURL(file);
     }
@@ -80,11 +82,21 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const finalData: Recipe = {
-      ...formData,
-      id: dish?.id || `new-${Date.now()}`
-    };
-    onSave(finalData);
+    const formEl = e.target as HTMLFormElement;
+    const submissionData = new FormData(formEl);
+
+    // Append non-input fields manually
+    submissionData.append('id', dish?.id || '');
+    submissionData.append('status', formData.status);
+    submissionData.append('difficulty', String(formData.difficulty));
+    submissionData.append('tags', JSON.stringify(formData.tags));
+    submissionData.append('image', formData.image); // The existing image URL
+
+    if (imageFile) {
+        submissionData.append('imageFile', imageFile);
+    }
+    
+    onSave(submissionData);
   };
   
   const difficultyLevels = [
@@ -110,6 +122,7 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
                     <Button type="button" variant="destructive" size="icon" className="absolute top-1 right-1 h-6 w-6 rounded-full" onClick={() => {
                         setImagePreview(null);
                         setFormData(prev => ({ ...prev, image: "" }));
+                        setImageFile(null);
                     }}>
                         <ImageIcon className="w-4 h-4" />
                     </Button>
@@ -123,18 +136,18 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
                   <Upload className="mr-2" /> Télécharger une image
                 </Label>
               </Button>
-              <Input id="image-upload" type="file" className="hidden" onChange={handleImageChange} accept="image/*" />
+              <Input id="image-upload" name="imageFile" type="file" className="hidden" onChange={handleImageChange} accept="image/*" />
             </div>
           </div>
           
           <div className="grid grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="name">Nom du plat *</Label>
-              <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
+              <Input id="name" name="name" defaultValue={formData.name} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="category">Catégorie *</Label>
-              <Select name="category" value={formData.category} onValueChange={(value) => handleSelectChange('category', value)}>
+              <Select name="category" defaultValue={formData.category} onValueChange={(value) => handleSelectChange('category', value)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {categories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
@@ -145,10 +158,10 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
 
           <div className="space-y-2">
             <Label htmlFor="description">Description</Label>
-            <Textarea id="description" name="description" value={formData.description} onChange={handleChange} rows={3} />
+            <Textarea id="description" name="description" defaultValue={formData.description} rows={3} />
           </div>
 
-          <div className="space-y-2">
+           <div className="space-y-2">
             <Label>Tags</Label>
             <div className="flex flex-wrap gap-2">
               {availableTags.map(tag => {
@@ -172,15 +185,15 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
           <div className="grid grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label htmlFor="price">Prix (€) *</Label>
-              <Input id="price" name="price" type="number" value={formData.price} onChange={handleChange} step="0.01" required />
+              <Input id="price" name="price" type="number" defaultValue={formData.price} step="0.01" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="prepTime">Temps de préparation (min) *</Label>
-              <Input id="prepTime" name="prepTime" type="number" value={formData.prepTime} onChange={handleChange} required />
+              <Input id="prepTime" name="prepTime" type="number" defaultValue={formData.prepTime} required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="difficulty">Difficulté *</Label>
-              <Select value={String(formData.difficulty)} onValueChange={(value) => handleSelectChange('difficulty', parseInt(value))}>
+              <Select defaultValue={String(formData.difficulty)} onValueChange={(value) => handleSelectChange('difficulty', parseInt(value))}>
                 <SelectTrigger id="difficulty"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {difficultyLevels.map(level => <SelectItem key={level.value} value={String(level.value)}>{level.label}</SelectItem>)}
@@ -201,9 +214,9 @@ export function DishForm({ dish, onSave, onCancel }: DishFormProps) {
         </div>
       </ScrollArea>
       <div className="flex justify-end gap-2 p-4 border-t border-border/20">
-        <Button type="button" variant="ghost" onClick={onCancel}>Annuler</Button>
-        <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-          {dish ? "Mettre à jour" : "Ajouter le plat"}
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={isSaving}>Annuler</Button>
+        <Button type="submit" className="bg-primary hover:bg-primary/90 text-primary-foreground" disabled={isSaving}>
+          {isSaving ? "Sauvegarde en cours..." : (dish ? "Mettre à jour" : "Ajouter le plat")}
         </Button>
       </div>
     </form>
