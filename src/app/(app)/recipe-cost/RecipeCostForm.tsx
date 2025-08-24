@@ -3,6 +3,7 @@
 
 import * as React from "react"
 import { Plus, Trash2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,8 +11,8 @@ import { Label } from "@/components/ui/label"
 import { Ingredient, Recipe, RecipeIngredient, units as availableUnits, conversions } from "@/data/definitions"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
+import { saveRecipeSheet } from "./actions"
 
 // --- Helper Functions ---
 const convertUnits = (quantity: number, fromUnit: string, toUnit: string): number => {
@@ -20,14 +21,13 @@ const convertUnits = (quantity: number, fromUnit: string, toUnit: string): numbe
     if (conversion) return quantity * conversion.factor;
     const reverseConversion = conversions.find(c => c.fromUnit === toUnit && c.toUnit === fromUnit);
     if (reverseConversion) return quantity / reverseConversion.factor;
-    // console.warn(`No conversion found from ${fromUnit} to ${toUnit}`);
-    return quantity; // Return original quantity if no conversion is found to avoid breaking calculations
+    return quantity;
 };
 
 const calculateIngredientCost = (
     quantity: number, 
     unitUse: string, 
-    ingredient: { unitPurchase: string; unitPrice: number },
+    ingredient?: { unitPurchase: string; unitPrice: number },
 ): number => {
     if (!ingredient || !ingredient.unitPurchase || !ingredient.unitPrice) return 0;
     const quantityInPurchaseUnits = convertUnits(quantity, unitUse, ingredient.unitPurchase);
@@ -35,33 +35,30 @@ const calculateIngredientCost = (
 };
 
 // --- Types ---
-interface FormIngredient extends Omit<RecipeIngredient, 'recipeId'> {
-  category: string;
-  unitPrice: number;
-  unitPurchase: string;
-  totalCost: number;
+export interface FormIngredient extends Omit<RecipeIngredient, 'recipeId'> {
   name: string;
+  totalCost: number;
 }
 
 // --- Component ---
 interface RecipeCostFormProps {
   recipe: Recipe | null
-  recipes: Recipe[]
   ingredients: Ingredient[]
   recipeIngredients: RecipeIngredient[]
 }
 
 export function RecipeCostForm({
   recipe: initialRecipe,
-  recipes: allRecipes,
   ingredients: stockIngredients,
   recipeIngredients: allRecipeIngredients,
 }: RecipeCostFormProps) {
   
   const router = useRouter();
   const { toast } = useToast();
+  const [isSaving, setIsSaving] = React.useState(false);
   const [dishName, setDishName] = React.useState(initialRecipe?.name || "");
   const [portions, setPortions] = React.useState(1);
+  const [procedure, setProcedure] = React.useState(initialRecipe?.procedure || { preparation: [], cuisson: [], service: [] });
   const [formIngredients, setFormIngredients] = React.useState<FormIngredient[]>([]);
 
   React.useEffect(() => {
@@ -70,22 +67,14 @@ export function RecipeCostForm({
         .filter(ri => ri.recipeId === initialRecipe.id)
         .map(ri => {
           const stockIng = stockIngredients.find(si => si.id === ri.ingredientId);
-          if (!stockIng) return null;
-          
-          const cost = calculateIngredientCost(ri.quantity, ri.unitUse, {
-            unitPurchase: stockIng.unitPurchase,
-            unitPrice: stockIng.unitPrice
-          });
+          const cost = calculateIngredientCost(ri.quantity, ri.unitUse, stockIng);
 
           return {
             id: ri.id,
             ingredientId: ri.ingredientId,
-            name: stockIng.name,
+            name: stockIng?.name || '',
             quantity: ri.quantity,
             unitUse: ri.unitUse,
-            category: stockIng.category,
-            unitPrice: stockIng.unitPrice,
-            unitPurchase: stockIng.unitPurchase,
             totalCost: cost,
           };
         })
@@ -93,9 +82,9 @@ export function RecipeCostForm({
       
       setFormIngredients(existingIngredients);
       setDishName(initialRecipe.name);
-      // Assuming portions would be stored in the recipe or technical sheet object
-      // For now, we default to 1
-      setPortions(1);
+      setProcedure(initialRecipe.procedure || { preparation: [], cuisson: [], service: [] });
+      // This would ideally be stored in the recipe object
+      setPortions(1); 
     }
   }, [initialRecipe, allRecipeIngredients, stockIngredients]);
 
@@ -107,9 +96,6 @@ export function RecipeCostForm({
       name: '',
       quantity: 0,
       unitUse: 'g',
-      category: '',
-      unitPrice: 0,
-      unitPurchase: '',
       totalCost: 0,
     }]);
   };
@@ -121,19 +107,10 @@ export function RecipeCostForm({
   const handleSelectIngredient = (index: number, ingredientId: string) => {
     const selected = stockIngredients.find(ing => ing.id === ingredientId);
     if (!selected) {
-        // Reset if "Sélectionner..." is chosen
         setFormIngredients(prev => {
             const newIngredients = [...prev];
             const current = newIngredients[index];
-            newIngredients[index] = {
-              ...current,
-              ingredientId: '',
-              name: '',
-              category: '',
-              unitPrice: 0,
-              unitPurchase: '',
-              totalCost: 0,
-            };
+            newIngredients[index] = { ...current, ingredientId: '', name: '', totalCost: 0 };
             return newIngredients;
         });
         return;
@@ -150,11 +127,8 @@ export function RecipeCostForm({
             ...current,
             ingredientId: selected.id,
             name: selected.name,
-            category: selected.category,
-            unitPrice: selected.unitPrice,
-            unitPurchase: selected.unitPurchase,
             totalCost: newCost,
-            unitUse: selected.unitPurchase, // Default to purchase unit for simplicity
+            unitUse: current.unitUse || 'g',
         };
         
         return newIngredients;
@@ -162,13 +136,14 @@ export function RecipeCostForm({
 };
 
 
-  const updateIngredientField = (index: number, field: keyof FormIngredient, value: any) => {
+  const updateIngredientField = (index: number, field: 'quantity' | 'unitUse', value: any) => {
     setFormIngredients(prev => {
         const newIngredients = [...prev];
         const ingredientToUpdate = newIngredients[index];
         
         if (ingredientToUpdate) {
-            (ingredientToUpdate as any)[field] = value;
+            if(field === 'quantity') ingredientToUpdate.quantity = parseFloat(value) || 0;
+            if(field === 'unitUse') ingredientToUpdate.unitUse = value;
             
             const stockIng = stockIngredients.find(si => si.id === ingredientToUpdate.ingredientId);
             if (stockIng) {
@@ -180,25 +155,59 @@ export function RecipeCostForm({
         return newIngredients;
     });
   };
+  
+  const handleProcedureChange = (field: 'preparation' | 'cuisson' | 'service', value: string) => {
+    setProcedure(prev => ({
+        ...prev,
+        [field]: value.split('\n')
+    }));
+  };
 
   const totalCost = formIngredients.reduce((acc, ing) => acc + ing.totalCost, 0);
   const costPerPortion = portions > 0 ? totalCost / portions : 0;
   
-  const handleSave = () => {
-    // In a real application, you would send this data to your backend/database
-    console.log("Données à sauvegarder :", {
-        dishName,
-        portions,
-        ingredients: formIngredients,
-        totalCost,
-        costPerPortion,
-    });
+  const handleSave = async () => {
+    if (!initialRecipe) {
+        toast({ title: "Erreur", description: "Impossible de sauvegarder une fiche sans plat associé.", variant: "destructive"});
+        return;
+    }
+    
+    setIsSaving(true);
+    
+    const dataToSave = {
+        recipeId: initialRecipe.id,
+        cost: costPerPortion, // Storing cost per portion in the recipe
+        procedure: procedure,
+        ingredients: formIngredients.map(ing => ({
+            id: ing.id,
+            recipeId: initialRecipe.id,
+            ingredientId: ing.ingredientId,
+            quantity: ing.quantity,
+            unitUse: ing.unitUse,
+        })),
+    };
 
-    toast({
-      title: "Fiche technique sauvegardée !",
-      description: `La fiche pour "${dishName}" a été enregistrée avec succès.`,
-    });
-    router.push('/menu');
+    try {
+        const result = await saveRecipeSheet(dataToSave);
+        if (result.success) {
+            toast({
+              title: "Fiche technique sauvegardée !",
+              description: `La fiche pour "${dishName}" a été mise à jour avec succès.`,
+            });
+            router.push('/menu');
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : "Une erreur inconnue est survenue.";
+        toast({
+          title: "Erreur lors de la sauvegarde",
+          description: errorMessage,
+          variant: "destructive"
+        });
+    } finally {
+        setIsSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -214,7 +223,7 @@ export function RecipeCostForm({
             <CardContent className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                     <Label htmlFor="dishName">Nom du plat</Label>
-                    <Input id="dishName" value={dishName} onChange={(e) => setDishName(e.target.value)} />
+                    <Input id="dishName" value={dishName} readOnly disabled />
                 </div>
                 <div className="space-y-1">
                     <Label htmlFor="portions">Nombre de portions</Label>
@@ -226,7 +235,7 @@ export function RecipeCostForm({
         <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Ingrédients & Coûts</CardTitle>
-              <Button onClick={addIngredientRow} size="sm">
+              <Button onClick={addIngredientRow} size="sm" disabled={isSaving}>
                 <Plus className="mr-2 h-4 w-4" /> Ajouter un ingrédient
               </Button>
             </CardHeader>
@@ -250,11 +259,12 @@ export function RecipeCostForm({
                                             value={ing.ingredientId}
                                             onChange={(e) => handleSelectIngredient(index, e.target.value)}
                                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                            disabled={isSaving}
                                         >
                                             <option value="">Sélectionner un ingrédient...</option>
                                             {stockIngredients.map((stockIng) => (
                                                 <option key={stockIng.id} value={stockIng.id}>
-                                                    {stockIng.name} ({stockIng.unitPrice} DZD/{stockIng.unitPurchase})
+                                                    {stockIng.name}
                                                 </option>
                                             ))}
                                         </select>
@@ -263,16 +273,16 @@ export function RecipeCostForm({
                                         <Input
                                           type="number"
                                           value={ing.quantity}
-                                          onChange={(e) => updateIngredientField(index, 'quantity', parseFloat(e.target.value) || 0)}
+                                          onChange={(e) => updateIngredientField(index, 'quantity', e.target.value)}
                                           className="w-24"
-                                          disabled={!ing.ingredientId}
+                                          disabled={!ing.ingredientId || isSaving}
                                         />
                                     </td>
                                     <td className="p-2">
                                         <select
                                             value={ing.unitUse}
                                             onChange={(e) => updateIngredientField(index, 'unitUse', e.target.value)}
-                                            disabled={!ing.ingredientId}
+                                            disabled={!ing.ingredientId || isSaving}
                                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                         >
                                             {availableUnits.map(unit => (
@@ -282,7 +292,7 @@ export function RecipeCostForm({
                                     </td>
                                     <td className="p-2 text-right font-mono">{ing.totalCost.toFixed(2)} DZD</td>
                                     <td className="p-2 text-center">
-                                        <Button variant="ghost" size="icon" onClick={() => removeIngredientRow(index)}>
+                                        <Button variant="ghost" size="icon" onClick={() => removeIngredientRow(index)} disabled={isSaving}>
                                             <Trash2 className="h-4 w-4 text-destructive" />
                                         </Button>
                                     </td>
@@ -309,23 +319,45 @@ export function RecipeCostForm({
             <CardContent className="space-y-4">
                 <div>
                     <Label htmlFor="preparation">Préparation</Label>
-                    <Textarea id="preparation" placeholder="Étapes de préparation..."></Textarea>
+                    <Textarea 
+                        id="preparation" 
+                        placeholder="Étapes de préparation..." 
+                        value={Array.isArray(procedure.preparation) ? procedure.preparation.join('\n') : ''}
+                        onChange={(e) => handleProcedureChange('preparation', e.target.value)}
+                        disabled={isSaving}
+                    />
                 </div>
                 <div>
                     <Label htmlFor="cuisson">Cuisson</Label>
-                    <Textarea id="cuisson" placeholder="Instructions de cuisson..."></Textarea>
+                    <Textarea 
+                        id="cuisson" 
+                        placeholder="Instructions de cuisson..."
+                        value={Array.isArray(procedure.cuisson) ? procedure.cuisson.join('\n') : ''}
+                        onChange={(e) => handleProcedureChange('cuisson', e.target.value)}
+                        disabled={isSaving}
+                    />
                 </div>
                 <div>
                     <Label htmlFor="service">Service</Label>
-                    <Textarea id="service" placeholder="Instructions de service..."></Textarea>
+                    <Textarea 
+                        id="service" 
+                        placeholder="Instructions de service..."
+                        value={Array.isArray(procedure.service) ? procedure.service.join('\n') : ''}
+                        onChange={(e) => handleProcedureChange('service', e.target.value)}
+                        disabled={isSaving}
+                    />
                 </div>
             </CardContent>
         </Card>
         
         <div className="flex justify-end gap-2 pt-4">
-            <Button variant="ghost" onClick={handleCancel}>Annuler</Button>
-            <Button onClick={handleSave}>Sauvegarder</Button>
+            <Button variant="ghost" onClick={handleCancel} disabled={isSaving}>Annuler</Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? 'Sauvegarde en cours...' : 'Sauvegarder'}
+            </Button>
         </div>
     </div>
   );
 }
+
+    
