@@ -1,7 +1,8 @@
+
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { collection, getDocs, query, orderBy, where } from "firebase/firestore";
+import { useState, useEffect, useMemo } from "react";
+import { collection, getDocs, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Recipe } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
@@ -19,7 +20,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { PlusCircle, Utensils } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -36,7 +36,7 @@ export default function MenuClient() {
   const [selectedDish, setSelectedDish] = useState<Recipe | null>(null);
   const { toast } = useToast();
 
-  const fetchRecipes = useCallback(async () => {
+  const fetchRecipes = async () => {
     setIsLoading(true);
     try {
       const recipesCol = collection(db, "recipes");
@@ -57,11 +57,11 @@ export default function MenuClient() {
     } finally {
       setIsLoading(false);
     }
-  }, [toast]);
+  };
 
   useEffect(() => {
     fetchRecipes();
-  }, [fetchRecipes]);
+  }, []);
 
   const handleSeed = async () => {
     setIsSeeding(true);
