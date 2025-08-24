@@ -236,30 +236,29 @@ export function RecipeCostForm({
     <div className="space-y-6">
         <Card>
             <CardHeader>
-                <CardTitle>Détails de la recette</CardTitle>
-                <CardDescription>Informations générales et financières du plat.</CardDescription>
+                 <div className="flex items-baseline justify-between">
+                    <div className="flex items-baseline gap-4">
+                        <CardTitle>Détails de la recette :</CardTitle>
+                        <p className="text-2xl font-bold text-primary">{dishName}</p>
+                    </div>
+                    <CardDescription>Informations générales et financières du plat.</CardDescription>
+                 </div>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="space-y-1 md:col-span-2">
-                        <Label htmlFor="dishName">Nom du plat</Label>
-                        <Input id="dishName" value={dishName} readOnly disabled className="border-none p-0 h-auto text-base font-semibold bg-transparent" />
-                    </div>
-                    <div className="space-y-1">
-                        <Label htmlFor="portions">Nombre de portions</Label>
-                        <Input id="portions" type="number" value={portions} onChange={(e) => setPortions(Number(e.target.value))} min="1" />
-                    </div>
-                </div>
-                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 items-center">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-center">
                    <div className="lg:col-span-1">
                      <FoodCostGauge percentage={foodCost} />
                    </div>
-                   <div className="grid grid-cols-2 lg:col-span-2 gap-4">
+                   <div className="grid grid-cols-2 lg:grid-cols-4 lg:col-span-2 gap-4">
                        <FinancialInfo label="Prix Vente (TTC)" value={`${sellingPriceTTC.toFixed(2)} DZD`} />
                        <FinancialInfo label="Prix Vente (HT)" value={`${sellingPriceHT.toFixed(2)} DZD`} />
                        <FinancialInfo label="Coût / Portion" value={`${costPerPortion.toFixed(2)} DZD`} className="text-orange-500" />
                        <FinancialInfo label="Marge Brute (€)" value={`${grossMarginValue.toFixed(2)} DZD`} className="text-green-600" />
                    </div>
+                </div>
+                 <div className="space-y-1 max-w-xs">
+                    <Label htmlFor="portions">Nombre de portions</Label>
+                    <Input id="portions" type="number" value={portions} onChange={(e) => setPortions(Number(e.target.value))} min="1" />
                 </div>
             </CardContent>
         </Card>
