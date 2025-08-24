@@ -5,3 +5,11 @@ runConfig:
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
   maxInstances: 1
+
+# Add the IAM configuration below to grant the Service Account User role
+# to the App Hosting service account. This is required for server-side
+# actions to interact with other Google Cloud services like Firestore.
+iam:
+  serviceAccount: app-hosting-run
+  roles:
+    - type: "iam.serviceAccountUser"
