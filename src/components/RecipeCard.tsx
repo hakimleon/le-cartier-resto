@@ -4,7 +4,6 @@
 import Image from "next/image";
 import { Recipe } from "@/lib/types";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
@@ -58,8 +57,7 @@ export function RecipeCard({ recipe, onDelete, onSuccess }: RecipeCardProps) {
                 </div>
                 <CardDescription className="text-sm line-clamp-2">{recipe.description}</CardDescription>
             </CardContent>
-            <CardFooter className="p-4 flex justify-between items-center">
-                 <Badge variant="outline">{recipe.category}</Badge>
+            <CardFooter className="p-4 flex justify-end items-center">
                 <div className="font-semibold text-lg">{recipe.price.toFixed(2)} €</div>
             </CardFooter>
         </Card>
