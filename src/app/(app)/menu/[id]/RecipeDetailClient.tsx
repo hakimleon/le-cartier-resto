@@ -295,7 +295,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const totalCost = combinedIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
     const portions = recipe.portions || 1;
-    const costPerPortionValue = totalCost / portions;
+    const costPerPortionValue = portions > 0 ? totalCost / portions : 0;
     const tvaRate = recipe.tvaRate || 10;
     const priceHTValue = recipe.price / (1 + tvaRate / 100);
     
