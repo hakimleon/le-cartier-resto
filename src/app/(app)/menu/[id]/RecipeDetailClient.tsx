@@ -66,6 +66,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         if (recipeSnap.exists()) {
           const fetchedData = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe;
+          // Merge fetched data with mock data for fields not in Firestore yet
           setRecipe({ ...mockRecipe, ...fetchedData, id: recipeId });
         } else {
           setError("Fiche technique non trouvée.");
@@ -102,8 +103,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const totalIngredientsCost = recipe.ingredientsList?.reduce((acc, item) => acc + item.totalCost, 0) || 0;
   const priceHT = recipe.price / (1 + (recipe.tvaRate || 0) / 100);
   const costPerPortion = totalIngredientsCost / (recipe.portions || 1);
-  const marginPerPortion = priceHT - costPerPortion;
-  const marginPercentage = priceHT > 0 ? (marginPerPortion / priceHT) * 100 : 0; // Marge sur Prix de Vente HT
+
+  // Key Performance Indicators (KPIs)
+  const grossMargin = priceHT - costPerPortion; // Marge Brute (€)
+  const grossMarginPercentage = priceHT > 0 ? (grossMargin / priceHT) * 100 : 0; // Marge Brute (%)
+  const foodCostPercentage = priceHT > 0 ? (costPerPortion / priceHT) * 100 : 0; // Food Cost (%)
+  const multiplierCoefficient = costPerPortion > 0 ? priceHT / costPerPortion : 0; // Coefficient Multiplicateur
 
   return (
     <div className="space-y-8">
@@ -133,18 +138,18 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             {/* General & Costs */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Général</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations & Rentabilité</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                   <div className="space-y-6">
-                       <div className="grid grid-cols-3 gap-4 text-center">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="space-y-4">
+                        <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted/50 rounded-lg">
                            <div>
                                 <p className="text-sm text-muted-foreground">Vente TTC</p>
                                 <p className="font-bold text-lg">{recipe.price.toFixed(2)}€</p>
                            </div>
                            <div>
-                                <p className="text-sm text-muted-foreground">TVA</p>
-                                <p className="font-bold text-lg">{recipe.tvaRate}%</p>
+                                <p className="text-sm text-muted-foreground">Vente HT</p>
+                                <p className="font-bold text-lg">{priceHT.toFixed(2)}€</p>
                            </div>
                            <div>
                                 <p className="text-sm text-muted-foreground">Portions</p>
@@ -153,24 +158,28 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                        </div>
                         <div className="space-y-2 text-sm border-t pt-4">
                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Prix de vente HT</span>
-                                <span className="font-semibold">{priceHT.toFixed(2)}€</span>
+                                <span className="text-muted-foreground">Marge Brute</span>
+                                <span className="font-semibold text-green-600">{grossMargin.toFixed(2)}€ / portion</span>
                             </div>
                              <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Coût / Portion</span>
-                                <span className="font-semibold text-red-600">{costPerPortion.toFixed(2)}€</span>
+                                <span className="text-muted-foreground">Coût Matière</span>
+                                <span className="font-semibold text-red-600">{costPerPortion.toFixed(2)}€ / portion</span>
                             </div>
-                             <div className="flex justify-between items-center border-t pt-2 mt-1">
-                                <span className="font-semibold">Marge / Portion</span>
-                                <span className="font-bold text-green-600">{marginPerPortion.toFixed(2)}€</span>
+                             <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Food Cost</span>
+                                <span className="font-semibold">{foodCostPercentage.toFixed(2)}%</span>
+                            </div>
+                             <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Coefficient</span>
+                                 <span className="font-semibold">x {multiplierCoefficient.toFixed(2)}</span>
                             </div>
                         </div>
                    </div>
                    <div className="flex flex-col items-center justify-center">
-                       <h4 className="font-semibold text-center mb-2">Ratio Marge / PV HT</h4>
+                       <h4 className="font-semibold text-center mb-2">Marge Brute (%)</h4>
                         <GaugeChart 
-                            value={marginPercentage}
-                            label={`${marginPerPortion.toFixed(2)}€ / portion`}
+                            value={grossMarginPercentage}
+                            label={`${grossMargin.toFixed(2)}€ / portion`}
                             unit="%"
                         />
                    </div>
