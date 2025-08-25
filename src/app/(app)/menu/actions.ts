@@ -41,3 +41,12 @@ export async function deleteDish(id: string) {
   const recipeDoc = doc(db, 'recipes', id);
   await deleteDoc(recipeDoc);
 }
+
+export async function deleteRecipeIngredient(recipeIngredientId: string) {
+  if (!recipeIngredientId) {
+    throw new Error("L'identifiant de la liaison est requis pour la suppression.");
+  }
+  const recipeIngredientDoc = doc(db, 'recipeIngredients', recipeIngredientId);
+  await deleteDoc(recipeIngredientDoc);
+}
+

@@ -2,9 +2,9 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { doc, getDoc, collection, query, where, getDocs, addDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, addDoc, deleteDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Recipe, RecipeIngredient, Ingredient } from "@/lib/types";
+import { Recipe, RecipeIngredient, Ingredient, RecipeIngredientLink } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,6 +18,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import { deleteRecipeIngredient } from "../actions";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -26,6 +27,7 @@ type RecipeDetailClientProps = {
 // Extends RecipeIngredient to include purchase unit details for conversion
 type FullRecipeIngredient = RecipeIngredient & {
     unitPurchase: string; 
+    recipeIngredientId: string; // The ID of the document in recipeIngredients collection
 };
 
 type NewRecipeIngredient = {
@@ -41,8 +43,8 @@ type NewRecipeIngredient = {
 
 const getConversionFactor = (purchaseUnit: string, usageUnit: string) => {
     if (purchaseUnit === usageUnit) return 1;
-    if (purchaseUnit === 'kg' && usageUnit === 'g') return 1000;
-    if (purchaseUnit === 'l' && usageUnit === 'ml') return 1000;
+    if (purchaseUnit.toLowerCase() === 'kg' && usageUnit.toLowerCase() === 'g') return 1000;
+    if (purchaseUnit.toLowerCase() === 'l' && usageUnit.toLowerCase() === 'ml') return 1000;
     // Add other conversions here
     return 1; // Default to 1 if no conversion rule found
 }
@@ -87,7 +89,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
       
       const ingredientsDataPromises = recipeIngredientsSnap.docs.map(async (recipeIngredientDoc) => {
-          const recipeIngredientData = recipeIngredientDoc.data();
+          const recipeIngredientData = recipeIngredientDoc.data() as RecipeIngredientLink;
           const ingredientDocRef = doc(db, "ingredients", recipeIngredientData.ingredientId);
           const ingredientSnap = await getDoc(ingredientDocRef);
 
@@ -99,6 +101,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
               
               return {
                   id: ingredientSnap.id,
+                  recipeIngredientId: recipeIngredientDoc.id, // Store the link document ID
                   name: ingredientData.name,
                   quantity: recipeIngredientData.quantity,
                   unit: recipeIngredientData.unitUse,
@@ -191,6 +194,28 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const handleRemoveNewIngredient = (tempId: string) => {
     setNewIngredients(current => current.filter(ing => ing.id !== tempId));
   };
+  
+  const handleRemoveExistingIngredient = async (recipeIngredientId: string, ingredientName: string) => {
+    if (!confirm(`Êtes-vous sûr de vouloir retirer "${ingredientName}" de cette recette ?`)) {
+        return;
+    }
+    try {
+        await deleteRecipeIngredient(recipeIngredientId);
+        toast({
+            title: "Succès",
+            description: `L'ingrédient "${ingredientName}" a été retiré de la recette.`,
+        });
+        fetchRecipeData(); // Refresh data
+    } catch (error) {
+        console.error("Error deleting recipe ingredient:", error);
+        toast({
+            title: "Erreur",
+            description: "La suppression de l'ingrédient a échoué.",
+            variant: "destructive",
+        });
+    }
+  };
+
 
   const handleSave = async () => {
     if (newIngredients.length === 0) {
@@ -236,7 +261,17 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   };
 
   const combinedIngredients = useMemo(() => {
-    return [...ingredients, ...newIngredients];
+    // Map existing ingredients to match the structure for cost calculation
+    const existing = ingredients.map(ing => ({
+        ...ing,
+        totalCost: ing.totalCost || 0
+    }));
+    // Map new ingredients as well
+    const newOnes = newIngredients.map(ing => ({
+        ...ing,
+        totalCost: ing.totalCost || 0
+    }));
+    return [...existing, ...newOnes];
   }, [ingredients, newIngredients]);
 
   const {
@@ -398,7 +433,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     <TableCell>{ing.quantity}</TableCell>
                                     <TableCell>{ing.unit}</TableCell>
                                     <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
-                                    <TableCell></TableCell>
+                                    <TableCell>
+                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId, ing.name)}>
+                                            <Trash2 className="h-4 w-4 text-red-500"/>
+                                        </Button>
+                                    </TableCell>
                                 </TableRow>
                             ))}
                              {newIngredients.map((newIng) => (
