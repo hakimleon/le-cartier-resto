@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
+import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe } from "@/lib/types";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -20,10 +20,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { PlusCircle, Utensils } from "lucide-react";
+import { PlusCircle, Utensils, AlertTriangle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DishForm } from "./DishForm";
 import { seedRecipes, deleteDish } from "./actions";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const categories = ["Entrée", "Plat", "Dessert"];
 
@@ -34,8 +35,15 @@ export default function MenuClient() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedDish, setSelectedDish] = useState<Recipe | null>(null);
   const { toast } = useToast();
+  const [firebaseError, setFirebaseError] = useState(false);
 
   useEffect(() => {
+    if (!isFirebaseConfigured) {
+      setFirebaseError(true);
+      setIsLoading(false);
+      return;
+    }
+
     const fetchRecipes = async () => {
       setIsLoading(true);
       try {
@@ -48,8 +56,8 @@ export default function MenuClient() {
       } catch (error) {
          console.error("Error fetching recipes: ", error);
          toast({
-           title: "Erreur",
-           description: "Impossible de charger le menu. Vérifiez la configuration Firebase et les règles de sécurité Firestore.",
+           title: "Erreur de chargement",
+           description: "Impossible de charger le menu. Vérifiez les règles de sécurité Firestore et la console pour plus de détails.",
            variant: "destructive",
          });
       } finally {
@@ -64,14 +72,12 @@ export default function MenuClient() {
     setIsSeeding(true);
     try {
       await seedRecipes();
-      // Manually trigger a refetch by calling the effect's logic again
       const recipesCol = collection(db, "recipes");
       const querySnapshot = await getDocs(recipesCol);
       const recipesData = querySnapshot.docs.map(
         (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
       );
       setRecipes(recipesData);
-
       toast({
         title: "Succès",
         description: "Le menu de démonstration a été ajouté.",
@@ -107,18 +113,14 @@ export default function MenuClient() {
     }
   };
   
-  const handleSuccess = () => {
+  const handleSuccess = async () => {
     setDialogOpen(false);
-    // Manually trigger a refetch by calling the effect's logic again
-    const fetchRecipes = async () => {
-      const recipesCol = collection(db, "recipes");
-      const querySnapshot = await getDocs(recipesCol);
-      const recipesData = querySnapshot.docs.map(
-        (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
-      );
-      setRecipes(recipesData);
-    };
-    fetchRecipes();
+    const recipesCol = collection(db, "recipes");
+    const querySnapshot = await getDocs(recipesCol);
+    const recipesData = querySnapshot.docs.map(
+      (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
+    );
+    setRecipes(recipesData);
   };
 
   const openEditDialog = (dish: Recipe) => {
@@ -145,6 +147,18 @@ export default function MenuClient() {
           <Utensils className="h-12 w-12 animate-pulse text-muted-foreground" />
           <p className="mt-4 text-muted-foreground">Chargement du menu...</p>
         </div>
+      );
+    }
+    
+    if (firebaseError) {
+      return (
+        <Alert variant="destructive" className="max-w-2xl mx-auto">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Erreur de Configuration Firebase</AlertTitle>
+          <AlertDescription>
+            La connexion à Firebase a échoué. Veuillez vérifier que les variables d'environnement Firebase (NEXT_PUBLIC_FIREBASE_*) sont correctement définies dans votre fichier `.env`. Sans cette configuration, l'application ne peut pas accéder à la base de données.
+          </AlertDescription>
+        </Alert>
       );
     }
 
@@ -202,7 +216,7 @@ export default function MenuClient() {
       <div className="container mx-auto p-4 md:p-6 lg:p-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">Mon Menu</h1>
-          <Button onClick={openNewDialog}>
+          <Button onClick={openNewDialog} disabled={firebaseError}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Ajouter un plat
           </Button>

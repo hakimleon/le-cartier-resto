@@ -18,7 +18,6 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
 };
 
-
 // Initialize Firebase
 let app;
 if (!getApps().length) {
@@ -30,4 +29,8 @@ if (!getApps().length) {
 const db = getFirestore(app);
 const storage = getStorage(app);
 
-export { app, db, storage };
+// Helper to check if the config is valid
+export const isFirebaseConfigured = !!firebaseConfig.apiKey && !!firebaseConfig.projectId;
+
+
+export { app, db, storage, firebaseConfig };
