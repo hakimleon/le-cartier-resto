@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -12,9 +13,10 @@ import {
 import { cn } from "@/lib/utils"
 
 const GAUGE_COLORS = {
-    low: "hsl(var(--chart-5))",    // Red-ish
-    medium: "hsl(var(--chart-4))", // Yellow-ish
-    high: "hsl(var(--chart-1))",   // Green-ish
+    // For Food Cost: low is good (green), high is bad (red)
+    good: "hsl(var(--chart-1))",      // Green
+    average: "hsl(var(--chart-4))",  // Yellow
+    bad: "hsl(var(--chart-5))",      // Red-ish
 };
 
 interface GaugeChartProps {
@@ -26,26 +28,27 @@ interface GaugeChartProps {
 export function GaugeChart({ value, label, unit }: GaugeChartProps) {
     const chartConfig = {
         value: {
-          label: "Marge",
+          label: "Food Cost",
         },
-        low: {
-          label: "Faible",
-          color: GAUGE_COLORS.low,
+        good: {
+          label: "Bon",
+          color: GAUGE_COLORS.good,
         },
-        medium: {
-          label: "Moyenne",
-          color: GAUGE_COLORS.medium,
+        average: {
+          label: "Moyen",
+          color: GAUGE_COLORS.average,
         },
-        high: {
-          label: "Élevée",
-          color: GAUGE_COLORS.high,
+        bad: {
+          label: "Élevé",
+          color: GAUGE_COLORS.bad,
         },
     } satisfies ChartConfig
 
+    // Lower food cost is better.
     const getLevel = (v: number) => {
-        if (v < 60) return "low";
-        if (v < 75) return "medium";
-        return "high";
+        if (v < 30) return "good";
+        if (v < 40) return "average";
+        return "bad";
     }
 
     const level = getLevel(value);
@@ -102,3 +105,5 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
         </ChartContainer>
     )
 }
+
+    

@@ -101,7 +101,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   }
   
   const totalIngredientsCost = recipe.ingredientsList?.reduce((acc, item) => acc + item.totalCost, 0) || 0;
-  const priceHT = recipe.price / (1 + (recipe.tvaRate || 0) / 100);
+  const priceHT = recipe.price / (1 + (recipe.tvaRate || 10) / 100);
   const costPerPortion = totalIngredientsCost / (recipe.portions || 1);
 
   // Key Performance Indicators (KPIs)
@@ -158,28 +158,24 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                        </div>
                         <div className="space-y-2 text-sm border-t pt-4">
                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Marge Brute</span>
-                                <span className="font-semibold text-green-600">{grossMargin.toFixed(2)}€ / portion</span>
+                                <span className="text-muted-foreground">Coût Matière / Portion</span>
+                                <span className="font-semibold">{costPerPortion.toFixed(2)}€</span>
                             </div>
-                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Coût Matière</span>
-                                <span className="font-semibold text-red-600">{costPerPortion.toFixed(2)}€ / portion</span>
-                            </div>
-                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Food Cost</span>
-                                <span className="font-semibold">{foodCostPercentage.toFixed(2)}%</span>
-                            </div>
-                             <div className="flex justify-between items-center">
+                            <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Coefficient</span>
                                  <span className="font-semibold">x {multiplierCoefficient.toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Marge Brute</span>
+                                <span className="font-semibold">{grossMargin.toFixed(2)}€ ({grossMarginPercentage.toFixed(2)}%)</span>
                             </div>
                         </div>
                    </div>
                    <div className="flex flex-col items-center justify-center">
-                       <h4 className="font-semibold text-center mb-2">Marge Brute (%)</h4>
+                       <h4 className="font-semibold text-center mb-2">Food Cost (%)</h4>
                         <GaugeChart 
-                            value={grossMarginPercentage}
-                            label={`${grossMargin.toFixed(2)}€ / portion`}
+                            value={foodCostPercentage}
+                            label={`Coût portion: ${costPerPortion.toFixed(2)}€`}
                             unit="%"
                         />
                    </div>
@@ -367,5 +363,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
