@@ -30,7 +30,7 @@ const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
   description: z.string().min(10, "La description doit contenir au moins 10 caractères."),
   price: z.coerce.number().positive("Le prix doit être un nombre positif."),
-  category: z.enum(["Entrée", "Plat", "Dessert"]),
+  category: z.enum(["Entrées froides et chaudes", "Plats", "Les mets de chez nous", "Symphonie de pâtes", "Humburgers", "Dessert"]),
 });
 
 type DishFormProps = {
@@ -48,7 +48,7 @@ export function DishForm({ dish, onSuccess }: DishFormProps) {
       name: dish?.name || "",
       description: dish?.description || "",
       price: dish?.price || 0,
-      category: dish?.category || "Plat",
+      category: dish?.category || "Plats",
     },
   });
 
@@ -136,8 +136,11 @@ export function DishForm({ dish, onSuccess }: DishFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="Entrée">Entrée</SelectItem>
-                  <SelectItem value="Plat">Plat</SelectItem>
+                  <SelectItem value="Entrées froides et chaudes">Entrées froides et chaudes</SelectItem>
+                  <SelectItem value="Plats">Plats</SelectItem>
+                  <SelectItem value="Les mets de chez nous">Les mets de chez nous</SelectItem>
+                  <SelectItem value="Symphonie de pâtes">Symphonie de pâtes</SelectItem>
+                  <SelectItem value="Humburgers">Humburgers</SelectItem>
                   <SelectItem value="Dessert">Dessert</SelectItem>
                 </SelectContent>
               </Select>

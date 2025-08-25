@@ -15,6 +15,15 @@ import { useToast } from "@/hooks/use-toast";
 import { deleteDish } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+const CATEGORY_ORDER = [
+  "Entrées froides et chaudes",
+  "Plats",
+  "Les mets de chez nous",
+  "Symphonie de pâtes",
+  "Humburgers",
+  "Dessert",
+];
+
 export default function MenuClient() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,8 +49,18 @@ export default function MenuClient() {
       );
       setRecipes(recipesData);
 
-      const uniqueCategories = ["Tous", ...new Set(recipesData.map(recipe => recipe.category))];
-      setCategories(uniqueCategories);
+      const uniqueCategories = [...new Set(recipesData.map(recipe => recipe.category))];
+      
+      const sortedCategories = uniqueCategories.sort((a, b) => {
+        const indexA = CATEGORY_ORDER.indexOf(a);
+        const indexB = CATEGORY_ORDER.indexOf(b);
+        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+
+      setCategories(["Tous", ...sortedCategories]);
 
       setError(null);
     } catch (e: any)      {
