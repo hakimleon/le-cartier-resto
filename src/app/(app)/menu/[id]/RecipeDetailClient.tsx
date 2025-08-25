@@ -139,9 +139,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
                    <div className="space-y-4">
-                        <div className="aspect-video relative w-full rounded-lg overflow-hidden border">
-                            <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} layout="fill" objectFit="cover" data-ai-hint="food image" />
-                        </div>
                         <div className="grid grid-cols-3 gap-4 text-center">
                             <div>
                                 <p className="text-sm text-muted-foreground">Vente TTC</p>
@@ -156,6 +153,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <p className="font-bold">{recipe.portions}</p>
                             </div>
                         </div>
+                        <p className="text-sm text-muted-foreground pt-4">{recipe.description}</p>
                    </div>
                    <div className="space-y-4">
                         <h4 className="font-semibold text-lg">Analyse de rentabilité</h4>
@@ -364,5 +362,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
