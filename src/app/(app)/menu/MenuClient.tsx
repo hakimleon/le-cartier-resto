@@ -70,9 +70,9 @@ export default function MenuClient() {
 
     if (recipes.length === 0) {
       return (
-        <div className="flex flex-col items-center justify-center p-10">
-           <Utensils className="h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-semibold">Le menu ne contient aucune recette.</h3>
+        <div className="text-center p-10">
+          <h3 className="text-lg font-semibold">Le menu ne contient aucune recette.</h3>
+          <p className="text-muted-foreground">Ajoutez votre premier plat pour commencer.</p>
         </div>
       );
     }
@@ -81,7 +81,7 @@ export default function MenuClient() {
       <ul>
         {recipes.map((dish) => (
           <li key={dish.id} className="border-b py-2">
-            <span className="font-bold">{dish.name}</span> - {dish.price} € - <span className="text-sm text-muted-foreground">{dish.description}</span>
+            <span className="font-bold">{dish.name}</span> - {dish.price} €
           </li>
         ))}
       </ul>
