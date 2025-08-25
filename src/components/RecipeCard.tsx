@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Copy, Pencil, Soup, Trash2 } from "lucide-react";
 import { DishModal } from "@/app/(app)/menu/DishModal";
+import { cn } from "@/lib/utils";
 
 type RecipeCardProps = {
     recipe: Recipe;
