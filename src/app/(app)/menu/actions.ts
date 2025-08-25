@@ -1,3 +1,4 @@
+
 'use server';
 
 import { collection, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
@@ -30,5 +31,3 @@ export async function deleteRecipeIngredient(recipeIngredientId: string) {
   const recipeIngredientDoc = doc(db, 'recipeIngredients', recipeIngredientId);
   await deleteDoc(recipeIngredientDoc);
 }
-
-    
