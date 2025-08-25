@@ -20,8 +20,7 @@ export function RecipeCard({ recipe, onDelete, onSuccess }: RecipeCardProps) {
     const status = recipe.status || 'Actif';
     const duration = recipe.duration || 25;
     const difficulty = recipe.difficulty || 'Moyen';
-    const tags = recipe.tags || ['Épicé'];
-
+    
 
     return (
         <Card className="flex flex-col overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
@@ -44,12 +43,6 @@ export function RecipeCard({ recipe, onDelete, onSuccess }: RecipeCardProps) {
 
                 <p className="text-sm text-foreground line-clamp-2">{recipe.description}</p>
                 
-                <div className="flex items-center gap-2 pt-1">
-                  {tags.map(tag => (
-                    <Badge key={tag} variant="outline" className="text-xs">{tag}</Badge>
-                  ))}
-                </div>
-
             </CardContent>
             <CardFooter className="p-4 bg-muted/50 flex flex-col items-start gap-4">
                <div className="flex justify-between w-full text-sm text-muted-foreground">
