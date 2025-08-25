@@ -31,11 +31,11 @@ export default function AppLayout({
         <Sidebar>
           <SidebarHeader className="p-4">
             <Link href="/" className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="h-12 w-12 shrink-0 rounded-full">
-                    <UtensilsCrossed className="h-6 w-6 text-primary" />
+                <Button variant="ghost" size="icon" className="h-12 w-12 shrink-0 rounded-full bg-primary/10 text-primary hover:bg-primary/20">
+                    <UtensilsCrossed className="h-6 w-6" />
                 </Button>
                 <div className="flex flex-col">
-                    <h2 className="text-lg font-semibold tracking-tight text-foreground">Le Singulier</h2>
+                    <h2 className="text-lg font-semibold tracking-tight text-sidebar-foreground">Le Singulier</h2>
                     <p className="text-sm text-muted-foreground">Restaurant</p>
                 </div>
             </Link>
