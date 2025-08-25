@@ -43,9 +43,14 @@ type NewRecipeIngredient = {
 
 const getConversionFactor = (purchaseUnit: string, usageUnit: string) => {
     if (purchaseUnit === usageUnit) return 1;
-    if (purchaseUnit.toLowerCase() === 'kg' && usageUnit.toLowerCase() === 'g') return 1000;
-    if (purchaseUnit.toLowerCase() === 'l' && usageUnit.toLowerCase() === 'ml') return 1000;
-    // Add other conversions here
+    const pUnit = purchaseUnit.toLowerCase();
+    const uUnit = usageUnit.toLowerCase();
+
+    if (pUnit === 'kg' && uUnit === 'g') return 1000;
+    if (pUnit === 'l' && uUnit === 'ml') return 1000;
+    
+    // Add other conversions here if needed
+    
     return 1; // Default to 1 if no conversion rule found
 }
 
@@ -76,6 +81,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
       if (!recipeSnap.exists()) {
         setError("Fiche technique non trouvée.");
+        setIsLoading(false);
         return;
       }
       
@@ -134,7 +140,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       const allIngredientsData = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
       setAllIngredients(allIngredientsData);
 
-
+      setError(null);
     } catch (e: any) {
       console.error("Error fetching recipe data: ", e);
       setError("Impossible de charger les données de la fiche technique. " + e.message);
@@ -261,12 +267,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   };
 
   const combinedIngredients = useMemo(() => {
-    // Map existing ingredients to match the structure for cost calculation
     const existing = ingredients.map(ing => ({
         ...ing,
         totalCost: ing.totalCost || 0
     }));
-    // Map new ingredients as well
     const newOnes = newIngredients.map(ing => ({
         ...ing,
         totalCost: ing.totalCost || 0
@@ -322,7 +326,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   if (error) {
     return (
-      <Alert variant="destructive" className="max-w-2xl mx-auto">
+      <Alert variant="destructive" className="max-w-2xl mx-auto my-10">
         <AlertTriangle className="h-4 w-4" />
         <AlertTitle>Erreur</AlertTitle>
         <AlertDescription>{error}</AlertDescription>
@@ -427,8 +431,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {ingredients.length > 0 && ingredients.map(ing => (
-                                <TableRow key={ing.id}>
+                            {ingredients.map(ing => (
+                                <TableRow key={ing.recipeIngredientId}>
                                     <TableCell className="font-medium">{ing.name}</TableCell>
                                     <TableCell>{ing.quantity}</TableCell>
                                     <TableCell>{ing.unit}</TableCell>
@@ -460,7 +464,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             type="number"
                                             placeholder="Qté"
                                             className="w-20"
-                                            value={newIng.quantity}
+                                            value={newIng.quantity === 0 ? '' : newIng.quantity}
                                             onChange={(e) => handleNewIngredientChange(newIng.id, 'quantity', parseFloat(e.target.value) || 0)}
                                         />
                                     </TableCell>
@@ -543,7 +547,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-2">
-                    {recipe.allergens?.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>)}
+                    {recipe.allergens && recipe.allergens.length > 0 ? 
+                        recipe.allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>)
+                        : <p className="text-sm text-muted-foreground">Aucun allergène spécifié.</p>
+                    }
                 </CardContent>
             </Card>
             {/* Commercial Argument */}
@@ -563,7 +570,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </CardHeader>
                 <CardContent>
                     <div className="aspect-video relative w-full rounded-lg overflow-hidden border">
-                         <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill objectFit="cover" data-ai-hint="food image" />
+                         <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
                     </div>
                     <Button variant="outline" className="w-full mt-4">Changer la photo</Button>
                 </CardContent>
@@ -574,10 +581,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
       {(newIngredients.length > 0) && (
         <div className="flex justify-end sticky bottom-4">
-            <Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm">
+            <Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm shadow-lg">
                 <Button onClick={handleSave} disabled={isSaving}>
                     <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "Sauvegarde en cours..." : `Sauvegarder ${newIngredients.length} Ingrédient(s)`}
+                    {isSaving ? "Sauvegarde..." : `Sauvegarder ${newIngredients.length} ingrédient(s)`}
                 </Button>
             </Card>
         </div>

@@ -31,3 +31,5 @@ export async function deleteRecipeIngredient(recipeIngredientId: string) {
   const recipeIngredientDoc = doc(db, 'recipeIngredients', recipeIngredientId);
   await deleteDoc(recipeIngredientDoc);
 }
+
+    
