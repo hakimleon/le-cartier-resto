@@ -1,4 +1,5 @@
 
+
 export type RecipeIngredient = {
   id: string;
   name: string;
@@ -26,14 +27,14 @@ export type Recipe = {
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';
   
   // Fiche Technique Fields
-  portions: number;
-  tvaRate: number; // en pourcentage (ex: 10 pour 10%)
-  ingredientsList: RecipeIngredient[];
-  procedure_preparation: string;
-  procedure_cuisson: string;
-  procedure_service: string;
-  allergens: string[];
-  commercialArgument: string;
+  portions?: number;
+  tvaRate?: number; // en pourcentage (ex: 10 pour 10%)
+  ingredientsList?: RecipeIngredient[]; // This will be populated dynamically now
+  procedure_preparation?: string;
+  procedure_cuisson?: string;
+  procedure_service?: string;
+  allergens?: string[];
+  commercialArgument?: string;
 };
 
 export type Ingredient = {
@@ -46,5 +47,14 @@ export type Ingredient = {
     unitPrice: number;
     supplier: string;
 };
+
+// This new type represents the structure in the 'recipeIngredients' collection
+export type RecipeIngredientLink = {
+    recipeId: string;
+    ingredientId: string;
+    quantity: number;
+    unitUse: string;
+}
+    
 
     

@@ -2,9 +2,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Recipe } from "@/lib/types";
+import { Recipe, RecipeIngredient, Ingredient } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,66 +20,88 @@ type RecipeDetailClientProps = {
   recipeId: string;
 };
 
-const mockRecipe: Recipe = {
-    id: "mock-id",
-    name: "Filet de Boeuf Poêlé, Sauce au Poivre Vert",
-    category: "Plats",
-    description: "Un classique de la bistronomie française.",
-    price: 32.00,
-    portions: 10,
-    tvaRate: 10,
-    imageUrl: "https://picsum.photos/800/600",
-    ingredientsList: [
-        { id: "1", name: "Filet de boeuf", quantity: 2, unit: "kg", unitPrice: 45, totalCost: 90 },
-        { id: "2", name: "Poivre vert", quantity: 50, unit: "g", unitPrice: 0.1, totalCost: 5 },
-        { id: "3", name: "Crème fraîche", quantity: 0.5, unit: "l", unitPrice: 4, totalCost: 2 },
-        { id: "4", name: "Cognac", quantity: 0.1, unit: "l", unitPrice: 20, totalCost: 2 },
-        { id: "5", name: "Beurre", quantity: 100, unit: "g", unitPrice: 0.01, totalCost: 1 },
-    ],
-    procedure_preparation: "1. Parer le filet de boeuf.\n2. Concasser le poivre vert.\n3. Préparer les accompagnements.",
-    procedure_cuisson: "1. Saisir le filet de boeuf dans une poêle chaude avec du beurre.\n2. Déglacer au cognac et flamber.\n3. Ajouter la crème et le poivre vert, laisser réduire.",
-    procedure_service: "1. Trancher le filet de boeuf.\n2. Napper de sauce.\n3. Servir avec une purée de pommes de terre maison.",
-    allergens: ["Lactose", "Sulfites"],
-    commercialArgument: "Notre plat signature, préparé avec un filet de bœuf de première qualité et une sauce onctueuse qui ravira les palais les plus exigeants.",
-    status: 'Actif',
-    difficulty: 'Moyen',
-    duration: 45,
-};
-
+// Removed the large mockRecipe object as we are now fetching all data.
 
 export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchRecipe() {
+    async function fetchRecipeData() {
       if (!isFirebaseConfigured) {
         setError("La configuration de Firebase est manquante.");
         setIsLoading(false);
         return;
       }
-
+      setIsLoading(true);
       try {
+        // 1. Fetch the recipe document
         const recipeDocRef = doc(db, "recipes", recipeId);
         const recipeSnap = await getDoc(recipeDocRef);
 
-        if (recipeSnap.exists()) {
-          const fetchedData = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe;
-          // Merge fetched data with mock data for fields not in Firestore yet
-          setRecipe({ ...mockRecipe, ...fetchedData, id: recipeId });
-        } else {
+        if (!recipeSnap.exists()) {
           setError("Fiche technique non trouvée.");
+          setIsLoading(false);
+          return;
         }
+        
+        const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe;
+
+        // 2. Fetch the related ingredients from 'recipeIngredients'
+        const recipeIngredientsQuery = query(
+          collection(db, "recipeIngredients"),
+          where("recipeId", "==", recipeId)
+        );
+        const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
+        
+        const ingredientsDataPromises = recipeIngredientsSnap.docs.map(async (recipeIngredientDoc) => {
+            const recipeIngredientData = recipeIngredientDoc.data();
+            const ingredientDocRef = doc(db, "ingredients", recipeIngredientData.ingredientId);
+            const ingredientSnap = await getDoc(ingredientDocRef);
+
+            if (ingredientSnap.exists()) {
+                const ingredientData = ingredientSnap.data() as Ingredient;
+                const totalCost = (recipeIngredientData.quantity || 0) * (ingredientData.unitPrice || 0);
+                
+                return {
+                    id: ingredientSnap.id,
+                    name: ingredientData.name,
+                    quantity: recipeIngredientData.quantity,
+                    unit: recipeIngredientData.unitUse,
+                    unitPrice: ingredientData.unitPrice,
+                    totalCost: totalCost,
+                };
+            }
+            return null;
+        });
+
+        const resolvedIngredients = (await Promise.all(ingredientsDataPromises)).filter(Boolean) as RecipeIngredient[];
+        
+        setIngredients(resolvedIngredients);
+        // Use mock data for fields not yet in Firestore, but fetched data for everything else
+        setRecipe({
+          ...fetchedRecipe,
+          // Placeholder values for fields that might not be in all firestore documents yet
+          portions: fetchedRecipe.portions || 1,
+          tvaRate: fetchedRecipe.tvaRate || 10,
+          procedure_preparation: fetchedRecipe.procedure_preparation || "Procédure de préparation à ajouter.",
+          procedure_cuisson: fetchedRecipe.procedure_cuisson || "Procédure de cuisson à ajouter.",
+          procedure_service: fetchedRecipe.procedure_service || "Procédure de service à ajouter.",
+          allergens: fetchedRecipe.allergens || [],
+          commercialArgument: fetchedRecipe.commercialArgument || "Argumentaire à définir.",
+        });
+
       } catch (e: any) {
-        console.error("Error fetching recipe: ", e);
-        setError("Impossible de charger la fiche technique. " + e.message);
+        console.error("Error fetching recipe data: ", e);
+        setError("Impossible de charger les données de la fiche technique. " + e.message);
       } finally {
         setIsLoading(false);
       }
     }
 
-    fetchRecipe();
+    fetchRecipeData();
   }, [recipeId]);
 
   if (isLoading) {
@@ -101,7 +123,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   }
   
   // KPI Calculations
-  const totalIngredientsCost = recipe.ingredientsList?.reduce((acc, item) => acc + item.totalCost, 0) || 0;
+  const totalIngredientsCost = ingredients.reduce((acc, item) => acc + item.totalCost, 0) || 0;
   const costPerPortion = totalIngredientsCost / (recipe.portions || 1);
   const priceHT = recipe.price / (1 + (recipe.tvaRate || 10) / 100);
   
@@ -165,7 +187,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <span className="text-muted-foreground">Coefficient</span>
                                  <span className="font-semibold">x {multiplierCoefficient.toFixed(2)}</span>
                             </div>
-                            <div className="flex justify-between items-center">
+                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Marge Brute</span>
                                 <span className="font-semibold">{grossMargin.toFixed(2)}€ ({grossMarginPercentage.toFixed(2)}%)</span>
                             </div>
@@ -203,15 +225,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {recipe.ingredientsList?.map(ing => (
-                                <TableRow key={ing.id}>
-                                    <TableCell className="font-medium">{ing.name}</TableCell>
-                                    <TableCell className="text-right">{ing.quantity}</TableCell>
-                                    <TableCell>{ing.unit}</TableCell>
-                                    <TableCell className="text-right">{ing.unitPrice.toFixed(2)}€</TableCell>
-                                    <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
+                            {ingredients.length > 0 ? (
+                                ingredients.map(ing => (
+                                    <TableRow key={ing.id}>
+                                        <TableCell className="font-medium">{ing.name}</TableCell>
+                                        <TableCell className="text-right">{ing.quantity}</TableCell>
+                                        <TableCell>{ing.unit}</TableCell>
+                                        <TableCell className="text-right">{ing.unitPrice.toFixed(2)}€</TableCell>
+                                        <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
+                                    </TableRow>
+                                ))
+                             ) : (
+                                <TableRow>
+                                    <TableCell colSpan={5} className="text-center h-24">Aucun ingrédient lié à cette recette.</TableCell>
                                 </TableRow>
-                            ))}
+                             )}
                         </TableBody>
                     </Table>
                     <div className="flex justify-end mt-4">
@@ -363,3 +391,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
