@@ -186,14 +186,11 @@ export default function MenuClient() {
       )}
 
       <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-          <TabsList className="h-auto p-0 bg-transparent flex-wrap justify-start gap-x-4 gap-y-2 border-b-2 border-transparent">
+          <TabsList className="h-auto flex-wrap justify-start">
             {categories.map((category) => (
               <TabsTrigger 
                 key={category} 
                 value={category}
-                className={cn(
-                  "text-muted-foreground hover:text-primary transition-colors data-[state=active]:text-primary data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary rounded-none px-1 h-9",
-                )}
               >
                 {category}
               </TabsTrigger>
