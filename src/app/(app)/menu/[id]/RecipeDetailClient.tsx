@@ -206,7 +206,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>
-                         <Button variant="outline" size="sm"><PlusCircle className="mr-2 h-4 w-4"/>Ajouter</Button>
+                         <Button variant="outline" size="sm" onClick={() => alert("Fonctionnalité à implémenter")}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter</Button>
                     </CardTitle>
                     <CardDescription>Liste des ingrédients nécessaires pour {recipe.portions} portions.</CardDescription>
                 </CardHeader>
