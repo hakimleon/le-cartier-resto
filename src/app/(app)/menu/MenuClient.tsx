@@ -1,54 +1,112 @@
+
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { collection, getDocs } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { AlertTriangle, PlusCircle, Search } from "lucide-react";
+import { RecipeCard } from "@/components/RecipeCard";
+import { DishModal } from "./DishModal";
+import { useToast } from "@/hooks/use-toast";
+import { deleteDish } from "./actions";
 
 export default function MenuClient() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const { toast } = useToast();
+
+  const fetchRecipes = async () => {
+    if (!isFirebaseConfigured) {
+      setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
+      setIsLoading(false);
+      return;
+    }
+    
+    setIsLoading(true);
+    try {
+      const recipesCol = collection(db, "recipes");
+      const querySnapshot = await getDocs(recipesCol);
+      const recipesData = querySnapshot.docs.map(
+        (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
+      );
+      setRecipes(recipesData);
+      setError(null);
+    } catch (e: any) {
+      console.error("Error fetching recipes: ", e);
+      setError("Impossible de charger le menu. " + e.message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    async function fetchRecipes() {
-      if (!isFirebaseConfigured) {
-        setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
-        setIsLoading(false);
-        return;
-      }
-      
-      setIsLoading(true);
-      try {
-        const recipesCol = collection(db, "recipes");
-        const querySnapshot = await getDocs(recipesCol);
-        const recipesData = querySnapshot.docs.map(
-          (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
-        );
-        setRecipes(recipesData);
-        setError(null);
-      } catch (e: any) {
-        console.error("Error fetching recipes: ", e);
-        setError("Impossible de charger le menu.");
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
     fetchRecipes();
   }, []);
 
-  if (isLoading) {
-    return <div>Chargement...</div>;
-  }
+  const handleDelete = async (id: string, name: string) => {
+    if (confirm(`Êtes-vous sûr de vouloir supprimer le plat "${name}" ?`)) {
+      try {
+        await deleteDish(id);
+        toast({
+          title: "Succès",
+          description: `Le plat "${name}" a été supprimé.`,
+        });
+        fetchRecipes(); // Refresh list after delete
+      } catch (error) {
+        console.error("Error deleting dish:", error);
+        toast({
+          title: "Erreur",
+          description: "La suppression du plat a échoué.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
-  if (error) {
+  const filteredRecipes = useMemo(() => {
+    return recipes.filter(recipe => 
+      recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [recipes, searchTerm]);
+
+  const entrees = useMemo(() => filteredRecipes.filter(r => r.category === 'Entrée'), [filteredRecipes]);
+  const plats = useMemo(() => filteredRecipes.filter(r => r.category === 'Plat'), [filteredRecipes]);
+  const desserts = useMemo(() => filteredRecipes.filter(r => r.category === 'Dessert'), [filteredRecipes]);
+
+  const renderRecipeList = (recipeList: Recipe[]) => {
+    if (isLoading) {
+      return <div className="text-center">Chargement des recettes...</div>;
+    }
+    if (recipeList.length === 0) {
+      return <div className="text-center text-muted-foreground pt-8">Aucun plat trouvé dans cette catégorie.</div>;
+    }
+    return (
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {recipeList.map((recipe) => (
+          <RecipeCard 
+            key={recipe.id} 
+            recipe={recipe} 
+            onEdit={() => {}} // This will be handled by the modal trigger inside the card
+            onDelete={() => handleDelete(recipe.id!, recipe.name)}
+            onSuccess={fetchRecipes}
+          />
+        ))}
+      </div>
+    );
+  };
+
+  if (error && !isFirebaseConfigured) {
     return (
         <Alert variant="destructive" className="max-w-2xl mx-auto">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Erreur</AlertTitle>
+          <AlertTitle>Erreur de configuration Firebase</AlertTitle>
           <AlertDescription>
             {error}
           </AlertDescription>
@@ -56,20 +114,56 @@ export default function MenuClient() {
       );
   }
 
-  if (recipes.length === 0) {
-    return <div>Le menu est vide.</div>;
-  }
-
   return (
-    <div>
-      <h1>Menu</h1>
-      <ul>
-        {recipes.map((recipe) => (
-          <li key={recipe.id}>
-            {recipe.name} - {recipe.price} €
-          </li>
-        ))}
-      </ul>
+    <div className="space-y-6">
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <h1 className="text-3xl font-bold tracking-tight">Gestion du Menu</h1>
+            <p className="text-muted-foreground">Gérez les plats de votre restaurant.</p>
+        </div>
+        <div className="flex items-center gap-2">
+            <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                    placeholder="Rechercher un plat..." 
+                    className="pl-9"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </div>
+             <DishModal dish={null} onSuccess={fetchRecipes}>
+                <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Nouveau Plat
+                </Button>
+            </DishModal>
+        </div>
+      </header>
+
+      {error && (
+        <Alert variant="destructive">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Erreur</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      <Tabs defaultValue="entrees" className="w-full">
+        <TabsList>
+          <TabsTrigger value="entrees">Entrées</TabsTrigger>
+          <TabsTrigger value="plats">Plats</TabsTrigger>
+          <TabsTrigger value="desserts">Desserts</TabsTrigger>
+        </TabsList>
+        <TabsContent value="entrees" className="pt-4">
+          {renderRecipeList(entrees)}
+        </TabsContent>
+        <TabsContent value="plats" className="pt-4">
+          {renderRecipeList(plats)}
+        </TabsContent>
+        <TabsContent value="desserts" className="pt-4">
+          {renderRecipeList(desserts)}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
