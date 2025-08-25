@@ -2,6 +2,7 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
 import { Recipe } from "@/lib/types";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -26,59 +27,63 @@ export function RecipeCard({ recipe, onDelete, onSuccess }: RecipeCardProps) {
 
     return (
         <Card className="flex flex-col overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
-            <CardHeader className="p-0">
-                <div className="relative w-full h-40">
-                    <Image
-                        src={recipe.imageUrl || placeholderImage}
-                        alt={recipe.name}
-                        fill
-                        className="object-cover"
-                        data-ai-hint="food image"
-                    />
-                </div>
-            </CardHeader>
-            <CardContent className="flex-grow p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-bold tracking-tight">{recipe.name}</h3>
-                    <Badge variant={status === 'Actif' ? 'default' : 'secondary'} className={cn(
-                        status === 'Actif' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
-                    )}>{status}</Badge>
-                </div>
-                <div>
-                    <p className="text-sm font-medium text-primary">{recipe.category}</p>
-                    <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{recipe.description}</p>
-                </div>
-                <div className="flex items-center gap-2 flex-wrap">
-                    {tags.map(tag => (
-                        <Badge key={tag} variant="outline" className="flex items-center gap-1">
-                            <Tag className="h-3 w-3"/>
-                            <span>{tag}</span>
-                        </Badge>
-                    ))}
-                </div>
-                 <div className="flex justify-between w-full text-sm text-muted-foreground pt-2">
-                    <div className="flex items-center gap-2">
-                        <Clock className="h-4 w-4" />
-                        <span>{duration} min</span>
+            <Link href={`/menu/${recipe.id}`} className="flex flex-col flex-grow">
+                <CardHeader className="p-0">
+                    <div className="relative w-full h-40">
+                        <Image
+                            src={recipe.imageUrl || placeholderImage}
+                            alt={recipe.name}
+                            fill
+                            className="object-cover"
+                            data-ai-hint="food image"
+                        />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <Soup className="h-4 w-4" />
-                        <span>{difficulty}</span>
+                </CardHeader>
+                <CardContent className="flex-grow p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                        <h3 className="text-lg font-bold tracking-tight">{recipe.name}</h3>
+                        <Badge variant={status === 'Actif' ? 'default' : 'secondary'} className={cn(
+                            status === 'Actif' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
+                        )}>{status}</Badge>
                     </div>
-                </div>
-            </CardContent>
+                    <div>
+                        <p className="text-sm font-medium text-primary">{recipe.category}</p>
+                        <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{recipe.description}</p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {tags.map(tag => (
+                            <Badge key={tag} variant="outline" className="flex items-center gap-1">
+                                <Tag className="h-3 w-3"/>
+                                <span>{tag}</span>
+                            </Badge>
+                        ))}
+                    </div>
+                     <div className="flex justify-between w-full text-sm text-muted-foreground pt-2">
+                        <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            <span>{duration} min</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                            <Soup className="h-4 w-4" />
+                            <span>{difficulty}</span>
+                        </div>
+                    </div>
+                </CardContent>
+            </Link>
             <CardFooter className="p-4 bg-muted/50 flex justify-between items-center">
                 <div className="text-xl font-bold text-foreground">{recipe.price.toFixed(2)} €</div>
                 <div className="flex gap-1">
-                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => console.log('Duplicate action')}>
+                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); console.log('Duplicate action');}}>
                         <Copy className="h-4 w-4" />
                     </Button>
-                    <DishModal dish={recipe} onSuccess={onSuccess}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Pencil className="h-4 w-4" />
-                        </Button>
-                    </DishModal>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-500" onClick={onDelete}>
+                    <div onClick={(e) => e.stopPropagation()}>
+                        <DishModal dish={recipe} onSuccess={onSuccess}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8">
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                        </DishModal>
+                    </div>
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-500" onClick={(e) => {e.stopPropagation(); onDelete();}}>
                         <Trash2 className="h-4 w-4" />
                     </Button>
                 </div>

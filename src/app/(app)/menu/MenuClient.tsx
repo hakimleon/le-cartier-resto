@@ -191,6 +191,7 @@ export default function MenuClient() {
                 key={category} 
                 value={category}
               >
+               
                 {category}
               </TabsTrigger>
             ))}
