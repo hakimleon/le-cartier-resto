@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { doc, getDoc, collection, query, where, getDocs } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe, RecipeIngredient, Ingredient } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -12,27 +12,31 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Euro, FilePen, FileText, Image as ImageIcon, Info, PlusCircle, Trash2, Utensils } from "lucide-react";
+import { AlertTriangle, ChefHat, Euro, FilePen, FileText, Image as ImageIcon, Info, PlusCircle, Save, Trash2, Utensils } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { useToast } from "@/hooks/use-toast";
 
 type RecipeDetailClientProps = {
   recipeId: string;
 };
 
 // Define a type for the new ingredient row to manage its state
-type NewRecipeIngredient = Omit<RecipeIngredient, 'id'> & {
+type NewRecipeIngredient = Omit<RecipeIngredient, 'id' | 'totalCost'> & {
     id: string; // Temporary client-side ID
     ingredientId: string;
+    totalCost: number;
 };
 
 export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
   
   // State for inline editing
   const [newIngredients, setNewIngredients] = useState<NewRecipeIngredient[]>([]);
@@ -46,6 +50,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       return;
     }
     setIsLoading(true);
+    setNewIngredients([]); // Clear unsaved changes on refresh
     try {
       // 1. Fetch the recipe document
       const recipeDocRef = doc(db, "recipes", recipeId);
@@ -140,25 +145,20 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     setNewIngredients(current =>
       current.map(ing => {
         if (ing.id === tempId) {
+          const updatedIng = { ...ing, [field]: value };
+
           if (field === 'ingredientId') {
             const selectedIngredient = allIngredients.find(i => i.id === value);
             if (selectedIngredient) {
-              const newQuantity = ing.quantity;
-              const newTotalCost = newQuantity * selectedIngredient.unitPrice;
-              return {
-                ...ing,
-                ingredientId: selectedIngredient.id!,
-                name: selectedIngredient.name,
-                unitPrice: selectedIngredient.unitPrice,
-                totalCost: newTotalCost,
-              };
+                updatedIng.name = selectedIngredient.name;
+                updatedIng.unitPrice = selectedIngredient.unitPrice;
             }
-          } else if (field === 'quantity') {
-            const newQuantity = Number(value);
-            const newTotalCost = newQuantity * ing.unitPrice;
-            return { ...ing, quantity: newQuantity, totalCost: newTotalCost };
           }
-          return { ...ing, [field]: value };
+          
+          const newQuantity = (field === 'quantity') ? Number(value) : updatedIng.quantity;
+          updatedIng.totalCost = newQuantity * updatedIng.unitPrice;
+
+          return updatedIng;
         }
         return ing;
       })
@@ -169,13 +169,47 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     setNewIngredients(current => current.filter(ing => ing.id !== tempId));
   };
 
-  const handleSaveNewIngredients = async () => {
-    // Logic to save to Firestore will be added here
-    console.log("Saving:", newIngredients);
-    alert("La sauvegarde des nouveaux ingrédients sera implémentée ici.");
-    // After saving, refresh data and clear the new ingredients list
-    // await fetchRecipeData();
-    // setNewIngredients([]);
+  const handleSave = async () => {
+    if (newIngredients.length === 0) {
+        toast({ title: "Aucune modification", description: "Il n'y a pas de nouveaux ingrédients à sauvegarder." });
+        return;
+    }
+
+    setIsSaving(true);
+    try {
+        const batchPromises = newIngredients.map(ing => {
+            if (!ing.ingredientId || ing.quantity <= 0) {
+                console.warn("Skipping invalid ingredient:", ing);
+                return null; // Skip invalid entries
+            }
+            return addDoc(collection(db, "recipeIngredients"), {
+                recipeId: recipeId,
+                ingredientId: ing.ingredientId,
+                quantity: ing.quantity,
+                unitUse: ing.unit,
+            });
+        });
+
+        await Promise.all(batchPromises.filter(Boolean));
+
+        toast({
+            title: "Succès",
+            description: "Les nouveaux ingrédients ont été ajoutés à la recette.",
+        });
+
+        // Refresh data to show changes
+        fetchRecipeData();
+
+    } catch (error) {
+        console.error("Error saving new ingredients:", error);
+        toast({
+            title: "Erreur",
+            description: "La sauvegarde des ingrédients a échoué.",
+            variant: "destructive",
+        });
+    } finally {
+        setIsSaving(false);
+    }
   };
 
 
@@ -312,6 +346,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TableRow key={newIng.id}>
                                     <TableCell>
                                         <Select
+                                            value={newIng.ingredientId}
                                             onValueChange={(value) => handleNewIngredientChange(newIng.id, 'ingredientId', value)}
                                         >
                                             <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
@@ -327,12 +362,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             type="number"
                                             placeholder="Qté"
                                             className="w-20"
+                                            value={newIng.quantity}
                                             onChange={(e) => handleNewIngredientChange(newIng.id, 'quantity', e.target.value)}
                                         />
                                     </TableCell>
                                     <TableCell>
                                          <Select
-                                            defaultValue={newIng.unit}
+                                            value={newIng.unit}
                                             onValueChange={(value) => handleNewIngredientChange(newIng.id, 'unit', value)}
                                         >
                                             <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
@@ -364,9 +400,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         </TableBody>
                     </Table>
                     <div className="flex justify-end mt-4 gap-4">
-                       {newIngredients.length > 0 && (
-                           <Button onClick={handleSaveNewIngredients}>Sauvegarder les Ingrédients</Button>
-                       )}
                         <div className="text-right">
                             <p className="text-muted-foreground">Coût total ingrédients</p>
                             <p className="text-xl font-bold">{totalIngredientsCost.toFixed(2)}€</p>
@@ -440,6 +473,17 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         </div>
 
       </div>
+
+      {(newIngredients.length > 0) && (
+        <div className="flex justify-end sticky bottom-4">
+            <Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm">
+                <Button onClick={handleSave} disabled={isSaving}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {isSaving ? "Sauvegarde en cours..." : "Sauvegarder les modifications"}
+                </Button>
+            </Card>
+        </div>
+      )}
     </div>
   );
 }
