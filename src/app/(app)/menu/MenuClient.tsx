@@ -130,7 +130,6 @@ export default function MenuClient() {
           <RecipeCard 
             key={recipe.id} 
             recipe={recipe} 
-            onEdit={() => {}} 
             onDelete={() => handleDelete(recipe.id!, recipe.name)}
             onSuccess={fetchRecipes}
           />
