@@ -15,6 +15,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, ChefHat, Euro, FilePen, FileText, Image as ImageIcon, Info, PlusCircle, Scale, Utensils } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { Progress } from "@/components/ui/progress";
+import { cn } from "@/lib/utils";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -104,8 +106,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const priceHT = recipe.price / (1 + (recipe.tvaRate || 0) / 100);
   const costPerPortion = totalIngredientsCost / (recipe.portions || 1);
   const marginPerPortion = priceHT - costPerPortion;
-  const marginPercentage = costPerPortion > 0 ? (marginPerPortion / costPerPortion) * 100 : 0;
+  const marginPercentage = priceHT > 0 ? (marginPerPortion / priceHT) * 100 : 0; // Marge sur Prix de Vente HT
 
+  const getRatioColor = (ratio: number) => {
+    if (ratio < 60) return "bg-red-500"; // Faible
+    if (ratio < 75) return "bg-amber-500"; // Moyen
+    return "bg-green-500"; // Bon
+  };
 
   return (
     <div className="space-y-8">
@@ -142,21 +149,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         <div className="grid grid-cols-3 gap-4 text-center">
                             <div>
                                 <p className="text-sm text-muted-foreground">Vente TTC</p>
-                                <p className="font-bold">{recipe.price.toFixed(2)}€</p>
+                                <p className="font-bold text-lg">{recipe.price.toFixed(2)}€</p>
                             </div>
                             <div>
                                 <p className="text-sm text-muted-foreground">TVA</p>
-                                <p className="font-bold">{recipe.tvaRate}%</p>
+                                <p className="font-bold text-lg">{recipe.tvaRate}%</p>
                             </div>
                              <div>
                                 <p className="text-sm text-muted-foreground">Portions</p>
-                                <p className="font-bold">{recipe.portions}</p>
+                                <p className="font-bold text-lg">{recipe.portions}</p>
                             </div>
                         </div>
                    </div>
-                   <div className="space-y-4">
-                        <h4 className="font-semibold text-lg">Analyse de rentabilité</h4>
-                        <div className="space-y-3 text-sm">
+                   <div className="space-y-3">
+                        <h4 className="font-semibold text-lg mb-2">Analyse de rentabilité</h4>
+                        <div className="space-y-2 text-sm">
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Prix de vente HT</span>
                                 <span className="font-semibold">{priceHT.toFixed(2)}€</span>
@@ -165,14 +172,24 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <span className="text-muted-foreground">Coût portion</span>
                                 <span className="font-semibold text-red-600">{costPerPortion.toFixed(2)}€</span>
                             </div>
-                             <div className="flex justify-between items-center border-t pt-3">
-                                <span className="text-muted-foreground">Marge unitaire</span>
-                                <span className="font-semibold text-green-600">{marginPerPortion.toFixed(2)}€</span>
+                             <div className="flex justify-between items-center border-t pt-2 mt-1">
+                                <span className="text-muted-foreground">Marge / Portion</span>
+                                <span className="font-bold text-green-600">{marginPerPortion.toFixed(2)}€</span>
                             </div>
-                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Marge / Coût en %</span>
-                                <span className="font-semibold text-green-600">{marginPercentage.toFixed(2)}%</span>
-                            </div>
+                        </div>
+                        <div className="pt-2">
+                           <div className="flex justify-between items-center mb-1">
+                             <span className="text-sm text-muted-foreground">Ratio Marge / PV HT</span>
+                             <span className={cn(
+                                "font-bold text-lg",
+                                getRatioColor(marginPercentage).replace('bg-', 'text-')
+                             )}>{marginPercentage.toFixed(0)}%</span>
+                           </div>
+                           <Progress 
+                             value={marginPercentage} 
+                             className="h-3"
+                             indicatorClassName={getRatioColor(marginPercentage)}
+                            />
                         </div>
                    </div>
                 </CardContent>
@@ -276,7 +293,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </CardHeader>
                 <CardContent>
                     <div className="aspect-video relative w-full rounded-lg overflow-hidden border">
-                         <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} layout="fill" objectFit="cover" data-ai-hint="food image" />
+                         <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill objectFit="cover" data-ai-hint="food image" />
                     </div>
                     <Button variant="outline" className="w-full mt-4">Changer la photo</Button>
                 </CardContent>
