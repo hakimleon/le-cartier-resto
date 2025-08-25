@@ -15,3 +15,14 @@ export type Recipe = {
   duration?: number; // in minutes
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';
 };
+
+export type Ingredient = {
+    id?: string;
+    name: string;
+    category: string;
+    stockQuantity: number;
+    unitPurchase: string;
+    lowStockThreshold: number;
+    unitPrice: number;
+    supplier: string;
+};
