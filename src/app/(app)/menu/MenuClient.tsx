@@ -185,7 +185,7 @@ export default function MenuClient() {
       )}
 
       <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-          <TabsList>
+          <TabsList className="h-auto flex-wrap justify-start">
             {categories.map((category) => (
               <TabsTrigger key={category} value={category}>{category}</TabsTrigger>
             ))}
