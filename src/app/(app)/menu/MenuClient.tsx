@@ -36,8 +36,14 @@ export default function MenuClient() {
         (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
       );
       setRecipes(recipesData);
+
+      // --- Extraction et affichage des catégories ---
+      const uniqueCategories = [...new Set(recipesData.map(recipe => recipe.category))];
+      console.log("Catégories extraites:", uniqueCategories);
+      // ---------------------------------------------
+
       setError(null);
-    } catch (e: any) {
+    } catch (e: any)      {
       console.error("Error fetching recipes: ", e);
       setError("Impossible de charger le menu. " + e.message);
     } finally {
@@ -151,4 +157,3 @@ export default function MenuClient() {
     </div>
   );
 }
-
