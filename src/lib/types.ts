@@ -26,14 +26,14 @@ export type Recipe = {
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';
   
   // Fiche Technique Fields
-  portions?: number;
-  tvaRate?: number; // en pourcentage (ex: 10 pour 10%)
-  ingredientsList?: RecipeIngredient[];
-  procedure_preparation?: string;
-  procedure_cuisson?: string;
-  procedure_service?: string;
-  allergens?: string[];
-  commercialArgument?: string;
+  portions: number;
+  tvaRate: number; // en pourcentage (ex: 10 pour 10%)
+  ingredientsList: RecipeIngredient[];
+  procedure_preparation: string;
+  procedure_cuisson: string;
+  procedure_service: string;
+  allergens: string[];
+  commercialArgument: string;
 };
 
 export type Ingredient = {

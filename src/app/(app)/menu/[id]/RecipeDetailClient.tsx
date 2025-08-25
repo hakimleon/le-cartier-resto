@@ -12,11 +12,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Euro, FilePen, FileText, Image as ImageIcon, Info, PlusCircle, Scale, Utensils } from "lucide-react";
+import { AlertTriangle, ChefHat, Euro, FilePen, FileText, Image as ImageIcon, Info, PlusCircle, Utensils } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
+import { GaugeChart } from "@/components/ui/gauge-chart";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -67,7 +65,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const recipeSnap = await getDoc(recipeDocRef);
 
         if (recipeSnap.exists()) {
-          // Merge fetched data with mock data for fields that are not in Firestore yet
           const fetchedData = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe;
           setRecipe({ ...mockRecipe, ...fetchedData, id: recipeId });
         } else {
@@ -108,12 +105,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const marginPerPortion = priceHT - costPerPortion;
   const marginPercentage = priceHT > 0 ? (marginPerPortion / priceHT) * 100 : 0; // Marge sur Prix de Vente HT
 
-  const getRatioColor = (ratio: number) => {
-    if (ratio < 60) return "bg-red-500"; // Faible
-    if (ratio < 75) return "bg-amber-500"; // Moyen
-    return "bg-green-500"; // Bon
-  };
-
   return (
     <div className="space-y-8">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -145,52 +136,43 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Général</CardTitle>
                 </CardHeader>
                 <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                   <div className="space-y-4">
-                        <div className="grid grid-cols-3 gap-4 text-center">
-                            <div>
+                   <div className="space-y-6">
+                       <div className="grid grid-cols-3 gap-4 text-center">
+                           <div>
                                 <p className="text-sm text-muted-foreground">Vente TTC</p>
                                 <p className="font-bold text-lg">{recipe.price.toFixed(2)}€</p>
-                            </div>
-                            <div>
+                           </div>
+                           <div>
                                 <p className="text-sm text-muted-foreground">TVA</p>
                                 <p className="font-bold text-lg">{recipe.tvaRate}%</p>
-                            </div>
-                             <div>
+                           </div>
+                           <div>
                                 <p className="text-sm text-muted-foreground">Portions</p>
                                 <p className="font-bold text-lg">{recipe.portions}</p>
-                            </div>
-                        </div>
-                   </div>
-                   <div className="space-y-3">
-                        <h4 className="font-semibold text-lg mb-2">Analyse de rentabilité</h4>
-                        <div className="space-y-2 text-sm">
+                           </div>
+                       </div>
+                        <div className="space-y-2 text-sm border-t pt-4">
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Prix de vente HT</span>
                                 <span className="font-semibold">{priceHT.toFixed(2)}€</span>
                             </div>
                              <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Coût portion</span>
+                                <span className="text-muted-foreground">Coût / Portion</span>
                                 <span className="font-semibold text-red-600">{costPerPortion.toFixed(2)}€</span>
                             </div>
                              <div className="flex justify-between items-center border-t pt-2 mt-1">
-                                <span className="text-muted-foreground">Marge / Portion</span>
+                                <span className="font-semibold">Marge / Portion</span>
                                 <span className="font-bold text-green-600">{marginPerPortion.toFixed(2)}€</span>
                             </div>
                         </div>
-                        <div className="pt-2">
-                           <div className="flex justify-between items-center mb-1">
-                             <span className="text-sm text-muted-foreground">Ratio Marge / PV HT</span>
-                             <span className={cn(
-                                "font-bold text-lg",
-                                getRatioColor(marginPercentage).replace('bg-', 'text-')
-                             )}>{marginPercentage.toFixed(0)}%</span>
-                           </div>
-                           <Progress 
-                             value={marginPercentage} 
-                             className="h-3"
-                             indicatorClassName={getRatioColor(marginPercentage)}
-                            />
-                        </div>
+                   </div>
+                   <div className="flex flex-col items-center justify-center">
+                       <h4 className="font-semibold text-center mb-2">Ratio Marge / PV HT</h4>
+                        <GaugeChart 
+                            value={marginPercentage}
+                            label={`${marginPerPortion.toFixed(2)}€ / portion`}
+                            unit="%"
+                        />
                    </div>
                 </CardContent>
             </Card>
@@ -333,15 +315,14 @@ function RecipeDetailSkeleton() {
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-10 w-full" />
                   </div>
-                </div>
-                <div className="space-y-4">
-                  <Skeleton className="h-6 w-48" />
-                  <div className="space-y-3">
-                    <Skeleton className="h-5 w-full" />
+                   <div className="space-y-3 pt-4 border-t">
                     <Skeleton className="h-5 w-full" />
                     <Skeleton className="h-5 w-full" />
                     <Skeleton className="h-5 w-full" />
                   </div>
+                </div>
+                <div className="flex items-center justify-center">
+                    <Skeleton className="h-32 w-32 rounded-full" />
                 </div>
               </CardContent>
             </Card>
