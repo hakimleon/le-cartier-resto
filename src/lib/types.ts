@@ -1,8 +1,18 @@
+
+export type RecipeIngredient = {
+  id: string;
+  name: string;
+  quantity: number;
+  unit: string;
+  unitPrice: number;
+  totalCost: number;
+};
+
 export type Recipe = {
   id?: string;
   name: string;
   description: string;
-  price: number;
+  price: number; // Prix de vente TTC
   category: | 'Entrées froides et chaudes'
   | 'Plats'
   | 'Les mets de chez nous'
@@ -14,6 +24,16 @@ export type Recipe = {
   tags?: string[];
   duration?: number; // in minutes
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';
+  
+  // Fiche Technique Fields
+  portions?: number;
+  tvaRate?: number; // en pourcentage (ex: 10 pour 10%)
+  ingredientsList?: RecipeIngredient[];
+  procedure_preparation?: string;
+  procedure_cuisson?: string;
+  procedure_service?: string;
+  allergens?: string[];
+  commercialArgument?: string;
 };
 
 export type Ingredient = {
@@ -26,3 +46,5 @@ export type Ingredient = {
     unitPrice: number;
     supplier: string;
 };
+
+    
