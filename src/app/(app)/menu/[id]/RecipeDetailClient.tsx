@@ -23,6 +23,11 @@ type RecipeDetailClientProps = {
   recipeId: string;
 };
 
+// Extends RecipeIngredient to include purchase unit details for conversion
+type FullRecipeIngredient = RecipeIngredient & {
+    unitPurchase: string; 
+};
+
 type NewRecipeIngredient = {
     id: string; // Temporary client-side ID
     ingredientId: string;
@@ -30,12 +35,21 @@ type NewRecipeIngredient = {
     quantity: number;
     unit: string;
     unitPrice: number;
+    unitPurchase: string; // From the selected ingredient
     totalCost: number;
 };
 
+const getConversionFactor = (purchaseUnit: string, usageUnit: string) => {
+    if (purchaseUnit === usageUnit) return 1;
+    if (purchaseUnit === 'kg' && usageUnit === 'g') return 1000;
+    if (purchaseUnit === 'l' && usageUnit === 'ml') return 1000;
+    // Add other conversions here
+    return 1; // Default to 1 if no conversion rule found
+}
+
 export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
-  const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
+  const [ingredients, setIngredients] = useState<FullRecipeIngredient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -79,7 +93,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
           if (ingredientSnap.exists()) {
               const ingredientData = ingredientSnap.data() as Ingredient;
-              const totalCost = (recipeIngredientData.quantity || 0) * (ingredientData.unitPrice || 0);
+              const conversionFactor = getConversionFactor(ingredientData.unitPurchase, recipeIngredientData.unitUse);
+              const costPerUseUnit = ingredientData.unitPrice / conversionFactor;
+              const totalCost = (recipeIngredientData.quantity || 0) * costPerUseUnit;
               
               return {
                   id: ingredientSnap.id,
@@ -87,13 +103,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                   quantity: recipeIngredientData.quantity,
                   unit: recipeIngredientData.unitUse,
                   unitPrice: ingredientData.unitPrice,
+                  unitPurchase: ingredientData.unitPurchase, // Keep track of purchase unit
                   totalCost: totalCost,
               };
           }
           return null;
       });
 
-      const resolvedIngredients = (await Promise.all(ingredientsDataPromises)).filter(Boolean) as RecipeIngredient[];
+      const resolvedIngredients = (await Promise.all(ingredientsDataPromises)).filter(Boolean) as FullRecipeIngredient[];
       
       setIngredients(resolvedIngredients);
       
@@ -138,6 +155,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         quantity: 0,
         unit: 'g',
         unitPrice: 0,
+        unitPurchase: '',
         totalCost: 0,
       },
     ]);
@@ -148,17 +166,20 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       current.map(ing => {
         if (ing.id === tempId) {
           const updatedIng = { ...ing, [field]: value };
-
+          
           if (field === 'ingredientId') {
             const selectedIngredient = allIngredients.find(i => i.id === value);
             if (selectedIngredient) {
                 updatedIng.name = selectedIngredient.name;
                 updatedIng.unitPrice = selectedIngredient.unitPrice;
+                updatedIng.unitPurchase = selectedIngredient.unitPurchase;
             }
           }
           
+          const conversionFactor = getConversionFactor(updatedIng.unitPurchase, updatedIng.unit);
+          const costPerUseUnit = updatedIng.unitPrice / conversionFactor;
           const newQuantity = (field === 'quantity') ? Number(value) : updatedIng.quantity;
-          updatedIng.totalCost = newQuantity * updatedIng.unitPrice;
+          updatedIng.totalCost = newQuantity * costPerUseUnit;
 
           return updatedIng;
         }
@@ -239,23 +260,23 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const totalCost = combinedIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
     const portions = recipe.portions || 1;
-    const costPerPortion = totalCost / portions;
+    const costPerPortionValue = totalCost / portions;
     const tvaRate = recipe.tvaRate || 10;
-    const priceHT = recipe.price / (1 + tvaRate / 100);
+    const priceHTValue = recipe.price / (1 + tvaRate / 100);
     
-    const grossMargin = priceHT > 0 ? priceHT - costPerPortion : 0;
-    const grossMarginPercentage = priceHT > 0 ? (grossMargin / priceHT) * 100 : 0;
-    const foodCostPercentage = priceHT > 0 ? (costPerPortion / priceHT) * 100 : 0;
-    const multiplierCoefficient = costPerPortion > 0 ? priceHT / costPerPortion : 0;
+    const grossMarginValue = priceHTValue > 0 ? priceHTValue - costPerPortionValue : 0;
+    const grossMarginPercentageValue = priceHTValue > 0 ? (grossMarginValue / priceHTValue) * 100 : 0;
+    const foodCostPercentageValue = priceHTValue > 0 ? (costPerPortionValue / priceHTValue) * 100 : 0;
+    const multiplierCoefficientValue = costPerPortionValue > 0 ? priceHTValue / costPerPortionValue : 0;
 
     return {
         totalIngredientsCost: totalCost,
-        costPerPortion,
-        priceHT,
-        grossMargin,
-        grossMarginPercentage,
-        foodCostPercentage,
-        multiplierCoefficient
+        costPerPortion: costPerPortionValue,
+        priceHT: priceHTValue,
+        grossMargin: grossMarginValue,
+        grossMarginPercentage: grossMarginPercentageValue,
+        foodCostPercentage: foodCostPercentageValue,
+        multiplierCoefficient: multiplierCoefficientValue
     };
   }, [recipe, combinedIngredients]);
 
