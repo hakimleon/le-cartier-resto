@@ -29,7 +29,6 @@ export type Recipe = {
   // Fiche Technique Fields
   portions?: number;
   tvaRate?: number; // en pourcentage (ex: 10 pour 10%)
-  ingredientsList?: RecipeIngredient[]; // This will be populated dynamically now
   procedure_preparation?: string;
   procedure_cuisson?: string;
   procedure_service?: string;

@@ -20,8 +20,6 @@ type RecipeDetailClientProps = {
   recipeId: string;
 };
 
-// Removed the large mockRecipe object as we are now fetching all data.
-
 export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
@@ -80,10 +78,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const resolvedIngredients = (await Promise.all(ingredientsDataPromises)).filter(Boolean) as RecipeIngredient[];
         
         setIngredients(resolvedIngredients);
-        // Use mock data for fields not yet in Firestore, but fetched data for everything else
+        
         setRecipe({
           ...fetchedRecipe,
-          // Placeholder values for fields that might not be in all firestore documents yet
           portions: fetchedRecipe.portions || 1,
           tvaRate: fetchedRecipe.tvaRate || 10,
           procedure_preparation: fetchedRecipe.procedure_preparation || "Procédure de préparation à ajouter.",
