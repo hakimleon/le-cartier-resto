@@ -8,7 +8,6 @@ import { Recipe } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertTriangle, PlusCircle, Search } from "lucide-react";
 import { RecipeCard } from "@/components/RecipeCard";
 import { DishModal } from "./DishModal";
@@ -76,16 +75,13 @@ export default function MenuClient() {
     );
   }, [recipes, searchTerm]);
 
-  const entrees = useMemo(() => filteredRecipes.filter(r => r.category === 'Entrée'), [filteredRecipes]);
-  const plats = useMemo(() => filteredRecipes.filter(r => r.category === 'Plat'), [filteredRecipes]);
-  const desserts = useMemo(() => filteredRecipes.filter(r => r.category === 'Dessert'), [filteredRecipes]);
 
   const renderRecipeList = (recipeList: Recipe[]) => {
     if (isLoading) {
       return <div className="text-center">Chargement des recettes...</div>;
     }
     if (recipeList.length === 0) {
-      return <div className="text-center text-muted-foreground pt-8">Aucun plat trouvé dans cette catégorie.</div>;
+      return <div className="text-center text-muted-foreground pt-8">Aucun plat trouvé.</div>;
     }
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -148,22 +144,11 @@ export default function MenuClient() {
         </Alert>
       )}
 
-      <Tabs defaultValue="entrees" className="w-full">
-        <TabsList>
-          <TabsTrigger value="entrees">Entrées</TabsTrigger>
-          <TabsTrigger value="plats">Plats</TabsTrigger>
-          <TabsTrigger value="desserts">Desserts</TabsTrigger>
-        </TabsList>
-        <TabsContent value="entrees" className="pt-4">
-          {renderRecipeList(entrees)}
-        </TabsContent>
-        <TabsContent value="plats" className="pt-4">
-          {renderRecipeList(plats)}
-        </TabsContent>
-        <TabsContent value="desserts" className="pt-4">
-          {renderRecipeList(desserts)}
-        </TabsContent>
-      </Tabs>
+      <div className="pt-4">
+        {renderRecipeList(filteredRecipes)}
+      </div>
+
     </div>
   );
 }
+
