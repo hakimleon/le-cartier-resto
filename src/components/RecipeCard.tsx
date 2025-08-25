@@ -42,7 +42,6 @@ export function RecipeCard({ recipe, onDelete, onSuccess }: RecipeCardProps) {
                     <Badge variant={status === 'Actif' ? 'default' : 'secondary'} className={status === 'Actif' ? 'bg-green-600' : ''}>{status}</Badge>
                 </div>
 
-                <p className="text-sm text-muted-foreground">{recipe.category}</p>
                 <p className="text-sm text-foreground line-clamp-2">{recipe.description}</p>
                 
                 <div className="flex items-center gap-2 pt-1">
