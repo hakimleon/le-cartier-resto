@@ -32,4 +32,10 @@ export async function deleteRecipeIngredient(recipeIngredientId: string) {
   await deleteDoc(recipeIngredientDoc);
 }
 
-    
+export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe>) {
+    if (!recipeId) {
+        throw new Error("L'identifiant de la recette est requis.");
+    }
+    const recipeDoc = doc(db, 'recipes', recipeId);
+    await setDoc(recipeDoc, data, { merge: true });
+}

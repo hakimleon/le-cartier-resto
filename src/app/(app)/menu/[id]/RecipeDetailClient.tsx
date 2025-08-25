@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
@@ -12,13 +11,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Euro, FilePen, FileText, Image as ImageIcon, Info, PlusCircle, Save, Trash2, Utensils } from "lucide-react";
+import { AlertTriangle, ChefHat, Euro, FilePen, FileText, Image as ImageIcon, Info, PlusCircle, Save, Trash2, Utensils, X } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { deleteRecipeIngredient } from "../actions";
+import { deleteRecipeIngredient, updateRecipeDetails } from "../actions";
+import { Textarea } from "@/components/ui/textarea";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -42,7 +42,9 @@ type NewRecipeIngredient = {
 };
 
 const getConversionFactor = (purchaseUnit: string, usageUnit: string) => {
+    if (!purchaseUnit || !usageUnit) return 1;
     if (purchaseUnit === usageUnit) return 1;
+    
     const pUnit = purchaseUnit.toLowerCase();
     const uUnit = usageUnit.toLowerCase();
 
@@ -56,11 +58,14 @@ const getConversionFactor = (purchaseUnit: string, usageUnit: string) => {
 
 export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
+  const [editableRecipe, setEditableRecipe] = useState<Recipe | null>(null);
   const [ingredients, setIngredients] = useState<FullRecipeIngredient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const [isEditing, setIsEditing] = useState(false);
   
   const [newIngredients, setNewIngredients] = useState<NewRecipeIngredient[]>([]);
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
@@ -123,7 +128,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       
       setIngredients(resolvedIngredients);
       
-      setRecipe({
+      const fullRecipe = {
         ...fetchedRecipe,
         portions: fetchedRecipe.portions || 1,
         tvaRate: fetchedRecipe.tvaRate || 10,
@@ -132,7 +137,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         procedure_service: fetchedRecipe.procedure_service || "Procédure de service à ajouter.",
         allergens: fetchedRecipe.allergens || [],
         commercialArgument: fetchedRecipe.commercialArgument || "Argumentaire à définir.",
-      });
+      };
+      setRecipe(fullRecipe);
+      setEditableRecipe(fullRecipe); // Initialize editable state
 
       // 3. Fetch all available ingredients for the dropdown
       const allIngredientsQuery = query(collection(db, "ingredients"), where("name", "!=", ""));
@@ -153,6 +160,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   useEffect(() => {
     fetchRecipeData();
   }, [recipeId]);
+
+  const handleToggleEditMode = () => {
+    if (isEditing) {
+        // If canceling, reset editable state to original recipe
+        setEditableRecipe(recipe);
+        setNewIngredients([]);
+    }
+    setIsEditing(!isEditing);
+  };
+
+  const handleRecipeDataChange = (field: keyof Recipe, value: any) => {
+    if (editableRecipe) {
+        setEditableRecipe({ ...editableRecipe, [field]: value });
+    }
+  };
 
   const handleAddNewIngredient = () => {
     setNewIngredients([
@@ -224,17 +246,25 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
 
   const handleSave = async () => {
-    if (newIngredients.length === 0) {
-        toast({ title: "Aucune modification", description: "Il n'y a pas de nouveaux ingrédients à sauvegarder." });
-        return;
-    }
+    if (!editableRecipe) return;
 
     setIsSaving(true);
     try {
+        // Save recipe details changes
+        await updateRecipeDetails(recipeId, {
+            portions: editableRecipe.portions,
+            tvaRate: editableRecipe.tvaRate,
+            price: editableRecipe.price,
+            procedure_preparation: editableRecipe.procedure_preparation,
+            procedure_cuisson: editableRecipe.procedure_cuisson,
+            procedure_service: editableRecipe.procedure_service,
+            commercialArgument: editableRecipe.commercialArgument,
+        });
+
+        // Save new ingredients
         const batchPromises = newIngredients.map(ing => {
             if (!ing.ingredientId || ing.quantity <= 0) {
-                console.warn("Skipping invalid ingredient:", ing);
-                return null; // Skip invalid entries
+                return null;
             }
             return addDoc(collection(db, "recipeIngredients"), {
                 recipeId: recipeId,
@@ -248,23 +278,25 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         toast({
             title: "Succès",
-            description: "Les nouveaux ingrédients ont été ajoutés à la recette.",
+            description: "Les modifications ont été sauvegardées.",
         });
 
-        // Refresh data to show changes
+        setIsEditing(false);
         fetchRecipeData();
 
     } catch (error) {
-        console.error("Error saving new ingredients:", error);
+        console.error("Error saving changes:", error);
         toast({
             title: "Erreur",
-            description: "La sauvegarde des ingrédients a échoué.",
+            description: "La sauvegarde des modifications a échoué.",
             variant: "destructive",
         });
     } finally {
         setIsSaving(false);
     }
   };
+
+  const currentRecipeData = isEditing ? editableRecipe : recipe;
 
   const combinedIngredients = useMemo(() => {
     const existing = ingredients.map(ing => ({
@@ -287,7 +319,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     foodCostPercentage,
     multiplierCoefficient
   } = useMemo(() => {
-    if (!recipe) return {
+    if (!currentRecipeData) return {
         totalIngredientsCost: 0,
         costPerPortion: 0,
         priceHT: 0,
@@ -298,10 +330,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     };
 
     const totalCost = combinedIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
-    const portions = recipe.portions || 1;
+    const portions = currentRecipeData.portions || 1;
     const costPerPortionValue = portions > 0 ? totalCost / portions : 0;
-    const tvaRate = recipe.tvaRate || 10;
-    const priceHTValue = recipe.price / (1 + tvaRate / 100);
+    const tvaRate = currentRecipeData.tvaRate || 10;
+    const priceHTValue = currentRecipeData.price / (1 + tvaRate / 100);
     
     const grossMarginValue = priceHTValue > 0 ? priceHTValue - costPerPortionValue : 0;
     const grossMarginPercentageValue = priceHTValue > 0 ? (grossMarginValue / priceHTValue) * 100 : 0;
@@ -317,7 +349,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         foodCostPercentage: foodCostPercentageValue,
         multiplierCoefficient: multiplierCoefficientValue
     };
-  }, [recipe, combinedIngredients]);
+  }, [currentRecipeData, combinedIngredients]);
 
 
   if (isLoading) {
@@ -336,7 +368,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     );
   }
 
-  if (!recipe) {
+  if (!currentRecipeData) {
     return (
         <div className="container mx-auto py-10 text-center">
             <p>Chargement de la recette...</p>
@@ -352,14 +384,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <ChefHat className="h-7 w-7" />
             </div>
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">{recipe.name}</h1>
-                <p className="text-muted-foreground">{recipe.category}</p>
+                <h1 className="text-3xl font-bold tracking-tight">{currentRecipeData.name}</h1>
+                <p className="text-muted-foreground">{currentRecipeData.category}</p>
             </div>
         </div>
         <div className="flex items-center gap-2">
-            <Button variant="outline">
-                <FilePen className="mr-2 h-4 w-4"/>
-                Modifier
+            <Button variant="outline" onClick={handleToggleEditMode}>
+                 {isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}
             </Button>
         </div>
       </header>
@@ -379,7 +410,16 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted/50 rounded-lg">
                            <div>
                                 <p className="text-sm text-muted-foreground">Vente TTC</p>
-                                <p className="font-bold text-lg">{recipe.price.toFixed(2)}€</p>
+                                {isEditing ? (
+                                    <Input 
+                                        type="number"
+                                        value={editableRecipe?.price}
+                                        onChange={(e) => handleRecipeDataChange('price', parseFloat(e.target.value) || 0)}
+                                        className="font-bold text-lg text-center"
+                                    />
+                                ) : (
+                                    <p className="font-bold text-lg">{currentRecipeData.price.toFixed(2)}€</p>
+                                )}
                            </div>
                            <div>
                                 <p className="text-sm text-muted-foreground">Vente HT</p>
@@ -387,7 +427,16 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                            </div>
                            <div>
                                 <p className="text-sm text-muted-foreground">Portions</p>
-                                <p className="font-bold text-lg">{recipe.portions}</p>
+                                 {isEditing ? (
+                                    <Input 
+                                        type="number"
+                                        value={editableRecipe?.portions}
+                                        onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || 1)}
+                                        className="font-bold text-lg text-center"
+                                    />
+                                ) : (
+                                    <p className="font-bold text-lg">{currentRecipeData.portions}</p>
+                                )}
                            </div>
                        </div>
                         <div className="space-y-2 text-sm border-t pt-4">
@@ -421,9 +470,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>
-                         <Button variant="outline" size="sm" onClick={handleAddNewIngredient}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter</Button>
+                         {isEditing && <Button variant="outline" size="sm" onClick={handleAddNewIngredient}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter</Button>}
                     </CardTitle>
-                    <CardDescription>Liste des ingrédients nécessaires pour {recipe.portions} portions.</CardDescription>
+                    <CardDescription>Liste des ingrédients nécessaires pour {currentRecipeData.portions} portions.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -433,7 +482,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TableHead>Quantité</TableHead>
                                 <TableHead>Unité</TableHead>
                                 <TableHead className="text-right">Coût total</TableHead>
-                                <TableHead className="w-[50px]"></TableHead>
+                                {isEditing && <TableHead className="w-[50px]"></TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -443,14 +492,16 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     <TableCell>{ing.quantity}</TableCell>
                                     <TableCell>{ing.unit}</TableCell>
                                     <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
-                                    <TableCell>
-                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId, ing.name)}>
-                                            <Trash2 className="h-4 w-4 text-red-500"/>
-                                        </Button>
-                                    </TableCell>
+                                    {isEditing && (
+                                        <TableCell>
+                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId, ing.name)}>
+                                                <Trash2 className="h-4 w-4 text-red-500"/>
+                                            </Button>
+                                        </TableCell>
+                                    )}
                                 </TableRow>
                             ))}
-                             {newIngredients.map((newIng) => (
+                             {isEditing && newIngredients.map((newIng) => (
                                 <TableRow key={newIng.id}>
                                     <TableCell>
                                         <Select
@@ -502,7 +553,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
                              {combinedIngredients.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">Aucun ingrédient lié à cette recette.</TableCell>
+                                    <TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié à cette recette.</TableCell>
                                 </TableRow>
                              )}
                         </TableBody>
@@ -522,22 +573,53 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/>Procédure</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <Tabs defaultValue="preparation">
-                        <TabsList>
-                            <TabsTrigger value="preparation">Préparation</TabsTrigger>
-                            <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
-                            <TabsTrigger value="service">Service</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="preparation" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">
-                            {recipe.procedure_preparation}
-                        </TabsContent>
-                        <TabsContent value="cuisson" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">
-                             {recipe.procedure_cuisson}
-                        </TabsContent>
-                        <TabsContent value="service" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">
-                             {recipe.procedure_service}
-                        </TabsContent>
-                    </Tabs>
+                   {isEditing ? (
+                        <Tabs defaultValue="preparation">
+                            <TabsList>
+                                <TabsTrigger value="preparation">Préparation</TabsTrigger>
+                                <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
+                                <TabsTrigger value="service">Service</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="preparation" className="pt-4">
+                                <Textarea 
+                                    value={editableRecipe?.procedure_preparation}
+                                    onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)}
+                                    rows={8}
+                                />
+                            </TabsContent>
+                            <TabsContent value="cuisson" className="pt-4">
+                               <Textarea 
+                                    value={editableRecipe?.procedure_cuisson}
+                                    onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)}
+                                    rows={8}
+                                />
+                            </TabsContent>
+                            <TabsContent value="service" className="pt-4">
+                                 <Textarea 
+                                    value={editableRecipe?.procedure_service}
+                                    onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)}
+                                    rows={8}
+                                />
+                            </TabsContent>
+                        </Tabs>
+                   ) : (
+                        <Tabs defaultValue="preparation">
+                            <TabsList>
+                                <TabsTrigger value="preparation">Préparation</TabsTrigger>
+                                <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
+                                <TabsTrigger value="service">Service</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="preparation" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">
+                                {currentRecipeData.procedure_preparation}
+                            </TabsContent>
+                            <TabsContent value="cuisson" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">
+                                {currentRecipeData.procedure_cuisson}
+                            </TabsContent>
+                            <TabsContent value="service" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">
+                                {currentRecipeData.procedure_service}
+                            </TabsContent>
+                        </Tabs>
+                   )}
                 </CardContent>
             </Card>
         </div>
@@ -549,12 +631,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardHeader>
                      <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600"/>Allergènes</div>
-                         <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4"/></Button>
+                         {isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4"/></Button>}
                     </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-2">
-                    {recipe.allergens && recipe.allergens.length > 0 ? 
-                        recipe.allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>)
+                    {currentRecipeData.allergens && currentRecipeData.allergens.length > 0 ? 
+                        currentRecipeData.allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>)
                         : <p className="text-sm text-muted-foreground">Aucun allergène spécifié.</p>
                     }
                 </CardContent>
@@ -565,7 +647,15 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                      <CardTitle className="flex items-center gap-2"><Euro className="h-5 w-5"/>Argumentaire Commercial</CardTitle>
                 </CardHeader>
                 <CardContent className="prose prose-sm max-w-none text-muted-foreground">
-                   <p>{recipe.commercialArgument}</p>
+                    {isEditing ? (
+                        <Textarea 
+                            value={editableRecipe?.commercialArgument}
+                            onChange={(e) => handleRecipeDataChange('commercialArgument', e.target.value)}
+                            rows={5}
+                        />
+                    ) : (
+                        <p>{currentRecipeData.commercialArgument}</p>
+                    )}
                 </CardContent>
             </Card>
 
@@ -576,21 +666,20 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </CardHeader>
                 <CardContent>
                     <div className="aspect-video relative w-full rounded-lg overflow-hidden border">
-                         <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
+                         <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={currentRecipeData.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
                     </div>
-                    <Button variant="outline" className="w-full mt-4">Changer la photo</Button>
+                    {isEditing && <Button variant="outline" className="w-full mt-4">Changer la photo</Button>}
                 </CardContent>
             </Card>
         </div>
-
       </div>
 
-      {(newIngredients.length > 0) && (
+      {isEditing && (
         <div className="flex justify-end sticky bottom-4">
             <Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm shadow-lg">
                 <Button onClick={handleSave} disabled={isSaving}>
                     <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "Sauvegarde..." : `Sauvegarder les Ingrédients`}
+                    {isSaving ? "Sauvegarde..." : `Sauvegarder les modifications`}
                 </Button>
             </Card>
         </div>
