@@ -153,7 +153,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <p className="font-bold">{recipe.portions}</p>
                             </div>
                         </div>
-                        <p className="text-sm text-muted-foreground pt-4">{recipe.description}</p>
                    </div>
                    <div className="space-y-4">
                         <h4 className="font-semibold text-lg">Analyse de rentabilité</h4>
@@ -312,7 +311,6 @@ function RecipeDetailSkeleton() {
               </CardHeader>
               <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-4">
-                  <Skeleton className="aspect-video w-full rounded-lg" />
                   <div className="grid grid-cols-3 gap-4">
                     <Skeleton className="h-10 w-full" />
                     <Skeleton className="h-10 w-full" />
@@ -362,7 +360,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
 
     
