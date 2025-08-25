@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { doc, getDoc, collection, query, where, getDocs, addDoc } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe, RecipeIngredient, Ingredient } from "@/lib/types";
@@ -23,10 +23,13 @@ type RecipeDetailClientProps = {
   recipeId: string;
 };
 
-// Define a type for the new ingredient row to manage its state
-type NewRecipeIngredient = Omit<RecipeIngredient, 'id' | 'totalCost'> & {
+type NewRecipeIngredient = {
     id: string; // Temporary client-side ID
     ingredientId: string;
+    name: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
     totalCost: number;
 };
 
@@ -38,7 +41,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   
-  // State for inline editing
   const [newIngredients, setNewIngredients] = useState<NewRecipeIngredient[]>([]);
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
 
@@ -50,7 +52,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       return;
     }
     setIsLoading(true);
-    setNewIngredients([]); // Clear unsaved changes on refresh
+    setNewIngredients([]); 
     try {
       // 1. Fetch the recipe document
       const recipeDocRef = doc(db, "recipes", recipeId);
@@ -130,11 +132,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     setNewIngredients([
       ...newIngredients,
       {
-        id: `new-${Date.now()}`, // Temporary unique ID
+        id: `new-${Date.now()}`,
         ingredientId: '',
         name: '',
         quantity: 0,
-        unit: 'g', // Default unit
+        unit: 'g',
         unitPrice: 0,
         totalCost: 0,
       },
@@ -212,6 +214,51 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }
   };
 
+  const combinedIngredients = useMemo(() => {
+    return [...ingredients, ...newIngredients];
+  }, [ingredients, newIngredients]);
+
+  const {
+    totalIngredientsCost,
+    costPerPortion,
+    priceHT,
+    grossMargin,
+    grossMarginPercentage,
+    foodCostPercentage,
+    multiplierCoefficient
+  } = useMemo(() => {
+    if (!recipe) return {
+        totalIngredientsCost: 0,
+        costPerPortion: 0,
+        priceHT: 0,
+        grossMargin: 0,
+        grossMarginPercentage: 0,
+        foodCostPercentage: 0,
+        multiplierCoefficient: 0
+    };
+
+    const totalCost = combinedIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+    const portions = recipe.portions || 1;
+    const costPerPortion = totalCost / portions;
+    const tvaRate = recipe.tvaRate || 10;
+    const priceHT = recipe.price / (1 + tvaRate / 100);
+    
+    const grossMargin = priceHT > 0 ? priceHT - costPerPortion : 0;
+    const grossMarginPercentage = priceHT > 0 ? (grossMargin / priceHT) * 100 : 0;
+    const foodCostPercentage = priceHT > 0 ? (costPerPortion / priceHT) * 100 : 0;
+    const multiplierCoefficient = costPerPortion > 0 ? priceHT / costPerPortion : 0;
+
+    return {
+        totalIngredientsCost: totalCost,
+        costPerPortion,
+        priceHT,
+        grossMargin,
+        grossMarginPercentage,
+        foodCostPercentage,
+        multiplierCoefficient
+    };
+  }, [recipe, combinedIngredients]);
+
 
   if (isLoading) {
     return <RecipeDetailSkeleton />;
@@ -230,15 +277,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   if (!recipe) {
     return null;
   }
-  
-  const totalIngredientsCost = ingredients.reduce((acc, item) => acc + item.totalCost, 0) || 0;
-  const costPerPortion = totalIngredientsCost / (recipe.portions || 1);
-  const priceHT = recipe.price / (1 + (recipe.tvaRate || 10) / 100);
-  
-  const grossMargin = priceHT > 0 ? priceHT - costPerPortion : 0;
-  const grossMarginPercentage = priceHT > 0 ? (grossMargin / priceHT) * 100 : 0;
-  const foodCostPercentage = priceHT > 0 ? (costPerPortion / priceHT) * 100 : 0;
-  const multiplierCoefficient = costPerPortion > 0 ? priceHT / costPerPortion : 0;
 
   return (
     <div className="space-y-8">
@@ -363,7 +401,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             placeholder="Qté"
                                             className="w-20"
                                             value={newIng.quantity}
-                                            onChange={(e) => handleNewIngredientChange(newIng.id, 'quantity', e.target.value)}
+                                            onChange={(e) => handleNewIngredientChange(newIng.id, 'quantity', parseFloat(e.target.value) || 0)}
                                         />
                                     </TableCell>
                                     <TableCell>
@@ -392,7 +430,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 </TableRow>
                              ))}
 
-                             {ingredients.length === 0 && newIngredients.length === 0 && (
+                             {combinedIngredients.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={5} className="text-center h-24">Aucun ingrédient lié à cette recette.</TableCell>
                                 </TableRow>
@@ -479,7 +517,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             <Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm">
                 <Button onClick={handleSave} disabled={isSaving}>
                     <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "Sauvegarde en cours..." : "Sauvegarder les modifications"}
+                    {isSaving ? "Sauvegarde en cours..." : `Sauvegarder ${newIngredients.length} Ingrédient(s)`}
                 </Button>
             </Card>
         </div>
