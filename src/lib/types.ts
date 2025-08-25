@@ -10,4 +10,8 @@ export type Recipe = {
   | 'Humburgers'
   | 'Dessert';
   imageUrl?: string;
+  status?: 'Actif' | 'Inactif';
+  tags?: string[];
+  duration?: number; // in minutes
+  difficulty?: 'Facile' | 'Moyen' | 'Difficile';
 };
