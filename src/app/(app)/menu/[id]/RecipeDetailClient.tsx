@@ -100,15 +100,15 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return null;
   }
   
+  // KPI Calculations
   const totalIngredientsCost = recipe.ingredientsList?.reduce((acc, item) => acc + item.totalCost, 0) || 0;
-  const priceHT = recipe.price / (1 + (recipe.tvaRate || 10) / 100);
   const costPerPortion = totalIngredientsCost / (recipe.portions || 1);
-
-  // Key Performance Indicators (KPIs)
-  const grossMargin = priceHT - costPerPortion; // Marge Brute (€)
-  const grossMarginPercentage = priceHT > 0 ? (grossMargin / priceHT) * 100 : 0; // Marge Brute (%)
-  const foodCostPercentage = priceHT > 0 ? (costPerPortion / priceHT) * 100 : 0; // Food Cost (%)
-  const multiplierCoefficient = costPerPortion > 0 ? priceHT / costPerPortion : 0; // Coefficient Multiplicateur
+  const priceHT = recipe.price / (1 + (recipe.tvaRate || 10) / 100);
+  
+  const grossMargin = priceHT - costPerPortion;
+  const grossMarginPercentage = priceHT > 0 ? (grossMargin / priceHT) * 100 : 0;
+  const foodCostPercentage = priceHT > 0 ? (costPerPortion / priceHT) * 100 : 0;
+  const multiplierCoefficient = costPerPortion > 0 ? priceHT / costPerPortion : 0;
 
   return (
     <div className="space-y-8">
@@ -363,7 +363,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
-
-    
