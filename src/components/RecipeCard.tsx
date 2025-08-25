@@ -7,7 +7,7 @@ import { Recipe } from "@/lib/types";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Copy, Pencil, Soup, Tag, Trash2 } from "lucide-react";
+import { Clock, FileText, Pencil, Soup, Tag, Trash2 } from "lucide-react";
 import { DishModal } from "@/app/(app)/menu/DishModal";
 import { cn } from "@/lib/utils";
 
@@ -27,7 +27,7 @@ export function RecipeCard({ recipe, onDelete, onSuccess }: RecipeCardProps) {
 
     return (
         <Card className="flex flex-col overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all duration-300 group">
-            <Link href={`/menu/${recipe.id}`} className="flex flex-col flex-grow cursor-pointer group-hover:scale-105 transition-transform duration-300">
+            
                 <CardHeader className="p-0">
                     <div className="relative w-full h-40">
                         <Image
@@ -69,13 +69,15 @@ export function RecipeCard({ recipe, onDelete, onSuccess }: RecipeCardProps) {
                         </div>
                     </div>
                 </CardContent>
-            </Link>
+            
             <CardFooter className="p-4 bg-muted/50 flex justify-between items-center">
                 <div className="text-xl font-bold text-foreground">{recipe.price.toFixed(2)} €</div>
                 <div className="flex gap-1">
-                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => {e.stopPropagation(); console.log('Duplicate action');}}>
-                        <Copy className="h-4 w-4" />
-                    </Button>
+                     <Link href={`/menu/${recipe.id}`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <FileText className="h-4 w-4" />
+                        </Button>
+                    </Link>
                     <div onClick={(e) => e.stopPropagation()}>
                         <DishModal dish={recipe} onSuccess={onSuccess}>
                             <Button variant="ghost" size="icon" className="h-8 w-8">
