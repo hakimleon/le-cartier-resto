@@ -36,7 +36,7 @@ export function RecipeCard({ recipe, onDelete, onSuccess }: RecipeCardProps) {
                     />
                     <Badge variant={status === 'Actif' ? 'default' : 'secondary'} className={cn(
                         "absolute bottom-2 right-2",
-                        status === 'Actif' ? 'bg-green-600' : ''
+                        status === 'Actif' ? 'bg-green-400' : ''
                     )}>{status}</Badge>
                 </div>
             </CardHeader>
