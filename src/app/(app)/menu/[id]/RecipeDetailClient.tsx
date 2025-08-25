@@ -326,16 +326,22 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   if (error) {
     return (
-      <Alert variant="destructive" className="max-w-2xl mx-auto my-10">
-        <AlertTriangle className="h-4 w-4" />
-        <AlertTitle>Erreur</AlertTitle>
-        <AlertDescription>{error}</AlertDescription>
-      </Alert>
+      <div className="container mx-auto py-10">
+        <Alert variant="destructive" className="max-w-2xl mx-auto my-10">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Erreur</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      </div>
     );
   }
 
   if (!recipe) {
-    return null;
+    return (
+        <div className="container mx-auto py-10 text-center">
+            <p>Chargement de la recette...</p>
+        </div>
+    );
   }
 
   return (
