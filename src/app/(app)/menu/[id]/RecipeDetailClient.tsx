@@ -12,12 +12,21 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Euro, FilePen, FileText, Image as ImageIcon, Info, PlusCircle, Utensils } from "lucide-react";
+import { AlertTriangle, ChefHat, Euro, FilePen, FileText, Image as ImageIcon, Info, PlusCircle, Trash2, Utensils } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 
 type RecipeDetailClientProps = {
   recipeId: string;
+};
+
+// Define a type for the new ingredient row to manage its state
+type NewRecipeIngredient = Omit<RecipeIngredient, 'id'> & {
+    id: string; // Temporary client-side ID
+    ingredientId: string;
+    category: string;
 };
 
 export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
@@ -25,81 +34,153 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [ingredients, setIngredients] = useState<RecipeIngredient[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // State for inline editing
+  const [newIngredients, setNewIngredients] = useState<NewRecipeIngredient[]>([]);
+  const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
 
-  useEffect(() => {
-    async function fetchRecipeData() {
-      if (!isFirebaseConfigured) {
-        setError("La configuration de Firebase est manquante.");
-        setIsLoading(false);
+
+  const fetchRecipeData = async () => {
+    if (!isFirebaseConfigured) {
+      setError("La configuration de Firebase est manquante.");
+      setIsLoading(false);
+      return;
+    }
+    setIsLoading(true);
+    try {
+      // 1. Fetch the recipe document
+      const recipeDocRef = doc(db, "recipes", recipeId);
+      const recipeSnap = await getDoc(recipeDocRef);
+
+      if (!recipeSnap.exists()) {
+        setError("Fiche technique non trouvée.");
         return;
       }
-      setIsLoading(true);
-      try {
-        // 1. Fetch the recipe document
-        const recipeDocRef = doc(db, "recipes", recipeId);
-        const recipeSnap = await getDoc(recipeDocRef);
+      
+      const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe;
 
-        if (!recipeSnap.exists()) {
-          setError("Fiche technique non trouvée.");
-          setIsLoading(false);
-          return;
-        }
-        
-        const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe;
+      // 2. Fetch the related ingredients from 'recipeIngredients'
+      const recipeIngredientsQuery = query(
+        collection(db, "recipeIngredients"),
+        where("recipeId", "==", recipeId)
+      );
+      const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
+      
+      const ingredientsDataPromises = recipeIngredientsSnap.docs.map(async (recipeIngredientDoc) => {
+          const recipeIngredientData = recipeIngredientDoc.data();
+          const ingredientDocRef = doc(db, "ingredients", recipeIngredientData.ingredientId);
+          const ingredientSnap = await getDoc(ingredientDocRef);
 
-        // 2. Fetch the related ingredients from 'recipeIngredients'
-        const recipeIngredientsQuery = query(
-          collection(db, "recipeIngredients"),
-          where("recipeId", "==", recipeId)
-        );
-        const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
-        
-        const ingredientsDataPromises = recipeIngredientsSnap.docs.map(async (recipeIngredientDoc) => {
-            const recipeIngredientData = recipeIngredientDoc.data();
-            const ingredientDocRef = doc(db, "ingredients", recipeIngredientData.ingredientId);
-            const ingredientSnap = await getDoc(ingredientDocRef);
+          if (ingredientSnap.exists()) {
+              const ingredientData = ingredientSnap.data() as Ingredient;
+              const totalCost = (recipeIngredientData.quantity || 0) * (ingredientData.unitPrice || 0);
+              
+              return {
+                  id: ingredientSnap.id,
+                  name: ingredientData.name,
+                  quantity: recipeIngredientData.quantity,
+                  unit: recipeIngredientData.unitUse,
+                  unitPrice: ingredientData.unitPrice,
+                  totalCost: totalCost,
+              };
+          }
+          return null;
+      });
 
-            if (ingredientSnap.exists()) {
-                const ingredientData = ingredientSnap.data() as Ingredient;
-                const totalCost = (recipeIngredientData.quantity || 0) * (ingredientData.unitPrice || 0);
-                
-                return {
-                    id: ingredientSnap.id,
-                    name: ingredientData.name,
-                    quantity: recipeIngredientData.quantity,
-                    unit: recipeIngredientData.unitUse,
-                    unitPrice: ingredientData.unitPrice,
-                    totalCost: totalCost,
-                };
-            }
-            return null;
-        });
+      const resolvedIngredients = (await Promise.all(ingredientsDataPromises)).filter(Boolean) as RecipeIngredient[];
+      
+      setIngredients(resolvedIngredients);
+      
+      setRecipe({
+        ...fetchedRecipe,
+        portions: fetchedRecipe.portions || 1,
+        tvaRate: fetchedRecipe.tvaRate || 10,
+        procedure_preparation: fetchedRecipe.procedure_preparation || "Procédure de préparation à ajouter.",
+        procedure_cuisson: fetchedRecipe.procedure_cuisson || "Procédure de cuisson à ajouter.",
+        procedure_service: fetchedRecipe.procedure_service || "Procédure de service à ajouter.",
+        allergens: fetchedRecipe.allergens || [],
+        commercialArgument: fetchedRecipe.commercialArgument || "Argumentaire à définir.",
+      });
 
-        const resolvedIngredients = (await Promise.all(ingredientsDataPromises)).filter(Boolean) as RecipeIngredient[];
-        
-        setIngredients(resolvedIngredients);
-        
-        setRecipe({
-          ...fetchedRecipe,
-          portions: fetchedRecipe.portions || 1,
-          tvaRate: fetchedRecipe.tvaRate || 10,
-          procedure_preparation: fetchedRecipe.procedure_preparation || "Procédure de préparation à ajouter.",
-          procedure_cuisson: fetchedRecipe.procedure_cuisson || "Procédure de cuisson à ajouter.",
-          procedure_service: fetchedRecipe.procedure_service || "Procédure de service à ajouter.",
-          allergens: fetchedRecipe.allergens || [],
-          commercialArgument: fetchedRecipe.commercialArgument || "Argumentaire à définir.",
-        });
+      // 3. Fetch all available ingredients for the dropdown
+      const allIngredientsQuery = query(collection(db, "ingredients"), where("name", "!=", ""));
+      const allIngredientsSnap = await getDocs(allIngredientsQuery);
+      const allIngredientsData = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+      setAllIngredients(allIngredientsData);
 
-      } catch (e: any) {
-        console.error("Error fetching recipe data: ", e);
-        setError("Impossible de charger les données de la fiche technique. " + e.message);
-      } finally {
-        setIsLoading(false);
-      }
+
+    } catch (e: any) {
+      console.error("Error fetching recipe data: ", e);
+      setError("Impossible de charger les données de la fiche technique. " + e.message);
+    } finally {
+      setIsLoading(false);
     }
+  }
 
+
+  useEffect(() => {
     fetchRecipeData();
   }, [recipeId]);
+
+  const handleAddNewIngredient = () => {
+    setNewIngredients([
+      ...newIngredients,
+      {
+        id: `new-${Date.now()}`, // Temporary unique ID
+        ingredientId: '',
+        name: '',
+        quantity: 0,
+        unit: 'g', // Default unit
+        unitPrice: 0,
+        totalCost: 0,
+        category: '',
+      },
+    ]);
+  };
+  
+  const handleNewIngredientChange = (tempId: string, field: keyof NewRecipeIngredient, value: any) => {
+    setNewIngredients(current =>
+      current.map(ing => {
+        if (ing.id === tempId) {
+          if (field === 'ingredientId') {
+            const selectedIngredient = allIngredients.find(i => i.id === value);
+            if (selectedIngredient) {
+              const newQuantity = ing.quantity;
+              const newTotalCost = newQuantity * selectedIngredient.unitPrice;
+              return {
+                ...ing,
+                ingredientId: selectedIngredient.id!,
+                name: selectedIngredient.name,
+                unitPrice: selectedIngredient.unitPrice,
+                category: selectedIngredient.category,
+                totalCost: newTotalCost,
+              };
+            }
+          } else if (field === 'quantity') {
+            const newQuantity = Number(value);
+            const newTotalCost = newQuantity * ing.unitPrice;
+            return { ...ing, quantity: newQuantity, totalCost: newTotalCost };
+          }
+          return { ...ing, [field]: value };
+        }
+        return ing;
+      })
+    );
+  };
+  
+  const handleRemoveNewIngredient = (tempId: string) => {
+    setNewIngredients(current => current.filter(ing => ing.id !== tempId));
+  };
+
+  const handleSaveNewIngredients = async () => {
+    // Logic to save to Firestore will be added here
+    console.log("Saving:", newIngredients);
+    alert("La sauvegarde des nouveaux ingrédients sera implémentée ici.");
+    // After saving, refresh data and clear the new ingredients list
+    // await fetchRecipeData();
+    // setNewIngredients([]);
+  };
+
 
   if (isLoading) {
     return <RecipeDetailSkeleton />;
@@ -119,12 +200,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return null;
   }
   
-  // KPI Calculations
   const totalIngredientsCost = ingredients.reduce((acc, item) => acc + item.totalCost, 0) || 0;
   const costPerPortion = totalIngredientsCost / (recipe.portions || 1);
   const priceHT = recipe.price / (1 + (recipe.tvaRate || 10) / 100);
   
-  const grossMargin = priceHT - costPerPortion;
+  const grossMargin = priceHT > 0 ? priceHT - costPerPortion : 0;
   const grossMarginPercentage = priceHT > 0 ? (grossMargin / priceHT) * 100 : 0;
   const foodCostPercentage = priceHT > 0 ? (costPerPortion / priceHT) * 100 : 0;
   const multiplierCoefficient = costPerPortion > 0 ? priceHT / costPerPortion : 0;
@@ -206,7 +286,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>
-                         <Button variant="outline" size="sm" onClick={() => alert("Fonctionnalité à implémenter")}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter</Button>
+                         <Button variant="outline" size="sm" onClick={handleAddNewIngredient}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter</Button>
                     </CardTitle>
                     <CardDescription>Liste des ingrédients nécessaires pour {recipe.portions} portions.</CardDescription>
                 </CardHeader>
@@ -214,32 +294,89 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead>Ingrédient</TableHead>
-                                <TableHead className="text-right">Quantité</TableHead>
+                                <TableHead className="w-1/3">Ingrédient</TableHead>
+                                <TableHead>Quantité</TableHead>
                                 <TableHead>Unité</TableHead>
-                                <TableHead className="text-right">Coût unitaire</TableHead>
+                                <TableHead>Catégorie</TableHead>
                                 <TableHead className="text-right">Coût total</TableHead>
+                                <TableHead className="w-[50px]"></TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {ingredients.length > 0 ? (
-                                ingredients.map(ing => (
-                                    <TableRow key={ing.id}>
-                                        <TableCell className="font-medium">{ing.name}</TableCell>
-                                        <TableCell className="text-right">{ing.quantity}</TableCell>
-                                        <TableCell>{ing.unit}</TableCell>
-                                        <TableCell className="text-right">{ing.unitPrice.toFixed(2)}€</TableCell>
-                                        <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
-                                    </TableRow>
-                                ))
-                             ) : (
+                            {ingredients.length > 0 && ingredients.map(ing => (
+                                <TableRow key={ing.id}>
+                                    <TableCell className="font-medium">{ing.name}</TableCell>
+                                    <TableCell>{ing.quantity}</TableCell>
+                                    <TableCell>{ing.unit}</TableCell>
+                                     <TableCell>
+                                        <Badge variant="secondary">{allIngredients.find(i => i.id === ing.id)?.category}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
+                                    <TableCell></TableCell>
+                                </TableRow>
+                            ))}
+                             {newIngredients.map((newIng) => (
+                                <TableRow key={newIng.id}>
+                                    <TableCell>
+                                        <Select
+                                            onValueChange={(value) => handleNewIngredientChange(newIng.id, 'ingredientId', value)}
+                                        >
+                                            <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
+                                            <SelectContent>
+                                                {allIngredients.map(ing => (
+                                                    <SelectItem key={ing.id} value={ing.id!}>{ing.name}</SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Input
+                                            type="number"
+                                            placeholder="Qté"
+                                            className="w-20"
+                                            onChange={(e) => handleNewIngredientChange(newIng.id, 'quantity', e.target.value)}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                         <Select
+                                            defaultValue={newIng.unit}
+                                            onValueChange={(value) => handleNewIngredientChange(newIng.id, 'unit', value)}
+                                        >
+                                            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="g">g</SelectItem>
+                                                <SelectItem value="kg">kg</SelectItem>
+                                                <SelectItem value="ml">ml</SelectItem>
+                                                <SelectItem value="l">l</SelectItem>
+                                                <SelectItem value="pièce">pièce</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Badge variant="outline">{newIng.category || 'N/A'}</Badge>
+                                    </TableCell>
+                                    <TableCell className="text-right font-semibold">
+                                        {newIng.totalCost.toFixed(2)}€
+                                    </TableCell>
+                                    <TableCell>
+                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.id)}>
+                                            <Trash2 className="h-4 w-4 text-red-500"/>
+                                        </Button>
+                                    </TableCell>
+                                </TableRow>
+                             ))}
+
+                             {ingredients.length === 0 && newIngredients.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={5} className="text-center h-24">Aucun ingrédient lié à cette recette.</TableCell>
+                                    <TableCell colSpan={6} className="text-center h-24">Aucun ingrédient lié à cette recette.</TableCell>
                                 </TableRow>
                              )}
                         </TableBody>
                     </Table>
-                    <div className="flex justify-end mt-4">
+                    <div className="flex justify-end mt-4 gap-4">
+                       {newIngredients.length > 0 && (
+                           <Button onClick={handleSaveNewIngredients}>Sauvegarder les Ingrédients</Button>
+                       )}
                         <div className="text-right">
                             <p className="text-muted-foreground">Coût total ingrédients</p>
                             <p className="text-xl font-bold">{totalIngredientsCost.toFixed(2)}€</p>
