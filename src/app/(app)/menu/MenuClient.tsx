@@ -13,12 +13,15 @@ import { RecipeCard } from "@/components/RecipeCard";
 import { DishModal } from "./DishModal";
 import { useToast } from "@/hooks/use-toast";
 import { deleteDish } from "./actions";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function MenuClient() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("Tous");
   const { toast } = useToast();
 
   const fetchRecipes = async () => {
@@ -37,10 +40,8 @@ export default function MenuClient() {
       );
       setRecipes(recipesData);
 
-      // --- Extraction et affichage des catégories ---
-      const uniqueCategories = [...new Set(recipesData.map(recipe => recipe.category))];
-      console.log("Catégories extraites:", uniqueCategories);
-      // ---------------------------------------------
+      const uniqueCategories = ["Tous", ...new Set(recipesData.map(recipe => recipe.category))];
+      setCategories(uniqueCategories);
 
       setError(null);
     } catch (e: any)      {
@@ -76,18 +77,32 @@ export default function MenuClient() {
   };
 
   const filteredRecipes = useMemo(() => {
-    return recipes.filter(recipe => 
-      recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [recipes, searchTerm]);
+    return recipes.filter(recipe => {
+      const matchesCategory = selectedCategory === 'Tous' || recipe.category === selectedCategory;
+      const matchesSearch = recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [recipes, searchTerm, selectedCategory]);
 
 
   const renderRecipeList = (recipeList: Recipe[]) => {
     if (isLoading) {
-      return <div className="text-center">Chargement des recettes...</div>;
+       return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pt-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex flex-col space-y-3">
+                    <div className="h-48 rounded-md bg-muted animate-pulse" />
+                    <div className="space-y-2">
+                        <div className="h-4 w-3/4 rounded bg-muted animate-pulse" />
+                        <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
+                    </div>
+                </div>
+            ))}
+        </div>
+      );
     }
     if (recipeList.length === 0) {
-      return <div className="text-center text-muted-foreground pt-8">Aucun plat trouvé.</div>;
+      return <div className="text-center text-muted-foreground pt-12">Aucun plat ne correspond à votre recherche.</div>;
     }
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -95,7 +110,7 @@ export default function MenuClient() {
           <RecipeCard 
             key={recipe.id} 
             recipe={recipe} 
-            onEdit={() => {}} // This will be handled by the modal trigger inside the card
+            onEdit={() => {}} 
             onDelete={() => handleDelete(recipe.id!, recipe.name)}
             onSuccess={fetchRecipes}
           />
@@ -150,9 +165,16 @@ export default function MenuClient() {
         </Alert>
       )}
 
-      <div className="pt-4">
-        {renderRecipeList(filteredRecipes)}
-      </div>
+      <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
+          <TabsList>
+            {categories.map((category) => (
+              <TabsTrigger key={category} value={category}>{category}</TabsTrigger>
+            ))}
+          </TabsList>
+          <TabsContent value={selectedCategory} className="pt-4">
+              {renderRecipeList(filteredRecipes)}
+          </TabsContent>
+      </Tabs>
 
     </div>
   );
