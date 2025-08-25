@@ -16,7 +16,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { NotebookText, Carrot, UtensilsCrossed } from 'lucide-react';
+import { NotebookText, Carrot, UtensilsCrossed, LayoutDashboard } from 'lucide-react';
 
 export default function AppLayout({
   children,
@@ -42,6 +42,18 @@ export default function AppLayout({
           </SidebarHeader>
           <SidebarContent>
             <SidebarMenu>
+               <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname === '/dashboard'}
+                  tooltip="Tableau de bord"
+                >
+                  <Link href="/dashboard">
+                    <LayoutDashboard />
+                    <span>Dashboard</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
