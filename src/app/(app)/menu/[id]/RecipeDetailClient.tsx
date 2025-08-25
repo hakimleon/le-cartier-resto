@@ -454,7 +454,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
                                             <SelectContent>
                                                 {allIngredients.map(ing => (
-                                                    <SelectItem key={ing.id} value={ing.id!}>{ing.name}</SelectItem>
+                                                    ing.id ? <SelectItem key={ing.id} value={ing.id}>{ing.name}</SelectItem> : null
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -584,7 +584,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             <Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm shadow-lg">
                 <Button onClick={handleSave} disabled={isSaving}>
                     <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "Sauvegarde..." : `Sauvegarder ${newIngredients.length} ingrédient(s)`}
+                    {isSaving ? "Sauvegarde..." : `Sauvegarder les Ingrédients`}
                 </Button>
             </Card>
         </div>
@@ -664,5 +664,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
