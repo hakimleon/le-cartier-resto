@@ -26,7 +26,6 @@ type RecipeDetailClientProps = {
 type NewRecipeIngredient = Omit<RecipeIngredient, 'id'> & {
     id: string; // Temporary client-side ID
     ingredientId: string;
-    category: string;
 };
 
 export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
@@ -133,7 +132,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         unit: 'g', // Default unit
         unitPrice: 0,
         totalCost: 0,
-        category: '',
       },
     ]);
   };
@@ -152,7 +150,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 ingredientId: selectedIngredient.id!,
                 name: selectedIngredient.name,
                 unitPrice: selectedIngredient.unitPrice,
-                category: selectedIngredient.category,
                 totalCost: newTotalCost,
               };
             }
@@ -297,7 +294,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TableHead className="w-1/3">Ingrédient</TableHead>
                                 <TableHead>Quantité</TableHead>
                                 <TableHead>Unité</TableHead>
-                                <TableHead>Catégorie</TableHead>
                                 <TableHead className="text-right">Coût total</TableHead>
                                 <TableHead className="w-[50px]"></TableHead>
                             </TableRow>
@@ -308,9 +304,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     <TableCell className="font-medium">{ing.name}</TableCell>
                                     <TableCell>{ing.quantity}</TableCell>
                                     <TableCell>{ing.unit}</TableCell>
-                                     <TableCell>
-                                        <Badge variant="secondary">{allIngredients.find(i => i.id === ing.id)?.category}</Badge>
-                                    </TableCell>
                                     <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
                                     <TableCell></TableCell>
                                 </TableRow>
@@ -352,9 +345,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell>
-                                        <Badge variant="outline">{newIng.category || 'N/A'}</Badge>
-                                    </TableCell>
                                     <TableCell className="text-right font-semibold">
                                         {newIng.totalCost.toFixed(2)}€
                                     </TableCell>
@@ -368,7 +358,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
                              {ingredients.length === 0 && newIngredients.length === 0 && (
                                 <TableRow>
-                                    <TableCell colSpan={6} className="text-center h-24">Aucun ingrédient lié à cette recette.</TableCell>
+                                    <TableCell colSpan={5} className="text-center h-24">Aucun ingrédient lié à cette recette.</TableCell>
                                 </TableRow>
                              )}
                         </TableBody>
