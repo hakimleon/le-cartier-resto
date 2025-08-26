@@ -25,7 +25,7 @@ export default function IngredientsClient() {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
-  const fetchIngredients = () => {
+  useEffect(() => {
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
       setIsLoading(false);
@@ -55,12 +55,6 @@ export default function IngredientsClient() {
         setIsLoading(false);
     });
 
-    return unsubscribe;
-  };
-
-  useEffect(() => {
-    const unsubscribe = fetchIngredients();
-    // Cleanup subscription on unmount
     return () => {
         if(unsubscribe) {
             unsubscribe();
@@ -69,14 +63,14 @@ export default function IngredientsClient() {
   }, []);
 
   const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer l'ingrédient "${name}" ?`)) {
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer l'ingrédient "${name}" ?`)) {
       try {
         await deleteIngredient(id);
         toast({
           title: "Succès",
           description: `L'ingrédient "${name}" a été supprimé.`,
         });
-        // No need to call fetchIngredients, onSnapshot handles it
+        // onSnapshot will handle the UI update automatically.
       } catch (error) {
         console.error("Error deleting ingredient:", error);
         toast({
@@ -195,14 +189,16 @@ export default function IngredientsClient() {
                         </TableCell>
                         <TableCell>{ingredient.supplier}</TableCell>
                         <TableCell>
-                          <IngredientModal ingredient={ingredient} onSuccess={() => { /* onSnapshot handles updates */ }}>
-                            <Button variant="ghost" size="icon">
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </IngredientModal>
-                           <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-500" onClick={() => handleDelete(ingredient.id!, ingredient.name)}>
-                                <Trash2 className="h-4 w-4" />
-                            </Button>
+                          <div className="flex items-center">
+                            <IngredientModal ingredient={ingredient} onSuccess={() => { /* onSnapshot handles updates */ }}>
+                              <Button variant="ghost" size="icon">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </IngredientModal>
+                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-500" onClick={() => handleDelete(ingredient.id!, ingredient.name)}>
+                                  <Trash2 className="h-4 w-4" />
+                              </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
