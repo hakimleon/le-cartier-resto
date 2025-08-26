@@ -70,7 +70,6 @@ export default function IngredientsClient() {
           title: "Succès",
           description: `L'ingrédient "${name}" a été supprimé.`,
         });
-        // onSnapshot will handle the UI update automatically.
       } catch (error) {
         console.error("Error deleting ingredient:", error);
         toast({
