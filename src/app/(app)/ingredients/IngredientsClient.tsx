@@ -62,22 +62,16 @@ export default function IngredientsClient() {
     };
   }, []);
 
-  const handleDelete = async (id: string, name: string) => {
+  const handleDelete = (id: string, name: string) => {
     if (window.confirm(`Êtes-vous sûr de vouloir supprimer l'ingrédient "${name}" ?`)) {
-      try {
-        await deleteIngredient(id);
-        toast({
-          title: "Succès",
-          description: `L'ingrédient "${name}" a été supprimé.`,
-        });
-      } catch (error) {
+      deleteIngredient(id).catch(error => {
         console.error("Error deleting ingredient:", error);
         toast({
-          title: "Erreur",
-          description: "La suppression de l'ingrédient a échoué.",
-          variant: "destructive",
+            title: "Erreur",
+            description: "La suppression de l'ingrédient a échoué.",
+            variant: "destructive",
         });
-      }
+      });
     }
   };
 
