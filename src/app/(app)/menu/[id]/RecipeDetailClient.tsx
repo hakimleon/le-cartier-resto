@@ -2,7 +2,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe, RecipeIngredient, Ingredient, RecipeIngredientLink } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -69,102 +69,122 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [newIngredients, setNewIngredients] = useState<NewRecipeIngredient[]>([]);
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
 
-
-  const fetchRecipeData = async () => {
+  useEffect(() => {
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante.");
       setIsLoading(false);
       return;
     }
+    
     setIsLoading(true);
-    setNewIngredients([]); 
-    try {
-      // 1. Fetch the recipe document
-      const recipeDocRef = doc(db, "recipes", recipeId);
-      const recipeSnap = await getDoc(recipeDocRef);
 
-      if (!recipeSnap.exists()) {
-        setError("Fiche technique non trouvée.");
+    const unsubscribeCallbacks: (() => void)[] = [];
+
+    // 1. Fetch all available ingredients for the dropdown (one-time fetch is fine here)
+    const fetchAllIngredients = async () => {
+        try {
+            const allIngredientsQuery = query(collection(db, "ingredients"), where("name", "!=", ""));
+            const allIngredientsSnap = await getDocs(allIngredientsQuery);
+            const allIngredientsData = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+            setAllIngredients(allIngredientsData);
+        } catch (e: any) {
+            console.error("Error fetching all ingredients: ", e);
+            setError("Impossible de charger la liste complète des ingrédients. " + e.message);
+        }
+    };
+    fetchAllIngredients();
+
+    // 2. Set up real-time listener for the recipe document
+    const recipeDocRef = doc(db, "recipes", recipeId);
+    const unsubscribeRecipe = onSnapshot(recipeDocRef, (recipeSnap) => {
+        if (!recipeSnap.exists()) {
+            setError("Fiche technique non trouvée.");
+            setRecipe(null);
+            setIsLoading(false);
+            return;
+        }
+        
+        const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe;
+        const fullRecipe = {
+          ...fetchedRecipe,
+          portions: fetchedRecipe.portions || 1,
+          tvaRate: fetchedRecipe.tvaRate || 10,
+          procedure_preparation: fetchedRecipe.procedure_preparation || "Procédure de préparation à ajouter.",
+          procedure_cuisson: fetchedRecipe.procedure_cuisson || "Procédure de cuisson à ajouter.",
+          procedure_service: fetchedRecipe.procedure_service || "Procédure de service à ajouter.",
+          allergens: fetchedRecipe.allergens || [],
+          commercialArgument: fetchedRecipe.commercialArgument || "Argumentaire à définir.",
+        };
+        setRecipe(fullRecipe);
+        if (!isEditing) {
+            setEditableRecipe(fullRecipe);
+        }
+        setError(null);
+    }, (e: any) => {
+        console.error("Error with recipe snapshot: ", e);
+        setError("Erreur de chargement de la fiche technique. " + e.message);
         setIsLoading(false);
-        return;
-      }
-      
-      const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe;
+    });
+    unsubscribeCallbacks.push(unsubscribeRecipe);
 
-      // 2. Fetch the related ingredients from 'recipeIngredients'
-      const recipeIngredientsQuery = query(
-        collection(db, "recipeIngredients"),
-        where("recipeId", "==", recipeId)
-      );
-      const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
-      
-      const ingredientsDataPromises = recipeIngredientsSnap.docs.map(async (recipeIngredientDoc) => {
-          const recipeIngredientData = recipeIngredientDoc.data() as RecipeIngredientLink;
-          const ingredientDocRef = doc(db, "ingredients", recipeIngredientData.ingredientId);
-          const ingredientSnap = await getDoc(ingredientDocRef);
+    // 3. Set up real-time listener for related ingredients
+    const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
+    const unsubscribeRecipeIngredients = onSnapshot(recipeIngredientsQuery, async (recipeIngredientsSnap) => {
+        try {
+            const ingredientsDataPromises = recipeIngredientsSnap.docs.map(async (recipeIngredientDoc) => {
+                const recipeIngredientData = recipeIngredientDoc.data() as RecipeIngredientLink;
+                const ingredientDocRef = doc(db, "ingredients", recipeIngredientData.ingredientId);
+                const ingredientSnap = await getDoc(ingredientDocRef); // can be one-time fetch since ingredient details change less often
 
-          if (ingredientSnap.exists()) {
-              const ingredientData = ingredientSnap.data() as Ingredient;
-              const conversionFactor = getConversionFactor(ingredientData.unitPurchase, recipeIngredientData.unitUse);
-              const costPerUseUnit = ingredientData.unitPrice / conversionFactor;
-              const totalCost = (recipeIngredientData.quantity || 0) * costPerUseUnit;
-              
-              return {
-                  id: ingredientSnap.id,
-                  recipeIngredientId: recipeIngredientDoc.id, // Store the link document ID
-                  name: ingredientData.name,
-                  quantity: recipeIngredientData.quantity,
-                  unit: recipeIngredientData.unitUse,
-                  unitPrice: ingredientData.unitPrice,
-                  unitPurchase: ingredientData.unitPurchase, // Keep track of purchase unit
-                  totalCost: totalCost,
-              };
-          }
-          return null;
-      });
+                if (ingredientSnap.exists()) {
+                    const ingredientData = ingredientSnap.data() as Ingredient;
+                    const conversionFactor = getConversionFactor(ingredientData.unitPurchase, recipeIngredientData.unitUse);
+                    const costPerUseUnit = ingredientData.unitPrice / conversionFactor;
+                    const totalCost = (recipeIngredientData.quantity || 0) * costPerUseUnit;
+                    
+                    return {
+                        id: ingredientSnap.id,
+                        recipeIngredientId: recipeIngredientDoc.id,
+                        name: ingredientData.name,
+                        quantity: recipeIngredientData.quantity,
+                        unit: recipeIngredientData.unitUse,
+                        unitPrice: ingredientData.unitPrice,
+                        unitPurchase: ingredientData.unitPurchase,
+                        totalCost: totalCost,
+                    };
+                }
+                return null;
+            });
 
-      const resolvedIngredients = (await Promise.all(ingredientsDataPromises)).filter(Boolean) as FullRecipeIngredient[];
-      
-      setIngredients(resolvedIngredients);
-      
-      const fullRecipe = {
-        ...fetchedRecipe,
-        portions: fetchedRecipe.portions || 1,
-        tvaRate: fetchedRecipe.tvaRate || 10,
-        procedure_preparation: fetchedRecipe.procedure_preparation || "Procédure de préparation à ajouter.",
-        procedure_cuisson: fetchedRecipe.procedure_cuisson || "Procédure de cuisson à ajouter.",
-        procedure_service: fetchedRecipe.procedure_service || "Procédure de service à ajouter.",
-        allergens: fetchedRecipe.allergens || [],
-        commercialArgument: fetchedRecipe.commercialArgument || "Argumentaire à définir.",
-      };
-      setRecipe(fullRecipe);
-      setEditableRecipe(fullRecipe);
-      setEditableIngredients(resolvedIngredients);
+            const resolvedIngredients = (await Promise.all(ingredientsDataPromises)).filter(Boolean) as FullRecipeIngredient[];
+            setIngredients(resolvedIngredients);
+            if (!isEditing) {
+                setEditableIngredients(resolvedIngredients);
+            }
+        } catch (e: any) {
+            console.error("Error processing recipe ingredients snapshot:", e);
+            setError("Erreur de chargement des ingrédients de la recette. " + e.message);
+        } finally {
+            setIsLoading(false);
+        }
+    }, (e: any) => {
+        console.error("Error with recipe ingredients snapshot: ", e);
+        setError("Erreur de chargement des ingrédients de la recette. " + e.message);
+        setIsLoading(false);
+    });
+    unsubscribeCallbacks.push(unsubscribeRecipeIngredients);
 
-      // 3. Fetch all available ingredients for the dropdown
-      const allIngredientsQuery = query(collection(db, "ingredients"), where("name", "!=", ""));
-      const allIngredientsSnap = await getDocs(allIngredientsQuery);
-      const allIngredientsData = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
-      setAllIngredients(allIngredientsData);
-
-      setError(null);
-    } catch (e: any) {
-      console.error("Error fetching recipe data: ", e);
-      setError("Impossible de charger les données de la fiche technique. " + e.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-
-  useEffect(() => {
-    fetchRecipeData();
-  }, [recipeId]);
+    // Cleanup function to unsubscribe from all listeners on component unmount
+    return () => {
+      unsubscribeCallbacks.forEach(unsub => unsub());
+    };
+  }, [recipeId, isEditing]); // Re-sync non-editable state when editing is cancelled
 
   const handleToggleEditMode = () => {
     if (isEditing) {
-        setEditableRecipe(recipe);
-        setEditableIngredients(ingredients);
+        // Cancel editing
+        if(recipe) setEditableRecipe(recipe);
+        if(ingredients) setEditableIngredients(ingredients);
         setNewIngredients([]);
     }
     setIsEditing(!isEditing);
@@ -244,20 +264,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         return;
     }
     try {
-        // Optimistic UI update
-        setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId));
-
         await deleteRecipeIngredient(recipeIngredientId);
         
         toast({
             title: "Succès",
             description: `L'ingrédient "${ingredientName}" a été retiré de la recette.`,
         });
-        
-        // No need to call fetchRecipeData() right away, optimistic update handled it.
-        // But we need to sync the main 'ingredients' state for consistency if the user cancels editing.
-        setIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId));
-
+        // onSnapshot will handle the UI update
     } catch (error) {
         console.error("Error deleting recipe ingredient:", error);
         toast({
@@ -265,8 +278,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             description: "La suppression de l'ingrédient a échoué. Veuillez rafraîchir.",
             variant: "destructive",
         });
-        // If error, refetch to revert optimistic update
-        fetchRecipeData();
     }
   };
 
@@ -312,7 +323,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         });
 
         setIsEditing(false);
-        fetchRecipeData();
+        setNewIngredients([]); // Clear new ingredients form on save
+        // No need to fetch, onSnapshot will sync the data
 
     } catch (error) {
         console.error("Error saving changes:", error);
@@ -327,10 +339,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   };
 
   const currentRecipeData = isEditing ? editableRecipe : recipe;
-  const currentIngredients = isEditing ? editableIngredients : ingredients;
-
+  const currentIngredientsData = isEditing ? editableIngredients : ingredients;
+  
   const combinedIngredients = useMemo(() => {
-    const existing = currentIngredients.map(ing => ({
+    const existing = currentIngredientsData.map(ing => ({
         ...ing,
         totalCost: ing.totalCost || 0
     }));
@@ -339,7 +351,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         totalCost: ing.totalCost || 0
     }));
     return [...existing, ...newOnes];
-  }, [currentIngredients, newIngredients]);
+  }, [currentIngredientsData, newIngredients]);
 
   const {
     totalIngredientsCost,
@@ -517,7 +529,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {currentIngredients.map(ing => (
+                            {currentIngredientsData.map(ing => (
                                 <TableRow key={ing.recipeIngredientId}>
                                     <TableCell className="font-medium">{ing.name}</TableCell>
                                     <TableCell>

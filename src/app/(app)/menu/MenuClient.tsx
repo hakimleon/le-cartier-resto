@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query, getDocs } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -34,7 +34,7 @@ export default function MenuClient() {
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const { toast } = useToast();
 
-  const fetchRecipes = async () => {
+  const fetchRecipes = () => {
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
       setIsLoading(false);
@@ -42,38 +42,52 @@ export default function MenuClient() {
     }
     
     setIsLoading(true);
-    try {
-      const recipesCol = collection(db, "recipes");
-      const querySnapshot = await getDocs(recipesCol);
-      const recipesData = querySnapshot.docs.map(
-        (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
-      );
-      setRecipes(recipesData);
+    const recipesCol = collection(db, "recipes");
+    const q = query(recipesCol);
+    
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+        try {
+            const recipesData = querySnapshot.docs.map(
+                (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
+            );
+            setRecipes(recipesData);
 
-      const uniqueCategories = [...new Set(recipesData.map(recipe => recipe.category))];
-      
-      const sortedCategories = uniqueCategories.sort((a, b) => {
-        const indexA = CATEGORY_ORDER.indexOf(a);
-        const indexB = CATEGORY_ORDER.indexOf(b);
-        if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-        if (indexA === -1) return 1;
-        if (indexB === -1) return -1;
-        return indexA - indexB;
-      });
+            const uniqueCategories = [...new Set(recipesData.map(recipe => recipe.category))];
+            
+            const sortedCategories = uniqueCategories.sort((a, b) => {
+                const indexA = CATEGORY_ORDER.indexOf(a);
+                const indexB = CATEGORY_ORDER.indexOf(b);
+                if (indexA === -1 && indexB === -1) return a.localeCompare(b);
+                if (indexA === -1) return 1;
+                if (indexB === -1) return -1;
+                return indexA - indexB;
+            });
 
-      setCategories(["Tous", ...sortedCategories]);
+            setCategories(["Tous", ...sortedCategories]);
+            setError(null);
+        } catch(e: any) {
+            console.error("Error processing recipes snapshot: ", e);
+            setError("Impossible de traiter les données du menu. " + e.message);
+        } finally {
+            setIsLoading(false);
+        }
+    }, (e: any) => {
+        console.error("Error fetching recipes with onSnapshot: ", e);
+        setError("Impossible de charger le menu en temps réel. " + e.message);
+        setIsLoading(false);
+    });
 
-      setError(null);
-    } catch (e: any)      {
-      console.error("Error fetching recipes: ", e);
-      setError("Impossible de charger le menu. " + e.message);
-    } finally {
-      setIsLoading(false);
-    }
+    return unsubscribe;
   };
 
   useEffect(() => {
-    fetchRecipes();
+    const unsubscribe = fetchRecipes();
+    // Cleanup subscription on unmount
+    return () => {
+        if (unsubscribe) {
+            unsubscribe();
+        }
+    };
   }, []);
 
   const handleDelete = async (id: string, name: string) => {
@@ -84,7 +98,7 @@ export default function MenuClient() {
           title: "Succès",
           description: `Le plat "${name}" a été supprimé.`,
         });
-        fetchRecipes(); // Refresh list after delete
+        // No need to call fetchRecipes, onSnapshot will do it
       } catch (error) {
         console.error("Error deleting dish:", error);
         toast({
@@ -167,7 +181,7 @@ export default function MenuClient() {
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />
             </div>
-             <DishModal dish={null} onSuccess={fetchRecipes}>
+             <DishModal dish={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat
