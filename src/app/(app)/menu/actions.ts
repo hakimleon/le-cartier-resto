@@ -47,5 +47,3 @@ export async function updateRecipeIngredient(recipeIngredientId: string, data: {
     const recipeIngredientDoc = doc(db, 'recipeIngredients', recipeIngredientId);
     await updateDoc(recipeIngredientDoc, data);
 }
-
-    
