@@ -244,19 +244,29 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         return;
     }
     try {
+        // Optimistic UI update
+        setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId));
+
         await deleteRecipeIngredient(recipeIngredientId);
+        
         toast({
             title: "Succès",
             description: `L'ingrédient "${ingredientName}" a été retiré de la recette.`,
         });
-        fetchRecipeData();
+        
+        // No need to call fetchRecipeData() right away, optimistic update handled it.
+        // But we need to sync the main 'ingredients' state for consistency if the user cancels editing.
+        setIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId));
+
     } catch (error) {
         console.error("Error deleting recipe ingredient:", error);
         toast({
             title: "Erreur",
-            description: "La suppression de l'ingrédient a échoué.",
+            description: "La suppression de l'ingrédient a échoué. Veuillez rafraîchir.",
             variant: "destructive",
         });
+        // If error, refetch to revert optimistic update
+        fetchRecipeData();
     }
   };
 
@@ -290,6 +300,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 ingredientId: ing.ingredientId,
                 quantity: ing.quantity,
                 unitUse: ing.unit,
+                unitPurchase: ing.unitPurchase // Store purchase unit for future conversions
             });
         });
 
@@ -808,5 +819,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
