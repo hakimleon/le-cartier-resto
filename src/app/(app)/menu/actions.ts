@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Recipe } from '@/lib/types';
 
@@ -39,3 +39,13 @@ export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe
     const recipeDoc = doc(db, 'recipes', recipeId);
     await setDoc(recipeDoc, data, { merge: true });
 }
+
+export async function updateRecipeIngredient(recipeIngredientId: string, data: { quantity: number; unitUse: string; }) {
+    if (!recipeIngredientId) {
+        throw new Error("L'identifiant de l'ingrédient de la recette est requis.");
+    }
+    const recipeIngredientDoc = doc(db, 'recipeIngredients', recipeIngredientId);
+    await updateDoc(recipeIngredientDoc, data);
+}
+
+    
