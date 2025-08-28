@@ -13,10 +13,10 @@ import {
 import { cn } from "@/lib/utils"
 
 const GAUGE_COLORS = {
-    // For Food Cost: low is good (green), high is bad (red)
-    good: "hsl(var(--chart-1))",      // Green
-    average: "hsl(var(--chart-4))",  // Yellow
-    bad: "hsl(var(--chart-5))",      // Red-ish
+    // Custom colors based on user specification
+    excellent: "hsl(var(--chart-1))", // Green
+    correct: "hsl(var(--chart-4))",   // Orange/Yellow
+    bad: "hsl(var(--chart-5))",       // Red
 };
 
 interface GaugeChartProps {
@@ -30,24 +30,24 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
         value: {
           label: "Food Cost",
         },
-        good: {
-          label: "Bon",
-          color: GAUGE_COLORS.good,
+        excellent: {
+          label: "Excellent",
+          color: GAUGE_COLORS.excellent,
         },
-        average: {
-          label: "Moyen",
-          color: GAUGE_COLORS.average,
+        correct: {
+          label: "Correct",
+          color: GAUGE_COLORS.correct,
         },
         bad: {
-          label: "Élevé",
+          label: "Mauvais",
           color: GAUGE_COLORS.bad,
         },
     } satisfies ChartConfig
 
-    // Lower food cost is better.
+    // Use user-defined thresholds for food cost
     const getLevel = (v: number) => {
-        if (v < 30) return "good";
-        if (v < 40) return "average";
+        if (v < 25) return "excellent";
+        if (v <= 35) return "correct";
         return "bad";
     }
 
@@ -105,5 +105,3 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
         </ChartContainer>
     )
 }
-
-    
