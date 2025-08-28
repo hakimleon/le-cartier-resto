@@ -25,14 +25,13 @@ export async function deleteDish(id: string) {
   await deleteDoc(recipeDoc);
 }
 
-export async function deleteRecipeIngredient(recipeIngredientId: string) {
+export async function deleteRecipeIngredient(recipeIngredientId: string, recipeId: string) {
   if (!recipeIngredientId) {
     throw new Error("L'identifiant de la liaison est requis pour la suppression.");
   }
   const recipeIngredientDoc = doc(db, 'recipeIngredients', recipeIngredientId);
- const response =  await deleteDoc(recipeIngredientDoc);
- revalidatePath(`/menu/${recipeIngredientId}`)
- 
+  await deleteDoc(recipeIngredientDoc);
+  revalidatePath(`/menu/${recipeId}`);
 }
 
 export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe>) {

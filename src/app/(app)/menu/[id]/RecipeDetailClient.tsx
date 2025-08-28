@@ -131,9 +131,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
           status: fetchedRecipe.status || "Actif",
         };
         setRecipe(fullRecipe);
-        if (!isEditing) {
-            setEditableRecipe(fullRecipe);
-        }
+        setEditableRecipe(fullRecipe);
         setError(null);
     }, (e: any) => {
         console.error("Error with recipe snapshot: ", e);
@@ -173,9 +171,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
             const resolvedIngredients = (await Promise.all(ingredientsDataPromises)).filter(Boolean) as FullRecipeIngredient[];
             setIngredients(resolvedIngredients);
-            if (!isEditing) {
-                setEditableIngredients(resolvedIngredients);
-            }
+            setEditableIngredients(resolvedIngredients);
         } catch (e: any) {
             console.error("Error processing recipe ingredients snapshot:", e);
             setError("Erreur de chargement des ingrédients de la recette. " + e.message);
@@ -193,13 +189,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return () => {
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId, isEditing]); // Re-sync non-editable state when editing is cancelled
+  }, [recipeId]); 
 
   const handleToggleEditMode = () => {
     if (isEditing) {
-        // Cancel editing
-        if(recipe) setEditableRecipe(recipe);
-        if(ingredients) setEditableIngredients(ingredients);
+        // Cancel editing, revert changes
+        if(recipe) setEditableRecipe(JSON.parse(JSON.stringify(recipe)));
+        if(ingredients) setEditableIngredients(JSON.parse(JSON.stringify(ingredients)));
         setNewIngredients([]);
     }
     setIsEditing(!isEditing);
@@ -274,22 +270,22 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     setNewIngredients(current => current.filter(ing => ing.id !== tempId));
   };
   
-  const handleRemoveExistingIngredient = (recipeIngredientId: string, ingredientName: string) => {
-    deleteRecipeIngredient(recipeIngredientId).then(() => {
-        // onSnapshot will update the UI automatically. 
-        // We can optionally show a toast here.
+  const handleRemoveExistingIngredient = async (recipeIngredientId: string, ingredientName: string) => {
+    try {
+        await deleteRecipeIngredient(recipeIngredientId, recipeId);
+        // onSnapshot will update the UI automatically.
         toast({
             title: "Succès",
             description: `L'ingrédient "${ingredientName}" a été retiré.`,
         });
-    }).catch((error) => {
+    } catch (error) {
         console.error("Error deleting recipe ingredient:", error);
         toast({
             title: "Erreur",
             description: "La suppression de l'ingrédient a échoué.",
             variant: "destructive",
         });
-    });
+    }
   };
 
 
@@ -352,14 +348,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const currentIngredientsData = isEditing ? editableIngredients : ingredients;
   
   const combinedIngredients = useMemo(() => {
-    const existing = currentIngredientsData.map(ing => ({
-        ...ing,
-        totalCost: ing.totalCost || 0
-    }));
-    const newOnes = newIngredients.map(ing => ({
-        ...ing,
-        totalCost: ing.totalCost || 0
-    }));
+    // Make deep copies to avoid state mutation issues
+    const existing = currentIngredientsData ? JSON.parse(JSON.stringify(currentIngredientsData)) : [];
+    const newOnes = newIngredients ? JSON.parse(JSON.stringify(newIngredients)) : [];
+    
     return [...existing, ...newOnes];
   }, [currentIngredientsData, newIngredients]);
 
@@ -834,7 +826,7 @@ function RecipeDetailSkeleton() {
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
-              </CardHeader>
+              </d-header>
               <CardContent className="space-y-2">
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-3/4" />
