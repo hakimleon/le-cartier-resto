@@ -503,7 +503,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </div>
                         </div>
                    </div>
-                   <div className="flex flex-col items-center justify-start">
+                   <div className="flex flex-col items-center justify-center">
                        <h4 className="font-semibold text-center mb-2">Food Cost (%)</h4>
                         <GaugeChart 
                             value={foodCostPercentage}
@@ -801,7 +801,6 @@ function RecipeDetailSkeleton() {
              <Card>
               <CardHeader>
                  <Skeleton className="h-6 w-32" />
-                 <Skeleton className="h-4 w-64" />
               </CardHeader>
               <CardContent>
                 <Skeleton className="h-40 w-full" />
@@ -845,3 +844,4 @@ function RecipeDetailSkeleton() {
     
 
     
+

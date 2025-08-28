@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -49,14 +50,6 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
         { name: "background", value: 100 - value, fill: "hsl(var(--muted))" },
     ];
     
-    const legendData: {level: GaugeLevel; range: string, description: string }[] = [
-        { level: 'exceptionnel', range: '< 25%', description: 'Performance rare. Maîtrise parfaite ou prix très élevés.' },
-        { level: 'excellent', range: '25-30%', description: 'Performance optimale. Très bonne maîtrise des coûts.' },
-        { level: 'bon', range: '30-35%', description: 'Performance correcte. Standard du secteur.' },
-        { level: 'moyen', range: '35-40%', description: 'Acceptable mais perfectible. Surveillance requise.' },
-        { level: 'mauvais', range: '> 40%', description: 'Gestion défaillante. Action corrective urgente.' },
-    ]
-
     return (
         <div className="flex flex-col items-center">
             <ChartContainer
@@ -103,19 +96,6 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
                     </text>
                 </PieChart>
             </ChartContainer>
-            <div className="w-full mt-4 space-y-2 text-xs text-muted-foreground">
-                {legendData.map(item => {
-                    const Icon = GAUGE_LEVELS[item.level].icon;
-                    return (
-                        <div key={item.level} className="flex items-start gap-2">
-                             <Icon className="h-3 w-3 mt-0.5 shrink-0" style={{color: GAUGE_LEVELS[item.level].color}}/>
-                             <div>
-                                <span className="font-semibold text-foreground">{item.range}</span> - <span className="font-medium">{GAUGE_LEVELS[item.level].label}:</span> {item.description}
-                             </div>
-                        </div>
-                    )
-                })}
-            </div>
         </div>
     )
 }
