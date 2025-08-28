@@ -4,6 +4,7 @@
 import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Recipe } from '@/lib/types';
+import { revalidatePath } from 'next/cache';
 
 export async function saveDish(recipe: Omit<Recipe, 'id'>, id: string | null) {
   if (id) {
@@ -29,7 +30,9 @@ export async function deleteRecipeIngredient(recipeIngredientId: string) {
     throw new Error("L'identifiant de la liaison est requis pour la suppression.");
   }
   const recipeIngredientDoc = doc(db, 'recipeIngredients', recipeIngredientId);
-  await deleteDoc(recipeIngredientDoc);
+ const response =  await deleteDoc(recipeIngredientDoc);
+ revalidatePath(`/menu/${recipeIngredientId}`)
+ 
 }
 
 export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe>) {

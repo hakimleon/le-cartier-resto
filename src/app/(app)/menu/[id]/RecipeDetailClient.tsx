@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Euro, FilePen, FileText, Image as ImageIcon, Info, PlusCircle, Save, Trash2, Utensils, X } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, PlusCircle, Save, Soup, Trash2, Utensils, X } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +20,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient } from "../actions";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -114,6 +115,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
           procedure_service: fetchedRecipe.procedure_service || "Procédure de service à ajouter.",
           allergens: fetchedRecipe.allergens || [],
           commercialArgument: fetchedRecipe.commercialArgument || "Argumentaire à définir.",
+          duration: fetchedRecipe.duration || 25,
+          difficulty: fetchedRecipe.difficulty || "Moyen",
+          status: fetchedRecipe.status || "Actif",
         };
         setRecipe(fullRecipe);
         if (!isEditing) {
@@ -265,7 +269,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }
     try {
         await deleteRecipeIngredient(recipeIngredientId);
-        
         toast({
             title: "Succès",
             description: `L'ingrédient "${ingredientName}" a été retiré de la recette.`,
@@ -421,17 +424,22 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   return (
     <div className="space-y-8">
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
-            <div className="bg-primary/10 text-primary rounded-full h-14 w-14 flex items-center justify-center">
+      <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+        <div className="flex items-start gap-4">
+            <div className="bg-primary/10 text-primary rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
                 <ChefHat className="h-7 w-7" />
             </div>
             <div>
                 <h1 className="text-3xl font-bold tracking-tight">{recipe.name}</h1>
                 <p className="text-muted-foreground">{recipe.category}</p>
+                 <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                    <Badge variant={recipe.status === 'Actif' ? 'default' : 'secondary'} className={cn(recipe.status === 'Actif' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>{recipe.status}</Badge>
+                    <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {recipe.duration} min</div>
+                    <div className="flex items-center gap-1.5"><Soup className="h-4 w-4" /> {recipe.difficulty}</div>
+                </div>
             </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
             <Button variant="outline" onClick={handleToggleEditMode}>
                  {isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}
             </Button>
@@ -518,6 +526,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <CardDescription>Liste des ingrédients nécessaires pour {currentRecipeData.portions} portions.</CardDescription>
                 </CardHeader>
                 <CardContent>
+                    
                     <Table>
                         <TableHeader>
                             <TableRow>
@@ -698,6 +707,19 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         {/* Right Column */}
         <div className="lg:col-span-1 space-y-8">
+            {/* Photo */}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5"/>Photo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="aspect-video relative w-full rounded-lg overflow-hidden border">
+                         <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
+                    </div>
+                    {isEditing && <Button variant="outline" className="w-full mt-4">Changer la photo</Button>}
+                </CardContent>
+            </Card>
+
             {/* Allergens */}
             <Card>
                 <CardHeader>
@@ -728,19 +750,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     ) : (
                         <p>{recipe.commercialArgument}</p>
                     )}
-                </CardContent>
-            </Card>
-
-             {/* Photo */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5"/>Photo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="aspect-video relative w-full rounded-lg overflow-hidden border">
-                         <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
-                    </div>
-                    {isEditing && <Button variant="outline" className="w-full mt-4">Changer la photo</Button>}
                 </CardContent>
             </Card>
         </div>
@@ -831,7 +840,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
-
-    
