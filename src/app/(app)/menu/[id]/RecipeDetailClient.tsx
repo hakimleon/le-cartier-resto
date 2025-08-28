@@ -270,7 +270,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     try {
         await deleteRecipeIngredient(recipeIngredientId);
         // The 'onSnapshot' listener will automatically update the UI.
-        // We can also optimistically update the state for a faster feel.
         setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId));
         toast({
             title: "Succès",
@@ -316,7 +315,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 ingredientId: ing.ingredientId,
                 quantity: ing.quantity,
                 unitUse: ing.unit,
-                unitPurchase: ing.unitPurchase // Store purchase unit for future conversions
             });
         });
 
@@ -451,9 +449,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Column 1 (Left): Ingredients */}
-        <div className="space-y-8">
-             <Card className="h-full">
+        {/* Column 1 & 2 (Left & Center): Main content */}
+        <div className="lg:col-span-2 space-y-8">
+             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>
@@ -583,21 +581,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     </div>
                 </CardContent>
             </Card>
-        </div>
 
-        {/* Column 2 (Center): Photo & Procedure */}
-        <div className="space-y-8">
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5"/>Photo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="aspect-video relative w-full rounded-lg overflow-hidden border">
-                         <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
-                    </div>
-                    {isEditing && <Button variant="outline" className="w-full mt-4">Changer la photo</Button>}
-                </CardContent>
-            </Card>
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/>Procédure</CardTitle>
@@ -658,9 +642,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         <div className="space-y-8">
             <Card>
                 <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5"/>Photo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="aspect-video relative w-full rounded-lg overflow-hidden border">
+                         <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
+                    </div>
+                    {isEditing && <Button variant="outline" className="w-full mt-4">Changer la photo</Button>}
+                </CardContent>
+            </Card>
+            
+            <Card>
+                <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations & Rentabilité</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <CardContent className="grid grid-cols-1 gap-6">
                    <div className="space-y-4">
                         <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted/50 rounded-lg">
                            <div>
@@ -783,8 +779,8 @@ function RecipeDetailSkeleton() {
         </header>
   
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Column 1 Skeleton */}
-          <div className="space-y-8">
+          {/* Column 1 & 2 Skeleton */}
+          <div className="lg:col-span-2 space-y-8">
              <Card>
               <CardHeader>
                  <Skeleton className="h-6 w-32" />
@@ -793,14 +789,6 @@ function RecipeDetailSkeleton() {
               <CardContent>
                 <Skeleton className="h-40 w-full" />
               </CardContent>
-            </Card>
-          </div>
-
-          {/* Column 2 Skeleton */}
-          <div className="space-y-8">
-             <Card>
-              <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
-              <CardContent><Skeleton className="h-48 w-full" /></CardContent>
             </Card>
              <Card>
               <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
@@ -811,10 +799,14 @@ function RecipeDetailSkeleton() {
           {/* Column 3 Skeleton */}
           <div className="space-y-8">
             <Card>
+                <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
+                <CardContent><Skeleton className="h-48 w-full" /></CardContent>
+            </Card>
+            <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
               </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <CardContent className="space-y-6">
                 <div className="space-y-4">
                   <div className="grid grid-cols-3 gap-4">
                     <Skeleton className="h-10 w-full" />
