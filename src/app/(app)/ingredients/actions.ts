@@ -3,6 +3,7 @@
 import { collection, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Ingredient } from '@/lib/types';
+import { revalidatePath } from 'next/cache';
 
 export async function saveIngredient(ingredient: Omit<Ingredient, 'id'>, id: string | null) {
   if (id) {
@@ -13,6 +14,7 @@ export async function saveIngredient(ingredient: Omit<Ingredient, 'id'>, id: str
     // Create new document
     await addDoc(collection(db, 'ingredients'), ingredient);
   }
+  revalidatePath('/ingredients');
 }
 
 export async function deleteIngredient(id: string) {
@@ -21,4 +23,5 @@ export async function deleteIngredient(id: string) {
   }
   const ingredientDoc = doc(db, 'ingredients', id);
   await deleteDoc(ingredientDoc);
+  revalidatePath('/ingredients');
 }
