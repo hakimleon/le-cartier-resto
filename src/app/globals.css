@@ -27,12 +27,15 @@ body {
     --border: 240 6% 90%;
     --input: 240 6% 90%;
     --ring: 142 71% 45%;
-    --chart-1: 142 71% 45%;
-    --chart-2: 217 33% 17%;
-    --chart-3: 0 63% 31%;
-    --chart-4: 45 93% 47%;
-    --chart-5: 27 87% 67%;
     --radius: 0.5rem;
+
+    /* 5-level Chart Colors for Gauge */
+    --chart-1: 120 100% 35%; /* Exceptionnel - Bright Green */
+    --chart-2: 130 60% 50%; /* Excellent - Green */
+    --chart-3: 50 95% 55%;  /* Bon - Yellow */
+    --chart-4: 35 90% 60%;  /* Moyen - Orange */
+    --chart-5: 0 85% 65%;   /* Mauvais - Red */
+
 
     /* Sidebar specific variables for new theme */
     --sidebar-background: 0 0% 100%;
@@ -66,7 +69,13 @@ body {
     --border: 217 33% 17%;
     --input: 217 33% 17%;
     --ring: 142 71% 45%;
-    --chart-1: 142 71% 45%;
+    
+    /* 5-level Chart Colors for Gauge - Dark Mode */
+    --chart-1: 120 100% 35%; /* Exceptionnel - Bright Green */
+    --chart-2: 130 60% 50%; /* Excellent - Green */
+    --chart-3: 50 95% 55%;  /* Bon - Yellow */
+    --chart-4: 35 90% 60%;  /* Moyen - Orange */
+    --chart-5: 0 85% 65%;   /* Mauvais - Red */
 
     --sidebar-background: 222 47% 11%;
     --sidebar-foreground: 210 40% 98%;
