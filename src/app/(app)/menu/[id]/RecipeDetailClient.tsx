@@ -825,5 +825,3 @@ function RecipeDetailSkeleton() {
   }
 
     
-
-    
