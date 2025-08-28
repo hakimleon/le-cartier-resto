@@ -263,26 +263,25 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     setNewIngredients(current => current.filter(ing => ing.id !== tempId));
   };
   
-  const handleRemoveExistingIngredient = async (recipeIngredientId: string, ingredientName: string) => {
+  const handleRemoveExistingIngredient = (recipeIngredientId: string, ingredientName: string) => {
     if (!confirm(`Êtes-vous sûr de vouloir retirer "${ingredientName}" de cette recette ?`)) {
-        return;
+      return;
     }
-    try {
-        await deleteRecipeIngredient(recipeIngredientId);
-        // The 'onSnapshot' listener will automatically update the UI.
-        setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId));
+    deleteRecipeIngredient(recipeIngredientId).then(() => {
+        // onSnapshot will update the UI automatically. 
+        // We can optionally show a toast here.
         toast({
             title: "Succès",
-            description: `L'ingrédient "${ingredientName}" a été retiré de la recette.`,
+            description: `L'ingrédient "${ingredientName}" a été retiré.`,
         });
-    } catch (error) {
+    }).catch((error) => {
         console.error("Error deleting recipe ingredient:", error);
         toast({
             title: "Erreur",
-            description: "La suppression de l'ingrédient a échoué. Veuillez rafraîchir.",
+            description: "La suppression de l'ingrédient a échoué.",
             variant: "destructive",
         });
-    }
+    });
   };
 
 
@@ -837,5 +836,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
