@@ -14,7 +14,7 @@ export async function saveIngredient(ingredient: Omit<Ingredient, 'id'>, id: str
     // Create new document
     await addDoc(collection(db, 'ingredients'), ingredient);
   }
-  revalidatePath('/ingredients');
+  // No revalidation needed, onSnapshot handles updates on the client
 }
 
 export async function deleteIngredient(id: string) {
@@ -23,5 +23,5 @@ export async function deleteIngredient(id: string) {
   }
   const ingredientDoc = doc(db, 'ingredients', id);
   await deleteDoc(ingredientDoc);
-  revalidatePath('/ingredients');
+  // No revalidation needed, onSnapshot handles updates on the client
 }
