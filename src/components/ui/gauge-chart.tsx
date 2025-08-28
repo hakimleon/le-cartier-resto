@@ -60,48 +60,64 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
     ];
 
     return (
-        <ChartContainer
-        config={chartConfig}
-        className="mx-auto aspect-square h-full max-h-[250px]"
-        >
-        <PieChart>
-            <ChartTooltip
-                cursor={false}
-                content={<ChartTooltipContent hideLabel />}
-            />
-            <Pie
-                data={chartData}
-                dataKey="value"
-                nameKey="name"
-                innerRadius={60}
-                outerRadius={80}
-                startAngle={180}
-                endAngle={0}
-                cy="80%" // Move chart down to create semi-circle
+        <div className="flex flex-col items-center gap-3 w-full">
+            <ChartContainer
+                config={chartConfig}
+                className="mx-auto aspect-square h-full max-h-[250px]"
             >
-             {chartData.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={entry.fill} />
-            ))}
-            </Pie>
-            <text
-                x="50%"
-                y="75%"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="fill-foreground text-4xl font-bold"
-            >
-                {value.toFixed(0)}{unit}
-            </text>
-             <text
-                x="50%"
-                y="90%"
-                textAnchor="middle"
-                dominantBaseline="middle"
-                className="fill-muted-foreground text-sm"
-            >
-                {label}
-            </text>
-        </PieChart>
-        </ChartContainer>
+                <PieChart>
+                    <ChartTooltip
+                        cursor={false}
+                        content={<ChartTooltipContent hideLabel />}
+                    />
+                    <Pie
+                        data={chartData}
+                        dataKey="value"
+                        nameKey="name"
+                        innerRadius={60}
+                        outerRadius={80}
+                        startAngle={180}
+                        endAngle={0}
+                        cy="80%" // Move chart down to create semi-circle
+                    >
+                    {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.fill} />
+                    ))}
+                    </Pie>
+                    <text
+                        x="50%"
+                        y="75%"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="fill-foreground text-4xl font-bold"
+                    >
+                        {value.toFixed(0)}{unit}
+                    </text>
+                    <text
+                        x="50%"
+                        y="90%"
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        className="fill-muted-foreground text-sm"
+                    >
+                        {label}
+                    </text>
+                </PieChart>
+            </ChartContainer>
+            <div className="flex w-full justify-around text-xs text-muted-foreground pb-2">
+                <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: GAUGE_COLORS.excellent }} />
+                    <span>&lt; 25% Excellent</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: GAUGE_COLORS.correct }} />
+                    <span>25-35% Correct</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: GAUGE_COLORS.bad }} />
+                    <span>&gt; 35% Mauvais</span>
+                </div>
+            </div>
+        </div>
     )
 }
