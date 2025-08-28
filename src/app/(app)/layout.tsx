@@ -9,6 +9,7 @@ import {
   Sidebar,
   SidebarHeader,
   SidebarContent,
+  SidebarFooter,
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
@@ -16,7 +17,15 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { NotebookText, Carrot, UtensilsCrossed, LayoutDashboard } from 'lucide-react';
+import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat } from 'lucide-react';
+
+const Logo = () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M15.75 3.75L18.75 3.75M18.75 3.75L18.75 6.75M18.75 3.75L8.25 14.25" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M8.25 20.25L5.25 20.25M5.25 20.25L5.25 17.25M5.25 20.25L15.75 9.75" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+);
+
 
 export default function AppLayout({
   children,
@@ -28,19 +37,18 @@ export default function AppLayout({
   return (
     <SidebarProvider>
       <div className="flex min-h-screen bg-background">
-        <Sidebar>
+        <Sidebar variant="sidebar" collapsible="icon">
           <SidebarHeader className="p-4">
             <Link href="/" className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="h-12 w-12 shrink-0 rounded-full bg-primary/10 text-primary hover:bg-primary/20">
-                    <UtensilsCrossed className="h-6 w-6" />
+                <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 rounded-lg">
+                    <Logo />
                 </Button>
                 <div className="flex flex-col">
                     <h2 className="text-lg font-semibold tracking-tight text-sidebar-foreground">Le Singulier</h2>
-                    <p className="text-sm text-muted-foreground">Restaurant</p>
                 </div>
             </Link>
           </SidebarHeader>
-          <SidebarContent>
+          <SidebarContent className="p-4">
             <SidebarMenu>
                <SidebarMenuItem>
                 <SidebarMenuButton
@@ -58,11 +66,23 @@ export default function AppLayout({
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/menu')}
-                  tooltip="Gestion du menu"
+                  tooltip="Fiches Techniques"
                 >
                   <Link href="/menu">
+                    <ChefHat />
+                    <span>Fiches Tech.</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/recipes')}
+                  tooltip="Recettes"
+                >
+                  <Link href="/recipes">
                     <NotebookText />
-                    <span>Menu</span>
+                    <span>Recettes</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -70,7 +90,7 @@ export default function AppLayout({
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/ingredients')}
-                  tooltip="Gestion des ingrédients"
+                  tooltip="Ingrédients"
                 >
                   <Link href="/ingredients">
                     <Carrot />
@@ -80,9 +100,25 @@ export default function AppLayout({
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
+          <SidebarFooter className="p-4">
+             <SidebarMenu>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                    asChild
+                    isActive={pathname.startsWith('/settings')}
+                    tooltip="Paramètres"
+                    >
+                    <Link href="/settings">
+                        <Settings />
+                        <span>Paramètres</span>
+                    </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarFooter>
         </Sidebar>
         <SidebarInset>
-          <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-4 border-b bg-background/80 px-4 backdrop-blur-sm sm:px-6 md:justify-end">
+          <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-card/80 px-4 backdrop-blur-sm sm:px-6 md:justify-end">
              <SidebarTrigger className="md:hidden"/>
              {/* Future Header Content */}
           </header>
