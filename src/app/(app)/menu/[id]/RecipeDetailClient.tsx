@@ -793,6 +793,10 @@ function RecipeDetailSkeleton() {
               <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
               <CardContent><Skeleton className="h-40 w-full" /></CardContent>
             </Card>
+            <Card>
+              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+              <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+            </Card>
           </div>
   
           {/* Column 3 Skeleton */}
@@ -805,36 +809,21 @@ function RecipeDetailSkeleton() {
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
               </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div className="grid grid-cols-3 gap-4">
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                    <Skeleton className="h-10 w-full" />
-                  </div>
-                   <div className="space-y-3 pt-4 border-t">
-                    <Skeleton className="h-5 w-full" />
-                    <Skeleton className="h-5 w-full" />
-                    <Skeleton className="h-5 w-full" />
-                  </div>
-                </div>
-                <div className="flex items-center justify-center">
-                    <Skeleton className="h-32 w-32 rounded-full" />
-                </div>
+              <CardContent className="space-y-2">
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-5 w-3/4" />
               </CardContent>
             </Card>
              <Card>
               <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
               <CardContent><Skeleton className="h-10 w-full" /></CardContent>
             </Card>
-             <Card>
-              <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
-              <CardContent><Skeleton className="h-20 w-full" /></CardContent>
-            </Card>
           </div>
         </div>
       </div>
     );
   }
+
+    
 
     
