@@ -786,7 +786,7 @@ function RecipeDetailSkeleton() {
       <div className="space-y-8">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <Skeleton className="h-14 w-14 rounded-full" />
+            <Skeleton className="h-14 w-14 rounded-lg" />
             <div className="space-y-2">
               <Skeleton className="h-8 w-64" />
               <Skeleton className="h-4 w-32" />
@@ -800,9 +800,10 @@ function RecipeDetailSkeleton() {
           <div className="lg:col-span-2 space-y-8">
              <Card>
               <CardHeader>
-                 <Skeleton className="h-6 w-32" />
+                 <Skeleton className="h-6 w-48" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="grid grid-cols-2 gap-8">
+                <Skeleton className="h-40 w-full" />
                 <Skeleton className="h-40 w-full" />
               </CardContent>
             </Card>
@@ -840,5 +841,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
