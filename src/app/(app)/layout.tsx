@@ -65,11 +65,11 @@ export default function AppLayout({
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/menu')}
-                  tooltip="Fiches Techniques"
+                  tooltip="Menu"
                 >
                   <Link href="/menu">
                     <ChefHat />
-                    <span>Fiches Tech.</span>
+                    <span>Menu</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
