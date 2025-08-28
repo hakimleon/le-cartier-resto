@@ -269,11 +269,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }
     try {
         await deleteRecipeIngredient(recipeIngredientId);
+        // The 'onSnapshot' listener will automatically update the UI.
+        // We can also optimistically update the state for a faster feel.
+        setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId));
         toast({
             title: "Succès",
             description: `L'ingrédient "${ingredientName}" a été retiré de la recette.`,
         });
-        // onSnapshot will handle the UI update
     } catch (error) {
         console.error("Error deleting recipe ingredient:", error);
         toast({
@@ -449,75 +451,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Left & Center Column */}
-        <div className="lg:col-span-2 space-y-8">
-            {/* General & Costs */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations & Rentabilité</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className="space-y-4">
-                        <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted/50 rounded-lg">
-                           <div>
-                                <p className="text-sm text-muted-foreground">Vente TTC</p>
-                                {isEditing ? (
-                                    <Input 
-                                        type="number"
-                                        value={editableRecipe?.price}
-                                        onChange={(e) => handleRecipeDataChange('price', parseFloat(e.target.value) || 0)}
-                                        className="font-bold text-lg text-center"
-                                    />
-                                ) : (
-                                    <p className="font-bold text-lg">{currentRecipeData.price.toFixed(2)}€</p>
-                                )}
-                           </div>
-                           <div>
-                                <p className="text-sm text-muted-foreground">Vente HT</p>
-                                <p className="font-bold text-lg">{priceHT.toFixed(2)}€</p>
-                           </div>
-                           <div>
-                                <p className="text-sm text-muted-foreground">Portions</p>
-                                 {isEditing ? (
-                                    <Input 
-                                        type="number"
-                                        value={editableRecipe?.portions}
-                                        onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || 1)}
-                                        className="font-bold text-lg text-center"
-                                    />
-                                ) : (
-                                    <p className="font-bold text-lg">{currentRecipeData.portions}</p>
-                                )}
-                           </div>
-                       </div>
-                        <div className="space-y-2 text-sm border-t pt-4">
-                            <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Coût Matière / Portion</span>
-                                <span className="font-semibold">{costPerPortion.toFixed(2)}€</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Coefficient</span>
-                                 <span className="font-semibold">x {multiplierCoefficient.toFixed(2)}</span>
-                            </div>
-                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Marge Brute</span>
-                                <span className="font-semibold">{grossMargin.toFixed(2)}€ ({grossMarginPercentage.toFixed(2)}%)</span>
-                            </div>
-                        </div>
-                   </div>
-                   <div className="flex flex-col items-center justify-center">
-                       <h4 className="font-semibold text-center mb-2">Food Cost (%)</h4>
-                        <GaugeChart 
-                            value={foodCostPercentage}
-                            label={`Coût portion: ${costPerPortion.toFixed(2)}€`}
-                            unit="%"
-                        />
-                   </div>
-                </CardContent>
-            </Card>
-
-            {/* Ingredients */}
-            <Card>
+        {/* Column 1 (Left): Ingredients */}
+        <div className="space-y-8">
+             <Card className="h-full">
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>
@@ -647,8 +583,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     </div>
                 </CardContent>
             </Card>
+        </div>
 
-             {/* Procedure */}
+        {/* Column 2 (Center): Photo & Procedure */}
+        <div className="space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5"/>Photo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="aspect-video relative w-full rounded-lg overflow-hidden border">
+                         <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
+                    </div>
+                    {isEditing && <Button variant="outline" className="w-full mt-4">Changer la photo</Button>}
+                </CardContent>
+            </Card>
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/>Procédure</CardTitle>
@@ -705,22 +654,72 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             </Card>
         </div>
 
-        {/* Right Column */}
-        <div className="lg:col-span-1 space-y-8">
-            {/* Photo */}
+        {/* Column 3 (Right): Analysis & Details */}
+        <div className="space-y-8">
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5"/>Photo</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations & Rentabilité</CardTitle>
                 </CardHeader>
-                <CardContent>
-                    <div className="aspect-video relative w-full rounded-lg overflow-hidden border">
-                         <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
-                    </div>
-                    {isEditing && <Button variant="outline" className="w-full mt-4">Changer la photo</Button>}
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="space-y-4">
+                        <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted/50 rounded-lg">
+                           <div>
+                                <p className="text-sm text-muted-foreground">Vente TTC</p>
+                                {isEditing ? (
+                                    <Input 
+                                        type="number"
+                                        value={editableRecipe?.price}
+                                        onChange={(e) => handleRecipeDataChange('price', parseFloat(e.target.value) || 0)}
+                                        className="font-bold text-lg text-center"
+                                    />
+                                ) : (
+                                    <p className="font-bold text-lg">{currentRecipeData.price.toFixed(2)}€</p>
+                                )}
+                           </div>
+                           <div>
+                                <p className="text-sm text-muted-foreground">Vente HT</p>
+                                <p className="font-bold text-lg">{priceHT.toFixed(2)}€</p>
+                           </div>
+                           <div>
+                                <p className="text-sm text-muted-foreground">Portions</p>
+                                 {isEditing ? (
+                                    <Input 
+                                        type="number"
+                                        value={editableRecipe?.portions}
+                                        onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || 1)}
+                                        className="font-bold text-lg text-center"
+                                    />
+                                ) : (
+                                    <p className="font-bold text-lg">{currentRecipeData.portions}</p>
+                                )}
+                           </div>
+                       </div>
+                        <div className="space-y-2 text-sm border-t pt-4">
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Coût Matière / Portion</span>
+                                <span className="font-semibold">{costPerPortion.toFixed(2)}€</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Coefficient</span>
+                                 <span className="font-semibold">x {multiplierCoefficient.toFixed(2)}</span>
+                            </div>
+                             <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Marge Brute</span>
+                                <span className="font-semibold">{grossMargin.toFixed(2)}€ ({grossMarginPercentage.toFixed(2)}%)</span>
+                            </div>
+                        </div>
+                   </div>
+                   <div className="flex flex-col items-center justify-center">
+                       <h4 className="font-semibold text-center mb-2">Food Cost (%)</h4>
+                        <GaugeChart 
+                            value={foodCostPercentage}
+                            label={`Coût portion: ${costPerPortion.toFixed(2)}€`}
+                            unit="%"
+                        />
+                   </div>
                 </CardContent>
             </Card>
 
-            {/* Allergens */}
             <Card>
                 <CardHeader>
                      <CardTitle className="flex items-center justify-between">
@@ -735,7 +734,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     }
                 </CardContent>
             </Card>
-            {/* Commercial Argument */}
+
              <Card>
                 <CardHeader>
                      <CardTitle className="flex items-center gap-2"><Euro className="h-5 w-5"/>Argumentaire Commercial</CardTitle>
@@ -784,8 +783,33 @@ function RecipeDetailSkeleton() {
         </header>
   
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-            {/* General Card Skeleton */}
+          {/* Column 1 Skeleton */}
+          <div className="space-y-8">
+             <Card>
+              <CardHeader>
+                 <Skeleton className="h-6 w-32" />
+                 <Skeleton className="h-4 w-64" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-40 w-full" />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Column 2 Skeleton */}
+          <div className="space-y-8">
+             <Card>
+              <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
+              <CardContent><Skeleton className="h-48 w-full" /></CardContent>
+            </Card>
+             <Card>
+              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+              <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+            </Card>
+          </div>
+  
+          {/* Column 3 Skeleton */}
+          <div className="space-y-8">
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
@@ -808,35 +832,18 @@ function RecipeDetailSkeleton() {
                 </div>
               </CardContent>
             </Card>
-  
-            {/* Ingredients Card Skeleton */}
-            <Card>
-              <CardHeader>
-                 <Skeleton className="h-6 w-32" />
-                 <Skeleton className="h-4 w-64" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-40 w-full" />
-              </CardContent>
-            </Card>
-          </div>
-  
-          {/* Right Column Skeleton */}
-          <div className="lg:col-span-1 space-y-8">
-            <Card>
-              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+             <Card>
+              <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
               <CardContent><Skeleton className="h-10 w-full" /></CardContent>
             </Card>
              <Card>
-              <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
-              <CardContent><Skeleton className="h-20 w-full" /></CardContent>
-            </Card>
-             <Card>
               <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
-              <CardContent><Skeleton className="h-48 w-full" /></CardContent>
+              <CardContent><Skeleton className="h-20 w-full" /></CardContent>
             </Card>
           </div>
         </div>
       </div>
     );
   }
+
+    
