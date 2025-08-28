@@ -21,6 +21,17 @@ import { useToast } from "@/hooks/use-toast";
 import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient } from "../actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -264,9 +275,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   };
   
   const handleRemoveExistingIngredient = (recipeIngredientId: string, ingredientName: string) => {
-    if (!confirm(`Êtes-vous sûr de vouloir retirer "${ingredientName}" de cette recette ?`)) {
-      return;
-    }
     deleteRecipeIngredient(recipeIngredientId).then(() => {
         // onSnapshot will update the UI automatically. 
         // We can optionally show a toast here.
@@ -572,9 +580,27 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
                                     {isEditing && (
                                         <TableCell>
-                                            <Button variant="ghost" size="icon" onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId, ing.name)}>
-                                                <Trash2 className="h-4 w-4 text-red-500"/>
-                                            </Button>
+                                            <AlertDialog>
+                                                <AlertDialogTrigger asChild>
+                                                    <Button variant="ghost" size="icon">
+                                                        <Trash2 className="h-4 w-4 text-red-500"/>
+                                                    </Button>
+                                                </AlertDialogTrigger>
+                                                <AlertDialogContent>
+                                                    <AlertDialogHeader>
+                                                        <AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle>
+                                                        <AlertDialogDescription>
+                                                            Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ?
+                                                        </AlertDialogDescription>
+                                                    </AlertDialogHeader>
+                                                    <AlertDialogFooter>
+                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                        <AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId, ing.name)}>
+                                                            Retirer
+                                                        </AlertDialogAction>
+                                                    </AlertDialogFooter>
+                                                </AlertDialogContent>
+                                            </AlertDialog>
                                         </TableCell>
                                     )}
                                 </TableRow>
@@ -823,5 +849,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    

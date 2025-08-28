@@ -17,6 +17,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { IngredientModal } from "./IngredientModal";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export default function IngredientsClient() {
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
@@ -63,24 +74,22 @@ export default function IngredientsClient() {
   }, []);
 
   const handleDelete = async (id: string, name: string) => {
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer l'ingrédient "${name}" ?`)) {
-      try {
-        await deleteIngredient(id)
-        toast({
-          title: "Succès",
-          description: `L'ingrédient "${name}" a été supprimé.`,
-        });
-        // onSnapshot will handle the UI update automatically
-      }
-      catch (error) {
-        console.error("Error deleting ingredient:", error);
-        toast({
-            title: "Erreur",
-            description: "La suppression de l'ingrédient a échoué.",
-            variant: "destructive",
-        });
-      };
+    try {
+      await deleteIngredient(id)
+      toast({
+        title: "Succès",
+        description: `L'ingrédient "${name}" a été supprimé.`,
+      });
+      // onSnapshot will handle the UI update automatically
     }
+    catch (error) {
+      console.error("Error deleting ingredient:", error);
+      toast({
+          title: "Erreur",
+          description: "La suppression de l'ingrédient a échoué.",
+          variant: "destructive",
+      });
+    };
   };
 
   const filteredIngredients = useMemo(() => {
@@ -196,9 +205,27 @@ export default function IngredientsClient() {
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             </IngredientModal>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(ingredient.id!, ingredient.name)}>
+                             <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
                                   <Trash2 className="h-4 w-4" />
-                              </Button>
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Êtes-vous sûr de vouloir supprimer cet ingrédient ?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Cette action est irréversible. L'ingrédient "{ingredient.name}" sera définitivement supprimé.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(ingredient.id!, ingredient.name)}>
+                                    Supprimer
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
                           </div>
                         </TableCell>
                       </TableRow>
