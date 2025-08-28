@@ -454,8 +454,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations & Rentabilité</CardTitle>
                 </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                   <div className="md:col-span-2 space-y-4">
+                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                   <div className="space-y-4">
                         <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted/50 rounded-lg">
                            <div>
                                 <p className="text-sm text-muted-foreground">Vente TTC</p>
@@ -841,3 +841,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
