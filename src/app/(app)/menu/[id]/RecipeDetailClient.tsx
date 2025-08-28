@@ -450,6 +450,70 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         
         {/* Column 1 & 2 (Left & Center): Main content */}
         <div className="lg:col-span-2 space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations & Rentabilité</CardTitle>
+                </CardHeader>
+                <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                   <div className="md:col-span-2 space-y-4">
+                        <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted/50 rounded-lg">
+                           <div>
+                                <p className="text-sm text-muted-foreground">Vente TTC</p>
+                                {isEditing ? (
+                                    <Input 
+                                        type="number"
+                                        value={editableRecipe?.price}
+                                        onChange={(e) => handleRecipeDataChange('price', parseFloat(e.target.value) || 0)}
+                                        className="font-bold text-lg text-center"
+                                    />
+                                ) : (
+                                    <p className="font-bold text-lg">{currentRecipeData.price.toFixed(2)}€</p>
+                                )}
+                           </div>
+                           <div>
+                                <p className="text-sm text-muted-foreground">Vente HT</p>
+                                <p className="font-bold text-lg">{priceHT.toFixed(2)}€</p>
+                           </div>
+                           <div>
+                                <p className="text-sm text-muted-foreground">Portions</p>
+                                 {isEditing ? (
+                                    <Input 
+                                        type="number"
+                                        value={editableRecipe?.portions}
+                                        onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || 1)}
+                                        className="font-bold text-lg text-center"
+                                    />
+                                ) : (
+                                    <p className="font-bold text-lg">{currentRecipeData.portions}</p>
+                                )}
+                           </div>
+                       </div>
+                        <div className="space-y-2 text-sm border-t pt-4">
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Coût Matière / Portion</span>
+                                <span className="font-semibold">{costPerPortion.toFixed(2)}€</span>
+                            </div>
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Coefficient</span>
+                                 <span className="font-semibold">x {multiplierCoefficient.toFixed(2)}</span>
+                            </div>
+                             <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Marge Brute</span>
+                                <span className="font-semibold">{grossMargin.toFixed(2)}€ ({grossMarginPercentage.toFixed(2)}%)</span>
+                            </div>
+                        </div>
+                   </div>
+                   <div className="flex flex-col items-center justify-center">
+                       <h4 className="font-semibold text-center mb-2">Food Cost (%)</h4>
+                        <GaugeChart 
+                            value={foodCostPercentage}
+                            label={`Coût portion: ${costPerPortion.toFixed(2)}€`}
+                            unit="%"
+                        />
+                   </div>
+                </CardContent>
+            </Card>
+
              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
@@ -653,70 +717,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations & Rentabilité</CardTitle>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 gap-6">
-                   <div className="space-y-4">
-                        <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted/50 rounded-lg">
-                           <div>
-                                <p className="text-sm text-muted-foreground">Vente TTC</p>
-                                {isEditing ? (
-                                    <Input 
-                                        type="number"
-                                        value={editableRecipe?.price}
-                                        onChange={(e) => handleRecipeDataChange('price', parseFloat(e.target.value) || 0)}
-                                        className="font-bold text-lg text-center"
-                                    />
-                                ) : (
-                                    <p className="font-bold text-lg">{currentRecipeData.price.toFixed(2)}€</p>
-                                )}
-                           </div>
-                           <div>
-                                <p className="text-sm text-muted-foreground">Vente HT</p>
-                                <p className="font-bold text-lg">{priceHT.toFixed(2)}€</p>
-                           </div>
-                           <div>
-                                <p className="text-sm text-muted-foreground">Portions</p>
-                                 {isEditing ? (
-                                    <Input 
-                                        type="number"
-                                        value={editableRecipe?.portions}
-                                        onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || 1)}
-                                        className="font-bold text-lg text-center"
-                                    />
-                                ) : (
-                                    <p className="font-bold text-lg">{currentRecipeData.portions}</p>
-                                )}
-                           </div>
-                       </div>
-                        <div className="space-y-2 text-sm border-t pt-4">
-                            <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Coût Matière / Portion</span>
-                                <span className="font-semibold">{costPerPortion.toFixed(2)}€</span>
-                            </div>
-                            <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Coefficient</span>
-                                 <span className="font-semibold">x {multiplierCoefficient.toFixed(2)}</span>
-                            </div>
-                             <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Marge Brute</span>
-                                <span className="font-semibold">{grossMargin.toFixed(2)}€ ({grossMarginPercentage.toFixed(2)}%)</span>
-                            </div>
-                        </div>
-                   </div>
-                   <div className="flex flex-col items-center justify-center">
-                       <h4 className="font-semibold text-center mb-2">Food Cost (%)</h4>
-                        <GaugeChart 
-                            value={foodCostPercentage}
-                            label={`Coût portion: ${costPerPortion.toFixed(2)}€`}
-                            unit="%"
-                        />
-                   </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
                      <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600"/>Allergènes</div>
                          {isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4"/></Button>}
@@ -836,7 +836,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
 
     
