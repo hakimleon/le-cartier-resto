@@ -503,7 +503,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </div>
                         </div>
                    </div>
-                   <div className="flex flex-col items-center justify-center">
+                   <div className="flex flex-col items-center justify-start">
                        <h4 className="font-semibold text-center mb-2">Food Cost (%)</h4>
                         <GaugeChart 
                             value={foodCostPercentage}
