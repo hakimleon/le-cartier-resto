@@ -9,10 +9,8 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart"
-import { cn } from "@/lib/utils"
 
 const GAUGE_COLORS = {
-    // Custom colors based on user specification
     excellent: "hsl(var(--chart-1))", // Green
     correct: "hsl(var(--chart-4))",   // Orange/Yellow
     bad: "hsl(var(--chart-5))",       // Red
@@ -43,7 +41,6 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
         },
     } satisfies ChartConfig
 
-    // Use user-defined thresholds for food cost
     const getLevel = (v: number) => {
         if (v < 25) return "excellent";
         if (v <= 35) return "correct";
