@@ -100,20 +100,6 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
                     </text>
                 </PieChart>
             </ChartContainer>
-            <div className="flex w-full justify-around text-xs text-muted-foreground pb-2">
-                <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: GAUGE_COLORS.excellent }} />
-                    <span>&lt; 25% Excellent</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: GAUGE_COLORS.correct }} />
-                    <span>25-35% Correct</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: GAUGE_COLORS.bad }} />
-                    <span>&gt; 35% Mauvais</span>
-                </div>
-            </div>
         </div>
     )
 }
