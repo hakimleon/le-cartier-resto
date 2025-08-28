@@ -29,9 +29,9 @@ export function IngredientModal({ children, ingredient, onSuccess }: IngredientM
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{ingredient ? "Modifier l'ingrédient" : "Ajouter un ingrédient"}</DialogTitle>
+          <DialogTitle>{ingredient ? "Modifier l'ingrédient" : "Nouvel ingrédient"}</DialogTitle>
           <DialogDescription>
             {ingredient
               ? "Modifiez les détails de l'ingrédient ci-dessous."

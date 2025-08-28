@@ -20,9 +20,8 @@ import { Button } from '@/components/ui/button';
 import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat } from 'lucide-react';
 
 const Logo = () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M15.75 3.75L18.75 3.75M18.75 3.75L18.75 6.75M18.75 3.75L8.25 14.25" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-        <path d="M8.25 20.25L5.25 20.25M5.25 20.25L5.25 17.25M5.25 20.25L15.75 9.75" stroke="#10B981" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary">
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
     </svg>
 );
 
@@ -44,7 +43,7 @@ export default function AppLayout({
                     <Logo />
                 </Button>
                 <div className="flex flex-col">
-                    <h2 className="text-lg font-semibold tracking-tight text-sidebar-foreground">Le Singulier</h2>
+                    <h2 className="text-lg font-semibold tracking-tight text-foreground">Le Singulier</h2>
                 </div>
             </Link>
           </SidebarHeader>

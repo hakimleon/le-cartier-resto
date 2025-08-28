@@ -77,7 +77,8 @@ export default function IngredientsClient() {
 
   const filteredIngredients = useMemo(() => {
     return ingredients.filter(ingredient => 
-      ingredient.name.toLowerCase().includes(searchTerm.toLowerCase())
+      ingredient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      ingredient.category.toLowerCase().includes(searchTerm.toLowerCase())
     );
   }, [ingredients, searchTerm]);
 
@@ -92,36 +93,40 @@ export default function IngredientsClient() {
   }
 
   const renderSkeleton = () => (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          {Array.from({length: 7}).map((_, i) => <TableHead key={i}><Skeleton className="h-5 w-full" /></TableHead>)}
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {Array.from({ length: 5 }).map((_, i) => (
-          <TableRow key={i}>
-            <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
-            <TableCell><Skeleton className="h-8 w-24 rounded-full" /></TableCell>
-            <TableCell><Skeleton className="h-5 w-1/2" /></TableCell>
-            <TableCell><Skeleton className="h-5 w-1/2" /></TableCell>
-            <TableCell><Skeleton className="h-5 w-1/2" /></TableCell>
-            <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
-            <TableCell><Skeleton className="h-8 w-8" /></TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div className="space-y-4">
+        <div className="flex justify-between items-center">
+            <Skeleton className="h-10 w-64" />
+            <Skeleton className="h-10 w-32" />
+        </div>
+        <Card className="shadow-none border">
+            <CardContent className="p-0">
+                 <Table>
+                    <TableHeader>
+                        <TableRow>
+                        {Array.from({length: 6}).map((_, i) => <TableHead key={i}><Skeleton className="h-5 w-full" /></TableHead>)}
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {Array.from({ length: 10 }).map((_, i) => (
+                        <TableRow key={i}>
+                            {Array.from({length: 6}).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>)}
+                        </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </CardContent>
+        </Card>
+    </div>
   );
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between gap-4">
         <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input 
-                placeholder="Rechercher un ingrédient..." 
-                className="pl-9"
+                placeholder="Rechercher par nom ou catégorie..." 
+                className="pl-9 bg-card"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -137,77 +142,72 @@ export default function IngredientsClient() {
       {error && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Erreur</AlertTitle>
+          <AlertTitle>Erreur de chargement</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Liste des Ingrédients ({filteredIngredients.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
+    {isLoading ? renderSkeleton() : (
+      <Card className="shadow-none border">
+        <CardContent className="p-0">
           <div className="overflow-x-auto">
-            {isLoading ? renderSkeleton() : (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom</TableHead>
+                    <TableHead>Ingrédient</TableHead>
                     <TableHead>Catégorie</TableHead>
-                    <TableHead>Prix unitaire</TableHead>
-                    <TableHead>Unité</TableHead>
-                    <TableHead>Stock actuel</TableHead>
-                    <TableHead>Fournisseur</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>Stock</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-right">Prix Unitaire</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredIngredients.length > 0 ? (
-                    filteredIngredients.map((ingredient) => (
+                    filteredIngredients.map((ingredient) => {
+                      const isLowStock = ingredient.stockQuantity <= ingredient.lowStockThreshold;
+                      return (
                       <TableRow key={ingredient.id}>
                         <TableCell className="font-medium">{ingredient.name}</TableCell>
                         <TableCell>
-                          <Badge variant="secondary">{ingredient.category}</Badge>
+                          <Badge variant="outline">{ingredient.category}</Badge>
                         </TableCell>
-                        <TableCell>{ingredient.unitPrice.toFixed(2)} DZD</TableCell>
-                        <TableCell>{ingredient.unitPurchase}</TableCell>
-                        <TableCell
-                          className={cn(
-                            ingredient.stockQuantity <= ingredient.lowStockThreshold
-                              ? "text-red-600 font-bold"
-                              : ""
-                          )}
-                        >
-                          {ingredient.stockQuantity} {ingredient.unitPurchase}
-                        </TableCell>
-                        <TableCell>{ingredient.supplier}</TableCell>
                         <TableCell>
-                          <div className="flex items-center">
+                            {ingredient.stockQuantity} {ingredient.unitPurchase}
+                        </TableCell>
+                        <TableCell>
+                            <Badge variant={isLowStock ? 'destructive' : 'default'} className={cn(isLowStock ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800')}>
+                                {isLowStock ? "Stock bas" : "En stock"}
+                            </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">{ingredient.unitPrice.toFixed(2)} DZD</TableCell>
+                        <TableCell>
+                          <div className="flex items-center justify-end gap-2">
                             <IngredientModal ingredient={ingredient} onSuccess={() => { /* onSnapshot handles updates */ }}>
                               <Button variant="ghost" size="icon">
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             </IngredientModal>
-                            <Button variant="ghost" size="icon" className="text-red-500 hover:text-red-500" onClick={() => handleDelete(ingredient.id!, ingredient.name)}>
+                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => handleDelete(ingredient.id!, ingredient.name)}>
                                   <Trash2 className="h-4 w-4" />
                               </Button>
                           </div>
                         </TableCell>
                       </TableRow>
-                    ))
+                    )})
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="h-24 text-center">
+                      <TableCell colSpan={6} className="h-24 text-center">
                         Aucun ingrédient trouvé.
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
-            )}
           </div>
         </CardContent>
       </Card>
+    )}
     </div>
   );
 }

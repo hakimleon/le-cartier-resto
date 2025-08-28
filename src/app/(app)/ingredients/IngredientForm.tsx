@@ -79,37 +79,35 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
-            control={form.control}
-            name="name"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Nom de l'ingrédient</FormLabel>
-                <FormControl>
-                    <Input placeholder="Ex: Farine de blé T55" {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-            <FormField
-            control={form.control}
-            name="category"
-            render={({ field }) => (
-                <FormItem>
-                <FormLabel>Catégorie</FormLabel>
-                <FormControl>
-                    <Input placeholder="Ex: Épicerie sèche" {...field} />
-                </FormControl>
-                <FormMessage />
-                </FormItem>
-            )}
-            />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Nom de l'ingrédient</FormLabel>
+              <FormControl>
+                <Input placeholder="Ex: Farine de blé T55" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        <FormField
+          control={form.control}
+          name="category"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Catégorie</FormLabel>
+              <FormControl>
+                <Input placeholder="Ex: Épicerie sèche" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <div className="grid grid-cols-2 gap-4">
             <FormField
                 control={form.control}
                 name="stockQuantity"
@@ -136,6 +134,8 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                 </FormItem>
                 )}
             />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
             <FormField
                 control={form.control}
                 name="lowStockThreshold"
@@ -149,10 +149,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                 </FormItem>
                 )}
             />
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <FormField
+             <FormField
                 control={form.control}
                 name="unitPrice"
                 render={({ field }) => (
@@ -165,24 +162,27 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                 </FormItem>
                 )}
             />
-            <FormField
-                control={form.control}
-                name="supplier"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Fournisseur</FormLabel>
-                    <FormControl>
-                    <Input placeholder="Ex: Fournisseur ABC" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
         </div>
         
-        <Button type="submit" disabled={isSubmitting} className="mt-6">
-          {isSubmitting ? "Sauvegarde..." : "Sauvegarder"}
-        </Button>
+        <FormField
+            control={form.control}
+            name="supplier"
+            render={({ field }) => (
+            <FormItem>
+                <FormLabel>Fournisseur (Optionnel)</FormLabel>
+                <FormControl>
+                <Input placeholder="Ex: Fournisseur ABC" {...field} />
+                </FormControl>
+                <FormMessage />
+            </FormItem>
+            )}
+        />
+        
+        <div className="flex justify-end pt-4">
+            <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Sauvegarde..." : "Sauvegarder l'ingrédient"}
+            </Button>
+        </div>
       </form>
     </Form>
   );
