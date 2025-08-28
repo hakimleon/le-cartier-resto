@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -56,50 +57,49 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
     ];
 
     return (
-        <div className="flex flex-col items-center gap-3 w-full">
-            <ChartContainer
-                config={chartConfig}
-                className="mx-auto aspect-square h-full max-h-[250px]"
-            >
-                <PieChart>
-                    <ChartTooltip
-                        cursor={false}
-                        content={<ChartTooltipContent hideLabel />}
-                    />
-                    <Pie
-                        data={chartData}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius={60}
-                        outerRadius={80}
-                        startAngle={180}
-                        endAngle={0}
-                        cy="80%" // Move chart down to create semi-circle
-                    >
-                    {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                    </Pie>
-                    <text
-                        x="50%"
-                        y="75%"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        className="fill-foreground text-4xl font-bold"
-                    >
-                        {value.toFixed(0)}{unit}
-                    </text>
-                    <text
-                        x="50%"
-                        y="90%"
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        className="fill-muted-foreground text-sm"
-                    >
-                        {label}
-                    </text>
-                </PieChart>
-            </ChartContainer>
-        </div>
+        <ChartContainer
+            config={chartConfig}
+            className="mx-auto aspect-square h-full max-h-[250px]"
+        >
+            <PieChart>
+                <ChartTooltip
+                    cursor={false}
+                    content={<ChartTooltipContent hideLabel />}
+                />
+                <Pie
+                    data={chartData}
+                    dataKey="value"
+                    nameKey="name"
+                    innerRadius={60}
+                    outerRadius={80}
+                    startAngle={180}
+                    endAngle={0}
+                    cy="80%" // Move chart down to create semi-circle
+                >
+                {chartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                ))}
+                </Pie>
+                <text
+                    x="50%"
+                    y="75%"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-foreground text-4xl font-bold"
+                >
+                    {value.toFixed(0)}{unit}
+                </text>
+                <text
+                    x="50%"
+                    y="90%"
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    className="fill-muted-foreground text-sm"
+                >
+                    {label}
+                </text>
+            </PieChart>
+        </ChartContainer>
     )
 }
+
