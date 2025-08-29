@@ -74,9 +74,9 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
                     <p className="text-xs text-muted-foreground">{label}</p>
                 </div>
             </div>
-            <div className={cn("flex items-center gap-2 text-sm font-medium", `text-[${gaugeColor}]`)}>
-                <LevelIcon className="h-4 w-4" style={{color: gaugeColor}} />
-                <span style={{color: gaugeColor}}>{level.charAt(0).toUpperCase() + level.slice(1)}</span>
+            <div className={cn("flex items-center gap-2 text-sm font-medium")} style={{color: gaugeColor}}>
+                <LevelIcon className="h-4 w-4" />
+                <span>{level.charAt(0).toUpperCase() + level.slice(1)}</span>
             </div>
         </div>
     )
