@@ -97,18 +97,6 @@ export default function AppLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-                 <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/gauge-test')}
-                  tooltip="Test Jauge"
-                >
-                  <Link href="/gauge-test">
-                    <FlaskConical />
-                    <span>Test Jauge</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-4">
