@@ -1,22 +1,15 @@
 "use client"
 
 import * as React from "react"
-import { Pie, PieChart, Cell } from "recharts"
 import { Star, CheckCircle2, Shield, AlertTriangle, CircleX } from 'lucide-react';
-
-import {
-  ChartConfig,
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-} from "@/components/ui/chart"
+import { cn } from "@/lib/utils";
 
 const GAUGE_LEVELS = {
-    exceptionnel: { label: "Exceptionnel (<25%)", color: "hsl(142, 76%, 36%)", icon: Star },
-    excellent: { label: "Excellent (25-30%)", color: "hsl(65, 85%, 40%)", icon: CheckCircle2 },
-    bon: { label: "Bon (30-35%)", color: "hsl(48, 96%, 47%)", icon: Shield },
-    moyen: { label: "Moyen (35-40%)", color: "hsl(25, 95%, 53%)", icon: AlertTriangle },
-    mauvais: { label: "Mauvais (>40%)", color: "hsl(0, 84%, 60%)", icon: CircleX },
+    exceptionnel: { label: "Exceptionnel (<25%)", color: "bg-green-600", textColor: "text-green-600", icon: Star },
+    excellent: { label: "Excellent (25-30%)", color: "bg-lime-500", textColor: "text-lime-500", icon: CheckCircle2 },
+    bon: { label: "Bon (30-35%)", color: "bg-yellow-400", textColor: "text-yellow-400", icon: Shield },
+    moyen: { label: "Moyen (35-40%)", color: "bg-orange-500", textColor: "text-orange-500", icon: AlertTriangle },
+    mauvais: { label: "Mauvais (>40%)", color: "bg-red-600", textColor: "text-red-600", icon: CircleX },
 };
 
 type GaugeLevel = keyof typeof GAUGE_LEVELS;
@@ -28,11 +21,6 @@ interface GaugeChartProps {
 }
 
 export function GaugeChart({ value, label, unit }: GaugeChartProps) {
-    const chartConfig = Object.entries(GAUGE_LEVELS).reduce((acc, [key, val]) => {
-        acc[key as GaugeLevel] = { label: val.label, color: val.color };
-        return acc;
-    }, {} as ChartConfig);
-
     const getLevel = (v: number): GaugeLevel => {
         if (v < 25) return "exceptionnel";
         if (v < 30) return "excellent";
@@ -43,63 +31,41 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
 
     const validValue = isNaN(value) ? 0 : Math.max(0, Math.min(100, value));
     const level = getLevel(validValue);
-    const fillColor = GAUGE_LEVELS[level].color;
-    const LevelIcon = GAUGE_LEVELS[level].icon;
+    const levelInfo = GAUGE_LEVELS[level];
+    const LevelIcon = levelInfo.icon;
+    const rotation = Math.min(180, Math.max(0, validValue * 1.8)); // map 0-100 to 0-180 degrees
 
-    const chartData = [
-        { name: level, value: validValue, fill: fillColor },
-        { name: "background", value: 100 - validValue, fill: "#e5e7eb" }, // Fixed gray color
-    ];
-    
     return (
-        <div className="flex flex-col items-center">
-            <ChartContainer
-                config={chartConfig}
-                className="mx-auto aspect-square h-full max-h-[250px]"
-            >
-                <PieChart>
-                    <ChartTooltip
-                        cursor={false}
-                        content={<ChartTooltipContent hideLabel />}
-                    />
-                    <Pie
-                        data={chartData}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius={60}
-                        outerRadius={80}
-                        startAngle={180}
-                        endAngle={0}
-                        cy="85%" // Adjusted position
-                        strokeWidth={0}
-                    >
-                    {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                    ))}
-                    </Pie>
-                    <text
-                        x="50%"
-                        y="75%" // Adjusted position
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        className="fill-foreground text-4xl font-bold"
-                    >
-                        {validValue.toFixed(0)}{unit}
-                    </text>
-                    <text
-                        x="50%"
-                        y="85%" // Adjusted position
-                        textAnchor="middle"
-                        dominantBaseline="middle"
-                        className="fill-muted-foreground text-sm"
-                    >
-                        {label}
-                    </text>
-                </PieChart>
-            </ChartContainer>
-            <div className="flex items-center gap-2 mt-4 text-sm font-medium" style={{ color: fillColor }}>
+        <div className="flex w-full max-w-xs flex-col items-center gap-4 p-4">
+            <div className="relative h-28 w-56 overflow-hidden">
+                {/* Background arc */}
+                <div className="absolute left-0 top-0 h-full w-full rounded-t-full border-[24px] border-b-0 border-gray-200"></div>
+
+                {/* Foreground arc */}
+                <div className="absolute left-0 top-0 h-full w-full overflow-hidden">
+                    <div
+                        className={cn(
+                            "absolute left-[-50%] top-0 h-full w-full origin-[100%_100%] rounded-t-full border-[24px] border-b-0 border-r-[24px] border-transparent transition-transform duration-500",
+                            levelInfo.color
+                        )}
+                        style={{ transform: `rotate(${rotation}deg)` }}
+                    ></div>
+                </div>
+
+                {/* Center circle */}
+                <div className="absolute bottom-0 left-1/2 flex h-28 w-56 -translate-x-1/2 items-start justify-center">
+                     <div className="flex h-full w-full items-center justify-center rounded-t-full bg-card pt-4 text-center">
+                        <div>
+                            <span className="text-4xl font-bold">{validValue.toFixed(0)}</span>
+                            <span className="text-xl font-semibold text-muted-foreground">{unit}</span>
+                            <p className="text-xs text-muted-foreground">{label}</p>
+                        </div>
+                     </div>
+                </div>
+            </div>
+             <div className={cn("flex items-center gap-2 text-sm font-medium", levelInfo.textColor)}>
                 <LevelIcon className="h-4 w-4" />
-                <span>{GAUGE_LEVELS[level].label}</span>
+                <span>{levelInfo.label}</span>
             </div>
         </div>
     )

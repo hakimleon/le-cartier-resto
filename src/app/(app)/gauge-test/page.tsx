@@ -14,9 +14,9 @@ export default function GaugeTestPage() {
   return (
     <div className="container mx-auto py-10">
       <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Test de la Jauge</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Test de la Jauge (CSS)</h1>
         <p className="text-muted-foreground">
-          Cette page sert à tester le composant GaugeChart avec différentes valeurs.
+          Cette page sert à tester le nouveau composant GaugeChart basé sur CSS.
         </p>
       </header>
 
@@ -26,7 +26,7 @@ export default function GaugeTestPage() {
             <CardHeader>
               <CardTitle>{data.name}</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex justify-center">
               <GaugeChart
                 value={data.value}
                 label={data.label}
@@ -39,7 +39,7 @@ export default function GaugeTestPage() {
             <CardHeader>
               <CardTitle>Cas Limite: 0%</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex justify-center">
               <GaugeChart
                 value={0}
                 label={"Food Cost 0%"}
@@ -51,7 +51,7 @@ export default function GaugeTestPage() {
             <CardHeader>
               <CardTitle>Cas Limite: 100%</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex justify-center">
               <GaugeChart
                 value={100}
                 label={"Food Cost 100%"}
