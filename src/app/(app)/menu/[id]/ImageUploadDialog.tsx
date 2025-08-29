@@ -53,7 +53,7 @@ export function ImageUploadDialog({ isOpen, onClose, onUploadComplete }: ImageUp
     }
     if (!CLOUD_NAME || !UPLOAD_PRESET) {
         toast({ title: "Erreur de configuration", description: "Les variables d'environnement Cloudinary sont manquantes.", variant: "destructive" });
-        console.error("Cloudinary environment variables not set.");
+        console.error("Cloudinary environment variables not set. Make sure NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME and NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET are set.");
         return;
     }
 
