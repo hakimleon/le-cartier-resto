@@ -49,12 +49,16 @@ const sortCategories = (categories: string[]) => {
     const indexA = customOrder.indexOf(a);
     const indexB = customOrder.indexOf(b);
     
+    // If both are not in customOrder, sort them alphabetically
     if (indexA === -1 && indexB === -1) {
-        return a.localeCompare(b); // sort alphabetically if not in customOrder
+        return a.localeCompare(b); 
     }
-    if (indexA === -1) return 1;  // move b before a if a is not in customOrder
-    if (indexB === -1) return -1; // move a before b if b is not in customOrder
+    // If only a is not in customOrder, move it to the end
+    if (indexA === -1) return 1;
+    // If only b is not in customOrder, move it to the end
+    if (indexB === -1) return -1;
     
+    // Otherwise, sort based on the customOrder index
     return indexA - indexB;
   });
 };
@@ -235,3 +239,5 @@ export default function MenuClient() {
     </div>
   );
 }
+
+    
