@@ -460,8 +460,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         
         {/* Column 1 & 2 (Left & Center): Main content */}
         <div className="lg:col-span-2 space-y-8">
+
+            <Card className="overflow-hidden">
+                <CardContent className="p-0">
+                    <div className="aspect-video relative w-full h-96">
+                         <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
+                         {isEditing && 
+                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                <Button variant="secondary" onClick={() => setIsImageUploadOpen(true)}><ImageIcon className="mr-2 h-4 w-4" />Changer la photo</Button>
+                            </div>
+                         }
+                    </div>
+                </CardContent>
+            </Card>
+
             <Card>
-                
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations Financières</CardTitle>
                 </CardHeader>
@@ -737,18 +750,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><ImageIcon className="h-5 w-5"/>Photo</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="aspect-video relative w-full rounded-lg overflow-hidden border">
-                         <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
-                    </div>
-                    {isEditing && <Button variant="outline" className="w-full mt-4" onClick={() => setIsImageUploadOpen(true)}>Changer la photo</Button>}
-                </CardContent>
-            </Card>
-            
-            <Card>
-                <CardHeader>
                      <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600"/>Allergènes</div>
                          {isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4"/></Button>}
@@ -854,3 +855,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
