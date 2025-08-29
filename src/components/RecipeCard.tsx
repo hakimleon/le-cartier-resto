@@ -47,14 +47,15 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                             className="object-cover"
                             data-ai-hint="food image"
                         />
+                         <Badge variant={status === 'Actif' ? 'default' : 'secondary'} className={cn(
+                            "absolute top-2 right-2",
+                            status === 'Actif' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
+                        )}>{status}</Badge>
                     </div>
                 </CardHeader>
                 <CardContent className="flex-grow p-4 space-y-3">
-                    <div className="flex items-center justify-between">
+                    <div>
                         <h3 className="text-lg font-bold tracking-tight">{recipe.name}</h3>
-                        <Badge variant={status === 'Actif' ? 'default' : 'secondary'} className={cn(
-                            status === 'Actif' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
-                        )}>{status}</Badge>
                     </div>
                     <div>
                         <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{recipe.description}</p>
