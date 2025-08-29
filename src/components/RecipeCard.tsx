@@ -10,6 +10,17 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, FileText, Pencil, Soup, Tag, Trash2 } from "lucide-react";
 import { DishModal } from "@/app/(app)/menu/DishModal";
 import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 type RecipeCardProps = {
     recipe: Recipe;
@@ -78,16 +89,30 @@ export function RecipeCard({ recipe, onDelete, onSuccess }: RecipeCardProps) {
                             <FileText className="h-4 w-4" />
                         </Button>
                     </Link>
-                    <div onClick={(e) => e.stopPropagation()}>
-                        <DishModal dish={recipe} onSuccess={onSuccess}>
-                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                <Pencil className="h-4 w-4" />
-                            </Button>
-                        </DishModal>
-                    </div>
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-500" onClick={(e) => {e.stopPropagation(); onDelete();}}>
-                        <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <DishModal dish={recipe} onSuccess={onSuccess}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                            <Pencil className="h-4 w-4" />
+                        </Button>
+                    </DishModal>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-500">
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Cette action est irréversible. Le plat "{recipe.name}" sera supprimé définitivement.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annuler</AlertDialogCancel>
+                          <AlertDialogAction onClick={onDelete}>Supprimer</AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             </CardFooter>
         </Card>

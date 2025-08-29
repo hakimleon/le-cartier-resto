@@ -15,6 +15,17 @@ import { useToast } from "@/hooks/use-toast";
 import { deleteDish } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 const CATEGORY_ORDER = [
   "Entrées froides et chaudes",
@@ -34,7 +45,7 @@ export default function MenuClient() {
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const { toast } = useToast();
 
-  const fetchRecipes = () => {
+  useEffect(() => {
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
       setIsLoading(false);
@@ -77,28 +88,21 @@ export default function MenuClient() {
         setIsLoading(false);
     });
 
-    return unsubscribe;
-  };
-
-  useEffect(() => {
-    const unsubscribe = fetchRecipes();
-    // Cleanup subscription on unmount
     return () => {
-        if (unsubscribe) {
+        if(unsubscribe) {
             unsubscribe();
         }
     };
   }, []);
 
   const handleDelete = async (id: string, name: string) => {
-    if (confirm(`Êtes-vous sûr de vouloir supprimer le plat "${name}" ?`)) {
       try {
         await deleteDish(id);
         toast({
           title: "Succès",
           description: `Le plat "${name}" a été supprimé.`,
         });
-        // No need to call fetchRecipes, onSnapshot will do it
+        // onSnapshot will handle the UI update automatically
       } catch (error) {
         console.error("Error deleting dish:", error);
         toast({
@@ -107,7 +111,6 @@ export default function MenuClient() {
           variant: "destructive",
         });
       }
-    }
   };
 
   const filteredRecipes = useMemo(() => {
@@ -145,7 +148,7 @@ export default function MenuClient() {
             key={recipe.id} 
             recipe={recipe} 
             onDelete={() => handleDelete(recipe.id!, recipe.name)}
-            onSuccess={fetchRecipes}
+            onSuccess={() => { /* onSnapshot handles updates */ }}
           />
         ))}
       </div>
