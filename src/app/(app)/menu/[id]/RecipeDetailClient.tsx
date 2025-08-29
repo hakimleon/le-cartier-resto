@@ -71,6 +71,22 @@ const getConversionFactor = (purchaseUnit: string, usageUnit: string) => {
     return 1; // Default to 1 if no conversion rule found
 }
 
+const GAUGE_LEVELS = {
+  exceptionnel: { icon: Star },
+  excellent: { icon: CheckCircle2 },
+  bon: { icon: Shield },
+  moyen: { icon: AlertTriangle },
+  mauvais: { icon: CircleX },
+};
+
+const foodCostIndicators = [
+  { range: "< 25%", level: "Exceptionnel", description: "Performance rare. Maîtrise parfaite ou prix très élevés.", color: "text-green-500", icon: GAUGE_LEVELS.exceptionnel.icon },
+  { range: "25-30%", level: "Excellent", description: "Performance optimale. Très bonne maîtrise des coûts.", color: "text-emerald-500", icon: GAUGE_LEVELS.excellent.icon },
+  { range: "30-35%", level: "Bon", description: "Performance correcte. Standard du secteur.", color: "text-yellow-500", icon: GAUGE_LEVELS.bon.icon },
+  { range: "35-40%", level: "Moyen", description: "Acceptable mais perfectible. Surveillance requise.", color: "text-orange-500", icon: GAUGE_LEVELS.moyen.icon },
+  { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500", icon: GAUGE_LEVELS.mauvais.icon },
+];
+
 export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [editableRecipe, setEditableRecipe] = useState<Recipe | null>(null);
@@ -429,21 +445,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         </div>
     );
   }
-  const GAUGE_LEVELS = {
-    exceptionnel: { icon: Star },
-    excellent: { icon: CheckCircle2 },
-    bon: { icon: Shield },
-    moyen: { icon: AlertTriangle },
-    mauvais: { icon: CircleX },
-  };
-
-  const foodCostIndicators = [
-    { range: "< 25%", level: "Exceptionnel", description: "Performance rare. Maîtrise parfaite ou prix très élevés.", color: "text-green-500", icon: GAUGE_LEVELS.exceptionnel.icon },
-    { range: "25-30%", level: "Excellent", description: "Performance optimale. Très bonne maîtrise des coûts.", color: "text-emerald-500", icon: GAUGE_LEVELS.excellent.icon },
-    { range: "30-35%", level: "Bon", description: "Performance correcte. Standard du secteur.", color: "text-yellow-500", icon: GAUGE_LEVELS.bon.icon },
-    { range: "35-40%", level: "Moyen", description: "Acceptable mais perfectible. Surveillance requise.", color: "text-orange-500", icon: GAUGE_LEVELS.moyen.icon },
-    { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500", icon: GAUGE_LEVELS.mauvais.icon },
-  ];
   
 
   return (
@@ -769,35 +770,31 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </CardContent>
             </Card>
 
-            <Accordion type="single" collapsible className="w-full">
-                <Card>
+            <Card>
+                <Accordion type="single" collapsible className="w-full">
                     <AccordionItem value="item-1" className="border-b-0">
-                        <AccordionTrigger className="p-3 hover:no-underline">
-                            <CardHeader className="p-0">
-                                <CardTitle className="flex items-center gap-2 text-lg text-muted-foreground"><ListChecks className="h-5 w-5"/>Indicateurs Food Cost</CardTitle>
-                            </CardHeader>
+                        <AccordionTrigger className="p-4 hover:no-underline">
+                           <div className="flex items-center gap-2 text-lg font-semibold text-muted-foreground"><ListChecks className="h-5 w-5"/>Indicateurs Food Cost</div>
                         </AccordionTrigger>
-                        <AccordionContent>
-                             <CardContent className="pt-0">
-                                <ul className="space-y-3 text-sm">
-                                    {foodCostIndicators.map(indicator => {
-                                        const Icon = indicator.icon;
-                                        return (
-                                            <li key={indicator.level} className="flex items-start gap-3">
-                                                <Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} />
-                                                <div>
-                                                    <span className="font-semibold">{indicator.range} - {indicator.level}</span>:
-                                                    <p className="text-muted-foreground text-xs">{indicator.description}</p>
-                                                </div>
-                                            </li>
-                                        )
-                                    })}
-                                </ul>
-                            </CardContent>
+                        <AccordionContent className="px-4">
+                             <ul className="space-y-3 text-sm">
+                                {foodCostIndicators.map(indicator => {
+                                    const Icon = indicator.icon;
+                                    return (
+                                        <li key={indicator.level} className="flex items-start gap-3">
+                                            <Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} />
+                                            <div>
+                                                <span className="font-semibold">{indicator.range} - {indicator.level}</span>:
+                                                <p className="text-muted-foreground text-xs">{indicator.description}</p>
+                                            </div>
+                                        </li>
+                                    )
+                                })}
+                            </ul>
                         </AccordionContent>
                     </AccordionItem>
-                </Card>
-            </Accordion>
+                </Accordion>
+            </Card>
 
             <Card>
                 <CardHeader>
@@ -903,11 +900,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
-
-    
-
-
-
-
