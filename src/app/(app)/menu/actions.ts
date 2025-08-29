@@ -1,10 +1,8 @@
-
 'use server';
 
 import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Recipe } from '@/lib/types';
-import { revalidatePath } from 'next/cache';
 
 export async function saveDish(recipe: Omit<Recipe, 'id'>, id: string | null) {
   if (id) {
@@ -15,6 +13,7 @@ export async function saveDish(recipe: Omit<Recipe, 'id'>, id: string | null) {
     // Create new document
     await addDoc(collection(db, 'recipes'), recipe);
   }
+  // No revalidation needed, onSnapshot handles updates on the client
 }
 
 export async function deleteDish(id: string) {
@@ -23,15 +22,16 @@ export async function deleteDish(id: string) {
   }
   const recipeDoc = doc(db, 'recipes', id);
   await deleteDoc(recipeDoc);
+  // No revalidation needed, onSnapshot handles updates on the client
 }
 
-export async function deleteRecipeIngredient(recipeIngredientId: string, recipeId: string) {
+export async function deleteRecipeIngredient(recipeIngredientId: string) {
   if (!recipeIngredientId) {
     throw new Error("L'identifiant de la liaison est requis pour la suppression.");
   }
   const recipeIngredientDoc = doc(db, 'recipeIngredients', recipeIngredientId);
   await deleteDoc(recipeIngredientDoc);
-  revalidatePath(`/menu/${recipeId}`);
+  // No revalidation needed, onSnapshot handles updates on the client
 }
 
 export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe>) {
