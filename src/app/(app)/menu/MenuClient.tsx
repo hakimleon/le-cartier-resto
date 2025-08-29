@@ -128,13 +128,32 @@ export default function MenuClient() {
         });
       }
   };
+  
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    // When a search is initiated, reset the category to "Tous" to search across all categories
+    if (e.target.value) {
+      setSelectedCategory("Tous");
+    }
+  };
+
 
   const filteredRecipes = useMemo(() => {
-    return recipes.filter(recipe => {
-      const matchesCategory = selectedCategory === 'Tous' || recipe.category === selectedCategory;
-      const matchesSearch = recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesCategory && matchesSearch;
-    });
+    let recipesToFilter = recipes;
+
+    // Apply search term filter first
+    if (searchTerm) {
+        recipesToFilter = recipesToFilter.filter(recipe =>
+        recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    
+    // Then apply category filter
+    if (selectedCategory !== 'Tous') {
+        recipesToFilter = recipesToFilter.filter(recipe => recipe.category === selectedCategory);
+    }
+    
+    return recipesToFilter;
   }, [recipes, searchTerm, selectedCategory]);
 
 
@@ -196,7 +215,7 @@ export default function MenuClient() {
                     placeholder="Rechercher un plat..." 
                     className="pl-9"
                     value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
+                    onChange={handleSearchChange}
                 />
             </div>
              <DishModal dish={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
