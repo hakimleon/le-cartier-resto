@@ -28,6 +28,8 @@ import {
 } from "@/components/ui/alert-dialog"
 
 const formatCategory = (category: string) => {
+    if (!category) return "";
+    // Gère les deux types de tirets
     const separator = category.includes("–") ? "–" : "-";
     if (category.includes(separator)) {
         return category.split(separator)[0].trim();
@@ -49,16 +51,12 @@ const sortCategories = (categories: string[]) => {
     const indexA = customOrder.indexOf(a);
     const indexB = customOrder.indexOf(b);
     
-    // If both are not in customOrder, sort them alphabetically
-    if (indexA === -1 && indexB === -1) {
-        return a.localeCompare(b); 
-    }
-    // If only a is not in customOrder, move it to the end
+    // Si A n'est pas dans la liste, il va à la fin
     if (indexA === -1) return 1;
-    // If only b is not in customOrder, move it to the end
+    // Si B n'est pas dans la liste, il va à la fin
     if (indexB === -1) return -1;
     
-    // Otherwise, sort based on the customOrder index
+    // Sinon, on trie selon l'ordre défini
     return indexA - indexB;
   });
 };
@@ -226,7 +224,6 @@ export default function MenuClient() {
                 key={category} 
                 value={category}
               >
-               
                 {formatCategory(category)}
               </TabsTrigger>
             ))}
@@ -239,5 +236,3 @@ export default function MenuClient() {
     </div>
   );
 }
-
-    
