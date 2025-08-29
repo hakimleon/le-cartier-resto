@@ -27,21 +27,36 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-const CATEGORY_ORDER = [
-  "Entrées froides et chaudes",
-  "Plats",
-  "Les mets de chez nous",
-  "Symphonie de pâtes",
-  "Humburgers",
-  "Dessert",
-];
-
 const formatCategory = (category: string) => {
     const separator = category.includes("–") ? "–" : "-";
     if (category.includes(separator)) {
         return category.split(separator)[0].trim();
     }
     return category.trim();
+};
+
+const sortCategories = (categories: string[]) => {
+  const customOrder = [
+    "Entrées froides et chaudes",
+    "Plats",
+    "Les mets de chez nous",
+    "Symphonie de pâtes",
+    "Humburgers",
+    "Dessert",
+  ];
+
+  return [...categories].sort((a, b) => {
+    const indexA = customOrder.indexOf(a);
+    const indexB = customOrder.indexOf(b);
+    
+    if (indexA === -1 && indexB === -1) {
+        return a.localeCompare(b); // sort alphabetically if not in customOrder
+    }
+    if (indexA === -1) return 1;  // move b before a if a is not in customOrder
+    if (indexB === -1) return -1; // move a before b if b is not in customOrder
+    
+    return indexA - indexB;
+  });
 };
 
 export default function MenuClient() {
@@ -72,15 +87,7 @@ export default function MenuClient() {
             setRecipes(recipesData);
 
             const uniqueCategories = [...new Set(recipesData.map(recipe => recipe.category))];
-            
-            const sortedCategories = uniqueCategories.sort((a, b) => {
-                const indexA = CATEGORY_ORDER.indexOf(a);
-                const indexB = CATEGORY_ORDER.indexOf(b);
-                if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-                if (indexA === -1) return 1;
-                if (indexB === -1) return -1;
-                return indexA - indexB;
-            });
+            const sortedCategories = sortCategories(uniqueCategories);
 
             setCategories(["Tous", ...sortedCategories]);
             setError(null);
