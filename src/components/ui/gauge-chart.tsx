@@ -49,11 +49,10 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
                     className="absolute top-0 left-0 w-full h-[220px] rounded-full"
                     style={{
                         background: `conic-gradient(
+                            from -90deg,
                             ${gaugeColor} 0% ${fillPercentage}%, 
                             ${emptyColor} ${fillPercentage}% 100%
                         )`,
-                        // We rotate it by -90deg to start from the left.
-                        transform: 'rotate(-90deg)',
                     }}
                 ></div>
                 
