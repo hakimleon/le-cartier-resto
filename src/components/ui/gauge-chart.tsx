@@ -99,3 +99,5 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
         </div>
     )
 }
+
+    
