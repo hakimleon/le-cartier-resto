@@ -22,6 +22,12 @@ import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient } f
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -437,7 +443,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     { range: "30-35%", level: "Bon", description: "Performance correcte. Standard du secteur.", color: "text-yellow-500", icon: GAUGE_LEVELS.bon.icon },
     { range: "35-40%", level: "Moyen", description: "Acceptable mais perfectible. Surveillance requise.", color: "text-orange-500", icon: GAUGE_LEVELS.moyen.icon },
     { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500", icon: GAUGE_LEVELS.mauvais.icon },
-  ]
+  ];
   
 
   return (
@@ -763,27 +769,35 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </CardContent>
             </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><ListChecks className="h-5 w-5"/>Indicateurs Food Cost</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <ul className="space-y-3 text-sm">
-                        {foodCostIndicators.map(indicator => {
-                            const Icon = indicator.icon;
-                            return (
-                                <li key={indicator.level} className="flex items-start gap-3">
-                                    <Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} />
-                                    <div>
-                                        <span className="font-semibold">{indicator.range} - {indicator.level}</span>:
-                                        <p className="text-muted-foreground text-xs">{indicator.description}</p>
-                                    </div>
-                                </li>
-                            )
-                        })}
-                    </ul>
-                </CardContent>
-            </Card>
+            <Accordion type="single" collapsible className="w-full">
+                <Card>
+                    <AccordionItem value="item-1" className="border-b-0">
+                        <AccordionTrigger className="p-6 hover:no-underline">
+                            <CardHeader className="p-0">
+                                <CardTitle className="flex items-center gap-2"><ListChecks className="h-5 w-5"/>Indicateurs Food Cost</CardTitle>
+                            </CardHeader>
+                        </AccordionTrigger>
+                        <AccordionContent>
+                             <CardContent className="pt-0">
+                                <ul className="space-y-3 text-sm">
+                                    {foodCostIndicators.map(indicator => {
+                                        const Icon = indicator.icon;
+                                        return (
+                                            <li key={indicator.level} className="flex items-start gap-3">
+                                                <Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} />
+                                                <div>
+                                                    <span className="font-semibold">{indicator.range} - {indicator.level}</span>:
+                                                    <p className="text-muted-foreground text-xs">{indicator.description}</p>
+                                                </div>
+                                            </li>
+                                        )
+                                    })}
+                                </ul>
+                            </CardContent>
+                        </AccordionContent>
+                    </AccordionItem>
+                </Card>
+            </Accordion>
 
             <Card>
                 <CardHeader>
@@ -893,4 +907,5 @@ function RecipeDetailSkeleton() {
     
 
     
+
 
