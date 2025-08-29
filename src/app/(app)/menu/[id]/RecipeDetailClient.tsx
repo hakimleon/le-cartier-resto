@@ -447,7 +447,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4">
        <ImageUploadDialog
         isOpen={isImageUploadOpen}
         onClose={() => setIsImageUploadOpen(false)}
@@ -772,9 +772,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             <Accordion type="single" collapsible className="w-full">
                 <Card>
                     <AccordionItem value="item-1" className="border-b-0">
-                        <AccordionTrigger className="p-6 hover:no-underline">
+                        <AccordionTrigger className="p-3 hover:no-underline">
                             <CardHeader className="p-0">
-                                <CardTitle className="flex items-center gap-2 text-xl text-muted-foreground"><ListChecks className="h-5 w-5"/>Indicateurs Food Cost</CardTitle>
+                                <CardTitle className="flex items-center gap-2 text-lg text-muted-foreground"><ListChecks className="h-5 w-5"/>Indicateurs Food Cost</CardTitle>
                             </CardHeader>
                         </AccordionTrigger>
                         <AccordionContent>
