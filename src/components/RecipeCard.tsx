@@ -48,7 +48,7 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                             data-ai-hint="food image"
                         />
                          <Badge variant={status === 'Actif' ? 'default' : 'secondary'} className={cn(
-                            "absolute top-2 right-2",
+                            "absolute bottom-2 right-2",
                             status === 'Actif' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
                         )}>{status}</Badge>
                     </div>
