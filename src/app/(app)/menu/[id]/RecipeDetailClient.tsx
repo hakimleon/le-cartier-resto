@@ -451,6 +451,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         {/* Column 1 & 2 (Left & Center): Main content */}
         <div className="lg:col-span-2 space-y-8">
             <Card>
+                
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations Financières</CardTitle>
                 </CardHeader>
@@ -711,7 +712,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         {/* Column 3 (Right): Analysis & Details */}
         <div className="space-y-8">
-             <Card>
+             <Card className="bg-pink-500">
                 <CardHeader>
                     <CardTitle>Food Cost (%)</CardTitle>
                 </CardHeader>
@@ -721,6 +722,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         label={`Coût portion: ${costPerPortion.toFixed(2)}€`}
                         unit="%"
                     />
+                    
                 </CardContent>
             </Card>
 
