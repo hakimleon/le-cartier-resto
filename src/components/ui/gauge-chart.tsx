@@ -34,7 +34,7 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
     const levelInfo = GAUGE_LEVELS[level];
     const LevelIcon = levelInfo.icon;
     
-    // Conic gradient requires angles. We map 0-100 to 0-180 degrees.
+    // Conic gradient requires angles. We map 0-100 to 0-180 degrees for the semi-circle.
     const fillPercentage = validValue;
     const gaugeColor = levelInfo.color;
     const emptyColor = "hsl(var(--muted))";
@@ -44,14 +44,16 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
             <div
                 className="relative h-[110px] w-[220px] overflow-hidden"
             >
-                {/* The gauge itself, using conic-gradient */}
+                {/* The gauge itself, using conic-gradient, rotated to start from the left */}
                 <div
                     className="absolute top-0 left-0 w-full h-[220px] rounded-full"
                     style={{
                         background: `conic-gradient(
-                            from -90deg,
-                            ${gaugeColor} 0% ${fillPercentage}%, 
-                            ${emptyColor} ${fillPercentage}% 100%
+                            from 180deg at 50% 50%,
+                            ${gaugeColor} 0deg,
+                            ${gaugeColor} ${fillPercentage * 1.8}deg, 
+                            ${emptyColor} ${fillPercentage * 1.8}deg,
+                            ${emptyColor} 180deg
                         )`,
                     }}
                 ></div>

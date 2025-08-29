@@ -712,7 +712,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         {/* Column 3 (Right): Analysis & Details */}
         <div className="space-y-8">
-             <Card className="bg-pink-500">
+             <Card>
                 <CardHeader>
                     <CardTitle>Food Cost (%)</CardTitle>
                 </CardHeader>
