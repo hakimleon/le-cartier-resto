@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -6,11 +5,11 @@ import { Star, CheckCircle2, Shield, AlertTriangle, CircleX } from 'lucide-react
 import { cn } from "@/lib/utils";
 
 const GAUGE_LEVELS = {
-    exceptionnel: { label: "Exceptionnel", color: "hsl(var(--chart-1))" },
-    excellent: { label: "Excellent", color: "hsl(var(--chart-2))" },
-    bon: { label: "Bon", color: "hsl(var(--chart-3))" },
-    moyen: { label: "Moyen", color: "hsl(var(--chart-4))" },
-    mauvais: { label: "Mauvais", color: "hsl(var(--chart-5))" },
+    exceptionnel: { label: "Exceptionnel", color: "hsl(var(--chart-1))", icon: Star },
+    excellent: { label: "Excellent", color: "hsl(var(--chart-2))", icon: CheckCircle2 },
+    bon: { label: "Bon", color: "hsl(var(--chart-3))", icon: Shield },
+    moyen: { label: "Moyen", color: "hsl(var(--chart-4))", icon: AlertTriangle },
+    mauvais: { label: "Mauvais", color: "hsl(var(--chart-5))", icon: CircleX },
 };
 
 type GaugeLevel = keyof typeof GAUGE_LEVELS;
@@ -37,36 +36,29 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
     
     const gaugeColor = levelInfo.color;
     
+    const gaugeRotation = (validValue / 100) * 180;
+
     return (
-        <div className="flex w-full max-w-[220px] flex-col items-center gap-2">
+        <div className="flex w-full max-w-[200px] flex-col items-center gap-2">
             <div
-                className="relative h-[110px] w-[220px] overflow-hidden"
+                className="relative h-[100px] w-[200px] overflow-hidden"
             >
+                {/* Background Arc */}
+                <div className="w-full h-full rounded-t-full border-[16px] border-b-0 border-muted"></div>
+                
+                {/* Value Arc */}
                 <div 
-                    className="w-full h-full rounded-t-full border-[12px] border-b-0 border-muted"
+                    className="absolute top-0 left-0 w-full h-full rounded-t-full border-[16px] border-b-0 border-transparent border-t-primary"
                     style={{
-                        position: 'absolute',
-                        clipPath: 'inset(0 0 50% 0)',
-                    }}
-                ></div>
-                <div 
-                    className="w-full h-full rounded-t-full border-[12px] border-b-0 border-transparent"
-                    style={{
-                        position: 'absolute',
-                        clipPath: 'inset(0 0 50% 0)',
                         borderColor: gaugeColor,
-                        transform: `rotate(${validValue * 1.8}deg)`,
+                        transform: `rotate(${gaugeRotation}deg)`,
                         transformOrigin: '50% 100%',
-                        transition: 'transform 0.5s ease-in-out',
+                        clipPath: 'polygon(0 0, 100% 0, 100% 50%, 0 50%)', // Only show top half after rotation
                     }}
                 ></div>
-                <div 
-                    className="absolute w-[calc(100%-24px)] h-[calc(100%-12px)] bg-card rounded-t-full"
-                    style={{
-                        bottom: 0,
-                        left: '12px',
-                    }}
-                ></div>
+
+                {/* Cover for the center part */}
+                 <div className="absolute bottom-0 left-[8px] right-[8px] top-[8px] bg-card rounded-t-full"></div>
 
 
                 {/* Text Content */}
@@ -82,5 +74,3 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
         </div>
     )
 }
-
-    
