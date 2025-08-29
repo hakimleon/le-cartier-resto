@@ -34,38 +34,34 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
     const levelInfo = GAUGE_LEVELS[level];
     const LevelIcon = levelInfo.icon;
     
-    const fillPercentage = validValue;
     const gaugeColor = levelInfo.color;
-    const emptyColor = "hsl(var(--muted))";
+    const rotation = (validValue / 100) * 180;
 
     return (
         <div className="flex w-full max-w-[220px] flex-col items-center gap-2">
             <div
                 className="relative h-[110px] w-[220px] overflow-hidden"
             >
-                {/* The gauge itself, using conic-gradient, rotated to start from the left */}
-                <div
-                    className="absolute top-0 left-0 w-full h-[220px] rounded-full"
-                    style={{
-                        background: `conic-gradient(
-                            from 180deg at 50% 50%,
-                            ${gaugeColor} 0deg,
-                            ${gaugeColor} ${fillPercentage * 1.8}deg, 
-                            ${emptyColor} ${fillPercentage * 1.8}deg,
-                            ${emptyColor} 180deg
-                        )`,
-                    }}
-                ></div>
+                {/* Background Arc */}
+                <div className="absolute top-0 left-0 w-full h-full rounded-t-full border-[12px] border-b-0 border-muted"></div>
                 
-                {/* Center Mask to create the donut shape */}
-                <div
-                    className="absolute top-[12px] left-[12px] w-[196px] h-[196px] rounded-full bg-card"
+                {/* Foreground/Value Arc */}
+                <div 
+                  className="absolute top-0 left-0 w-full h-full rounded-t-full border-[12px] border-b-0 border-transparent"
+                  style={{
+                    borderColor: gaugeColor,
+                    clipPath: `inset(0% ${100 - validValue}% 0% 0%)`,
+                  }}
                 ></div>
 
-                {/* Cover for the bottom half to create a semi-circle */}
+                {/* Cover for the center part of the border */}
+                <div className="absolute top-[12px] left-[12px] w-[196px] h-[196px] rounded-full bg-card"></div>
+                
+                 {/* Cover for the bottom half to create a semi-circle */}
                 <div
                     className="absolute bottom-0 left-0 w-full h-1/2 bg-card"
                 ></div>
+
 
                 {/* Text Content */}
                 <div className="absolute bottom-0 left-0 flex w-full flex-col items-center justify-end pb-2 h-full z-10">
