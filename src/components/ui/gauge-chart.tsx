@@ -33,10 +33,10 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
     const level = getLevel(validValue);
     const levelInfo = GAUGE_LEVELS[level];
     const LevelIcon = levelInfo.icon;
-    
     const gaugeColor = levelInfo.color;
     
-    const gaugeRotation = (validValue / 100) * 180;
+    // Angle from -90deg (start) to 90deg (end)
+    const angle = (validValue / 100) * 180 - 90;
 
     return (
         <div className="flex w-full max-w-[200px] flex-col items-center gap-2">
@@ -44,21 +44,29 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
                 className="relative h-[100px] w-[200px] overflow-hidden"
             >
                 {/* Background Arc */}
-                <div className="w-full h-full rounded-t-full border-[16px] border-b-0 border-muted"></div>
-                
-                {/* Value Arc */}
                 <div 
-                    className="absolute top-0 left-0 w-full h-full rounded-t-full border-[16px] border-b-0 border-transparent border-t-primary"
-                    style={{
-                        borderColor: gaugeColor,
-                        transform: `rotate(${gaugeRotation}deg)`,
-                        transformOrigin: '50% 100%',
-                        clipPath: 'polygon(0 0, 100% 0, 100% 50%, 0 50%)', // Only show top half after rotation
-                    }}
+                    className="absolute h-[100px] w-[200px] rounded-t-full border-[16px] border-b-0 border-muted"
                 ></div>
+                
+                {/* Value Arc - This is a container that rotates, with the color on one side */}
+                <div 
+                    className="absolute h-[100px] w-[200px]"
+                    style={{
+                        transform: `rotate(${angle}deg)`,
+                        transformOrigin: '50% 100%',
+                    }}
+                >
+                    <div 
+                        className="absolute h-[100px] w-[200px] rounded-t-full border-[16px] border-b-0 border-r-[16px]"
+                        style={{
+                            borderColor: gaugeColor,
+                            clipPath: 'polygon(50% 0, 100% 0, 100% 100%, 50% 100%)',
+                        }}
+                    ></div>
+                </div>
 
-                {/* Cover for the center part */}
-                 <div className="absolute bottom-0 left-[8px] right-[8px] top-[8px] bg-card rounded-t-full"></div>
+                {/* Cover for the center part to create the donut effect */}
+                <div className="absolute bottom-0 left-[16px] right-[16px] top-[16px] bg-card rounded-t-full"></div>
 
 
                 {/* Text Content */}
