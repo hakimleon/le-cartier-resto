@@ -36,6 +36,15 @@ const CATEGORY_ORDER = [
   "Dessert",
 ];
 
+const formatCategory = (category: string) => {
+    // Utilise un tiret standard ou un tiret demi-cadratin
+    const separator = category.includes("–") ? "–" : "-";
+    if (category.includes(separator)) {
+        return category.split(separator)[0].trim();
+    }
+    return category.trim();
+};
+
 export default function MenuClient() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -208,7 +217,7 @@ export default function MenuClient() {
                 value={category}
               >
                
-                {category}
+                {formatCategory(category)}
               </TabsTrigger>
             ))}
           </TabsList>
