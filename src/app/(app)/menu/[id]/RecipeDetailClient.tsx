@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, PlusCircle, Save, Soup, Trash2, Utensils, X } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -423,6 +423,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         </div>
     );
   }
+  const GAUGE_LEVELS = {
+    exceptionnel: { icon: Star },
+    excellent: { icon: CheckCircle2 },
+    bon: { icon: Shield },
+    moyen: { icon: AlertTriangle },
+    mauvais: { icon: CircleX },
+  };
 
   const foodCostIndicators = [
     { range: "< 25%", level: "Exceptionnel", description: "Performance rare. Maîtrise parfaite ou prix très élevés.", color: "text-green-500", icon: GAUGE_LEVELS.exceptionnel.icon },
@@ -431,13 +438,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     { range: "35-40%", level: "Moyen", description: "Acceptable mais perfectible. Surveillance requise.", color: "text-orange-500", icon: GAUGE_LEVELS.moyen.icon },
     { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500", icon: GAUGE_LEVELS.mauvais.icon },
   ]
-  const GAUGE_LEVELS = {
-    exceptionnel: { icon: require('lucide-react').Star },
-    excellent: { icon: require('lucide-react').CheckCircle2 },
-    bon: { icon: require('lucide-react').Shield },
-    moyen: { icon: require('lucide-react').AlertTriangle },
-    mauvais: { icon: require('lucide-react').CircleX },
-  };
+  
 
   return (
     <div className="space-y-8">
@@ -892,3 +893,4 @@ function RecipeDetailSkeleton() {
     
 
     
+
