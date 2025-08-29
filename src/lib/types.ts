@@ -19,7 +19,8 @@ export type Recipe = {
   | 'Les mets de chez nous'
   | 'Symphonie de pâtes'
   | 'Nos Burgers Bistronomiques'
-  | 'Dessert';
+  | 'Dessert'
+  | 'Élixirs & Rafraîchissements';
   imageUrl?: string;
   status?: 'Actif' | 'Inactif';
   tags?: string[];

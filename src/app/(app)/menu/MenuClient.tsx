@@ -40,6 +40,7 @@ const sortCategories = (categories: string[]) => {
     "Symphonie de pâtes",
     "Nos Burgers Bistronomiques",
     "Dessert",
+    "Élixirs & Rafraîchissements",
   ];
 
   return [...categories].sort((a, b) => {
