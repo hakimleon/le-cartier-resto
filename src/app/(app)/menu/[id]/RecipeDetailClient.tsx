@@ -39,6 +39,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ImageUploadDialog } from "./ImageUploadDialog";
+import FloatingSaveButton from "./FloatingSaveButton";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -770,7 +771,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </CardContent>
             </Card>
 
-            <Card className="w-[350px]">
+            <Card>
                 <Accordion type="single" collapsible className="w-full">
                     <AccordionItem value="item-1" className="border-b-0">
                         <AccordionTrigger className="p-4 hover:no-underline">
@@ -831,14 +832,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       </div>
 
       {isEditing && (
-        <div className="flex justify-end sticky bottom-4">
-            <Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm shadow-lg">
-                <Button onClick={handleSave} disabled={isSaving}>
-                    <Save className="mr-2 h-4 w-4" />
-                    {isSaving ? "Sauvegarde..." : `Sauvegarder les modifications`}
-                </Button>
-            </Card>
-        </div>
+        <FloatingSaveButton onClick={handleSave} disabled={isSaving} />
       )}
     </div>
   );
