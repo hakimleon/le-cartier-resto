@@ -38,13 +38,17 @@ const sortCategories = (categories: string[]) => {
     "Plats",
     "Les mets de chez nous",
     "Symphonie de pâtes",
-    "Humburgers",
+    "Nos Burgers Bistronomiques",
     "Dessert",
   ];
 
   return [...categories].sort((a, b) => {
     const indexA = customOrder.indexOf(a);
     const indexB = customOrder.indexOf(b);
+
+    if (indexA === -1 && indexB === -1) {
+        return a.localeCompare(b);
+    }
 
     if (indexA !== -1 && indexB !== -1) {
       return indexA - indexB;

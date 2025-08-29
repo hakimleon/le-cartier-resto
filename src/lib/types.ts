@@ -18,7 +18,7 @@ export type Recipe = {
   | 'Plats'
   | 'Les mets de chez nous'
   | 'Symphonie de pâtes'
-  | 'Humburgers'
+  | 'Nos Burgers Bistronomiques'
   | 'Dessert';
   imageUrl?: string;
   status?: 'Actif' | 'Inactif';
