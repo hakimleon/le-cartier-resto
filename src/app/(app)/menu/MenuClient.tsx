@@ -37,7 +37,6 @@ const CATEGORY_ORDER = [
 ];
 
 const formatCategory = (category: string) => {
-    // Utilise un tiret standard ou un tiret demi-cadratin
     const separator = category.includes("–") ? "–" : "-";
     if (category.includes(separator)) {
         return category.split(separator)[0].trim();
