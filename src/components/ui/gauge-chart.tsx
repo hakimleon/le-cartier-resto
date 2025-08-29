@@ -41,20 +41,15 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
         return "mauvais";
     }
 
-    const validValue = isNaN(value) ? 0 : value;
+    const validValue = isNaN(value) ? 0 : Math.max(0, Math.min(100, value));
     const level = getLevel(validValue);
     const fillColor = GAUGE_LEVELS[level].color;
     const LevelIcon = GAUGE_LEVELS[level].icon;
 
-    // Correctly calculate the angle for the gauge. 
     // The Pie chart is a full circle, so we use startAngle and endAngle to make it a semi-circle (180 degrees).
-    const maxGaugeValue = 100; // The gauge represents a value from 0 to 100%
-    const totalAngle = 180;
-    const angle = (validValue / maxGaugeValue) * totalAngle;
-
     const chartData = [
-        { name: level, value: angle, fill: fillColor },
-        { name: "background", value: totalAngle - angle, fill: "hsl(var(--muted))" },
+        { name: level, value: validValue, fill: fillColor },
+        { name: "background", value: 100 - validValue, fill: "hsl(var(--muted))" },
     ];
     
     return (
@@ -76,7 +71,7 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
                         outerRadius={80}
                         startAngle={180}
                         endAngle={0}
-                        cy="80%" // Move chart down to create semi-circle
+                        cy="100%" // Position the center at the bottom to create a semicircle
                         strokeWidth={0}
                     >
                     {chartData.map((entry, index) => (
@@ -85,7 +80,7 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
                     </Pie>
                     <text
                         x="50%"
-                        y="75%"
+                        y="90%"
                         textAnchor="middle"
                         dominantBaseline="middle"
                         className="fill-foreground text-4xl font-bold"
@@ -94,7 +89,7 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
                     </text>
                     <text
                         x="50%"
-                        y="90%"
+                        y="115%"
                         textAnchor="middle"
                         dominantBaseline="middle"
                         className="fill-muted-foreground text-sm"
@@ -103,7 +98,7 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
                     </text>
                 </PieChart>
             </ChartContainer>
-            <div className="flex items-center gap-2 mt-2 text-sm font-medium" style={{ color: fillColor }}>
+            <div className="flex items-center gap-2 mt-4 text-sm font-medium" style={{ color: fillColor }}>
                 <LevelIcon className="h-4 w-4" />
                 <span>{GAUGE_LEVELS[level].label}</span>
             </div>
