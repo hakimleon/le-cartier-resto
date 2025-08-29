@@ -461,7 +461,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <ChefHat className="h-7 w-7" />
             </div>
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">{recipe.name}</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
                 <p className="text-muted-foreground">{recipe.category}</p>
                  <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                     <Badge variant={recipe.status === 'Actif' ? 'default' : 'secondary'} className={cn(recipe.status === 'Actif' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>{recipe.status}</Badge>
@@ -907,5 +907,6 @@ function RecipeDetailSkeleton() {
     
 
     
+
 
 
