@@ -36,7 +36,10 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
     const tags = recipe.tags || ['Épicé']; 
 
     return (
-        <Card className="flex flex-col overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all duration-300 group">
+        <Card className={cn(
+            "flex flex-col overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all duration-300 group",
+             status === 'Inactif' && "grayscale opacity-75"
+        )}>
             
                 <CardHeader className="p-0">
                     <div className="relative w-full h-40">
