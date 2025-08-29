@@ -160,8 +160,8 @@ export default function MenuClient() {
   const renderRecipeList = (recipeList: Recipe[]) => {
     if (isLoading) {
        return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pt-4">
-            {Array.from({ length: 3 }).map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
+            {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex flex-col space-y-3">
                     <div className="h-48 rounded-md bg-muted animate-pulse" />
                     <div className="space-y-2">
@@ -177,7 +177,7 @@ export default function MenuClient() {
       return <div className="text-center text-muted-foreground pt-12">Aucun plat ne correspond à votre recherche.</div>;
     }
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {recipeList.map((recipe) => (
           <RecipeCard 
             key={recipe.id} 
