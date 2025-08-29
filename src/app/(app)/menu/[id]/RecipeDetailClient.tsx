@@ -770,7 +770,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </CardContent>
             </Card>
 
-            <Card>
+            <Card className="w-[350px]">
                 <Accordion type="single" collapsible className="w-full">
                     <AccordionItem value="item-1" className="border-b-0">
                         <AccordionTrigger className="p-4 hover:no-underline">
