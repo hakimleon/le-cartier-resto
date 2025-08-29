@@ -33,10 +33,14 @@ const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
   description: z.string().min(10, "La description doit contenir au moins 10 caractères."),
   price: z.coerce.number().positive("Le prix doit être un nombre positif."),
-  category: z.enum(["Entrées froides et chaudes", "Plats", "Les mets de chez nous", "Symphonie de pâtes", "Humburgers", "Dessert"]),
+  category: z.enum(["Entrées froides et chaudes", "Plats", "Les mets de chez nous", "Symphonie de pâtes", "Humburgers", "Dessert"], {
+    errorMap: () => ({ message: "Veuillez sélectionner une catégorie valide." }),
+  }),
   status: z.enum(["Actif", "Inactif"]),
   duration: z.coerce.number().int().positive("La durée doit être un nombre entier positif."),
-  difficulty: z.enum(["Facile", "Moyen", "Difficile"]),
+  difficulty: z.enum(["Facile", "Moyen", "Difficile"], {
+    errorMap: () => ({ message: "Veuillez sélectionner une difficulté valide." }),
+  }),
 });
 
 type DishFormProps = {
