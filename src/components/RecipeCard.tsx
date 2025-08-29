@@ -57,7 +57,6 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                         )}>{status}</Badge>
                     </div>
                     <div>
-                        <p className="text-sm font-medium text-primary">{recipe.category}</p>
                         <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{recipe.description}</p>
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
