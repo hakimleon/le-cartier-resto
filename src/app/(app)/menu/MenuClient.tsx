@@ -29,12 +29,7 @@ import {
 
 const formatCategory = (category: string) => {
     if (!category) return "";
-    // Gère les deux types de tirets
-    const separator = category.includes("–") ? "–" : "-";
-    if (category.includes(separator)) {
-        return category.split(separator)[0].trim();
-    }
-    return category.trim();
+    return category.split(/[-–]/)[0].trim();
 };
 
 const sortCategories = (categories: string[]) => {
@@ -50,14 +45,13 @@ const sortCategories = (categories: string[]) => {
   return [...categories].sort((a, b) => {
     const indexA = customOrder.indexOf(a);
     const indexB = customOrder.indexOf(b);
-    
-    // Si A n'est pas dans la liste, il va à la fin
-    if (indexA === -1) return 1;
-    // Si B n'est pas dans la liste, il va à la fin
-    if (indexB === -1) return -1;
-    
-    // Sinon, on trie selon l'ordre défini
-    return indexA - indexB;
+
+    if (indexA !== -1 && indexB !== -1) {
+      return indexA - indexB;
+    }
+    if (indexA !== -1) return -1;
+    if (indexB !== -1) return 1;
+    return a.localeCompare(b);
   });
 };
 
