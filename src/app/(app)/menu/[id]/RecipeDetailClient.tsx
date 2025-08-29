@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { ImageUploadDialog } from "./ImageUploadDialog";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -77,6 +78,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const { toast } = useToast();
 
   const [isEditing, setIsEditing] = useState(false);
+  const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
   
   const [newIngredients, setNewIngredients] = useState<NewRecipeIngredient[]>([]);
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
@@ -302,6 +304,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             procedure_cuisson: editableRecipe.procedure_cuisson,
             procedure_service: editableRecipe.procedure_service,
             commercialArgument: editableRecipe.commercialArgument,
+            imageUrl: editableRecipe.imageUrl,
         });
 
         const ingredientUpdatePromises = editableIngredients.map(ing => {
@@ -423,6 +426,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   return (
     <div className="space-y-8">
+       <ImageUploadDialog
+        isOpen={isImageUploadOpen}
+        onClose={() => setIsImageUploadOpen(false)}
+        onUploadComplete={(url) => {
+          handleRecipeDataChange('imageUrl', url);
+        }}
+      />
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-4">
             <div className="bg-primary/10 text-primary rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
@@ -731,9 +741,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </CardHeader>
                 <CardContent>
                     <div className="aspect-video relative w-full rounded-lg overflow-hidden border">
-                         <Image src={recipe.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
+                         <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
                     </div>
-                    {isEditing && <Button variant="outline" className="w-full mt-4">Changer la photo</Button>}
+                    {isEditing && <Button variant="outline" className="w-full mt-4" onClick={() => setIsImageUploadOpen(true)}>Changer la photo</Button>}
                 </CardContent>
             </Card>
             
@@ -844,9 +854,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
-
-    
-
-    
