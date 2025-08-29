@@ -34,7 +34,6 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
     const levelInfo = GAUGE_LEVELS[level];
     const LevelIcon = levelInfo.icon;
     
-    // Conic gradient requires angles. We map 0-100 to 0-180 degrees for the semi-circle.
     const fillPercentage = validValue;
     const gaugeColor = levelInfo.color;
     const emptyColor = "hsl(var(--muted))";
