@@ -25,10 +25,9 @@ import {
 type RecipeCardProps = {
     recipe: Recipe;
     onDelete: () => void;
-    onSuccess: () => void;
 };
 
-export function RecipeCard({ recipe, onDelete, onSuccess }: RecipeCardProps) {
+export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
     const placeholderImage = "https://placehold.co/600x400.png";
     const status = recipe.status || 'Actif';
     const duration = recipe.duration || 25;
@@ -89,7 +88,7 @@ export function RecipeCard({ recipe, onDelete, onSuccess }: RecipeCardProps) {
                             <FileText className="h-4 w-4" />
                         </Button>
                     </Link>
-                    <DishModal dish={recipe} onSuccess={onSuccess}>
+                    <DishModal dish={recipe} onSuccess={() => { /* onSnapshot will handle updates */ }}>
                         <Button variant="ghost" size="icon" className="h-8 w-8">
                             <Pencil className="h-4 w-4" />
                         </Button>

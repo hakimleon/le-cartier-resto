@@ -148,7 +148,6 @@ export default function MenuClient() {
             key={recipe.id} 
             recipe={recipe} 
             onDelete={() => handleDelete(recipe.id!, recipe.name)}
-            onSuccess={() => { /* onSnapshot handles updates */ }}
           />
         ))}
       </div>
