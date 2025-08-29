@@ -464,7 +464,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             <Card className="overflow-hidden">
                 <CardContent className="p-0">
                     <div className="aspect-video relative w-full h-96">
-                         <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "cover"}} data-ai-hint="food image" />
+                         <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "contain"}} data-ai-hint="food image" />
                          {isEditing && 
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
                                 <Button variant="secondary" onClick={() => setIsImageUploadOpen(true)}><ImageIcon className="mr-2 h-4 w-4" />Changer la photo</Button>
@@ -855,5 +855,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
