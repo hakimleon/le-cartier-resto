@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, PlusCircle, Save, Soup, Trash2, Utensils, X } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, PlusCircle, Save, Soup, Trash2, Utensils, X } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -274,7 +274,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   
   const handleRemoveExistingIngredient = async (recipeIngredientId: string, ingredientName: string) => {
     try {
-        await deleteRecipeIngredient(recipeIngredientId, recipeId);
+        await deleteRecipeIngredient(recipeIngredientId);
         // onSnapshot will update the UI automatically.
         toast({
             title: "Succès",
@@ -424,6 +424,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     );
   }
 
+  const foodCostIndicators = [
+    { range: "< 25%", level: "Exceptionnel", description: "Performance rare. Maîtrise parfaite ou prix très élevés.", color: "text-green-500", icon: GAUGE_LEVELS.exceptionnel.icon },
+    { range: "25-30%", level: "Excellent", description: "Performance optimale. Très bonne maîtrise des coûts.", color: "text-emerald-500", icon: GAUGE_LEVELS.excellent.icon },
+    { range: "30-35%", level: "Bon", description: "Performance correcte. Standard du secteur.", color: "text-yellow-500", icon: GAUGE_LEVELS.bon.icon },
+    { range: "35-40%", level: "Moyen", description: "Acceptable mais perfectible. Surveillance requise.", color: "text-orange-500", icon: GAUGE_LEVELS.moyen.icon },
+    { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500", icon: GAUGE_LEVELS.mauvais.icon },
+  ]
+  const GAUGE_LEVELS = {
+    exceptionnel: { icon: require('lucide-react').Star },
+    excellent: { icon: require('lucide-react').CheckCircle2 },
+    bon: { icon: require('lucide-react').Shield },
+    moyen: { icon: require('lucide-react').AlertTriangle },
+    mauvais: { icon: require('lucide-react').CircleX },
+  };
+
   return (
     <div className="space-y-8">
        <ImageUploadDialog
@@ -460,10 +475,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         
         {/* Column 1 & 2 (Left & Center): Main content */}
         <div className="lg:col-span-2 space-y-8">
-
             <Card className="overflow-hidden">
                 <CardContent className="p-0">
-                    <div className="aspect-video relative w-full h-96">
+                    <div className="relative w-full h-96">
                          <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "contain"}} data-ai-hint="food image" />
                          {isEditing && 
                             <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
@@ -750,6 +764,28 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
             <Card>
                 <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><ListChecks className="h-5 w-5"/>Indicateurs Food Cost</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <ul className="space-y-3 text-sm">
+                        {foodCostIndicators.map(indicator => {
+                            const Icon = indicator.icon;
+                            return (
+                                <li key={indicator.level} className="flex items-start gap-3">
+                                    <Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} />
+                                    <div>
+                                        <span className="font-semibold">{indicator.range} - {indicator.level}</span>:
+                                        <p className="text-muted-foreground text-xs">{indicator.description}</p>
+                                    </div>
+                                </li>
+                            )
+                        })}
+                    </ul>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
                      <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600"/>Allergènes</div>
                          {isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4"/></Button>}
@@ -814,13 +850,10 @@ function RecipeDetailSkeleton() {
           {/* Column 1 & 2 Skeleton */}
           <div className="lg:col-span-2 space-y-8">
              <Card>
-              <CardHeader>
-                 <Skeleton className="h-6 w-48" />
-              </CardHeader>
-              <CardContent className="grid grid-cols-1 gap-8">
-                <Skeleton className="h-40 w-full" />
-              </CardContent>
-            </Card>
+                <CardContent className="p-0">
+                    <Skeleton className="w-full h-96" />
+                </CardContent>
+             </Card>
              <Card>
               <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
               <CardContent><Skeleton className="h-40 w-full" /></CardContent>

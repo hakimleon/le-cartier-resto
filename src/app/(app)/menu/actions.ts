@@ -1,3 +1,4 @@
+
 'use server';
 
 import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
@@ -39,7 +40,7 @@ export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe
         throw new Error("L'identifiant de la recette est requis.");
     }
     const recipeDoc = doc(db, 'recipes', recipeId);
-    await setDoc(recipeDoc, data, { merge: true });
+    await updateDoc(recipeDoc, data);
 }
 
 export async function updateRecipeIngredient(recipeIngredientId: string, data: { quantity: number; unitUse: string; }) {
