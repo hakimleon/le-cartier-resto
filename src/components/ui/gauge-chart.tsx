@@ -1,4 +1,3 @@
-
 "use client"
 
 import * as React from "react"
@@ -23,7 +22,7 @@ const GAUGE_LEVELS = {
 type GaugeLevel = keyof typeof GAUGE_LEVELS;
 
 interface GaugeChartProps {
-  value: number; // The main value (0 to 100)
+  value: number; // The main value (e.g. food cost percentage)
   label: string;
   unit: string;
 }
@@ -42,14 +41,20 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
         return "mauvais";
     }
 
-    const level = getLevel(value);
     const validValue = isNaN(value) ? 0 : value;
+    const level = getLevel(validValue);
     const fillColor = GAUGE_LEVELS[level].color;
     const LevelIcon = GAUGE_LEVELS[level].icon;
 
+    // Correctly calculate the angle for the gauge. 
+    // The Pie chart is a full circle, so we use startAngle and endAngle to make it a semi-circle (180 degrees).
+    const maxGaugeValue = 100; // The gauge represents a value from 0 to 100%
+    const totalAngle = 180;
+    const angle = (validValue / maxGaugeValue) * totalAngle;
+
     const chartData = [
-        { name: level, value: validValue, fill: fillColor },
-        { name: "background", value: 100 - validValue, fill: "hsl(var(--muted))" },
+        { name: level, value: angle, fill: fillColor },
+        { name: "background", value: totalAngle - angle, fill: "hsl(var(--muted))" },
     ];
     
     return (
