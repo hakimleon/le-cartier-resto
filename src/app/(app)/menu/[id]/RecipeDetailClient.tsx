@@ -758,7 +758,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         <div className="space-y-8">
              <Card>
                 <CardHeader>
-                    <CardTitle>Food Cost (%)</CardTitle>
+                    <CardTitle className="text-xl text-muted-foreground">Food Cost (%)</CardTitle>
                 </CardHeader>
                 <CardContent className="flex items-center justify-center p-6">
                     <GaugeChart 
@@ -774,7 +774,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <AccordionItem value="item-1" className="border-b-0">
                         <AccordionTrigger className="p-6 hover:no-underline">
                             <CardHeader className="p-0">
-                                <CardTitle className="flex items-center gap-2"><ListChecks className="h-5 w-5"/>Indicateurs Food Cost</CardTitle>
+                                <CardTitle className="flex items-center gap-2 text-xl text-muted-foreground"><ListChecks className="h-5 w-5"/>Indicateurs Food Cost</CardTitle>
                             </CardHeader>
                         </AccordionTrigger>
                         <AccordionContent>
@@ -801,7 +801,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
             <Card>
                 <CardHeader>
-                     <CardTitle className="flex items-center justify-between">
+                     <CardTitle className="flex items-center justify-between text-xl text-muted-foreground">
                         <div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600"/>Allergènes</div>
                          {isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4"/></Button>}
                     </CardTitle>
@@ -816,7 +816,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
              <Card>
                 <CardHeader>
-                     <CardTitle className="flex items-center gap-2"><Euro className="h-5 w-5"/>Argumentaire Commercial</CardTitle>
+                     <CardTitle className="flex items-center gap-2 text-xl text-muted-foreground"><Euro className="h-5 w-5"/>Argumentaire Commercial</CardTitle>
                 </CardHeader>
                 <CardContent className="prose prose-sm max-w-none text-muted-foreground">
                     {isEditing ? (
@@ -907,6 +907,7 @@ function RecipeDetailSkeleton() {
     
 
     
+
 
 
 
