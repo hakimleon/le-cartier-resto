@@ -3,7 +3,7 @@
 
 import * as React from "react"
 import { Pie, PieChart, Cell } from "recharts"
-import { Star, CheckCircle2, AlertTriangle, ShieldAlert, CircleX } from 'lucide-react';
+import { Star, CheckCircle2, Shield, AlertTriangle, CircleX } from 'lucide-react';
 
 import {
   ChartConfig,
@@ -13,11 +13,11 @@ import {
 } from "@/components/ui/chart"
 
 const GAUGE_LEVELS = {
-    exceptionnel: { label: "Exceptionnel", color: "hsl(var(--chart-1))", icon: Star },
-    excellent: { label: "Excellent", color: "hsl(var(--chart-2))", icon: CheckCircle2 },
-    bon: { label: "Bon", color: "hsl(var(--chart-3))", icon: ShieldAlert },
-    moyen: { label: "Moyen", color: "hsl(var(--chart-4))", icon: AlertTriangle },
-    mauvais: { label: "Mauvais", color: "hsl(var(--chart-5))", icon: CircleX },
+    exceptionnel: { label: "Exceptionnel (<25%)", color: "hsl(var(--chart-1))", icon: Star },
+    excellent: { label: "Excellent (25-30%)", color: "hsl(var(--chart-2))", icon: CheckCircle2 },
+    bon: { label: "Bon (30-35%)", color: "hsl(var(--chart-3))", icon: Shield },
+    moyen: { label: "Moyen (35-40%)", color: "hsl(var(--chart-4))", icon: AlertTriangle },
+    mauvais: { label: "Mauvais (>40%)", color: "hsl(var(--chart-5))", icon: CircleX },
 };
 
 type GaugeLevel = keyof typeof GAUGE_LEVELS;
@@ -43,11 +43,13 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
     }
 
     const level = getLevel(value);
+    const validValue = isNaN(value) ? 0 : value;
     const fillColor = GAUGE_LEVELS[level].color;
+    const LevelIcon = GAUGE_LEVELS[level].icon;
 
     const chartData = [
-        { name: level, value: value, fill: fillColor },
-        { name: "background", value: 100 - value, fill: "hsl(var(--muted))" },
+        { name: level, value: validValue, fill: fillColor },
+        { name: "background", value: 100 - validValue, fill: "hsl(var(--muted))" },
     ];
     
     return (
@@ -83,7 +85,7 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
                         dominantBaseline="middle"
                         className="fill-foreground text-4xl font-bold"
                     >
-                        {value.toFixed(0)}{unit}
+                        {validValue.toFixed(0)}{unit}
                     </text>
                     <text
                         x="50%"
@@ -96,8 +98,10 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
                     </text>
                 </PieChart>
             </ChartContainer>
+            <div className="flex items-center gap-2 mt-2 text-sm font-medium" style={{ color: fillColor }}>
+                <LevelIcon className="h-4 w-4" />
+                <span>{GAUGE_LEVELS[level].label}</span>
+            </div>
         </div>
     )
 }
-
-    

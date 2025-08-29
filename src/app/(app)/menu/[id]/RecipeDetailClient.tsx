@@ -711,11 +711,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         {/* Column 3 (Right): Analysis & Details */}
         <div className="space-y-8">
-            <Card>
+             <Card>
                 <CardHeader>
                     <CardTitle>Food Cost (%)</CardTitle>
                 </CardHeader>
-                <CardContent className="flex items-center justify-center">
+                <CardContent className="flex items-center justify-center p-6">
                     <GaugeChart 
                         value={foodCostPercentage}
                         label={`Coût portion: ${costPerPortion.toFixed(2)}€`}
