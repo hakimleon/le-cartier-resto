@@ -719,7 +719,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardContent className="flex items-center justify-center p-6">
                     <GaugeChart 
                         value={foodCostPercentage}
-                        label={`Coût portion: ${costPerPortion.toFixed(2)}€`}
                         unit="%"
                     />
                     
@@ -845,6 +844,8 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
 

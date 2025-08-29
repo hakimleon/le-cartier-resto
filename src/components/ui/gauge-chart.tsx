@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -5,18 +6,18 @@ import { Star, CheckCircle2, Shield, AlertTriangle, CircleX } from 'lucide-react
 import { cn } from "@/lib/utils";
 
 const GAUGE_LEVELS = {
-    exceptionnel: { label: "Exceptionnel", color: "hsl(var(--chart-1))", icon: Star },
-    excellent: { label: "Excellent", color: "hsl(var(--chart-2))", icon: CheckCircle2 },
-    bon: { label: "Bon", color: "hsl(var(--chart-3))", icon: Shield },
-    moyen: { label: "Moyen", color: "hsl(var(--chart-4))", icon: AlertTriangle },
-    mauvais: { label: "Mauvais", color: "hsl(var(--chart-5))", icon: CircleX },
+    exceptionnel: { label: "Exceptionnel", color: "hsl(var(--chart-1))" },
+    excellent: { label: "Excellent", color: "hsl(var(--chart-2))" },
+    bon: { label: "Bon", color: "hsl(var(--chart-3))" },
+    moyen: { label: "Moyen", color: "hsl(var(--chart-4))" },
+    mauvais: { label: "Mauvais", color: "hsl(var(--chart-5))" },
 };
 
 type GaugeLevel = keyof typeof GAUGE_LEVELS;
 
 interface GaugeChartProps {
   value: number;
-  label: string;
+  label?: string;
   unit: string;
 }
 
@@ -35,38 +36,43 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
     const LevelIcon = levelInfo.icon;
     
     const gaugeColor = levelInfo.color;
-    const rotation = (validValue / 100) * 180;
-
+    
     return (
         <div className="flex w-full max-w-[220px] flex-col items-center gap-2">
             <div
                 className="relative h-[110px] w-[220px] overflow-hidden"
             >
-                {/* Background Arc */}
-                <div className="absolute top-0 left-0 w-full h-full rounded-t-full border-[12px] border-b-0 border-muted"></div>
-                
-                {/* Foreground/Value Arc */}
                 <div 
-                  className="absolute top-0 left-0 w-full h-full rounded-t-full border-[12px] border-b-0 border-transparent"
-                  style={{
-                    borderColor: gaugeColor,
-                    clipPath: `inset(0% ${100 - validValue}% 0% 0%)`,
-                  }}
+                    className="w-full h-full rounded-t-full border-[12px] border-b-0 border-muted"
+                    style={{
+                        position: 'absolute',
+                        clipPath: 'inset(0 0 50% 0)',
+                    }}
                 ></div>
-
-                {/* Cover for the center part of the border */}
-                <div className="absolute top-[12px] left-[12px] w-[196px] h-[196px] rounded-full bg-card"></div>
-                
-                 {/* Cover for the bottom half to create a semi-circle */}
-                <div
-                    className="absolute bottom-0 left-0 w-full h-1/2 bg-card"
+                <div 
+                    className="w-full h-full rounded-t-full border-[12px] border-b-0 border-transparent"
+                    style={{
+                        position: 'absolute',
+                        clipPath: 'inset(0 0 50% 0)',
+                        borderColor: gaugeColor,
+                        transform: `rotate(${validValue * 1.8}deg)`,
+                        transformOrigin: '50% 100%',
+                        transition: 'transform 0.5s ease-in-out',
+                    }}
+                ></div>
+                <div 
+                    className="absolute w-[calc(100%-24px)] h-[calc(100%-12px)] bg-card rounded-t-full"
+                    style={{
+                        bottom: 0,
+                        left: '12px',
+                    }}
                 ></div>
 
 
                 {/* Text Content */}
                 <div className="absolute bottom-0 left-0 flex w-full flex-col items-center justify-end pb-2 h-full z-10">
                     <span className="text-3xl font-bold">{validValue.toFixed(0)}<span className="text-xl font-semibold text-muted-foreground">{unit}</span></span>
-                    <p className="text-xs text-muted-foreground">{label}</p>
+                    {label && <p className="text-xs text-muted-foreground">{label}</p>}
                 </div>
             </div>
             <div className={cn("flex items-center gap-2 text-sm font-medium")} style={{color: gaugeColor}}>
@@ -76,3 +82,5 @@ export function GaugeChart({ value, label, unit }: GaugeChartProps) {
         </div>
     )
 }
+
+    
