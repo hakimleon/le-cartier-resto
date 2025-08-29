@@ -33,7 +33,7 @@ const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
   description: z.string().min(10, "La description doit contenir au moins 10 caractères."),
   price: z.coerce.number().positive("Le prix doit être un nombre positif."),
-  category: z.enum(["Entrées froides et chaudes", "Plats", "Les mets de chez nous", "Symphonie de pâtes", "Nos Burgers Bistronomiques", "Dessert", "Élixirs & Rafraîchissements"], {
+  category: z.enum(["Entrées froides et chaudes", "Plats et Grillades", "Les mets de chez nous", "Symphonie de pâtes", "Nos Burgers Bistronomiques", "Dessert", "Élixirs & Rafraîchissements"], {
     errorMap: () => ({ message: "Veuillez sélectionner une catégorie valide." }),
   }),
   status: z.enum(["Actif", "Inactif"]),
@@ -58,7 +58,7 @@ export function DishForm({ dish, onSuccess }: DishFormProps) {
       name: dish?.name || "",
       description: dish?.description || "",
       price: dish?.price || 0,
-      category: dish?.category || "Plats",
+      category: dish?.category || "Plats et Grillades",
       status: dish?.status || "Actif",
       duration: dish?.duration || 25,
       difficulty: dish?.difficulty || "Moyen",
@@ -151,7 +151,7 @@ export function DishForm({ dish, onSuccess }: DishFormProps) {
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="Entrées froides et chaudes">Entrées froides et chaudes</SelectItem>
-                    <SelectItem value="Plats">Plats</SelectItem>
+                    <SelectItem value="Plats et Grillades">Plats et Grillades</SelectItem>
                     <SelectItem value="Les mets de chez nous">Les mets de chez nous</SelectItem>
                     <SelectItem value="Symphonie de pâtes">Symphonie de pâtes</SelectItem>
                     <SelectItem value="Nos Burgers Bistronomiques">Nos Burgers Bistronomiques</SelectItem>

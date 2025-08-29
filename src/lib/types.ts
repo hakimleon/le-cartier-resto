@@ -15,7 +15,7 @@ export type Recipe = {
   description: string;
   price: number; // Prix de vente TTC
   category: | 'Entrées froides et chaudes'
-  | 'Plats'
+  | 'Plats et Grillades'
   | 'Les mets de chez nous'
   | 'Symphonie de pâtes'
   | 'Nos Burgers Bistronomiques'

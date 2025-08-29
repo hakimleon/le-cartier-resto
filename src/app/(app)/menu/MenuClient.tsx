@@ -35,7 +35,7 @@ const formatCategory = (category: string) => {
 const sortCategories = (categories: string[]) => {
   const customOrder = [
     "Entrées froides et chaudes",
-    "Plats",
+    "Plats et Grillades",
     "Les mets de chez nous",
     "Symphonie de pâtes",
     "Nos Burgers Bistronomiques",
