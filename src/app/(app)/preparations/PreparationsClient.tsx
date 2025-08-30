@@ -10,76 +10,28 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, PlusCircle, Search } from "lucide-react";
 import { RecipeCard } from "@/components/RecipeCard";
-import { DishModal } from "./DishModal";
+import { RecipeModal } from "./RecipeModal";
 import { useToast } from "@/hooks/use-toast";
-import { deleteDish } from "./actions";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+import { deleteDish } from "@/app/(app)/menu/actions";
 
-const formatCategory = (category?: string) => {
-    if (!category) return "";
-    return category.split(/[-–]/)[0].trim();
-};
-
-const sortCategories = (categories: string[]) => {
-  const customOrder = [
-    "Entrées froides et chaudes",
-    "Plats et Grillades",
-    "Les mets de chez nous",
-    "Symphonie de pâtes",
-    "Nos Burgers Bistronomiques",
-    "Dessert",
-    "Élixirs & Rafraîchissements",
-  ];
-
-  return [...categories].sort((a, b) => {
-    const indexA = customOrder.indexOf(a);
-    const indexB = customOrder.indexOf(b);
-
-    if (indexA === -1 && indexB === -1) {
-        return a.localeCompare(b);
-    }
-
-    if (indexA !== -1 && indexB !== -1) {
-      return indexA - indexB;
-    }
-    if (indexA !== -1) return -1;
-    if (indexB !== -1) return 1;
-    return a.localeCompare(b);
-  });
-};
-
-export default function MenuClient() {
+export default function PreparationsClient() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [categories, setCategories] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState("Tous");
   const { toast } = useToast();
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
-      setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
+      setError("La configuration de Firebase est manquante.");
       setIsLoading(false);
       return;
     }
     
     setIsLoading(true);
     const recipesCol = collection(db, "recipes");
-    // We only want to show items of type 'Plat' on the menu page.
-    const q = query(recipesCol, where("type", "==", "Plat"));
+    // We only want to show items of type 'Préparation'
+    const q = query(recipesCol, where("type", "==", "Préparation"));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         try {
@@ -87,21 +39,16 @@ export default function MenuClient() {
                 (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
             );
             setRecipes(recipesData);
-
-            const uniqueCategories = [...new Set(recipesData.map(recipe => recipe.category).filter(Boolean) as string[])];
-            const sortedCategories = sortCategories(uniqueCategories);
-
-            setCategories(["Tous", ...sortedCategories]);
             setError(null);
         } catch(e: any) {
-            console.error("Error processing recipes snapshot: ", e);
-            setError("Impossible de traiter les données du menu. " + e.message);
+            console.error("Error processing preparations snapshot: ", e);
+            setError("Impossible de traiter les données des préparations. " + e.message);
         } finally {
             setIsLoading(false);
         }
     }, (e: any) => {
-        console.error("Error fetching recipes with onSnapshot: ", e);
-        setError("Impossible de charger le menu en temps réel. " + e.message);
+        console.error("Error fetching preparations with onSnapshot: ", e);
+        setError("Impossible de charger les préparations en temps réel. " + e.message);
         setIsLoading(false);
     });
 
@@ -117,14 +64,13 @@ export default function MenuClient() {
         await deleteDish(id);
         toast({
           title: "Succès",
-          description: `Le plat "${name}" a été supprimé.`,
+          description: `La préparation "${name}" a été supprimée.`,
         });
-        // onSnapshot will handle the UI update automatically
       } catch (error) {
-        console.error("Error deleting dish:", error);
+        console.error("Error deleting preparation:", error);
         toast({
           title: "Erreur",
-          description: "La suppression du plat a échoué.",
+          description: "La suppression de la préparation a échoué.",
           variant: "destructive",
         });
       }
@@ -132,31 +78,14 @@ export default function MenuClient() {
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    // When a search is initiated, reset the category to "Tous" to search across all categories
-    if (e.target.value) {
-      setSelectedCategory("Tous");
-    }
   };
 
-
   const filteredRecipes = useMemo(() => {
-    let recipesToFilter = recipes;
-
-    // Apply search term filter first
-    if (searchTerm) {
-        recipesToFilter = recipesToFilter.filter(recipe =>
-        recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    // Then apply category filter
-    if (selectedCategory !== 'Tous') {
-        recipesToFilter = recipesToFilter.filter(recipe => recipe.category === selectedCategory);
-    }
-    
-    return recipesToFilter;
-  }, [recipes, searchTerm, selectedCategory]);
-
+    if (!searchTerm) return recipes;
+    return recipes.filter(recipe =>
+      recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [recipes, searchTerm]);
 
   const renderRecipeList = (recipeList: Recipe[]) => {
     if (isLoading) {
@@ -175,7 +104,7 @@ export default function MenuClient() {
       );
     }
     if (recipeList.length === 0) {
-      return <div className="text-center text-muted-foreground pt-12">Aucun plat ne correspond à votre recherche.</div>;
+      return <div className="text-center text-muted-foreground pt-12">Aucune préparation ne correspond à votre recherche.</div>;
     }
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -206,25 +135,25 @@ export default function MenuClient() {
     <div className="space-y-6">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Gestion du Menu</h1>
-            <p className="text-muted-foreground">Gérez les plats de votre restaurant.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Gestion des Préparations</h1>
+            <p className="text-muted-foreground">Gérez vos fiches techniques de préparations (sauces, fonds, etc.).</p>
         </div>
         <div className="flex items-center gap-2">
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                    placeholder="Rechercher un plat..." 
+                    placeholder="Rechercher une préparation..." 
                     className="pl-9"
                     value={searchTerm}
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <RecipeModal recipe={null} type="Préparation" onSuccess={() => { /* onSnapshot handles updates */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
-                    Nouveau Plat
+                    Nouvelle Préparation
                 </Button>
-            </DishModal>
+            </RecipeModal>
         </div>
       </header>
 
@@ -236,21 +165,9 @@ export default function MenuClient() {
         </Alert>
       )}
 
-      <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-          <TabsList>
-            {categories.map((category) => (
-              <TabsTrigger 
-                key={category} 
-                value={category}
-              >
-                {formatCategory(category)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-          <TabsContent value={selectedCategory} className="pt-4">
-              {renderRecipeList(filteredRecipes)}
-          </TabsContent>
-      </Tabs>
+      <div className="pt-4">
+        {renderRecipeList(filteredRecipes)}
+      </div>
 
     </div>
   );

@@ -41,6 +41,7 @@ const formSchema = z.object({
   difficulty: z.enum(["Facile", "Moyen", "Difficile"], {
     errorMap: () => ({ message: "Veuillez sélectionner une difficulté valide." }),
   }),
+  type: z.literal('Plat').default('Plat'),
 });
 
 type DishFormProps = {
@@ -62,6 +63,7 @@ export function DishForm({ dish, onSuccess }: DishFormProps) {
       status: dish?.status || "Actif",
       duration: dish?.duration || 25,
       difficulty: dish?.difficulty || "Moyen",
+      type: "Plat"
     },
   });
 

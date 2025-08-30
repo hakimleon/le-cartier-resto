@@ -7,7 +7,7 @@ import { Recipe } from "@/lib/types";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, FileText, Pencil, Soup, Tag, Trash2 } from "lucide-react";
+import { Clock, FileText, FlaskConical, Pencil, Soup, Tag, Trash2 } from "lucide-react";
 import { DishModal } from "@/app/(app)/menu/DishModal";
 import { cn } from "@/lib/utils";
 import {
@@ -21,6 +21,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { RecipeModal } from "@/app/(app)/preparations/RecipeModal";
 
 type RecipeCardProps = {
     recipe: Recipe;
@@ -32,8 +33,8 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
     const status = recipe.status || 'Actif';
     const duration = recipe.duration || 25;
     const difficulty = recipe.difficulty || 'Moyen';
-    // Les tags seront gérés dynamiquement plus tard
-    const tags = recipe.tags || ['Épicé']; 
+    const tags = recipe.tags || []; 
+    const isPlat = recipe.type === 'Plat';
 
     return (
         <Card className={cn(
@@ -50,10 +51,18 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                             className="object-cover"
                             data-ai-hint="food image"
                         />
-                         <Badge variant={status === 'Actif' ? 'default' : 'secondary'} className={cn(
-                            "absolute bottom-2 right-2",
-                            status === 'Actif' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
-                        )}>{status}</Badge>
+                         {isPlat && recipe.status && (
+                             <Badge variant={status === 'Actif' ? 'default' : 'secondary'} className={cn(
+                                "absolute bottom-2 right-2",
+                                status === 'Actif' ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'
+                            )}>{status}</Badge>
+                         )}
+                         {!isPlat && (
+                             <Badge variant="outline" className="absolute bottom-2 right-2 bg-background/80 backdrop-blur-sm">
+                                <FlaskConical className="h-3 w-3 mr-1.5" />
+                                Préparation
+                             </Badge>
+                         )}
                     </div>
                 </CardHeader>
                 <CardContent className="flex-grow p-4 space-y-3">
@@ -63,14 +72,16 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                     <div>
                         <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{recipe.description}</p>
                     </div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                        {tags.map(tag => (
-                            <Badge key={tag} variant="outline" className="flex items-center gap-1">
-                                <Tag className="h-3 w-3"/>
-                                <span>{tag}</span>
-                            </Badge>
-                        ))}
-                    </div>
+                    {tags.length > 0 && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                            {tags.map(tag => (
+                                <Badge key={tag} variant="outline" className="flex items-center gap-1">
+                                    <Tag className="h-3 w-3"/>
+                                    <span>{tag}</span>
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
                      <div className="flex justify-between w-full text-sm text-muted-foreground pt-2">
                         <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4" />
@@ -84,21 +95,31 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                 </CardContent>
             
             <CardFooter className="p-4 bg-muted/50 flex justify-between items-center">
-                <div className="text-xl font-bold text-foreground">{recipe.price.toFixed(2)} €</div>
+                <div className="text-xl font-bold text-foreground">
+                    {isPlat && recipe.price ? `${recipe.price.toFixed(2)} €` : ' '}
+                </div>
                 <div className="flex gap-1">
                      <Link href={`/menu/${recipe.id}`}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Voir la fiche technique">
                             <FileText className="h-4 w-4" />
                         </Button>
                     </Link>
-                    <DishModal dish={recipe} onSuccess={() => { /* onSnapshot will handle updates */ }}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                            <Pencil className="h-4 w-4" />
-                        </Button>
-                    </DishModal>
+                    {isPlat ? (
+                        <DishModal dish={recipe} onSuccess={() => { /* onSnapshot will handle updates */ }}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier le plat">
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                        </DishModal>
+                    ) : (
+                        <RecipeModal recipe={recipe} type="Préparation" onSuccess={() => {}}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier la préparation">
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                        </RecipeModal>
+                    )}
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-500">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-500" title={isPlat ? "Supprimer le plat" : "Supprimer la préparation"}>
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -106,7 +127,7 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Cette action est irréversible. Le plat "{recipe.name}" sera supprimé définitivement.
+                            Cette action est irréversible. {recipe.type === 'Plat' ? 'Le plat' : 'La préparation'} "{recipe.name}" sera supprimé(e) définitivement.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>

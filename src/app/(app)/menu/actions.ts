@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Recipe } from '@/lib/types';
 
@@ -12,18 +12,33 @@ export async function saveDish(recipe: Omit<Recipe, 'id'>, id: string | null) {
     await setDoc(recipeDoc, recipe, { merge: true });
   } else {
     // Create new document
-    await addDoc(collection(db, 'recipes'), recipe);
+    const docToCreate = {
+        ...recipe,
+        type: recipe.type || 'Plat', // Default to 'Plat' if not specified
+    };
+    await addDoc(collection(db, 'recipes'), docToCreate);
   }
   // No revalidation needed, onSnapshot handles updates on the client
 }
 
 export async function deleteDish(id: string) {
-  if (!id) {
-    throw new Error("L'identifiant est requis pour la suppression.");
-  }
-  const recipeDoc = doc(db, 'recipes', id);
-  await deleteDoc(recipeDoc);
-  // No revalidation needed, onSnapshot handles updates on the client
+    if (!id) {
+      throw new Error("L'identifiant est requis pour la suppression.");
+    }
+  
+    const batch = writeBatch(db);
+  
+    // 1. Delete the recipe itself
+    const recipeDoc = doc(db, 'recipes', id);
+    batch.delete(recipeDoc);
+  
+    // TODO: When preparations are implemented, also delete links from parent recipes
+    // This part is for future implementation to avoid breaking changes now
+  
+    // 2. Commit the batch
+    await batch.commit();
+    
+    // onSnapshot will handle UI updates
 }
 
 export async function deleteRecipeIngredient(recipeIngredientId: string) {
