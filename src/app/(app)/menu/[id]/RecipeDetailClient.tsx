@@ -486,18 +486,20 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         
         {/* Column 1 & 2 (Left & Center): Main content */}
         <div className="lg:col-span-2 space-y-8">
-            <Card className="overflow-hidden">
-                <CardContent className="p-0">
-                    <div className="relative w-full h-96">
-                         <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "contain"}} data-ai-hint="food image" />
-                         {isEditing && 
-                            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                <Button variant="secondary" onClick={() => setIsImageUploadOpen(true)}><ImageIcon className="mr-2 h-4 w-4" />Changer la photo</Button>
-                            </div>
-                         }
-                    </div>
-                </CardContent>
-            </Card>
+            {isPlat && (
+                <Card className="overflow-hidden">
+                    <CardContent className="p-0">
+                        <div className="relative w-full h-96">
+                             <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "contain"}} data-ai-hint="food image" />
+                             {isEditing && 
+                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+                                    <Button variant="secondary" onClick={() => setIsImageUploadOpen(true)}><ImageIcon className="mr-2 h-4 w-4" />Changer la photo</Button>
+                                </div>
+                             }
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
 
             {isPlat && (
             <Card>
