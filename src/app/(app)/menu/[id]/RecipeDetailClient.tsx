@@ -404,7 +404,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const portions = currentRecipeData.portions || 1;
     const costPerPortionValue = portions > 0 ? totalCost / portions : 0;
     const tvaRate = currentRecipeData.tvaRate || 10;
-    const priceHTValue = currentRecipeData.price / (1 + tvaRate / 100);
+    const price = currentRecipeData.price || 0;
+    const priceHTValue = price / (1 + tvaRate / 100);
     
     const grossMarginValue = priceHTValue > 0 ? priceHTValue - costPerPortionValue : 0;
     const grossMarginPercentageValue = priceHTValue > 0 ? (grossMarginValue / priceHTValue) * 100 : 0;
@@ -508,12 +509,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             {isEditing ? (
                                 <Input 
                                     type="number"
-                                    value={editableRecipe?.price}
+                                    value={editableRecipe?.price || 0}
                                     onChange={(e) => handleRecipeDataChange('price', parseFloat(e.target.value) || 0)}
                                     className="font-bold text-lg text-center"
                                 />
                             ) : (
-                                <p className="font-bold text-lg">{currentRecipeData.price.toFixed(2)}€</p>
+                                <p className="font-bold text-lg">{currentRecipeData.price ? currentRecipeData.price.toFixed(2) : 'N/A'}€</p>
                             )}
                        </div>
                        <div>
@@ -894,3 +895,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
