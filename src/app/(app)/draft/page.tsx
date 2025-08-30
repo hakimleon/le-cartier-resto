@@ -1,6 +1,7 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FlaskConical } from "lucide-react";
+import DraftClient from "./DraftClient";
 
 export default function DraftPage() {
   return (
@@ -16,6 +17,19 @@ export default function DraftPage() {
                 </div>
             </header>
             
+            <Card>
+                <CardHeader>
+                    <CardTitle>Outils de migration</CardTitle>
+                    <CardDescription>
+                        Utilisez ces outils pour mettre à jour la structure de vos données.
+                        Ces actions sont généralement à n'exécuter qu'une seule fois.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <DraftClient />
+                </CardContent>
+            </Card>
+
             <div className="flex h-96 items-center justify-center rounded-lg border-2 border-dashed">
                 <p className="text-center text-muted-foreground">
                     Prêt à tester de nouvelles idées !<br/>
