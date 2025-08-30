@@ -9,33 +9,41 @@ export type RecipeIngredient = {
   totalCost: number;
 };
 
+// This will represent both a "Plat" and a "Préparation"
 export type Recipe = {
   id?: string;
   name: string;
   description: string;
-  price: number; // Prix de vente
-  category: | 'Entrées froides et chaudes'
+  type: 'Plat' | 'Préparation';
+  
+  // Common fields
+  difficulty?: 'Facile' | 'Moyen' | 'Difficile';
+  duration?: number; // in minutes
+  tags?: string[];
+  imageUrl?: string;
+  
+  // Fields for Fiche Technique (both Plat and Préparation)
+  portions?: number; // For a Plat
+  productionQuantity?: number; // For a Préparation
+  productionUnit?: string; // For a Préparation (e.g., kg, litre)
+
+  procedure_preparation?: string;
+  procedure_cuisson?: string;
+  procedure_service?: string;
+  allergens?: string[];
+  commercialArgument?: string; // Primarily for Plat
+
+  // Fields specific to "Plat"
+  price?: number; // Prix de vente
+  category?: | 'Entrées froides et chaudes'
   | 'Plats et Grillades'
   | 'Les mets de chez nous'
   | 'Symphonie de pâtes'
   | 'Nos Burgers Bistronomiques'
   | 'Dessert'
   | 'Élixirs & Rafraîchissements';
-  status: 'Actif' | 'Inactif';
-  imageUrl?: string;
-  tags?: string[];
-  duration?: number; // in minutes
-  difficulty?: 'Facile' | 'Moyen' | 'Difficile';
-  type?: 'Plat'; // Garder ce champ pour la compatibilité future, mais il est fixe pour l'instant
-  
-  // Fiche Technique Fields
-  portions?: number;
+  status?: 'Actif' | 'Inactif';
   tvaRate?: number; // en pourcentage (ex: 10 pour 10%)
-  procedure_preparation?: string;
-  procedure_cuisson?: string;
-  procedure_service?: string;
-  allergens?: string[];
-  commercialArgument?: string;
 };
 
 export type Ingredient = {
@@ -55,5 +63,12 @@ export type RecipeIngredientLink = {
     ingredientId: string;
     quantity: number;
     unitUse: string;
-}
-    
+};
+
+// Lien entre une recette (Plat) et une sous-recette (Préparation)
+export type RecipePreparationLink = {
+    parentRecipeId: string; // The "Plat"
+    childRecipeId: string; // The "Préparation"
+    quantity: number;
+    unitUse: string;
+};

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, onSnapshot, query } from "firebase/firestore";
+import { collection, onSnapshot, query, getDocs } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -84,7 +84,7 @@ export default function MenuClient() {
         try {
             const recipesData = querySnapshot.docs.map(
                 (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
-            );
+            ).filter(recipe => !recipe.type || recipe.type === 'Plat'); // Filter for plats client-side
             
             setRecipes(recipesData);
 
@@ -255,5 +255,3 @@ export default function MenuClient() {
     </div>
   );
 }
-
-    

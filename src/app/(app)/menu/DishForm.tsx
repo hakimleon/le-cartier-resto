@@ -70,9 +70,8 @@ export function DishForm({ dish, onSuccess }: DishFormProps) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      const recipeToSave: Omit<Recipe, 'id'> = {
-        ...values,
-      };
+      // We are sure the type is 'Plat' here from the schema
+      const recipeToSave = values as Omit<Recipe, 'id'>;
 
       await saveDish(recipeToSave, dish?.id || null);
       
