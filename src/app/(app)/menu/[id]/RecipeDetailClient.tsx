@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -401,7 +401,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     };
 
     const totalCost = combinedIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
-    const portions = currentRecipeData.portions || 1;
+    const portions = currentRecipeData.type === 'Plat' ? currentRecipeData.portions || 1 : currentRecipeData.productionQuantity || 1;
     const costPerPortionValue = portions > 0 ? totalCost / portions : 0;
     const tvaRate = currentRecipeData.tvaRate || 10;
     const price = currentRecipeData.price || 0;
@@ -448,6 +448,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     );
   }
   
+  const isPlat = currentRecipeData.type === 'Plat';
 
   return (
     <div className="space-y-4">
@@ -461,13 +462,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-4">
             <div className="bg-primary/10 text-primary rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
-                <ChefHat className="h-7 w-7" />
+                {isPlat ? <ChefHat className="h-7 w-7" /> : <NotebookText className="h-7 w-7" />}
             </div>
             <div>
                 <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
-                <p className="text-muted-foreground">{recipe.category}</p>
+                <p className="text-muted-foreground">{isPlat ? recipe.category : 'Préparation'}</p>
                  <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                    <Badge variant={recipe.status === 'Actif' ? 'default' : 'secondary'} className={cn(recipe.status === 'Actif' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>{recipe.status}</Badge>
+                    {isPlat && <Badge variant={recipe.status === 'Actif' ? 'default' : 'secondary'} className={cn(recipe.status === 'Actif' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>{recipe.status}</Badge>}
                     <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {recipe.duration} min</div>
                     <div className="flex items-center gap-1.5"><Soup className="h-4 w-4" /> {recipe.difficulty}</div>
                 </div>
@@ -498,6 +499,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </CardContent>
             </Card>
 
+            {isPlat && (
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations Financières</CardTitle>
@@ -551,6 +553,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     </div>
                 </CardContent>
             </Card>
+            )}
 
              <Card>
                 <CardHeader>
@@ -558,7 +561,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         <div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>
                          {isEditing && <Button variant="outline" size="sm" onClick={handleAddNewIngredient}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter</Button>}
                     </CardTitle>
-                    <CardDescription>Liste des ingrédients nécessaires pour {currentRecipeData.portions} portions.</CardDescription>
+                    <CardDescription>
+                        {isPlat 
+                            ? `Liste des ingrédients nécessaires pour ${currentRecipeData.portions} portions.`
+                            : `Liste des ingrédients pour produire ${currentRecipeData.productionQuantity} ${currentRecipeData.productionUnit}.`
+                        }
+                    </CardDescription>
                 </CardHeader>
                 <CardContent>
                     
@@ -694,7 +702,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     </Table>
                     <div className="flex justify-end mt-4 gap-4">
                         <div className="text-right">
-                            <p className="text-muted-foreground">Coût total ingrédients</p>
+                            <p className="text-muted-foreground">Coût total matières</p>
                             <p className="text-xl font-bold">{totalIngredientsCost.toFixed(2)}€</p>
                         </div>
                     </div>
@@ -759,76 +767,99 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         {/* Column 3 (Right): Analysis & Details */}
         <div className="space-y-8">
-             <Card>
-                <CardHeader>
-                    <CardTitle className="text-xl text-muted-foreground">Food Cost (%)</CardTitle>
-                </CardHeader>
-                <CardContent className="flex items-center justify-center p-6">
-                    <GaugeChart 
-                        value={foodCostPercentage}
-                        unit="%"
-                    />
-                    
-                </CardContent>
-            </Card>
+            {isPlat && (
+                <>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-xl text-muted-foreground">Food Cost (%)</CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex items-center justify-center p-6">
+                            <GaugeChart 
+                                value={foodCostPercentage}
+                                unit="%"
+                            />
+                        </CardContent>
+                    </Card>
 
-            <Card>
-                <Accordion type="single" collapsible className="w-full">
-                    <AccordionItem value="item-1" className="border-b-0">
-                        <AccordionTrigger className="p-4 hover:no-underline">
-                           <div className="flex items-center gap-2 text-lg font-semibold text-muted-foreground"><ListChecks className="h-5 w-5"/>Indicateurs Food Cost</div>
-                        </AccordionTrigger>
-                        <AccordionContent className="px-4">
-                             <ul className="space-y-3 text-sm">
-                                {foodCostIndicators.map(indicator => {
-                                    const Icon = indicator.icon;
-                                    return (
-                                        <li key={indicator.level} className="flex items-start gap-3">
-                                            <Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} />
-                                            <div>
-                                                <span className="font-semibold">{indicator.range} - {indicator.level}</span>:
-                                                <p className="text-muted-foreground text-xs">{indicator.description}</p>
-                                            </div>
-                                        </li>
-                                    )
-                                })}
-                            </ul>
-                        </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
-            </Card>
+                    <Card>
+                        <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="item-1" className="border-b-0">
+                                <AccordionTrigger className="p-4 hover:no-underline">
+                                <div className="flex items-center gap-2 text-lg font-semibold text-muted-foreground"><ListChecks className="h-5 w-5"/>Indicateurs Food Cost</div>
+                                </AccordionTrigger>
+                                <AccordionContent className="px-4">
+                                    <ul className="space-y-3 text-sm">
+                                        {foodCostIndicators.map(indicator => {
+                                            const Icon = indicator.icon;
+                                            return (
+                                                <li key={indicator.level} className="flex items-start gap-3">
+                                                    <Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} />
+                                                    <div>
+                                                        <span className="font-semibold">{indicator.range} - {indicator.level}</span>:
+                                                        <p className="text-muted-foreground text-xs">{indicator.description}</p>
+                                                    </div>
+                                                </li>
+                                            )
+                                        })}
+                                    </ul>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center justify-between text-xl text-muted-foreground">
+                                <div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600"/>Allergènes</div>
+                                {isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4"/></Button>}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="flex flex-wrap gap-2">
+                            {recipe.allergens && recipe.allergens.length > 0 ? 
+                                recipe.allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>)
+                                : <p className="text-sm text-muted-foreground">Aucun allergène spécifié.</p>
+                            }
+                        </CardContent>
+                    </Card>
 
-            <Card>
-                <CardHeader>
-                     <CardTitle className="flex items-center justify-between text-xl text-muted-foreground">
-                        <div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600"/>Allergènes</div>
-                         {isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4"/></Button>}
-                    </CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2">
-                    {recipe.allergens && recipe.allergens.length > 0 ? 
-                        recipe.allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>)
-                        : <p className="text-sm text-muted-foreground">Aucun allergène spécifié.</p>
-                    }
-                </CardContent>
-            </Card>
-
-             <Card>
-                <CardHeader>
-                     <CardTitle className="flex items-center gap-2 text-xl text-muted-foreground"><Euro className="h-5 w-5"/>Argumentaire Commercial</CardTitle>
-                </CardHeader>
-                <CardContent className="prose prose-sm max-w-none text-muted-foreground">
-                    {isEditing ? (
-                        <Textarea 
-                            value={editableRecipe?.commercialArgument}
-                            onChange={(e) => handleRecipeDataChange('commercialArgument', e.target.value)}
-                            rows={5}
-                        />
-                    ) : (
-                        <p>{recipe.commercialArgument}</p>
-                    )}
-                </CardContent>
-            </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-xl text-muted-foreground"><Euro className="h-5 w-5"/>Argumentaire Commercial</CardTitle>
+                        </CardHeader>
+                        <CardContent className="prose prose-sm max-w-none text-muted-foreground">
+                            {isEditing ? (
+                                <Textarea 
+                                    value={editableRecipe?.commercialArgument}
+                                    onChange={(e) => handleRecipeDataChange('commercialArgument', e.target.value)}
+                                    rows={5}
+                                />
+                            ) : (
+                                <p>{recipe.commercialArgument}</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </>
+            )}
+            {!isPlat && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations de Production</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Quantité Produite</span>
+                            <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+                        </div>
+                         <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Coût Total Matières</span>
+                            <span className="font-semibold">{totalIngredientsCost.toFixed(2)}€</span>
+                        </div>
+                        <div className="flex justify-between items-center font-bold text-primary border-t pt-2">
+                            <span className="">Coût de revient / {currentRecipeData.productionUnit}</span>
+                            <span className="">{(totalIngredientsCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)}€</span>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
         </div>
       </div>
 
@@ -895,5 +926,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
