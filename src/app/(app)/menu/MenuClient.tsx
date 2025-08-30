@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, onSnapshot, query, where, or } from "firebase/firestore";
+import { collection, onSnapshot, query } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -78,14 +78,14 @@ export default function MenuClient() {
     
     setIsLoading(true);
     const recipesCol = collection(db, "recipes");
-    // We want to show items of type 'Plat' OR items where 'type' does not exist (for backwards compatibility)
-    const q = query(recipesCol, or(where("type", "==", "Plat"), where("type", "==", null)));
+    const q = query(recipesCol);
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         try {
             const recipesData = querySnapshot.docs.map(
                 (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
             );
+            
             setRecipes(recipesData);
 
             const uniqueCategories = [...new Set(recipesData.map(recipe => recipe.category).filter(Boolean) as string[])];
@@ -255,3 +255,5 @@ export default function MenuClient() {
     </div>
   );
 }
+
+    
