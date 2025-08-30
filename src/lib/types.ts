@@ -13,24 +13,20 @@ export type Recipe = {
   id?: string;
   name: string;
   description: string;
-  type: 'Plat' | 'Préparation'; // NOUVEAU: Distingue un plat vendable d'une sous-recette
-  
-  // Champs spécifiques aux plats (vendables)
-  price?: number; // Prix de vente TTC
-  category?: | 'Entrées froides et chaudes'
+  price: number; // Prix de vente
+  category: | 'Entrées froides et chaudes'
   | 'Plats et Grillades'
   | 'Les mets de chez nous'
   | 'Symphonie de pâtes'
   | 'Nos Burgers Bistronomiques'
   | 'Dessert'
   | 'Élixirs & Rafraîchissements';
-  status?: 'Actif' | 'Inactif';
-
-  // Champs communs
+  status: 'Actif' | 'Inactif';
   imageUrl?: string;
   tags?: string[];
   duration?: number; // in minutes
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';
+  type?: 'Plat'; // Garder ce champ pour la compatibilité future, mais il est fixe pour l'instant
   
   // Fiche Technique Fields
   portions?: number;
@@ -40,10 +36,6 @@ export type Recipe = {
   procedure_service?: string;
   allergens?: string[];
   commercialArgument?: string;
-  
-  // Pour les préparations, l'unité de production (ex: litre, kg)
-  productionUnit?: string; 
-  productionQuantity?: number;
 };
 
 export type Ingredient = {
@@ -64,14 +56,4 @@ export type RecipeIngredientLink = {
     quantity: number;
     unitUse: string;
 }
-
-// NOUVEAU: Lien entre une recette et une préparation (sous-recette)
-export type RecipePreparationLink = {
-    recipeId: string; // Recette parente (ex: Pizza)
-    preparationId: string; // Sous-recette (ex: Sauce Tomate)
-    quantity: number; // Quantité de la préparation nécessaire
-    unitUse: string; // Unité (ex: litre)
-}
-    
-
     

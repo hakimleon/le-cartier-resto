@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Recipe } from '@/lib/types';
 
@@ -14,7 +14,7 @@ export async function saveDish(recipe: Omit<Recipe, 'id'>, id: string | null) {
     // Create new document
     const docToCreate = {
         ...recipe,
-        type: recipe.type || 'Plat', // Default to 'Plat' if not specified
+        type: 'Plat', // Ensure new dishes are correctly typed
     };
     await addDoc(collection(db, 'recipes'), docToCreate);
   }
@@ -32,10 +32,14 @@ export async function deleteDish(id: string) {
     const recipeDoc = doc(db, 'recipes', id);
     batch.delete(recipeDoc);
   
+    // 2. Find and delete all related ingredient links
+    const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", id));
+    const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
+    recipeIngredientsSnap.forEach(doc => batch.delete(doc.ref));
+
     // TODO: When preparations are implemented, also delete links from parent recipes
-    // This part is for future implementation to avoid breaking changes now
   
-    // 2. Commit the batch
+    // 3. Commit the batch
     await batch.commit();
     
     // onSnapshot will handle UI updates
