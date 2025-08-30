@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, PlusCircle, Search } from "lucide-react";
 import { RecipeCard } from "@/components/RecipeCard";
-import { DishModal } from "./DishModal";
 import { useToast } from "@/hooks/use-toast";
 import { deleteDish } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,7 +24,8 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { RecipeModal } from "../preparations/RecipeModal";
 
 const formatCategory = (category?: string) => {
     if (!category) return "";
@@ -219,12 +219,12 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <RecipeModal recipe={null} type="Plat" onSuccess={() => { /* onSnapshot handles updates */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat
                 </Button>
-            </DishModal>
+            </RecipeModal>
         </div>
       </header>
 

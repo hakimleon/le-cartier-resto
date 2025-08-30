@@ -12,11 +12,7 @@ export async function saveDish(recipe: Omit<Recipe, 'id'>, id: string | null) {
     await setDoc(recipeDoc, recipe, { merge: true });
   } else {
     // Create new document
-    const docToCreate = {
-        ...recipe,
-        type: 'Plat', // Ensure new dishes are correctly typed
-    };
-    await addDoc(collection(db, 'recipes'), docToCreate);
+    await addDoc(collection(db, 'recipes'), recipe);
   }
   // No revalidation needed, onSnapshot handles updates on the client
 }

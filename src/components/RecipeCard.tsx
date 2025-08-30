@@ -8,7 +8,6 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Clock, FileText, Pencil, Soup, Tag, Trash2 } from "lucide-react";
-import { DishModal } from "@/app/(app)/menu/DishModal";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -21,6 +20,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { RecipeModal } from "@/app/(app)/preparations/RecipeModal";
 
 type RecipeCardProps = {
     recipe: Recipe;
@@ -33,6 +33,8 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
     const duration = recipe.duration || 25;
     const difficulty = recipe.difficulty || 'Moyen';
     const tags = recipe.tags || []; 
+
+    const isPreparation = recipe.type === 'Préparation';
 
     return (
         <Card className={cn(
@@ -47,7 +49,7 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                             alt={recipe.name}
                             fill
                             className="object-cover"
-                            data-ai-hint="food image"
+                            data-ai-hint={isPreparation ? "sauce food" : "food image"}
                         />
                          {recipe.status && (
                              <Badge variant={status === 'Actif' ? 'default' : 'secondary'} className={cn(
@@ -60,6 +62,9 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                 <CardContent className="flex-grow p-4 space-y-3">
                     <div>
                         <h3 className="text-lg font-bold tracking-tight">{recipe.name}</h3>
+                         {isPreparation && (
+                            <Badge variant="outline" className="mt-1">Préparation</Badge>
+                         )}
                     </div>
                     <div>
                         <p className="text-sm text-muted-foreground line-clamp-2 mt-1">{recipe.description}</p>
@@ -96,14 +101,14 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                             <FileText className="h-4 w-4" />
                         </Button>
                     </Link>
-                    <DishModal dish={recipe} onSuccess={() => { /* onSnapshot will handle updates */ }}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier le plat">
+                    <RecipeModal recipe={recipe} type={recipe.type} onSuccess={() => { /* onSnapshot will handle updates */ }}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier">
                             <Pencil className="h-4 w-4" />
                         </Button>
-                    </DishModal>
+                    </RecipeModal>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-500" title="Supprimer le plat">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-500" title="Supprimer">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -111,7 +116,7 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                         <AlertDialogHeader>
                           <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Cette action est irréversible. Le plat "{recipe.name}" sera supprimé définitivement.
+                            Cette action est irréversible. L'élément "{recipe.name}" sera supprimé définitivement.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
