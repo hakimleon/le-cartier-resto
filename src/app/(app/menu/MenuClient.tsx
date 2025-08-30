@@ -27,7 +27,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 
-const formatCategory = (category: string) => {
+const formatCategory = (category?: string) => {
     if (!category) return "";
     return category.split(/[-–]/)[0].trim();
 };
@@ -84,10 +84,11 @@ export default function MenuClient() {
         try {
             const recipesData = querySnapshot.docs.map(
                 (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
-            );
+            ).filter(recipe => !recipe.type || recipe.type === 'Plat'); // Filter for plats client-side
+            
             setRecipes(recipesData);
 
-            const uniqueCategories = [...new Set(recipesData.map(recipe => recipe.category))];
+            const uniqueCategories = [...new Set(recipesData.map(recipe => recipe.category).filter(Boolean) as string[])];
             const sortedCategories = sortCategories(uniqueCategories);
 
             setCategories(["Tous", ...sortedCategories]);
