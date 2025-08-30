@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { DishForm } from "./DishForm";
+import { RecipeForm } from "@/app/(app)/preparations/RecipeForm";
 import { Recipe } from "@/lib/types";
 import { ReactNode, useState } from "react";
 
@@ -39,7 +39,7 @@ export function DishModal({ children, dish, onSuccess }: DishModalProps) {
               : "Ajoutez un nouveau plat à votre menu ici."}
           </DialogDescription>
         </DialogHeader>
-        <DishForm dish={dish} onSuccess={handleSuccess} />
+        <RecipeForm recipe={dish} type="Plat" onSuccess={handleSuccess} />
       </DialogContent>
     </Dialog>
   );
