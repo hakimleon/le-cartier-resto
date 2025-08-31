@@ -86,7 +86,7 @@ type NewRecipePreparation = {
     _costPerUnit?: number; // Internal: to recalculate cost
 };
 
-const getConversionFactor = (purchaseUnit: string, usageUnit: string) => {
+const getConversionFactor = (purchaseUnit?: string, usageUnit?: string) => {
     if (!purchaseUnit || !usageUnit) return 1;
     const pUnit = purchaseUnit.toLowerCase();
     const uUnit = usageUnit.toLowerCase();
@@ -138,6 +138,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
     const costs: Record<string, number> = {};
+    if (!ingredientsList || ingredientsList.length === 0) return costs;
+    
     for (const prep of preparationsList) {
         if (!prep.id) continue;
         const prepIngredientsSnap = await getDocs(query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id)));
@@ -1202,3 +1204,4 @@ function RecipeDetailSkeleton() {
 
 
     
+
