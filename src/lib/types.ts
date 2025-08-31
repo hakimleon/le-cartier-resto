@@ -14,7 +14,7 @@ export type Ingredient = {
 // Le type pour une préparation/sous-recette (fiche technique de base)
 export type Preparation = {
   id?: string;
-  type: 'Préparation'; // Toujours 'Préparation'
+  type: 'Préparation'; // Champ ajouté pour la cohérence
   name: string;
   description: string;
   
@@ -38,9 +38,9 @@ export type Preparation = {
 // Le type pour un plat final (fiche technique complète)
 export type Recipe = {
   id?: string;
+  type: 'Plat'; // Toujours 'Plat'
   name: string;
   description: string;
-  type: 'Plat'; // Toujours 'Plat'
   
   // Champs communs
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';
@@ -79,7 +79,7 @@ export type RecipeIngredientLink = {
 
 // Lien entre une recette (Plat) et une sous-recette (Préparation)
 export type RecipePreparationLink = {
-    id?: string;
+    id?: string; // Champ ajouté pour l'identifiant du document de liaison
     parentRecipeId: string; // L'ID du "Plat"
     childPreparationId: string; // L'ID de la "Préparation"
     quantity: number;
