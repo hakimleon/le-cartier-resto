@@ -78,9 +78,9 @@ type NewRecipePreparation = {
     quantity: number;
     unit: string;
     totalCost: number;
-    productionUnit: string;
-    productionQuantity: number;
-}
+    // We store these to recalculate cost without re-fetching
+    _costPerUnit?: number; 
+};
 
 const getConversionFactor = (purchaseUnit: string, usageUnit: string) => {
     if (!purchaseUnit || !usageUnit) return 1;
@@ -423,14 +423,52 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 quantity: 0,
                 unit: 'g',
                 totalCost: 0,
-                productionUnit: 'kg',
-                productionQuantity: 1,
             },
         ]);
     };
 
     const handleRemoveNewPreparation = (tempId: string) => {
         setNewPreparations(current => current.filter(p => p.id !== tempId));
+    };
+
+    const handleNewPreparationChange = async (tempId: string, field: keyof NewRecipePreparation, value: any) => {
+        setNewPreparations(current =>
+            Promise.all(current.map(async (prep) => {
+                if (prep.id === tempId) {
+                    let updatedPrep = { ...prep, [field]: value };
+
+                    if (field === 'childRecipeId') {
+                        const selectedPrep = allPreparations.find(p => p.id === value);
+                        if (selectedPrep) {
+                            updatedPrep.name = selectedPrep.name;
+                            
+                            // Calculate cost per unit of the selected preparation
+                            const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", selectedPrep.id));
+                            const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
+                            let prepTotalCost = 0;
+                            for (const prepIngDoc of prepIngredientsSnap.docs) {
+                                const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
+                                const ingDoc = await getDoc(doc(db, "ingredients", prepIngData.ingredientId));
+                                if (ingDoc.exists()) {
+                                    const ingData = ingDoc.data() as Ingredient;
+                                    const factor = getConversionFactor(ingData.unitPurchase, prepIngData.unitUse);
+                                    prepTotalCost += (prepIngData.quantity * ingData.unitPrice) / factor;
+                                }
+                            }
+                            const costPerUnit = (selectedPrep.productionQuantity || 1) > 0 ? prepTotalCost / (selectedPrep.productionQuantity || 1) : 0;
+                            updatedPrep._costPerUnit = costPerUnit;
+                        }
+                    }
+                    
+                    if (updatedPrep._costPerUnit) {
+                        updatedPrep.totalCost = (updatedPrep.quantity || 0) * updatedPrep._costPerUnit;
+                    }
+
+                    return updatedPrep;
+                }
+                return prep;
+            }))
+        );
     };
     
     const handleRemoveExistingPreparation = async (preparationId: string, preparationName: string) => {
@@ -896,7 +934,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             {isEditing && newPreparations.map((prep) => (
                                 <TableRow key={prep.id}>
                                     <TableCell>
-                                        <Select onValueChange={() => {}}>
+                                        <Select 
+                                            value={prep.childRecipeId}
+                                            onValueChange={(value) => handleNewPreparationChange(prep.id, 'childRecipeId', value)}
+                                        >
                                             <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
                                             <SelectContent>
                                                 {allPreparations.map(p => (
@@ -905,8 +946,23 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell><Input type="number" placeholder="Qté" className="w-20" /></TableCell>
-                                    <TableCell><Input placeholder="Unité" className="w-24" /></TableCell>
+                                    <TableCell>
+                                        <Input 
+                                            type="number" 
+                                            placeholder="Qté" 
+                                            className="w-20" 
+                                            value={prep.quantity === 0 ? '' : prep.quantity}
+                                            onChange={(e) => handleNewPreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)}
+                                        />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Input 
+                                            placeholder="Unité" 
+                                            className="w-24" 
+                                            value={prep.unit}
+                                            onChange={(e) => handleNewPreparationChange(prep.id, 'unit', e.target.value)}
+                                        />
+                                    </TableCell>
                                     <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
                                     <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
                                 </TableRow>
@@ -1152,3 +1208,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
