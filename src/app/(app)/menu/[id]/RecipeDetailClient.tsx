@@ -200,8 +200,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         } catch (e: any) {
             console.error("Error fetching initial data: ", e);
-            setError("Impossible de charger les données de support (ingrédients/préparations). " + e.message);
-            setIsLoading(false);
+            if (isMounted) {
+                setError("Impossible de charger les données de support (ingrédients/préparations). " + e.message);
+                setIsLoading(false);
+            }
         }
     };
     
@@ -222,7 +224,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             setError(null);
         }, (e: any) => {
             console.error("Error with recipe snapshot: ", e);
-            if(isMounted) setError("Erreur de chargement de la fiche technique. " + e.message);
+            if(isMounted) {
+                setError("Erreur de chargement de la fiche technique. " + e.message);
+                setIsLoading(false);
+            }
         });
         unsubscribeCallbacks.push(unsubscribeRecipe);
 
@@ -258,11 +263,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 console.error("Error processing recipe ingredients snapshot:", e);
                 setError("Erreur de chargement des ingrédients de la recette. " + e.message);
             } finally {
-                setIsLoading(false);
+                if(isMounted) setIsLoading(false);
             }
         }, (e: any) => {
             console.error("Error with recipe ingredients snapshot: ", e);
-            if(isMounted) setError("Erreur de chargement des ingrédients de la recette. " + e.message);
+            if(isMounted) {
+                setError("Erreur de chargement des ingrédients de la recette. " + e.message);
+                setIsLoading(false);
+            }
         });
         unsubscribeCallbacks.push(unsubscribeRecipeIngredients);
 
@@ -274,10 +282,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 const preparationsDataPromises = recipePreparationsSnap.docs.map(async (linkDoc) => {
                     const linkData = linkDoc.data() as RecipePreparationLink;
                     
-                    // Find the child preparation data from the already loaded list
                     const childRecipeData = allPreparations.find(p => p.id === linkData.childPreparationId);
                     
-                    // **THE FIX**: Check if childRecipeData and its cost are available before processing
                     if (childRecipeData && loadedCosts[linkData.childPreparationId] !== undefined) {
                         const costPerUnit = loadedCosts[linkData.childPreparationId];
                         return {
@@ -289,7 +295,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             totalCost: costPerUnit * (linkData.quantity || 0),
                         };
                     }
-                    return null; // Return null if the linked preparation or its cost is not found
+                    return null;
                 });
                 const resolvedPreparations = (await Promise.all(preparationsDataPromises)).filter(Boolean) as FullRecipePreparation[];
                 setPreparations(resolvedPreparations);
@@ -297,11 +303,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 console.error("Error processing recipe preparations snapshot:", e);
                 setError("Erreur de chargement des sous-recettes. " + e.message);
             } finally {
-                setIsLoading(false);
+                if(isMounted) setIsLoading(false);
             }
         }, (e: any) => {
             console.error("Error with recipe preparations snapshot: ", e);
-            if (isMounted) setError("Erreur de chargement des sous-recettes. " + e.message);
+            if (isMounted) {
+                setError("Erreur de chargement des sous-recettes. " + e.message);
+                setIsLoading(false);
+            }
         });
         unsubscribeCallbacks.push(unsubscribeRecipePreparations);
     };
@@ -1203,10 +1212,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-
-    
-
-
 
     
