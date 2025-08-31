@@ -14,6 +14,7 @@ export type Ingredient = {
 // Le type pour une préparation/sous-recette (fiche technique de base)
 export type Preparation = {
   id?: string;
+  type: 'Préparation'; // Toujours 'Préparation'
   name: string;
   description: string;
   
