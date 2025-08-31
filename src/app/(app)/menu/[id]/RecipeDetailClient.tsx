@@ -252,7 +252,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
     const unsubscribeRecipePreparations = onSnapshot(recipePreparationsQuery, async (recipePreparationsSnap) => {
         // This check prevents running the logic before the costs are calculated
-        if (Object.keys(preparationsCosts).length === 0) return;
+        if (Object.keys(preparationsCosts).length === 0 && allPreparations.length > 0) return;
         try {
             const preparationsDataPromises = recipePreparationsSnap.docs.map(async (linkDoc) => {
                 const linkData = linkDoc.data() as RecipePreparationLink;
@@ -292,7 +292,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return () => {
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId, preparationsCosts]); // Removed preparationsCosts from here in a previous step to avoid loop.
+  }, [recipeId]);
 
   const handleToggleEditMode = () => {
     if (isEditing) {
@@ -1186,7 +1186,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
-
-    
