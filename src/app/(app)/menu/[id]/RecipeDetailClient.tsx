@@ -137,8 +137,29 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
 
  const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
-    // TEMP: Disable complex calculation to ensure page loads
-    return {};
+    const costs: Record<string, number> = {};
+
+    for (const prep of preparationsList) {
+        if (!prep.id) continue;
+        
+        let totalCost = 0;
+        const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
+        const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
+
+        for (const prepIngDoc of prepIngredientsSnap.docs) {
+            const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
+            const ingDoc = ingredientsList.find(i => i.id === prepIngData.ingredientId);
+
+            if (ingDoc && ingDoc.unitPurchase && prepIngData.unitUse) {
+                const factor = getConversionFactor(ingDoc.unitPurchase, prepIngData.unitUse);
+                const costPerUseUnit = (ingDoc.unitPrice || 0) / factor;
+                totalCost += (prepIngData.quantity || 0) * costPerUseUnit;
+            }
+        }
+        
+        costs[prep.id] = (totalCost / (prep.productionQuantity || 1)) || 0;
+    }
+    return costs;
 }, []);
 
 
@@ -173,7 +194,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             if (!isMounted) return;
             setAllPreparations(allPrepsData);
             
-            // 3. Calculate preparation costs (currently disabled for stability)
+            // 3. Calculate preparation costs
             const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
             if (!isMounted) return;
             setPreparationsCosts(costs);
@@ -267,7 +288,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     
                     const childRecipeData = allPreparations.find(p => p.id === linkData.childPreparationId);
                     
-                    // Use a totalCost of 0 as it's temporarily disabled
                     if (childRecipeData) {
                          const costPerUnit = loadedCosts[linkData.childPreparationId] || 0;
                         return {
@@ -1196,6 +1216,8 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
 
