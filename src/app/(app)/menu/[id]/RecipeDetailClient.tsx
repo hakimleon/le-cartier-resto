@@ -273,10 +273,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             try {
                 const preparationsDataPromises = recipePreparationsSnap.docs.map(async (linkDoc) => {
                     const linkData = linkDoc.data() as RecipePreparationLink;
-                    const childRecipeSnap = await getDoc(doc(db, "preparations", linkData.childPreparationId));
-
-                    if (childRecipeSnap.exists() && loadedCosts[linkData.childPreparationId] !== undefined) {
-                        const childRecipeData = childRecipeSnap.data() as Preparation;
+                    
+                    // Find the child preparation data from the already loaded list
+                    const childRecipeData = allPreparations.find(p => p.id === linkData.childPreparationId);
+                    
+                    // **THE FIX**: Check if childRecipeData and its cost are available before processing
+                    if (childRecipeData && loadedCosts[linkData.childPreparationId] !== undefined) {
                         const costPerUnit = loadedCosts[linkData.childPreparationId];
                         return {
                             id: linkDoc.id,
@@ -287,7 +289,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             totalCost: costPerUnit * (linkData.quantity || 0),
                         };
                     }
-                    return null;
+                    return null; // Return null if the linked preparation or its cost is not found
                 });
                 const resolvedPreparations = (await Promise.all(preparationsDataPromises)).filter(Boolean) as FullRecipePreparation[];
                 setPreparations(resolvedPreparations);
@@ -310,7 +312,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       isMounted = false;
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId, calculatePreparationsCosts]); 
+  }, [recipeId, calculatePreparationsCosts, allPreparations]); 
 
   const handleToggleEditMode = () => {
     if (isEditing) {
@@ -1205,3 +1207,6 @@ function RecipeDetailSkeleton() {
 
     
 
+
+
+    
