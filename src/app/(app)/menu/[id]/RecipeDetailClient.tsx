@@ -449,22 +449,28 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     setIsSaving(true);
     try {
-        await updateRecipeDetails(recipeId, {
+        const recipeDataToSave = {
             name: editableRecipe.name,
             description: editableRecipe.description,
-            portions: editableRecipe.portions,
-            tvaRate: editableRecipe.tvaRate,
-            price: editableRecipe.price,
+            difficulty: editableRecipe.difficulty,
+            duration: editableRecipe.duration,
             procedure_preparation: editableRecipe.procedure_preparation,
             procedure_cuisson: editableRecipe.procedure_cuisson,
             procedure_service: editableRecipe.procedure_service,
-            commercialArgument: editableRecipe.commercialArgument,
             imageUrl: editableRecipe.imageUrl,
-            status: editableRecipe.status,
-            difficulty: editableRecipe.difficulty,
-            duration: editableRecipe.duration,
-            category: editableRecipe.category,
-        });
+            ...(editableRecipe.type === 'Plat' ? {
+                portions: editableRecipe.portions,
+                tvaRate: editableRecipe.tvaRate,
+                price: editableRecipe.price,
+                commercialArgument: editableRecipe.commercialArgument,
+                status: editableRecipe.status,
+                category: editableRecipe.category,
+            } : {
+                productionQuantity: editableRecipe.productionQuantity,
+                productionUnit: editableRecipe.productionUnit,
+            })
+        };
+        await updateRecipeDetails(recipeId, recipeDataToSave);
 
         const ingredientUpdatePromises = editableIngredients.map(ing => {
             return updateRecipeIngredient(ing.recipeIngredientId, {
@@ -497,8 +503,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         await Promise.all([
             ...ingredientUpdatePromises, 
-            ...newIngredientPromises, 
-            ...newPreparationPromises
+            ...newIngredientPromises,
+            ...newPreparationPromises,
         ]);
 
         toast({
@@ -1172,5 +1178,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
