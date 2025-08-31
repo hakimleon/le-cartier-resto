@@ -131,10 +131,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
 
   useEffect(() => {
-    // Critical guard: Do not proceed if recipeId is not available
     if (!recipeId) {
         setIsLoading(false);
-        setError("L'identifiant de la recette est manquant.");
+        setError("L'identifiant de la recette est manquante.");
         return;
     }
 
@@ -150,30 +149,23 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const fetchSupportingData = async () => {
         try {
-            // 1. Fetch all available ingredients for the dropdown
-            const allIngredientsQuery = query(collection(db, "ingredients"), where("name", "!=", ""));
-            const allIngredientsSnap = await getDocs(allIngredientsQuery);
-            const allIngredientsData = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
-            setAllIngredients(allIngredientsData);
+            const allIngredientsSnap = await getDocs(query(collection(db, "ingredients"), where("name", "!=", "")));
+            setAllIngredients(allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient)));
 
-            // 2. Fetch all available preparations
-            const allPrepsQuery = query(collection(db, "recipes"), where("type", "==", "Préparation"));
-            const allPrepsSnap = await getDocs(allPrepsQuery);
+            const allPrepsSnap = await getDocs(query(collection(db, "recipes"), where("type", "==", "Préparation")));
             const allPrepsData = allPrepsSnap.docs.map(doc => ({...doc.data(), id: doc.id} as Recipe));
             setAllPreparations(allPrepsData);
 
-            // 3. Pre-calculate costs for all preparations
             const costs: Record<string, number> = {};
             for (const prep of allPrepsData) {
                 if (!prep.id) continue;
-                const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
-                const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
+                const prepIngredientsSnap = await getDocs(query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id)));
                 let prepTotalCost = 0;
                 for (const prepIngDoc of prepIngredientsSnap.docs) {
                     const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
-                    const ingDoc = await getDoc(doc(db, "ingredients", prepIngData.ingredientId));
-                    if (ingDoc.exists()) {
-                        const ingData = ingDoc.data() as Ingredient;
+                    const ingDocSnap = await getDoc(doc(db, "ingredients", prepIngData.ingredientId));
+                    if (ingDocSnap.exists()) {
+                        const ingData = ingDocSnap.data() as Ingredient;
                         const factor = getConversionFactor(ingData.unitPurchase, prepIngData.unitUse);
                         prepTotalCost += (prepIngData.quantity * ingData.unitPrice) / factor;
                     }
@@ -182,7 +174,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 costs[prep.id] = costPerUnit;
             }
             setPreparationsCosts(costs);
-
         } catch (e: any) {
             console.error("Error fetching supporting data: ", e);
             setError("Impossible de charger les données de support (ingrédients/préparations). " + e.message);
@@ -191,8 +182,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     
     fetchSupportingData();
 
-
-    // Set up real-time listener for the recipe document
     const recipeDocRef = doc(db, "recipes", recipeId);
     const unsubscribeRecipe = onSnapshot(recipeDocRef, (recipeSnap) => {
         if (!recipeSnap.exists()) {
@@ -203,21 +192,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         }
         
         const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe;
-        const fullRecipe = {
-          ...fetchedRecipe,
-          portions: fetchedRecipe.portions || 1,
-          tvaRate: fetchedRecipe.tvaRate || 10,
-          procedure_preparation: fetchedRecipe.procedure_preparation || "Procédure de préparation à ajouter.",
-          procedure_cuisson: fetchedRecipe.procedure_cuisson || "Procédure de cuisson à ajouter.",
-          procedure_service: fetchedRecipe.procedure_service || "Procédure de service à ajouter.",
-          allergens: fetchedRecipe.allergens || [],
-          commercialArgument: fetchedRecipe.commercialArgument || "Argumentaire à définir.",
-          duration: fetchedRecipe.duration || 25,
-          difficulty: fetchedRecipe.difficulty || "Moyen",
-          status: fetchedRecipe.status || "Actif",
-        };
-        setRecipe(fullRecipe);
-        setEditableRecipe(fullRecipe);
+        setRecipe(fetchedRecipe);
+        setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe))); // Deep copy
         setError(null);
     }, (e: any) => {
         console.error("Error with recipe snapshot: ", e);
@@ -226,21 +202,17 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     });
     unsubscribeCallbacks.push(unsubscribeRecipe);
 
-    // Set up real-time listener for related ingredients
     const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
     const unsubscribeRecipeIngredients = onSnapshot(recipeIngredientsQuery, async (recipeIngredientsSnap) => {
         try {
             const ingredientsDataPromises = recipeIngredientsSnap.docs.map(async (recipeIngredientDoc) => {
                 const recipeIngredientData = recipeIngredientDoc.data() as RecipeIngredientLink;
-                const ingredientDocRef = doc(db, "ingredients", recipeIngredientData.ingredientId);
-                const ingredientSnap = await getDoc(ingredientDocRef);
+                const ingredientSnap = await getDoc(doc(db, "ingredients", recipeIngredientData.ingredientId));
 
                 if (ingredientSnap.exists()) {
                     const ingredientData = ingredientSnap.data() as Ingredient;
-                    const conversionFactor = getConversionFactor(ingredientData.unitPurchase, recipeIngredientData.unitUse);
-                    const costPerUseUnit = ingredientData.unitPrice / conversionFactor;
-                    const totalCost = (recipeIngredientData.quantity || 0) * costPerUseUnit;
-                    
+                    const factor = getConversionFactor(ingredientData.unitPurchase, recipeIngredientData.unitUse);
+                    const costPerUseUnit = ingredientData.unitPrice / factor;
                     return {
                         id: ingredientSnap.id,
                         recipeIngredientId: recipeIngredientDoc.id,
@@ -249,7 +221,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         unit: recipeIngredientData.unitUse,
                         unitPrice: ingredientData.unitPrice,
                         unitPurchase: ingredientData.unitPurchase,
-                        totalCost: totalCost,
+                        totalCost: (recipeIngredientData.quantity || 0) * costPerUseUnit,
                     };
                 }
                 return null;
@@ -257,7 +229,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
             const resolvedIngredients = (await Promise.all(ingredientsDataPromises)).filter(Boolean) as FullRecipeIngredient[];
             setIngredients(resolvedIngredients);
-            setEditableIngredients(resolvedIngredients);
+            setEditableIngredients(JSON.parse(JSON.stringify(resolvedIngredients)));
         } catch (e: any) {
             console.error("Error processing recipe ingredients snapshot:", e);
             setError("Erreur de chargement des ingrédients de la recette. " + e.message);
@@ -271,28 +243,23 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     });
     unsubscribeCallbacks.push(unsubscribeRecipeIngredients);
 
-
-     // Set up real-time listener for related preparations
     const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
     const unsubscribeRecipePreparations = onSnapshot(recipePreparationsQuery, async (recipePreparationsSnap) => {
         try {
             const preparationsDataPromises = recipePreparationsSnap.docs.map(async (linkDoc) => {
                 const linkData = linkDoc.data() as RecipePreparationLink;
-                const childRecipeDocRef = doc(db, "recipes", linkData.childRecipeId);
-                const childRecipeSnap = await getDoc(childRecipeDocRef);
+                const childRecipeSnap = await getDoc(doc(db, "recipes", linkData.childRecipeId));
 
-                if (childRecipeSnap.exists()) {
+                if (childRecipeSnap.exists() && preparationsCosts[linkData.childRecipeId] !== undefined) {
                     const childRecipeData = childRecipeSnap.data() as Recipe;
-                    const costPerUnit = preparationsCosts[linkData.childRecipeId] || 0;
-                    const totalCostForParent = costPerUnit * (linkData.quantity || 0);
-
+                    const costPerUnit = preparationsCosts[linkData.childRecipeId];
                     return {
                         id: linkDoc.id,
                         childRecipeId: linkData.childRecipeId,
                         name: childRecipeData.name,
                         quantity: linkData.quantity,
                         unit: linkData.unitUse,
-                        totalCost: totalCostForParent,
+                        totalCost: costPerUnit * (linkData.quantity || 0),
                     };
                 }
                 return null;
@@ -314,15 +281,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     });
     unsubscribeCallbacks.push(unsubscribeRecipePreparations);
 
-    // Cleanup function to unsubscribe from all listeners on component unmount
     return () => {
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId, preparationsCosts]); 
+  }, [recipeId]); 
 
   const handleToggleEditMode = () => {
     if (isEditing) {
-        // Cancel editing, revert changes
         if(recipe) setEditableRecipe(JSON.parse(JSON.stringify(recipe)));
         if(ingredients) setEditableIngredients(JSON.parse(JSON.stringify(ingredients)));
         setNewIngredients([]);
@@ -403,7 +368,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const handleRemoveExistingIngredient = async (recipeIngredientId: string, ingredientName: string) => {
     try {
         await deleteRecipeIngredient(recipeIngredientId);
-        // onSnapshot will update the UI automatically.
         toast({
             title: "Succès",
             description: `L'ingrédient "${ingredientName}" a été retiré.`,
@@ -451,9 +415,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0;
                         }
                     }
-
-                    // Recalculate total cost if quantity or selection changes
-                    const costPerUnit = updatedPrep._costPerUnit || 0;
+                    
+                    const costPerUnit = updatedPrep._costPerUnit || preparationsCosts[updatedPrep.childRecipeId] || 0;
                     updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUnit;
 
                     return updatedPrep;
@@ -487,6 +450,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     setIsSaving(true);
     try {
         await updateRecipeDetails(recipeId, {
+            name: editableRecipe.name,
+            description: editableRecipe.description,
             portions: editableRecipe.portions,
             tvaRate: editableRecipe.tvaRate,
             price: editableRecipe.price,
@@ -495,6 +460,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             procedure_service: editableRecipe.procedure_service,
             commercialArgument: editableRecipe.commercialArgument,
             imageUrl: editableRecipe.imageUrl,
+            status: editableRecipe.status,
+            difficulty: editableRecipe.difficulty,
+            duration: editableRecipe.duration,
+            category: editableRecipe.category,
         });
 
         const ingredientUpdatePromises = editableIngredients.map(ing => {
@@ -504,27 +473,33 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             });
         });
 
-        const newIngredientPromises = newIngredients.map(ing => {
-            if (!ing.ingredientId || ing.quantity <= 0) return null;
-            return addDoc(collection(db, "recipeIngredients"), {
-                recipeId: recipeId,
-                ingredientId: ing.ingredientId,
-                quantity: ing.quantity,
-                unitUse: ing.unit,
+        const newIngredientPromises = newIngredients
+            .filter(ing => ing.ingredientId && ing.quantity > 0)
+            .map(ing => {
+                return addDoc(collection(db, "recipeIngredients"), {
+                    recipeId: recipeId,
+                    ingredientId: ing.ingredientId,
+                    quantity: ing.quantity,
+                    unitUse: ing.unit,
+                });
             });
-        });
 
-        const newPreparationPromises = newPreparations.map(prep => {
-            if (!prep.childRecipeId || prep.quantity <= 0) return null;
-            return addDoc(collection(db, "recipePreparationLinks"), {
-                parentRecipeId: recipeId,
-                childRecipeId: prep.childRecipeId,
-                quantity: prep.quantity,
-                unitUse: prep.unit,
+        const newPreparationPromises = newPreparations
+            .filter(prep => prep.childRecipeId && prep.quantity > 0)
+            .map(prep => {
+                return addDoc(collection(db, "recipePreparationLinks"), {
+                    parentRecipeId: recipeId,
+                    childRecipeId: prep.childRecipeId,
+                    quantity: prep.quantity,
+                    unitUse: prep.unit,
+                });
             });
-        });
 
-        await Promise.all([...ingredientUpdatePromises, ...newIngredientPromises.filter(Boolean), ...newPreparationPromises.filter(Boolean)]);
+        await Promise.all([
+            ...ingredientUpdatePromises, 
+            ...newIngredientPromises, 
+            ...newPreparationPromises
+        ]);
 
         toast({
             title: "Succès",
@@ -532,7 +507,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         });
 
         setIsEditing(false);
-        setNewIngredients([]); // Clear new ingredients form on save
+        setNewIngredients([]);
         setNewPreparations([]);
 
     } catch (error) {
@@ -550,16 +525,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const currentRecipeData = isEditing ? editableRecipe : recipe;
   const currentIngredientsData = isEditing ? editableIngredients : ingredients;
   
-  const combinedIngredients = useMemo(() => {
-    const existing = currentIngredientsData ? JSON.parse(JSON.stringify(currentIngredientsData)) : [];
-    const newOnes = newIngredients ? JSON.parse(JSON.stringify(newIngredients)) : [];
-    
-    return [...existing, ...newOnes];
-  }, [currentIngredientsData, newIngredients]);
-
   const {
-    totalIngredientsCost,
-    totalPreparationsCost,
     totalRecipeCost,
     costPerPortion,
     priceHT,
@@ -569,17 +535,18 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     multiplierCoefficient
   } = useMemo(() => {
     if (!currentRecipeData) return {
-        totalIngredientsCost: 0, totalPreparationsCost: 0, totalRecipeCost: 0,
-        costPerPortion: 0, priceHT: 0, grossMargin: 0,
+        totalRecipeCost: 0, costPerPortion: 0, priceHT: 0, grossMargin: 0,
         grossMarginPercentage: 0, foodCostPercentage: 0, multiplierCoefficient: 0
     };
 
-    const ingredientsCost = combinedIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+    const ingredientsCost = (isEditing ? editableIngredients : ingredients).reduce((acc, item) => acc + (item.totalCost || 0), 0);
+    const newIngredientsCost = newIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
     const preparationsCost = preparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
     const newPreparationsCost = newPreparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
-    const totalCost = ingredientsCost + preparationsCost + newPreparationsCost;
+    
+    const totalCost = ingredientsCost + newIngredientsCost + preparationsCost + newPreparationsCost;
 
-    const portions = currentRecipeData.type === 'Plat' ? currentRecipeData.portions || 1 : currentRecipeData.productionQuantity || 1;
+    const portions = currentRecipeData.type === 'Plat' ? (currentRecipeData.portions || 1) : (currentRecipeData.productionQuantity || 1);
     const costPerPortionValue = portions > 0 ? totalCost / portions : 0;
     const tvaRate = currentRecipeData.tvaRate || 10;
     const price = currentRecipeData.price || 0;
@@ -591,8 +558,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const multiplierCoefficientValue = costPerPortionValue > 0 ? priceHTValue / costPerPortionValue : 0;
 
     return {
-        totalIngredientsCost: ingredientsCost,
-        totalPreparationsCost: preparationsCost + newPreparationsCost,
         totalRecipeCost: totalCost,
         costPerPortion: costPerPortionValue,
         priceHT: priceHTValue,
@@ -601,7 +566,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         foodCostPercentage: foodCostPercentageValue,
         multiplierCoefficient: multiplierCoefficientValue
     };
-  }, [currentRecipeData, combinedIngredients, preparations, newPreparations]);
+  }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, newPreparations, isEditing]);
 
 
   if (isLoading) {
@@ -872,7 +837,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 </TableRow>
                              ))}
 
-                             {combinedIngredients.length === 0 && (
+                             {currentIngredientsData.length === 0 && newIngredients.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié à cette recette.</TableCell>
                                 </TableRow>
@@ -1209,6 +1174,3 @@ function RecipeDetailSkeleton() {
   }
 
     
-
-    
-
