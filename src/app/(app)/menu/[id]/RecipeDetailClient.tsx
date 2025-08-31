@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation } from "@/lib/types";
@@ -18,7 +18,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, deleteRecipePreparationLink, addRecipePreparationLink } from "../actions";
+import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparation, deleteRecipePreparationLink } from "../actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -136,6 +136,27 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [preparationsCosts, setPreparationsCosts] = useState<Record<string, number>>({});
 
 
+  const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
+    const costs: Record<string, number> = {};
+    for (const prep of preparationsList) {
+        if (!prep.id) continue;
+        const prepIngredientsSnap = await getDocs(query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id)));
+        let prepTotalCost = 0;
+        for (const prepIngDoc of prepIngredientsSnap.docs) {
+            const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
+            const ingDoc = ingredientsList.find(i => i.id === prepIngData.ingredientId);
+            if (ingDoc) {
+                const factor = getConversionFactor(ingDoc.unitPurchase, prepIngData.unitUse);
+                prepTotalCost += (prepIngData.quantity * ingDoc.unitPrice) / factor;
+            }
+        }
+        const costPerUnit = (prep.productionQuantity || 1) > 0 ? prepTotalCost / (prep.productionQuantity || 1) : 0;
+        costs[prep.id] = costPerUnit;
+    }
+    return costs;
+  }, []);
+
+
   useEffect(() => {
     if (!recipeId) {
         setIsLoading(false);
@@ -150,155 +171,144 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }
     
     setIsLoading(true);
-
+    let isMounted = true;
     const unsubscribeCallbacks: (() => void)[] = [];
 
-    const fetchSupportingData = async () => {
+    const fetchAllData = async () => {
         try {
-            // Fetch all ingredients
-            const allIngredientsSnap = await getDocs(query(collection(db, "ingredients"), where("name", "!=", "")));
+            // 1. Fetch all ingredients first, as they are needed for cost calculations
+            const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
             const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+            if (!isMounted) return;
             setAllIngredients(ingredientsList);
 
-            // Fetch all "Préparation" type recipes
+            // 2. Fetch all preparations
             const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
             const allPrepsData = allPrepsSnap.docs.map(doc => ({...doc.data(), id: doc.id} as Preparation));
+            if (!isMounted) return;
             setAllPreparations(allPrepsData);
-
-            // Pre-calculate cost per unit for each preparation
-            const costs: Record<string, number> = {};
-            for (const prep of allPrepsData) {
-                if (!prep.id) continue;
-                const prepIngredientsSnap = await getDocs(query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id)));
-                let prepTotalCost = 0;
-                for (const prepIngDoc of prepIngredientsSnap.docs) {
-                    const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
-                    const ingDoc = ingredientsList.find(i => i.id === prepIngData.ingredientId);
-                    if (ingDoc) {
-                        const factor = getConversionFactor(ingDoc.unitPurchase, prepIngData.unitUse);
-                        prepTotalCost += (prepIngData.quantity * ingDoc.unitPrice) / factor;
-                    }
-                }
-                const costPerUnit = (prep.productionQuantity || 1) > 0 ? prepTotalCost / (prep.productionQuantity || 1) : 0;
-                costs[prep.id] = costPerUnit;
-            }
+            
+            // 3. Calculate preparation costs
+            const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
+            if (!isMounted) return;
             setPreparationsCosts(costs);
+
+            // 4. Set up listeners
+            setupListeners(ingredientsList, costs);
+
         } catch (e: any) {
-            console.error("Error fetching supporting data: ", e);
+            console.error("Error fetching initial data: ", e);
             setError("Impossible de charger les données de support (ingrédients/préparations). " + e.message);
+            setIsLoading(false);
         }
     };
     
-    // Recipe main data listener
-    const recipeDocRef = doc(db, "recipes", recipeId);
-    const unsubscribeRecipe = onSnapshot(recipeDocRef, (recipeSnap) => {
-        if (!recipeSnap.exists()) {
-            setError("Fiche technique non trouvée.");
-            setRecipe(null);
-            setIsLoading(false);
-            return;
-        }
-        
-        const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe;
-        setRecipe(fetchedRecipe);
-        setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe))); // Deep copy
-        setError(null);
-    }, (e: any) => {
-        console.error("Error with recipe snapshot: ", e);
-        setError("Erreur de chargement de la fiche technique. " + e.message);
-        setIsLoading(false);
-    });
-    unsubscribeCallbacks.push(unsubscribeRecipe);
+    const setupListeners = (loadedIngredients: Ingredient[], loadedCosts: Record<string, number>) => {
+        // Recipe main data listener
+        const recipeDocRef = doc(db, "recipes", recipeId);
+        const unsubscribeRecipe = onSnapshot(recipeDocRef, (recipeSnap) => {
+            if (!isMounted) return;
+            if (!recipeSnap.exists()) {
+                setError("Fiche technique non trouvée.");
+                setRecipe(null);
+                setIsLoading(false);
+                return;
+            }
+            const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe;
+            setRecipe(fetchedRecipe);
+            setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe))); // Deep copy
+            setError(null);
+        }, (e: any) => {
+            console.error("Error with recipe snapshot: ", e);
+            if(isMounted) setError("Erreur de chargement de la fiche technique. " + e.message);
+        });
+        unsubscribeCallbacks.push(unsubscribeRecipe);
 
-    // Recipe Ingredients listener
-    const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
-    const unsubscribeRecipeIngredients = onSnapshot(recipeIngredientsQuery, async (recipeIngredientsSnap) => {
-        try {
-            if (allIngredients.length === 0) await fetchSupportingData();
-            const ingredientsDataPromises = recipeIngredientsSnap.docs.map(async (recipeIngredientDoc) => {
-                const recipeIngredientData = recipeIngredientDoc.data() as RecipeIngredientLink;
-                const ingredientSnap = await getDoc(doc(db, "ingredients", recipeIngredientData.ingredientId));
+        // Recipe Ingredients listener
+        const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
+        const unsubscribeRecipeIngredients = onSnapshot(recipeIngredientsQuery, async (recipeIngredientsSnap) => {
+            if (!isMounted) return;
+            try {
+                const ingredientsDataPromises = recipeIngredientsSnap.docs.map(async (recipeIngredientDoc) => {
+                    const recipeIngredientData = recipeIngredientDoc.data() as RecipeIngredientLink;
+                    const ingredientData = loadedIngredients.find(i => i.id === recipeIngredientData.ingredientId);
+                    
+                    if (ingredientData) {
+                        const factor = getConversionFactor(ingredientData.unitPurchase, recipeIngredientData.unitUse);
+                        const costPerUseUnit = ingredientData.unitPrice / factor;
+                        return {
+                            id: ingredientData.id!,
+                            recipeIngredientId: recipeIngredientDoc.id,
+                            name: ingredientData.name,
+                            quantity: recipeIngredientData.quantity,
+                            unit: recipeIngredientData.unitUse,
+                            unitPrice: ingredientData.unitPrice,
+                            unitPurchase: ingredientData.unitPurchase,
+                            totalCost: (recipeIngredientData.quantity || 0) * costPerUseUnit,
+                        };
+                    }
+                    return null;
+                });
+                const resolvedIngredients = (await Promise.all(ingredientsDataPromises)).filter(Boolean) as FullRecipeIngredient[];
+                setIngredients(resolvedIngredients);
+                setEditableIngredients(JSON.parse(JSON.stringify(resolvedIngredients)));
+            } catch (e: any) {
+                console.error("Error processing recipe ingredients snapshot:", e);
+                setError("Erreur de chargement des ingrédients de la recette. " + e.message);
+            } finally {
+                setIsLoading(false);
+            }
+        }, (e: any) => {
+            console.error("Error with recipe ingredients snapshot: ", e);
+            if(isMounted) setError("Erreur de chargement des ingrédients de la recette. " + e.message);
+        });
+        unsubscribeCallbacks.push(unsubscribeRecipeIngredients);
 
-                if (ingredientSnap.exists()) {
-                    const ingredientData = ingredientSnap.data() as Ingredient;
-                    const factor = getConversionFactor(ingredientData.unitPurchase, recipeIngredientData.unitUse);
-                    const costPerUseUnit = ingredientData.unitPrice / factor;
-                    return {
-                        id: ingredientSnap.id,
-                        recipeIngredientId: recipeIngredientDoc.id,
-                        name: ingredientData.name,
-                        quantity: recipeIngredientData.quantity,
-                        unit: recipeIngredientData.unitUse,
-                        unitPrice: ingredientData.unitPrice,
-                        unitPurchase: ingredientData.unitPurchase,
-                        totalCost: (recipeIngredientData.quantity || 0) * costPerUseUnit,
-                    };
-                }
-                return null;
-            });
+        // Recipe Preparations listener
+        const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
+        const unsubscribeRecipePreparations = onSnapshot(recipePreparationsQuery, async (recipePreparationsSnap) => {
+             if (!isMounted) return;
+            try {
+                const preparationsDataPromises = recipePreparationsSnap.docs.map(async (linkDoc) => {
+                    const linkData = linkDoc.data() as RecipePreparationLink;
+                    const childRecipeSnap = await getDoc(doc(db, "preparations", linkData.childPreparationId));
 
-            const resolvedIngredients = (await Promise.all(ingredientsDataPromises)).filter(Boolean) as FullRecipeIngredient[];
-            setIngredients(resolvedIngredients);
-            setEditableIngredients(JSON.parse(JSON.stringify(resolvedIngredients)));
-        } catch (e: any) {
-            console.error("Error processing recipe ingredients snapshot:", e);
-            setError("Erreur de chargement des ingrédients de la recette. " + e.message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, (e: any) => {
-        console.error("Error with recipe ingredients snapshot: ", e);
-        setError("Erreur de chargement des ingrédients de la recette. " + e.message);
-        setIsLoading(false);
-    });
-    unsubscribeCallbacks.push(unsubscribeRecipeIngredients);
+                    if (childRecipeSnap.exists() && loadedCosts[linkData.childPreparationId] !== undefined) {
+                        const childRecipeData = childRecipeSnap.data() as Preparation;
+                        const costPerUnit = loadedCosts[linkData.childPreparationId];
+                        return {
+                            id: linkDoc.id,
+                            childPreparationId: linkData.childPreparationId,
+                            name: childRecipeData.name,
+                            quantity: linkData.quantity,
+                            unit: linkData.unitUse,
+                            totalCost: costPerUnit * (linkData.quantity || 0),
+                        };
+                    }
+                    return null;
+                });
+                const resolvedPreparations = (await Promise.all(preparationsDataPromises)).filter(Boolean) as FullRecipePreparation[];
+                setPreparations(resolvedPreparations);
+            } catch (e: any) {
+                console.error("Error processing recipe preparations snapshot:", e);
+                setError("Erreur de chargement des sous-recettes. " + e.message);
+            } finally {
+                setIsLoading(false);
+            }
+        }, (e: any) => {
+            console.error("Error with recipe preparations snapshot: ", e);
+            if (isMounted) setError("Erreur de chargement des sous-recettes. " + e.message);
+        });
+        unsubscribeCallbacks.push(unsubscribeRecipePreparations);
+    };
 
-    // Recipe Preparations listener
-    const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
-    const unsubscribeRecipePreparations = onSnapshot(recipePreparationsQuery, async (recipePreparationsSnap) => {
-        try {
-            if (Object.keys(preparationsCosts).length === 0) await fetchSupportingData();
-
-            const preparationsDataPromises = recipePreparationsSnap.docs.map(async (linkDoc) => {
-                const linkData = linkDoc.data() as RecipePreparationLink;
-                // Child recipe is now a preparation from the 'preparations' collection
-                const childRecipeSnap = await getDoc(doc(db, "preparations", linkData.childPreparationId));
-
-                if (childRecipeSnap.exists() && preparationsCosts[linkData.childPreparationId] !== undefined) {
-                    const childRecipeData = childRecipeSnap.data() as Preparation;
-                    const costPerUnit = preparationsCosts[linkData.childPreparationId];
-                    return {
-                        id: linkDoc.id,
-                        childPreparationId: linkData.childPreparationId,
-                        name: childRecipeData.name,
-                        quantity: linkData.quantity,
-                        unit: linkData.unitUse,
-                        totalCost: costPerUnit * (linkData.quantity || 0),
-                    };
-                }
-                return null;
-            });
-
-            const resolvedPreparations = (await Promise.all(preparationsDataPromises)).filter(Boolean) as FullRecipePreparation[];
-            setPreparations(resolvedPreparations);
-
-        } catch (e: any) {
-            console.error("Error processing recipe preparations snapshot:", e);
-            setError("Erreur de chargement des sous-recettes. " + e.message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, (e: any) => {
-        console.error("Error with recipe preparations snapshot: ", e);
-        setError("Erreur de chargement des sous-recettes. " + e.message);
-        setIsLoading(false);
-    });
-    unsubscribeCallbacks.push(unsubscribeRecipePreparations);
+    fetchAllData();
 
     return () => {
+      isMounted = false;
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId]); 
+  }, [recipeId, calculatePreparationsCosts]); 
 
   const handleToggleEditMode = () => {
     if (isEditing) {
@@ -504,7 +514,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const newPreparationPromises = newPreparations
             .filter(prep => prep.childPreparationId && prep.quantity > 0)
             .map(prep => {
-                return addRecipePreparationLink({
+                return addRecipePreparation({
                     parentRecipeId: recipeId,
                     childPreparationId: prep.childPreparationId,
                     quantity: prep.quantity,
@@ -1189,3 +1199,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
