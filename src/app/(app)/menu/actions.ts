@@ -3,7 +3,7 @@
 
 import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Recipe } from '@/lib/types';
+import { Recipe, RecipePreparationLink } from '@/lib/types';
 
 export async function saveDish(recipe: Omit<Recipe, 'id'>, id: string | null) {
   if (id) {
@@ -38,12 +38,9 @@ export async function deleteDish(id: string) {
     const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
     recipePreparationsSnap.forEach(doc => batch.delete(doc.ref));
 
-    // 4. Find and delete all links where this recipe is a CHILD
-    const childRecipeLinksQuery = query(collection(db, "recipePreparationLinks"), where("childRecipeId", "==", id));
-    const childRecipeLinksSnap = await getDocs(childRecipeLinksQuery);
-    childRecipeLinksSnap.forEach(doc => batch.delete(doc.ref));
+    // NOTE: No need to find where this recipe is a CHILD, because a "Plat" cannot be a child.
   
-    // 5. Commit the batch
+    // 4. Commit the batch
     await batch.commit();
     
     // onSnapshot will handle UI updates
@@ -58,11 +55,11 @@ export async function deleteRecipeIngredient(recipeIngredientId: string) {
   // No revalidation needed, onSnapshot handles updates on the client
 }
 
-export async function deleteRecipePreparation(recipePreparationId: string) {
-    if (!recipePreparationId) {
+export async function deleteRecipePreparation(recipePreparationLinkId: string) {
+    if (!recipePreparationLinkId) {
       throw new Error("L'identifiant de la liaison est requis pour la suppression.");
     }
-    const recipePreparationDoc = doc(db, 'recipePreparationLinks', recipePreparationId);
+    const recipePreparationDoc = doc(db, 'recipePreparationLinks', recipePreparationLinkId);
     await deleteDoc(recipePreparationDoc);
     // onSnapshot will handle UI updates
   }
@@ -83,9 +80,6 @@ export async function updateRecipeIngredient(recipeIngredientId: string, data: {
     await updateDoc(recipeIngredientDoc, data);
 }
 
-    
-
-    
-
-
-    
+export async function addRecipePreparation(link: Omit<RecipePreparationLink, 'id'>) {
+    await addDoc(collection(db, "recipePreparationLinks"), link);
+}

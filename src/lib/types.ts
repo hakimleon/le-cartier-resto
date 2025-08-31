@@ -81,7 +81,7 @@ export type RecipeIngredientLink = {
 export type RecipePreparationLink = {
     id?: string;
     parentRecipeId: string; // L'ID du "Plat"
-    childRecipeId: string; // L'ID de la "Préparation"
+    childPreparationId: string; // L'ID de la "Préparation"
     quantity: number;
     unitUse: string;
 };

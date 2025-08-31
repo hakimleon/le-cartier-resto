@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Recipe, RecipeIngredient, Ingredient, RecipeIngredientLink, RecipePreparationLink, Preparation } from "@/lib/types";
+import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, deleteRecipePreparation } from "../actions";
+import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, deleteRecipePreparation, addRecipePreparation } from "../actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -45,9 +45,15 @@ type RecipeDetailClientProps = {
 };
 
 // Extends RecipeIngredient to include purchase unit details for conversion
-type FullRecipeIngredient = RecipeIngredient & {
-    unitPurchase: string; 
+type FullRecipeIngredient = {
+    id: string; // Ingredient ID
     recipeIngredientId: string; // The ID of the document in recipeIngredients collection
+    name: string;
+    quantity: number;
+    unit: string;
+    unitPrice: number;
+    unitPurchase: string; 
+    totalCost: number;
 };
 
 type NewRecipeIngredient = {
@@ -63,7 +69,7 @@ type NewRecipeIngredient = {
 
 type FullRecipePreparation = {
     id: string; // The link document ID
-    childRecipeId: string;
+    childPreparationId: string;
     name: string;
     quantity: number;
     unit: string;
@@ -72,7 +78,7 @@ type FullRecipePreparation = {
 
 type NewRecipePreparation = {
     id: string; // Temporary client-side ID
-    childRecipeId: string;
+    childPreparationId: string;
     name: string;
     quantity: number;
     unit: string;
@@ -151,9 +157,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         try {
             // Fetch all ingredients
             const allIngredientsSnap = await getDocs(query(collection(db, "ingredients"), where("name", "!=", "")));
-            setAllIngredients(allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient)));
+            const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+            setAllIngredients(ingredientsList);
 
-            // Fetch all "Préparation" type recipes from the 'preparations' collection
+            // Fetch all "Préparation" type recipes
             const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
             const allPrepsData = allPrepsSnap.docs.map(doc => ({...doc.data(), id: doc.id} as Preparation));
             setAllPreparations(allPrepsData);
@@ -162,16 +169,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const costs: Record<string, number> = {};
             for (const prep of allPrepsData) {
                 if (!prep.id) continue;
-                // Since preparations are now self-contained with ingredients in recipeIngredients, we can calculate their cost
                 const prepIngredientsSnap = await getDocs(query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id)));
                 let prepTotalCost = 0;
                 for (const prepIngDoc of prepIngredientsSnap.docs) {
                     const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
-                    const ingDocSnap = await getDoc(doc(db, "ingredients", prepIngData.ingredientId));
-                    if (ingDocSnap.exists()) {
-                        const ingData = ingDocSnap.data() as Ingredient;
-                        const factor = getConversionFactor(ingData.unitPurchase, prepIngData.unitUse);
-                        prepTotalCost += (prepIngData.quantity * ingData.unitPrice) / factor;
+                    const ingDoc = ingredientsList.find(i => i.id === prepIngData.ingredientId);
+                    if (ingDoc) {
+                        const factor = getConversionFactor(ingDoc.unitPurchase, prepIngData.unitUse);
+                        prepTotalCost += (prepIngData.quantity * ingDoc.unitPrice) / factor;
                     }
                 }
                 const costPerUnit = (prep.productionQuantity || 1) > 0 ? prepTotalCost / (prep.productionQuantity || 1) : 0;
@@ -184,8 +189,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         }
     };
     
-    fetchSupportingData();
-
     // Recipe main data listener
     const recipeDocRef = doc(db, "recipes", recipeId);
     const unsubscribeRecipe = onSnapshot(recipeDocRef, (recipeSnap) => {
@@ -211,6 +214,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
     const unsubscribeRecipeIngredients = onSnapshot(recipeIngredientsQuery, async (recipeIngredientsSnap) => {
         try {
+            if (allIngredients.length === 0) await fetchSupportingData();
             const ingredientsDataPromises = recipeIngredientsSnap.docs.map(async (recipeIngredientDoc) => {
                 const recipeIngredientData = recipeIngredientDoc.data() as RecipeIngredientLink;
                 const ingredientSnap = await getDoc(doc(db, "ingredients", recipeIngredientData.ingredientId));
@@ -252,19 +256,20 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     // Recipe Preparations listener
     const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
     const unsubscribeRecipePreparations = onSnapshot(recipePreparationsQuery, async (recipePreparationsSnap) => {
-        if (Object.keys(preparationsCosts).length === 0 && allPreparations.length > 0) return;
         try {
+            if (Object.keys(preparationsCosts).length === 0) await fetchSupportingData();
+
             const preparationsDataPromises = recipePreparationsSnap.docs.map(async (linkDoc) => {
                 const linkData = linkDoc.data() as RecipePreparationLink;
                 // Child recipe is now a preparation from the 'preparations' collection
-                const childRecipeSnap = await getDoc(doc(db, "preparations", linkData.childRecipeId));
+                const childRecipeSnap = await getDoc(doc(db, "preparations", linkData.childPreparationId));
 
-                if (childRecipeSnap.exists() && preparationsCosts[linkData.childRecipeId] !== undefined) {
+                if (childRecipeSnap.exists() && preparationsCosts[linkData.childPreparationId] !== undefined) {
                     const childRecipeData = childRecipeSnap.data() as Preparation;
-                    const costPerUnit = preparationsCosts[linkData.childRecipeId];
+                    const costPerUnit = preparationsCosts[linkData.childPreparationId];
                     return {
                         id: linkDoc.id,
-                        childRecipeId: linkData.childRecipeId,
+                        childPreparationId: linkData.childPreparationId,
                         name: childRecipeData.name,
                         quantity: linkData.quantity,
                         unit: linkData.unitUse,
@@ -293,7 +298,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return () => {
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId, allPreparations.length]); // Rerun if allPreparations are loaded
+  }, [recipeId]); 
 
   const handleToggleEditMode = () => {
     if (isEditing) {
@@ -397,7 +402,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             ...newPreparations,
             {
                 id: `new-prep-${Date.now()}`,
-                childRecipeId: '',
+                childPreparationId: '',
                 name: '',
                 quantity: 0,
                 unit: 'g',
@@ -416,7 +421,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 if (p.id === tempId) {
                     const updatedPrep = { ...p, [field]: value };
                     
-                    if (field === 'childRecipeId') {
+                    if (field === 'childPreparationId') {
                         const selectedPrep = allPreparations.find(prep => prep.id === value);
                         if (selectedPrep) {
                             updatedPrep.name = selectedPrep.name;
@@ -425,7 +430,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         }
                     }
                     
-                    const costPerUnit = updatedPrep._costPerUnit || preparationsCosts[updatedPrep.childRecipeId] || 0;
+                    const costPerUnit = updatedPrep._costPerUnit || preparationsCosts[updatedPrep.childPreparationId] || 0;
                     updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUnit;
 
                     return updatedPrep;
@@ -435,9 +440,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         );
     };
     
-    const handleRemoveExistingPreparation = async (preparationId: string, preparationName: string) => {
+    const handleRemoveExistingPreparation = async (preparationLinkId: string, preparationName: string) => {
         try {
-            await deleteRecipePreparation(preparationId);
+            await deleteRecipePreparation(preparationLinkId);
             toast({
                 title: "Succès",
                 description: `La sous-recette "${preparationName}" a été retirée.`,
@@ -497,11 +502,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             });
 
         const newPreparationPromises = newPreparations
-            .filter(prep => prep.childRecipeId && prep.quantity > 0)
+            .filter(prep => prep.childPreparationId && prep.quantity > 0)
             .map(prep => {
-                return addDoc(collection(db, "recipePreparationLinks"), {
+                return addRecipePreparation({
                     parentRecipeId: recipeId,
-                    childRecipeId: prep.childRecipeId,
+                    childPreparationId: prep.childPreparationId,
                     quantity: prep.quantity,
                     unitUse: prep.unit,
                 });
@@ -904,8 +909,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TableRow key={prep.id}>
                                     <TableCell>
                                         <Select 
-                                            value={prep.childRecipeId}
-                                            onValueChange={(value) => handleNewPreparationChange(prep.id, 'childRecipeId', value)}
+                                            value={prep.childPreparationId}
+                                            onValueChange={(value) => handleNewPreparationChange(prep.id, 'childPreparationId', value)}
                                         >
                                             <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
                                             <SelectContent>
@@ -1184,5 +1189,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
