@@ -291,7 +291,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return () => {
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId, allPreparations.length]); // Removed preparationsCosts from dependencies
+  }, [recipeId]); 
 
   const handleToggleEditMode = () => {
     if (isEditing) {
@@ -1185,5 +1185,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
