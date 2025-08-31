@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Recipe, RecipeIngredient, Ingredient, RecipeIngredientLink, RecipePreparationLink } from "@/lib/types";
+import { Recipe, RecipeIngredient, Ingredient, RecipeIngredientLink, RecipePreparationLink, Preparation } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -126,7 +126,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   
   const [newIngredients, setNewIngredients] = useState<NewRecipeIngredient[]>([]);
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
-  const [allPreparations, setAllPreparations] = useState<Recipe[]>([]);
+  const [allPreparations, setAllPreparations] = useState<Preparation[]>([]);
   const [preparationsCosts, setPreparationsCosts] = useState<Record<string, number>>({});
 
 
@@ -153,15 +153,16 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const allIngredientsSnap = await getDocs(query(collection(db, "ingredients"), where("name", "!=", "")));
             setAllIngredients(allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient)));
 
-            // Fetch all "Préparation" type recipes
-            const allPrepsSnap = await getDocs(query(collection(db, "recipes"), where("type", "==", "Préparation")));
-            const allPrepsData = allPrepsSnap.docs.map(doc => ({...doc.data(), id: doc.id} as Recipe));
+            // Fetch all "Préparation" type recipes from the 'preparations' collection
+            const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
+            const allPrepsData = allPrepsSnap.docs.map(doc => ({...doc.data(), id: doc.id} as Preparation));
             setAllPreparations(allPrepsData);
 
             // Pre-calculate cost per unit for each preparation
             const costs: Record<string, number> = {};
             for (const prep of allPrepsData) {
                 if (!prep.id) continue;
+                // Since preparations are now self-contained with ingredients in recipeIngredients, we can calculate their cost
                 const prepIngredientsSnap = await getDocs(query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id)));
                 let prepTotalCost = 0;
                 for (const prepIngDoc of prepIngredientsSnap.docs) {
@@ -255,10 +256,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         try {
             const preparationsDataPromises = recipePreparationsSnap.docs.map(async (linkDoc) => {
                 const linkData = linkDoc.data() as RecipePreparationLink;
-                const childRecipeSnap = await getDoc(doc(db, "recipes", linkData.childRecipeId));
+                // Child recipe is now a preparation from the 'preparations' collection
+                const childRecipeSnap = await getDoc(doc(db, "preparations", linkData.childRecipeId));
 
                 if (childRecipeSnap.exists() && preparationsCosts[linkData.childRecipeId] !== undefined) {
-                    const childRecipeData = childRecipeSnap.data() as Recipe;
+                    const childRecipeData = childRecipeSnap.data() as Preparation;
                     const costPerUnit = preparationsCosts[linkData.childRecipeId];
                     return {
                         id: linkDoc.id,
@@ -291,7 +293,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return () => {
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId]); 
+  }, [recipeId, allPreparations.length]); // Rerun if allPreparations are loaded
 
   const handleToggleEditMode = () => {
     if (isEditing) {
@@ -472,10 +474,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 commercialArgument: editableRecipe.commercialArgument,
                 status: editableRecipe.status,
                 category: editableRecipe.category,
-            } : {
-                productionQuantity: editableRecipe.productionQuantity,
-                productionUnit: editableRecipe.productionUnit,
-            })
+            } : {})
         };
         await updateRecipeDetails(recipeId, recipeDataToSave);
 
@@ -559,7 +558,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     
     const totalCost = ingredientsCost + newIngredientsCost + preparationsCost + newPreparationsCost;
 
-    const portions = currentRecipeData.type === 'Plat' ? (currentRecipeData.portions || 1) : (currentRecipeData.productionQuantity || 1);
+    const portions = currentRecipeData.type === 'Plat' ? (currentRecipeData.portions || 1) : 1;
     const costPerPortionValue = portions > 0 ? totalCost / portions : 0;
     const tvaRate = currentRecipeData.tvaRate || 10;
     const price = currentRecipeData.price || 0;
@@ -1015,7 +1014,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardContent>
                      <div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)}€</div>
                      <p className="text-xs text-muted-foreground text-right mt-1">
-                        {isPlat ? "Coût par portion : " + costPerPortion.toFixed(2) + "€" : "Coût par " + (currentRecipeData.productionUnit || 'unité') + " : " + (totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2) + "€"}
+                        {isPlat ? "Coût par portion : " + costPerPortion.toFixed(2) + "€" : "Coût par " + (recipe.productionUnit || 'unité') + " : " + (totalRecipeCost / (recipe.productionQuantity || 1)).toFixed(2) + "€"}
                      </p>
                 </CardContent>
             </Card>
@@ -1185,7 +1184,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
 
     
