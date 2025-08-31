@@ -39,7 +39,6 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ImageUploadDialog } from "./ImageUploadDialog";
-import FloatingSaveButton from "./FloatingSaveButton";
 
 type RecipeDetailClientProps = {
   recipeId: string;
