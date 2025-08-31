@@ -432,43 +432,41 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     };
 
     const handleNewPreparationChange = async (tempId: string, field: keyof NewRecipePreparation, value: any) => {
-        setNewPreparations(current =>
-            Promise.all(current.map(async (prep) => {
-                if (prep.id === tempId) {
-                    let updatedPrep = { ...prep, [field]: value };
+         const newPrepState = [...newPreparations];
+         const prepIndex = newPrepState.findIndex(p => p.id === tempId);
+         if(prepIndex === -1) return;
 
-                    if (field === 'childRecipeId') {
-                        const selectedPrep = allPreparations.find(p => p.id === value);
-                        if (selectedPrep) {
-                            updatedPrep.name = selectedPrep.name;
-                            
-                            // Calculate cost per unit of the selected preparation
-                            const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", selectedPrep.id));
-                            const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
-                            let prepTotalCost = 0;
-                            for (const prepIngDoc of prepIngredientsSnap.docs) {
-                                const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
-                                const ingDoc = await getDoc(doc(db, "ingredients", prepIngData.ingredientId));
-                                if (ingDoc.exists()) {
-                                    const ingData = ingDoc.data() as Ingredient;
-                                    const factor = getConversionFactor(ingData.unitPurchase, prepIngData.unitUse);
-                                    prepTotalCost += (prepIngData.quantity * ingData.unitPrice) / factor;
-                                }
-                            }
-                            const costPerUnit = (selectedPrep.productionQuantity || 1) > 0 ? prepTotalCost / (selectedPrep.productionQuantity || 1) : 0;
-                            updatedPrep._costPerUnit = costPerUnit;
-                        }
-                    }
-                    
-                    if (updatedPrep._costPerUnit) {
-                        updatedPrep.totalCost = (updatedPrep.quantity || 0) * updatedPrep._costPerUnit;
-                    }
+         let updatedPrep = { ...newPrepState[prepIndex], [field]: value };
 
-                    return updatedPrep;
-                }
-                return prep;
-            }))
-        );
+         if (field === 'childRecipeId') {
+             const selectedPrep = allPreparations.find(p => p.id === value);
+             if (selectedPrep) {
+                 updatedPrep.name = selectedPrep.name;
+                 
+                 // Calculate cost per unit of the selected preparation
+                 const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", selectedPrep.id));
+                 const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
+                 let prepTotalCost = 0;
+                 for (const prepIngDoc of prepIngredientsSnap.docs) {
+                     const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
+                     const ingDoc = await getDoc(doc(db, "ingredients", prepIngData.ingredientId));
+                     if (ingDoc.exists()) {
+                         const ingData = ingDoc.data() as Ingredient;
+                         const factor = getConversionFactor(ingData.unitPurchase, prepIngData.unitUse);
+                         prepTotalCost += (prepIngData.quantity * ingData.unitPrice) / factor;
+                     }
+                 }
+                 const costPerUnit = (selectedPrep.productionQuantity || 1) > 0 ? prepTotalCost / (selectedPrep.productionQuantity || 1) : 0;
+                 updatedPrep._costPerUnit = costPerUnit;
+             }
+         }
+         
+         if (updatedPrep._costPerUnit) {
+             updatedPrep.totalCost = (updatedPrep.quantity || 0) * updatedPrep._costPerUnit;
+         }
+
+         newPrepState[prepIndex] = updatedPrep;
+         setNewPreparations(newPrepState);
     };
     
     const handleRemoveExistingPreparation = async (preparationId: string, preparationName: string) => {
