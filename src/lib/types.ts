@@ -1,65 +1,68 @@
 
-
-export type RecipeIngredient = {
-  id: string;
-  name: string;
-  quantity: number;
-  unit: string;
-  unitPrice: number;
-  totalCost: number;
+// Le type pour un ingrédient de base
+export type Ingredient = {
+    id?: string;
+    name: string;
+    category: string;
+    stockQuantity: number;
+    unitPurchase: string; // ex: kg, litre, pièce
+    lowStockThreshold: number;
+    unitPrice: number;
+    supplier: string;
 };
 
-// This will represent both a "Plat" and a "Préparation"
+// Le type pour une préparation/sous-recette (fiche technique de base)
+export type Preparation = {
+  id?: string;
+  name: string;
+  description: string;
+  duration?: number; // en minutes
+  difficulty?: 'Facile' | 'Moyen' | 'Difficile';
+  productionQuantity: number; // Quantité produite
+  productionUnit: string; // Unité de la quantité produite (kg, litre, pièce)
+  procedure_preparation?: string;
+  procedure_cuisson?: string;
+  procedure_service?: string;
+  // Ce type n'a pas de prix de vente ni de statut Actif/Inactif
+};
+
+// Le type pour un plat final (fiche technique complète)
 export type Recipe = {
   id?: string;
   name: string;
   description: string;
-  type: 'Plat' | 'Préparation';
+  type: 'Plat'; // Toujours 'Plat'
   
-  // Common fields
+  // Champs communs
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';
   duration?: number; // in minutes
   tags?: string[];
   imageUrl?: string;
   
-  // Fields for Fiche Technique (both Plat and Préparation)
-  portions?: number; // For a Plat
-  productionQuantity?: number; // For a Préparation
-  productionUnit?: string; // For a Préparation (e.g., kg, litre)
-
+  // Champs Fiche Technique
+  portions: number;
   procedure_preparation?: string;
   procedure_cuisson?: string;
   procedure_service?: string;
   allergens?: string[];
-  commercialArgument?: string; // Primarily for Plat
+  commercialArgument?: string;
 
-  // Fields specific to "Plat"
-  price?: number; // Prix de vente
-  category?: | 'Entrées froides et chaudes'
+  // Champs spécifiques au Plat
+  price: number; // Prix de vente
+  category: | 'Entrées froides et chaudes'
   | 'Plats et Grillades'
   | 'Les mets de chez nous'
   | 'Symphonie de pâtes'
   | 'Nos Burgers Bistronomiques'
   | 'Dessert'
   | 'Élixirs & Rafraîchissements';
-  status?: 'Actif' | 'Inactif';
+  status: 'Actif' | 'Inactif';
   tvaRate?: number; // en pourcentage (ex: 10 pour 10%)
 };
 
-export type Ingredient = {
-    id?: string;
-    name: string;
-    category: string;
-    stockQuantity: number;
-    unitPurchase: string;
-    lowStockThreshold: number;
-    unitPrice: number;
-    supplier: string;
-};
-
-// Lien entre une recette et un ingrédient brut
+// Lien entre une recette/préparation et un ingrédient brut
 export type RecipeIngredientLink = {
-    recipeId: string;
+    recipeId: string; // ID de la recette (Plat) OU de la préparation
     ingredientId: string;
     quantity: number;
     unitUse: string;
@@ -68,8 +71,8 @@ export type RecipeIngredientLink = {
 // Lien entre une recette (Plat) et une sous-recette (Préparation)
 export type RecipePreparationLink = {
     id?: string;
-    parentRecipeId: string; // The "Plat"
-    childRecipeId: string; // The "Préparation"
+    parentRecipeId: string; // L'ID du "Plat"
+    childPreparationId: string; // L'ID de la "Préparation"
     quantity: number;
     unitUse: string;
 };
