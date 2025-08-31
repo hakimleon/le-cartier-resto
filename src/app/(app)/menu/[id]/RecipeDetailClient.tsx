@@ -77,8 +77,7 @@ type NewRecipePreparation = {
     quantity: number;
     unit: string;
     totalCost: number;
-    // We store these to recalculate cost without re-fetching
-    _costPerUnit?: number; 
+    _costPerUnit?: number; // Internal: to recalculate cost
 };
 
 const getConversionFactor = (purchaseUnit: string, usageUnit: string) => {
@@ -128,10 +127,16 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [newIngredients, setNewIngredients] = useState<NewRecipeIngredient[]>([]);
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
   const [allPreparations, setAllPreparations] = useState<Recipe[]>([]);
+  const [preparationsCosts, setPreparationsCosts] = useState<Record<string, number>>({});
 
 
   useEffect(() => {
-    if (!recipeId) return; // Guard clause to prevent running with undefined recipeId
+    // Critical guard: Do not proceed if recipeId is not available
+    if (!recipeId) {
+        setIsLoading(false);
+        setError("L'identifiant de la recette est manquant.");
+        return;
+    }
 
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante.");
@@ -143,36 +148,51 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const unsubscribeCallbacks: (() => void)[] = [];
 
-    // 1. Fetch all available ingredients for the dropdown (one-time fetch is fine here)
-    const fetchAllIngredients = async () => {
+    const fetchSupportingData = async () => {
         try {
+            // 1. Fetch all available ingredients for the dropdown
             const allIngredientsQuery = query(collection(db, "ingredients"), where("name", "!=", ""));
             const allIngredientsSnap = await getDocs(allIngredientsQuery);
             const allIngredientsData = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
             setAllIngredients(allIngredientsData);
-        } catch (e: any) {
-            console.error("Error fetching all ingredients: ", e);
-            setError("Impossible de charger la liste complète des ingrédients. " + e.message);
-        }
-    };
-    fetchAllIngredients();
 
-    // Fetch all available preparations
-    const fetchAllPreparations = async () => {
-        try {
+            // 2. Fetch all available preparations
             const allPrepsQuery = query(collection(db, "recipes"), where("type", "==", "Préparation"));
             const allPrepsSnap = await getDocs(allPrepsQuery);
             const allPrepsData = allPrepsSnap.docs.map(doc => ({...doc.data(), id: doc.id} as Recipe));
             setAllPreparations(allPrepsData);
-        } catch(e: any) {
-             console.error("Error fetching all preparations: ", e);
-            setError("Impossible de charger la liste complète des préparations. " + e.message);
+
+            // 3. Pre-calculate costs for all preparations
+            const costs: Record<string, number> = {};
+            for (const prep of allPrepsData) {
+                if (!prep.id) continue;
+                const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
+                const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
+                let prepTotalCost = 0;
+                for (const prepIngDoc of prepIngredientsSnap.docs) {
+                    const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
+                    const ingDoc = await getDoc(doc(db, "ingredients", prepIngData.ingredientId));
+                    if (ingDoc.exists()) {
+                        const ingData = ingDoc.data() as Ingredient;
+                        const factor = getConversionFactor(ingData.unitPurchase, prepIngData.unitUse);
+                        prepTotalCost += (prepIngData.quantity * ingData.unitPrice) / factor;
+                    }
+                }
+                const costPerUnit = (prep.productionQuantity || 1) > 0 ? prepTotalCost / (prep.productionQuantity || 1) : 0;
+                costs[prep.id] = costPerUnit;
+            }
+            setPreparationsCosts(costs);
+
+        } catch (e: any) {
+            console.error("Error fetching supporting data: ", e);
+            setError("Impossible de charger les données de support (ingrédients/préparations). " + e.message);
         }
     };
-    fetchAllPreparations();
+    
+    fetchSupportingData();
 
 
-    // 2. Set up real-time listener for the recipe document
+    // Set up real-time listener for the recipe document
     const recipeDocRef = doc(db, "recipes", recipeId);
     const unsubscribeRecipe = onSnapshot(recipeDocRef, (recipeSnap) => {
         if (!recipeSnap.exists()) {
@@ -206,7 +226,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     });
     unsubscribeCallbacks.push(unsubscribeRecipe);
 
-    // 3. Set up real-time listener for related ingredients
+    // Set up real-time listener for related ingredients
     const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
     const unsubscribeRecipeIngredients = onSnapshot(recipeIngredientsQuery, async (recipeIngredientsSnap) => {
         try {
@@ -252,7 +272,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     unsubscribeCallbacks.push(unsubscribeRecipeIngredients);
 
 
-     // 4. Set up real-time listener for related preparations
+     // Set up real-time listener for related preparations
     const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
     const unsubscribeRecipePreparations = onSnapshot(recipePreparationsQuery, async (recipePreparationsSnap) => {
         try {
@@ -263,22 +283,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
                 if (childRecipeSnap.exists()) {
                     const childRecipeData = childRecipeSnap.data() as Recipe;
-                    // We need to calculate the cost of the preparation first
-                    const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", childRecipeData.id));
-                    const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
-                    
-                    let prepTotalCost = 0;
-                    for (const prepIngDoc of prepIngredientsSnap.docs) {
-                        const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
-                        const ingDoc = await getDoc(doc(db, "ingredients", prepIngData.ingredientId));
-                        if (ingDoc.exists()) {
-                            const ingData = ingDoc.data() as Ingredient;
-                            const factor = getConversionFactor(ingData.unitPurchase, prepIngData.unitUse);
-                            prepTotalCost += (prepIngData.quantity * ingData.unitPrice) / factor;
-                        }
-                    }
-
-                    const costPerUnit = (childRecipeData.productionQuantity || 1) > 0 ? prepTotalCost / (childRecipeData.productionQuantity || 1) : 0;
+                    const costPerUnit = preparationsCosts[linkData.childRecipeId] || 0;
                     const totalCostForParent = costPerUnit * (linkData.quantity || 0);
 
                     return {
@@ -313,7 +318,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return () => {
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId]); 
+  }, [recipeId, preparationsCosts]); 
 
   const handleToggleEditMode = () => {
     if (isEditing) {
@@ -432,53 +437,24 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setNewPreparations(current => current.filter(p => p.id !== tempId));
     };
 
-    const handleNewPreparationChange = async (tempId: string, field: keyof NewRecipePreparation, value: any) => {
+    const handleNewPreparationChange = (tempId: string, field: keyof NewRecipePreparation, value: any) => {
         setNewPreparations(current =>
             current.map(p => {
                 if (p.id === tempId) {
                     const updatedPrep = { ...p, [field]: value };
-
+                    
                     if (field === 'childRecipeId') {
                         const selectedPrep = allPreparations.find(prep => prep.id === value);
                         if (selectedPrep) {
                             updatedPrep.name = selectedPrep.name;
-                            updatedPrep.unit = selectedPrep.productionUnit || 'g'; // Default unit from preparation
-                            
-                            // Define async function to calculate cost and update state
-                            const calculateCost = async () => {
-                                const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", selectedPrep.id));
-                                const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
-                                let prepTotalCost = 0;
-                                for (const prepIngDoc of prepIngredientsSnap.docs) {
-                                    const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
-                                    const ingDoc = await getDoc(doc(db, "ingredients", prepIngData.ingredientId));
-                                    if (ingDoc.exists()) {
-                                        const ingData = ingDoc.data() as Ingredient;
-                                        const factor = getConversionFactor(ingData.unitPurchase, prepIngData.unitUse);
-                                        prepTotalCost += (prepIngData.quantity * ingData.unitPrice) / factor;
-                                    }
-                                }
-                                const costPerUnit = (selectedPrep.productionQuantity || 1) > 0 ? prepTotalCost / (selectedPrep.productionQuantity || 1) : 0;
-                                
-                                // Update state inside the map to create the final object
-                                setNewPreparations(currentInner => currentInner.map(pi => {
-                                    if (pi.id === tempId) {
-                                        return { ...updatedPrep, _costPerUnit: costPerUnit, totalCost: (updatedPrep.quantity || 0) * costPerUnit };
-                                    }
-                                    return pi;
-                                }));
-                            };
-                            
-                            calculateCost();
-                            // Return the preparation with its name and unit updated immediately
-                            return updatedPrep;
+                            updatedPrep.unit = selectedPrep.productionUnit || 'g';
+                            updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0;
                         }
                     }
 
-                    // Recalculate cost if quantity changes and costPerUnit is known
-                    if (field === 'quantity' && updatedPrep._costPerUnit) {
-                        updatedPrep.totalCost = (updatedPrep.quantity || 0) * updatedPrep._costPerUnit;
-                    }
+                    // Recalculate total cost if quantity or selection changes
+                    const costPerUnit = updatedPrep._costPerUnit || 0;
+                    updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUnit;
 
                     return updatedPrep;
                 }
@@ -1235,3 +1211,4 @@ function RecipeDetailSkeleton() {
     
 
     
+
