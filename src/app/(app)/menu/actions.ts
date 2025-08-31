@@ -33,12 +33,12 @@ export async function deleteDish(id: string) {
     const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
     recipeIngredientsSnap.forEach(doc => batch.delete(doc.ref));
 
-    // 3. Find and delete all related preparation links
+    // 3. Find and delete all related preparation links (where this recipe is the PARENT)
     const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", id));
     const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
     recipePreparationsSnap.forEach(doc => batch.delete(doc.ref));
 
-    // 4. Find and delete all links where this recipe is a child
+    // 4. Find and delete all links where this recipe is a CHILD
     const childRecipeLinksQuery = query(collection(db, "recipePreparationLinks"), where("childRecipeId", "==", id));
     const childRecipeLinksSnap = await getDocs(childRecipeLinksQuery);
     childRecipeLinksSnap.forEach(doc => batch.delete(doc.ref));
