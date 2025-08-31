@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -401,6 +401,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     };
 
     const totalCost = combinedIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+    // TODO: Add cost of sub-recipes here later
     const portions = currentRecipeData.type === 'Plat' ? currentRecipeData.portions || 1 : currentRecipeData.productionQuantity || 1;
     const costPerPortionValue = portions > 0 ? totalCost / portions : 0;
     const tvaRate = currentRecipeData.tvaRate || 10;
@@ -561,13 +562,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>
-                         {isEditing && <Button variant="outline" size="sm" onClick={handleAddNewIngredient}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter</Button>}
+                         {isEditing && <Button variant="outline" size="sm" onClick={handleAddNewIngredient}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Ingrédient</Button>}
                     </CardTitle>
                     <CardDescription>
-                        {isPlat 
-                            ? `Liste des ingrédients nécessaires pour ${currentRecipeData.portions} portions.`
-                            : `Liste des ingrédients pour produire ${currentRecipeData.productionQuantity} ${currentRecipeData.productionUnit}.`
-                        }
+                       Liste des matières premières nécessaires pour la recette.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -702,14 +700,41 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                              )}
                         </TableBody>
                     </Table>
-                    <div className="flex justify-end mt-4 gap-4">
-                        <div className="text-right">
-                            <p className="text-muted-foreground">Coût total matières</p>
-                            <p className="text-xl font-bold">{totalIngredientsCost.toFixed(2)}€</p>
-                        </div>
-                    </div>
                 </CardContent>
             </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                        <div className="flex items-center gap-2"><BookCopy className="h-5 w-5"/>Sous-Recettes</div>
+                         {isEditing && <Button variant="outline" size="sm" onClick={() => {}}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Préparation</Button>}
+                    </CardTitle>
+                    <CardDescription>
+                       Liste des préparations (fiches techniques internes) utilisées dans cette recette.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead className="w-1/3">Préparation</TableHead>
+                                <TableHead>Quantité</TableHead>
+                                <TableHead>Unité</TableHead>
+                                <TableHead className="text-right">Coût</TableHead>
+                                {isEditing && <TableHead className="w-[50px]"></TableHead>}
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            <TableRow>
+                                <TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">
+                                    Aucune sous-recette ajoutée.
+                                </TableCell>
+                            </TableRow>
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
 
             <Card>
                 <CardHeader>
@@ -769,6 +794,17 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         {/* Column 3 (Right): Analysis & Details */}
         <div className="space-y-8">
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle>
+                </CardHeader>
+                <CardContent>
+                     <div className="text-3xl font-bold text-right">{totalIngredientsCost.toFixed(2)}€</div>
+                     <p className="text-xs text-muted-foreground text-right mt-1">
+                        {isPlat ? "Coût par portion : " + costPerPortion.toFixed(2) + "€" : "Coût par " + currentRecipeData.productionUnit + " : " + (totalIngredientsCost / (currentRecipeData.productionQuantity || 1)).toFixed(2) + "€"}
+                     </p>
+                </CardContent>
+            </Card>
             {isPlat && (
                 <>
                     <Card>
@@ -932,3 +968,4 @@ function RecipeDetailSkeleton() {
     
 
     
+
