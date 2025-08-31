@@ -251,7 +251,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     // Recipe Preparations listener
     const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
     const unsubscribeRecipePreparations = onSnapshot(recipePreparationsQuery, async (recipePreparationsSnap) => {
-        // This check prevents running the logic before the costs are calculated
         if (Object.keys(preparationsCosts).length === 0 && allPreparations.length > 0) return;
         try {
             const preparationsDataPromises = recipePreparationsSnap.docs.map(async (linkDoc) => {
@@ -292,7 +291,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return () => {
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId]);
+  }, [recipeId, allPreparations.length]); // Removed preparationsCosts from dependencies
 
   const handleToggleEditMode = () => {
     if (isEditing) {
@@ -1186,3 +1185,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
