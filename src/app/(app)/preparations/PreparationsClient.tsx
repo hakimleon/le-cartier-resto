@@ -8,11 +8,32 @@ import { Recipe } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, PlusCircle, Search } from "lucide-react";
-import { RecipeCard } from "@/components/RecipeCard";
+import { AlertTriangle, PlusCircle, Search, FileText, Pencil, Trash2 } from "lucide-react";
 import { RecipeModal } from "./RecipeModal";
 import { useToast } from "@/hooks/use-toast";
 import { deleteDish } from "@/app/(app)/menu/actions";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 export default function PreparationsClient() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
@@ -30,7 +51,6 @@ export default function PreparationsClient() {
     
     setIsLoading(true);
     const recipesCol = collection(db, "recipes");
-    // We only want to show items of type 'Préparation'
     const q = query(recipesCol, where("type", "==", "Préparation"));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -87,37 +107,97 @@ export default function PreparationsClient() {
     );
   }, [recipes, searchTerm]);
 
-  const renderRecipeList = (recipeList: Recipe[]) => {
-    if (isLoading) {
-       return (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex flex-col space-y-3">
-                    <div className="h-48 rounded-md bg-muted animate-pulse" />
-                    <div className="space-y-2">
-                        <div className="h-4 w-3/4 rounded bg-muted animate-pulse" />
-                        <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
-                    </div>
-                </div>
-            ))}
-        </div>
-      );
-    }
-    if (recipeList.length === 0) {
-      return <div className="text-center text-muted-foreground pt-12">Aucune préparation ne correspond à votre recherche.</div>;
-    }
-    return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {recipeList.map((recipe) => (
-          <RecipeCard 
-            key={recipe.id} 
-            recipe={recipe} 
-            onDelete={() => handleDelete(recipe.id!, recipe.name)}
-          />
-        ))}
-      </div>
-    );
-  };
+  const renderSkeleton = () => (
+    <Card className="shadow-none border">
+        <CardContent className="p-0">
+             <Table>
+                <TableHeader>
+                    <TableRow>
+                    {Array.from({length: 4}).map((_, i) => <TableHead key={i}><Skeleton className="h-5 w-full" /></TableHead>)}
+                    </TableRow>
+                </TableHeader>
+                <TableBody>
+                    {Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                        {Array.from({length: 4}).map((_, j) => <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>)}
+                    </TableRow>
+                    ))}
+                </TableBody>
+            </Table>
+        </CardContent>
+    </Card>
+  );
+
+  const renderTable = (recipeList: Recipe[]) => (
+     <Card className="shadow-none border">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nom de la préparation</TableHead>
+                  <TableHead>Description</TableHead>
+                  <TableHead>Production</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {recipeList.length > 0 ? (
+                  recipeList.map((recipe) => (
+                    <TableRow key={recipe.id}>
+                      <TableCell className="font-medium">{recipe.name}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm max-w-sm truncate">{recipe.description}</TableCell>
+                      <TableCell>
+                        {recipe.productionQuantity} {recipe.productionUnit}
+                      </TableCell>
+                      <TableCell>
+                          <div className="flex items-center justify-end gap-1">
+                            <Link href={`/menu/${recipe.id}`}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" title="Voir la fiche technique">
+                                    <FileText className="h-4 w-4" />
+                                </Button>
+                            </Link>
+                            <RecipeModal recipe={recipe} type="Préparation" onSuccess={() => { /* onSnapshot handles updates */ }}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier">
+                                    <Pencil className="h-4 w-4" />
+                                </Button>
+                            </RecipeModal>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Supprimer">
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    Cette action est irréversible. La préparation "{recipe.name}" sera supprimée définitivement.
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                  <AlertDialogAction onClick={() => handleDelete(recipe.id!, recipe.name)}>Supprimer</AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={4} className="h-24 text-center">
+                      Aucune préparation trouvée.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+  );
 
   if (error && !isFirebaseConfigured) {
     return (
@@ -166,7 +246,7 @@ export default function PreparationsClient() {
       )}
 
       <div className="pt-4">
-        {renderRecipeList(filteredRecipes)}
+        {isLoading ? renderSkeleton() : renderTable(filteredRecipes)}
       </div>
 
     </div>
