@@ -131,6 +131,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
 
   useEffect(() => {
+    if (!recipeId) return; // Guard clause to prevent running with undefined recipeId
+
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante.");
       setIsLoading(false);
@@ -441,9 +443,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         if (selectedPrep) {
                             updatedPrep.name = selectedPrep.name;
                             updatedPrep.unit = selectedPrep.productionUnit || 'g'; // Default unit from preparation
-                            // We will calculate cost on the fly for simplicity now
-                            // This part is complex because it requires fetching all ingredients for the child recipe
-                            // Let's do it properly now
+                            
+                            // Define async function to calculate cost and update state
                             const calculateCost = async () => {
                                 const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", selectedPrep.id));
                                 const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
@@ -458,12 +459,19 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     }
                                 }
                                 const costPerUnit = (selectedPrep.productionQuantity || 1) > 0 ? prepTotalCost / (selectedPrep.productionQuantity || 1) : 0;
-                                updatedPrep._costPerUnit = costPerUnit;
-                                updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUnit;
-                                // We need to update state again once cost is calculated
-                                setNewPreparations(currentInner => currentInner.map(pi => pi.id === tempId ? updatedPrep : pi));
+                                
+                                // Update state inside the map to create the final object
+                                setNewPreparations(currentInner => currentInner.map(pi => {
+                                    if (pi.id === tempId) {
+                                        return { ...updatedPrep, _costPerUnit: costPerUnit, totalCost: (updatedPrep.quantity || 0) * costPerUnit };
+                                    }
+                                    return pi;
+                                }));
                             };
+                            
                             calculateCost();
+                            // Return the preparation with its name and unit updated immediately
+                            return updatedPrep;
                         }
                     }
 
