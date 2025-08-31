@@ -86,15 +86,40 @@ type NewRecipePreparation = {
     _costPerUnit?: number; // Internal: to recalculate cost
 };
 
-const getConversionFactor = (purchaseUnit?: string, usageUnit?: string) => {
-    if (!purchaseUnit || !usageUnit) return 1;
-    const pUnit = purchaseUnit.toLowerCase();
-    const uUnit = usageUnit.toLowerCase();
-    if (pUnit === uUnit) return 1;
-    if (pUnit === 'kg' && uUnit === 'g') return 1000;
-    if (pUnit === 'l' && uUnit === 'ml') return 1000;
-    return 1; // Default to 1 if no conversion rule found
-}
+const getConversionFactor = (purchaseUnit: string, usageUnit: string): number => {
+    if (!purchaseUnit || !usageUnit) {
+      return 1;
+    }
+  
+    const pUnit = purchaseUnit.toLowerCase().trim();
+    const uUnit = usageUnit.toLowerCase().trim();
+  
+    if (pUnit === uUnit) {
+      return 1;
+    }
+  
+    const conversions: Record<string, Record<string, number>> = {
+      'kg': { 'g': 1000 },
+      'l': { 'ml': 1000 },
+      'litre': { 'ml': 1000 },
+    };
+  
+    if (conversions[pUnit] && conversions[pUnit][uUnit]) {
+      return conversions[pUnit][uUnit];
+    }
+  
+    // Handle reverse conversion (e.g., g to kg)
+    for (const baseUnit in conversions) {
+      for (const targetUnit in conversions[baseUnit]) {
+        if (baseUnit === uUnit && targetUnit === pUnit) {
+          return 1 / conversions[baseUnit][targetUnit];
+        }
+      }
+    }
+  
+    return 1; // Default if no conversion rule found
+  };
+  
 
 const GAUGE_LEVELS = {
   exceptionnel: { icon: Star },
@@ -150,7 +175,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
             const ingDoc = ingredientsList.find(i => i.id === prepIngData.ingredientId);
 
-            if (ingDoc && ingDoc.unitPurchase && prepIngData.unitUse) {
+            // Robust check
+            if (ingDoc && ingDoc.unitPrice && ingDoc.unitPurchase && prepIngData.unitUse) {
                 const factor = getConversionFactor(ingDoc.unitPurchase, prepIngData.unitUse);
                 const costPerUseUnit = (ingDoc.unitPrice || 0) / factor;
                 totalCost += (prepIngData.quantity || 0) * costPerUseUnit;
@@ -244,7 +270,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     const recipeIngredientData = recipeIngredientDoc.data() as RecipeIngredientLink;
                     const ingredientData = loadedIngredients.find(i => i.id === recipeIngredientData.ingredientId);
                     
-                    if (ingredientData) {
+                    if (ingredientData && ingredientData.unitPurchase && recipeIngredientData.unitUse) {
                         const factor = getConversionFactor(ingredientData.unitPurchase, recipeIngredientData.unitUse);
                         const costPerUseUnit = ingredientData.unitPrice / factor;
                         return {
@@ -1216,6 +1242,8 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
 
