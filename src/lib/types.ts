@@ -67,6 +67,7 @@ export type RecipeIngredientLink = {
 
 // Lien entre une recette (Plat) et une sous-recette (Préparation)
 export type RecipePreparationLink = {
+    id?: string;
     parentRecipeId: string; // The "Plat"
     childRecipeId: string; // The "Préparation"
     quantity: number;

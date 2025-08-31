@@ -53,6 +53,15 @@ export async function deleteRecipeIngredient(recipeIngredientId: string) {
   // No revalidation needed, onSnapshot handles updates on the client
 }
 
+export async function deleteRecipePreparation(recipePreparationId: string) {
+    if (!recipePreparationId) {
+      throw new Error("L'identifiant de la liaison est requis pour la suppression.");
+    }
+    const recipePreparationDoc = doc(db, 'recipePreparationLinks', recipePreparationId);
+    await deleteDoc(recipePreparationDoc);
+    // onSnapshot will handle UI updates
+  }
+
 export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe>) {
     if (!recipeId) {
         throw new Error("L'identifiant de la recette est requis.");
