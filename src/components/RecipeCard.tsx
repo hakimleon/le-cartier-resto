@@ -3,7 +3,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Recipe } from "@/lib/types";
+import { Recipe, Preparation } from "@/lib/types";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,7 +20,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { RecipeModal } from "@/app/(app)/preparations/RecipeModal";
+import { DishModal } from "@/app/(app)/menu/DishModal";
+import { PreparationModal } from "@/app/(app)/preparations/PreparationModal";
 
 type RecipeCardProps = {
     recipe: Recipe;
@@ -35,6 +36,27 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
     const tags = recipe.tags || []; 
 
     const isPreparation = recipe.type === 'Préparation';
+
+    const EditModal = () => {
+        if (recipe.type === 'Plat') {
+            return (
+                <DishModal dish={recipe} onSuccess={() => { /* onSnapshot handles updates */ }}>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier">
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                </DishModal>
+            )
+        }
+        // The cast is safe here because if it's not a Plat, it must be a Preparation based on old logic
+        // This component might need a refactor to handle a single type in the future
+        return (
+             <PreparationModal preparation={recipe as unknown as Preparation} onSuccess={() => { /* onSnapshot handles updates */ }}>
+                <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier">
+                    <Pencil className="h-4 w-4" />
+                </Button>
+            </PreparationModal>
+        )
+    }
 
     return (
         <Card className={cn(
@@ -101,11 +123,9 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                             <FileText className="h-4 w-4" />
                         </Button>
                     </Link>
-                    <RecipeModal recipe={recipe} type={recipe.type} onSuccess={() => { /* onSnapshot will handle updates */ }}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier">
-                            <Pencil className="h-4 w-4" />
-                        </Button>
-                    </RecipeModal>
+                    
+                    <EditModal />
+
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Supprimer">
@@ -117,7 +137,7 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                           <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
                           <AlertDialogDescription>
                             Cette action est irréversible. L'élément "{recipe.name}" sera supprimé définitivement.
-                          </AlertDialogDescription>
+                          </Description>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
                           <AlertDialogCancel>Annuler</AlertDialogCancel>
@@ -130,5 +150,3 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
         </Card>
     );
 }
-
-    

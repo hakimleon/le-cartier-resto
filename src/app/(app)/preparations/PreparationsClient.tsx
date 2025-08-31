@@ -2,16 +2,16 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Recipe } from "@/lib/types";
+import { Preparation } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, PlusCircle, Search, FileText, Pencil, Trash2 } from "lucide-react";
-import { RecipeModal } from "./RecipeModal";
+import { PreparationModal } from "./PreparationModal";
 import { useToast } from "@/hooks/use-toast";
-import { deleteDish } from "@/app/(app)/menu/actions";
+import { deletePreparation } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Table,
@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 export default function PreparationsClient() {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
+  const [preparations, setPreparations] = useState<Preparation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
@@ -50,15 +50,15 @@ export default function PreparationsClient() {
     }
     
     setIsLoading(true);
-    const recipesCol = collection(db, "recipes");
-    const q = query(recipesCol, where("type", "==", "Préparation"));
+    const prepsCol = collection(db, "preparations");
+    const q = query(prepsCol);
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         try {
-            const recipesData = querySnapshot.docs.map(
-                (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
+            const prepsData = querySnapshot.docs.map(
+                (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
             );
-            setRecipes(recipesData);
+            setPreparations(prepsData);
             setError(null);
         } catch(e: any) {
             console.error("Error processing preparations snapshot: ", e);
@@ -81,7 +81,7 @@ export default function PreparationsClient() {
 
   const handleDelete = async (id: string, name: string) => {
       try {
-        await deleteDish(id);
+        await deletePreparation(id);
         toast({
           title: "Succès",
           description: `La préparation "${name}" a été supprimée.`,
@@ -100,12 +100,12 @@ export default function PreparationsClient() {
     setSearchTerm(e.target.value);
   };
 
-  const filteredRecipes = useMemo(() => {
-    if (!searchTerm) return recipes;
-    return recipes.filter(recipe =>
-      recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPreparations = useMemo(() => {
+    if (!searchTerm) return preparations;
+    return preparations.filter(p =>
+      p.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
-  }, [recipes, searchTerm]);
+  }, [preparations, searchTerm]);
 
   const renderSkeleton = () => (
     <Card className="shadow-none border">
@@ -128,7 +128,7 @@ export default function PreparationsClient() {
     </Card>
   );
 
-  const renderTable = (recipeList: Recipe[]) => (
+  const renderTable = (prepList: Preparation[]) => (
      <Card className="shadow-none border">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -142,26 +142,26 @@ export default function PreparationsClient() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recipeList.length > 0 ? (
-                  recipeList.map((recipe) => (
-                    <TableRow key={recipe.id}>
-                      <TableCell className="font-medium">{recipe.name}</TableCell>
-                      <TableCell className="text-muted-foreground text-sm max-w-sm truncate">{recipe.description}</TableCell>
+                {prepList.length > 0 ? (
+                  prepList.map((prep) => (
+                    <TableRow key={prep.id}>
+                      <TableCell className="font-medium">{prep.name}</TableCell>
+                      <TableCell className="text-muted-foreground text-sm max-w-sm truncate">{prep.description}</TableCell>
                       <TableCell>
-                        {recipe.productionQuantity} {recipe.productionUnit}
+                        {prep.productionQuantity} {prep.productionUnit}
                       </TableCell>
                       <TableCell>
                           <div className="flex items-center justify-end gap-1">
-                            <Link href={`/menu/${recipe.id}`}>
+                            <Link href={`/menu/${prep.id}`}>
                                 <Button variant="ghost" size="icon" className="h-8 w-8" title="Voir la fiche technique">
                                     <FileText className="h-4 w-4" />
                                 </Button>
                             </Link>
-                            <RecipeModal recipe={recipe} type="Préparation" onSuccess={() => { /* onSnapshot handles updates */ }}>
+                            <PreparationModal preparation={prep} onSuccess={() => { /* onSnapshot handles updates */ }}>
                                 <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier">
                                     <Pencil className="h-4 w-4" />
                                 </Button>
-                            </RecipeModal>
+                            </PreparationModal>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Supprimer">
@@ -172,12 +172,12 @@ export default function PreparationsClient() {
                                 <AlertDialogHeader>
                                   <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
                                   <AlertDialogDescription>
-                                    Cette action est irréversible. La préparation "{recipe.name}" sera supprimée définitivement.
+                                    Cette action est irréversible. La préparation "{prep.name}" sera supprimée définitivement.
                                   </AlertDialogDescription>
                                 </AlertDialogHeader>
                                 <AlertDialogFooter>
                                   <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                  <AlertDialogAction onClick={() => handleDelete(recipe.id!, recipe.name)}>Supprimer</AlertDialogAction>
+                                  <AlertDialogAction onClick={() => handleDelete(prep.id!, prep.name)}>Supprimer</AlertDialogAction>
                                 </AlertDialogFooter>
                               </AlertDialogContent>
                             </AlertDialog>
@@ -228,12 +228,12 @@ export default function PreparationsClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <RecipeModal recipe={null} type="Préparation" onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <PreparationModal preparation={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouvelle Préparation
                 </Button>
-            </RecipeModal>
+            </PreparationModal>
         </div>
       </header>
 
@@ -246,7 +246,7 @@ export default function PreparationsClient() {
       )}
 
       <div className="pt-4">
-        {isLoading ? renderSkeleton() : renderTable(filteredRecipes)}
+        {isLoading ? renderSkeleton() : renderTable(filteredPreparations)}
       </div>
 
     </div>

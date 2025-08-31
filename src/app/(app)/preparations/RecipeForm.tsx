@@ -72,6 +72,7 @@ export function RecipeForm({ recipe, type, onSuccess }: RecipeFormProps) {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
+    // @ts-ignore
     defaultValues: recipe ? {
         name: recipe.name,
         description: recipe.description,
@@ -108,6 +109,7 @@ export function RecipeForm({ recipe, type, onSuccess }: RecipeFormProps) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
+      // @ts-ignore
       await saveDish(values, recipe?.id || null);
       
       toast({

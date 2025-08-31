@@ -30,7 +30,7 @@ export function DishModal({ children, dish, onSuccess }: DishModalProps) {
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{dish ? "Modifier le plat" : "Nouveau plat"}</DialogTitle>
           <DialogDescription>
@@ -44,5 +44,3 @@ export function DishModal({ children, dish, onSuccess }: DishModalProps) {
     </Dialog>
   );
 }
-
-    
