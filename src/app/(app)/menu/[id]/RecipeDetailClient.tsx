@@ -136,27 +136,32 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [preparationsCosts, setPreparationsCosts] = useState<Record<string, number>>({});
 
 
-  const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
+ const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
     const costs: Record<string, number> = {};
     if (!ingredientsList || ingredientsList.length === 0) return costs;
     
     for (const prep of preparationsList) {
         if (!prep.id) continue;
+        
         const prepIngredientsSnap = await getDocs(query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id)));
         let prepTotalCost = 0;
+        
         for (const prepIngDoc of prepIngredientsSnap.docs) {
             const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
             const ingDoc = ingredientsList.find(i => i.id === prepIngData.ingredientId);
-            if (ingDoc) {
+
+            // Robustness check
+            if (ingDoc && ingDoc.unitPurchase && prepIngData.unitUse) {
                 const factor = getConversionFactor(ingDoc.unitPurchase, prepIngData.unitUse);
                 prepTotalCost += (prepIngData.quantity * ingDoc.unitPrice) / factor;
             }
         }
+        
         const costPerUnit = (prep.productionQuantity || 1) > 0 ? prepTotalCost / (prep.productionQuantity || 1) : 0;
         costs[prep.id] = costPerUnit;
     }
     return costs;
-  }, []);
+}, []);
 
 
   useEffect(() => {
@@ -1212,5 +1217,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
