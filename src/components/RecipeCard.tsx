@@ -108,7 +108,7 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
                     </RecipeModal>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-500" title="Supprimer">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Supprimer">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -130,3 +130,5 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
         </Card>
     );
 }
+
+    

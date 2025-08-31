@@ -37,8 +37,13 @@ export async function deleteDish(id: string) {
     const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", id));
     const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
     recipePreparationsSnap.forEach(doc => batch.delete(doc.ref));
+
+    // 4. Find and delete all links where this recipe is a child
+    const childRecipeLinksQuery = query(collection(db, "recipePreparationLinks"), where("childRecipeId", "==", id));
+    const childRecipeLinksSnap = await getDocs(childRecipeLinksQuery);
+    childRecipeLinksSnap.forEach(doc => batch.delete(doc.ref));
   
-    // 4. Commit the batch
+    // 5. Commit the batch
     await batch.commit();
     
     // onSnapshot will handle UI updates
@@ -77,3 +82,5 @@ export async function updateRecipeIngredient(recipeIngredientId: string, data: {
     const recipeIngredientDoc = doc(db, 'recipeIngredients', recipeIngredientId);
     await updateDoc(recipeIngredientDoc, data);
 }
+
+    

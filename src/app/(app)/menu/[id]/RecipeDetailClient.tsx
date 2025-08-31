@@ -431,41 +431,52 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     };
 
     const handleNewPreparationChange = async (tempId: string, field: keyof NewRecipePreparation, value: any) => {
-         const newPrepState = [...newPreparations];
-         const prepIndex = newPrepState.findIndex(p => p.id === tempId);
-         if(prepIndex === -1) return;
+        setNewPreparations(current =>
+            current.map(p => {
+                if (p.id === tempId) {
+                    const updatedPrep = { ...p, [field]: value };
 
-         let updatedPrep = { ...newPrepState[prepIndex], [field]: value };
+                    if (field === 'childRecipeId') {
+                        const selectedPrep = allPreparations.find(prep => prep.id === value);
+                        if (selectedPrep) {
+                            updatedPrep.name = selectedPrep.name;
+                            updatedPrep.unit = selectedPrep.productionUnit || 'g'; // Default unit from preparation
+                            // We will calculate cost on the fly for simplicity now
+                            // This part is complex because it requires fetching all ingredients for the child recipe
+                            // Let's do it properly now
+                            const calculateCost = async () => {
+                                const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", selectedPrep.id));
+                                const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
+                                let prepTotalCost = 0;
+                                for (const prepIngDoc of prepIngredientsSnap.docs) {
+                                    const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
+                                    const ingDoc = await getDoc(doc(db, "ingredients", prepIngData.ingredientId));
+                                    if (ingDoc.exists()) {
+                                        const ingData = ingDoc.data() as Ingredient;
+                                        const factor = getConversionFactor(ingData.unitPurchase, prepIngData.unitUse);
+                                        prepTotalCost += (prepIngData.quantity * ingData.unitPrice) / factor;
+                                    }
+                                }
+                                const costPerUnit = (selectedPrep.productionQuantity || 1) > 0 ? prepTotalCost / (selectedPrep.productionQuantity || 1) : 0;
+                                updatedPrep._costPerUnit = costPerUnit;
+                                updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUnit;
+                                // We need to update state again once cost is calculated
+                                setNewPreparations(currentInner => currentInner.map(pi => pi.id === tempId ? updatedPrep : pi));
+                            };
+                            calculateCost();
+                        }
+                    }
 
-         if (field === 'childRecipeId') {
-             const selectedPrep = allPreparations.find(p => p.id === value);
-             if (selectedPrep) {
-                 updatedPrep.name = selectedPrep.name;
-                 
-                 // Calculate cost per unit of the selected preparation
-                 const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", selectedPrep.id));
-                 const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
-                 let prepTotalCost = 0;
-                 for (const prepIngDoc of prepIngredientsSnap.docs) {
-                     const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
-                     const ingDoc = await getDoc(doc(db, "ingredients", prepIngData.ingredientId));
-                     if (ingDoc.exists()) {
-                         const ingData = ingDoc.data() as Ingredient;
-                         const factor = getConversionFactor(ingData.unitPurchase, prepIngData.unitUse);
-                         prepTotalCost += (prepIngData.quantity * ingData.unitPrice) / factor;
-                     }
-                 }
-                 const costPerUnit = (selectedPrep.productionQuantity || 1) > 0 ? prepTotalCost / (selectedPrep.productionQuantity || 1) : 0;
-                 updatedPrep._costPerUnit = costPerUnit;
-             }
-         }
-         
-         if (updatedPrep._costPerUnit) {
-             updatedPrep.totalCost = (updatedPrep.quantity || 0) * updatedPrep._costPerUnit;
-         }
+                    // Recalculate cost if quantity changes and costPerUnit is known
+                    if (field === 'quantity' && updatedPrep._costPerUnit) {
+                        updatedPrep.totalCost = (updatedPrep.quantity || 0) * updatedPrep._costPerUnit;
+                    }
 
-         newPrepState[prepIndex] = updatedPrep;
-         setNewPreparations(newPrepState);
+                    return updatedPrep;
+                }
+                return p;
+            })
+        );
     };
     
     const handleRemoveExistingPreparation = async (preparationId: string, preparationName: string) => {
@@ -1042,7 +1053,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardContent>
                      <div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)}€</div>
                      <p className="text-xs text-muted-foreground text-right mt-1">
-                        {isPlat ? "Coût par portion : " + costPerPortion.toFixed(2) + "€" : "Coût par " + currentRecipeData.productionUnit + " : " + (totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2) + "€"}
+                        {isPlat ? "Coût par portion : " + costPerPortion.toFixed(2) + "€" : "Coût par " + (currentRecipeData.productionUnit || 'unité') + " : " + (totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2) + "€"}
                      </p>
                 </CardContent>
             </Card>
@@ -1143,7 +1154,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       </div>
 
       {isEditing && (
-        <FloatingSaveButton onClick={handleSave} disabled={isSaving} />
+        <div className="fixed bottom-6 right-6 z-50">
+            <Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm shadow-lg">
+                <Button onClick={handleSave} disabled={isSaving}>
+                    <Save className="mr-2 h-4 w-4" />
+                    {isSaving ? "Sauvegarde..." : `Sauvegarder les modifications`}
+                </Button>
+            </Card>
+        </div>
       )}
     </div>
   );
@@ -1205,5 +1223,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
