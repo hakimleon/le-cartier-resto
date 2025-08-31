@@ -16,7 +16,6 @@ export type Preparation = {
   id?: string;
   name: string;
   description: string;
-  type: 'Préparation'; // Toujours 'Préparation'
   
   // Champs communs
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';

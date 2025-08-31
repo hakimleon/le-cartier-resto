@@ -18,7 +18,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, deleteRecipePreparation, addRecipePreparation } from "../actions";
+import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, deleteRecipePreparationLink, addRecipePreparationLink } from "../actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -442,7 +442,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     
     const handleRemoveExistingPreparation = async (preparationLinkId: string, preparationName: string) => {
         try {
-            await deleteRecipePreparation(preparationLinkId);
+            await deleteRecipePreparationLink(preparationLinkId);
             toast({
                 title: "Succès",
                 description: `La sous-recette "${preparationName}" a été retirée.`,
@@ -504,7 +504,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const newPreparationPromises = newPreparations
             .filter(prep => prep.childPreparationId && prep.quantity > 0)
             .map(prep => {
-                return addRecipePreparation({
+                return addRecipePreparationLink({
                     parentRecipeId: recipeId,
                     childPreparationId: prep.childPreparationId,
                     quantity: prep.quantity,

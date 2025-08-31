@@ -38,7 +38,7 @@ export async function deleteDish(id: string) {
     const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
     recipePreparationsSnap.forEach(doc => batch.delete(doc.ref));
 
-    // NOTE: No need to find where this recipe is a CHILD, because a "Plat" cannot be a child.
+    // NOTE: A "Plat" cannot be a child, so no need to look for child links.
   
     // 4. Commit the batch
     await batch.commit();
@@ -55,12 +55,12 @@ export async function deleteRecipeIngredient(recipeIngredientId: string) {
   // No revalidation needed, onSnapshot handles updates on the client
 }
 
-export async function deleteRecipePreparation(recipePreparationLinkId: string) {
-    if (!recipePreparationLinkId) {
+export async function deleteRecipePreparationLink(linkId: string) {
+    if (!linkId) {
       throw new Error("L'identifiant de la liaison est requis pour la suppression.");
     }
-    const recipePreparationDoc = doc(db, 'recipePreparationLinks', recipePreparationLinkId);
-    await deleteDoc(recipePreparationDoc);
+    const recipePreparationLinkDoc = doc(db, 'recipePreparationLinks', linkId);
+    await deleteDoc(recipePreparationLinkDoc);
     // onSnapshot will handle UI updates
   }
 
@@ -80,6 +80,6 @@ export async function updateRecipeIngredient(recipeIngredientId: string, data: {
     await updateDoc(recipeIngredientDoc, data);
 }
 
-export async function addRecipePreparation(link: Omit<RecipePreparationLink, 'id'>) {
+export async function addRecipePreparationLink(link: Omit<RecipePreparationLink, 'id'>) {
     await addDoc(collection(db, "recipePreparationLinks"), link);
 }
