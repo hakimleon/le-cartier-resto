@@ -16,14 +16,23 @@ export type Preparation = {
   id?: string;
   name: string;
   description: string;
-  duration?: number; // en minutes
+  type: 'Préparation'; // Toujours 'Préparation'
+  
+  // Champs communs
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';
-  productionQuantity: number; // Quantité produite
-  productionUnit: string; // Unité de la quantité produite (kg, litre, pièce)
+  duration?: number; // in minutes
+  tags?: string[];
+  imageUrl?: string;
+  
+  // Champs Fiche Technique
   procedure_preparation?: string;
   procedure_cuisson?: string;
   procedure_service?: string;
-  // Ce type n'a pas de prix de vente ni de statut Actif/Inactif
+  allergens?: string[];
+  
+  // Champs spécifiques à la Préparation
+  productionQuantity: number; // Quantité produite
+  productionUnit: string; // Unité de la quantité produite (kg, litre, pièce)
 };
 
 // Le type pour un plat final (fiche technique complète)
@@ -72,7 +81,7 @@ export type RecipeIngredientLink = {
 export type RecipePreparationLink = {
     id?: string;
     parentRecipeId: string; // L'ID du "Plat"
-    childPreparationId: string; // L'ID de la "Préparation"
+    childRecipeId: string; // L'ID de la "Préparation"
     quantity: number;
     unitUse: string;
 };
