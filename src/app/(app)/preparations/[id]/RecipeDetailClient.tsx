@@ -18,7 +18,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink } from "@/app/(app)/menu/actions";
+import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink } from "@/app/(app)/menu/actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -74,6 +74,7 @@ type FullRecipePreparation = {
     quantity: number;
     unit: string;
     totalCost: number;
+    _costPerUnit?: number;
 }
 
 type NewRecipePreparation = {
@@ -145,6 +146,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [editableIngredients, setEditableIngredients] = useState<FullRecipeIngredient[]>([]);
   
   const [preparations, setPreparations] = useState<FullRecipePreparation[]>([]);
+  const [editablePreparations, setEditablePreparations] = useState<FullRecipePreparation[]>([]);
   const [newPreparations, setNewPreparations] = useState<NewRecipePreparation[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -323,12 +325,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             quantity: linkData.quantity,
                             unit: linkData.unitUse,
                             totalCost: costPerUnit * (linkData.quantity || 0),
+                            _costPerUnit: costPerUnit,
                         };
                     }
                     return null;
                 }).filter(Boolean) as FullRecipePreparation[];
                 
                 setPreparations(preparationsData);
+                setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
             } catch (e: any) {
                 console.error("Error processing recipe preparations snapshot:", e);
                 setError("Erreur de chargement des sous-recettes. " + e.message);
@@ -357,6 +361,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     if (isEditing) {
         if(recipe) setEditableRecipe(JSON.parse(JSON.stringify(recipe)));
         if(ingredients) setEditableIngredients(JSON.parse(JSON.stringify(ingredients)));
+        if(preparations) setEditablePreparations(JSON.parse(JSON.stringify(preparations)));
         setNewIngredients([]);
         setNewPreparations([]);
     }
@@ -468,6 +473,20 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setNewPreparations(current => current.filter(p => p.id !== tempId));
     };
 
+    const handlePreparationChange = (linkId: string, field: 'quantity' | 'unit', value: any) => {
+        setEditablePreparations(current => 
+            current.map(prep => {
+                if (prep.id === linkId) {
+                    const updatedPrep = { ...prep, [field]: value };
+                    const costPerUnit = prep._costPerUnit || 0;
+                    updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUnit;
+                    return updatedPrep;
+                }
+                return prep;
+            })
+        );
+    };
+
     const handleNewPreparationChange = (tempId: string, field: keyof NewRecipePreparation, value: any) => {
         setNewPreparations(current =>
             current.map(p => {
@@ -546,6 +565,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 unitUse: ing.unit,
             });
         });
+        
+        const preparationUpdatePromises = editablePreparations.map(prep => {
+            return updateRecipePreparationLink(prep.id, {
+                quantity: prep.quantity,
+                unitUse: prep.unit,
+            });
+        });
 
         const newIngredientPromises = newIngredients
             .filter(ing => ing.ingredientId && ing.quantity > 0)
@@ -571,6 +597,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         await Promise.all([
             ...ingredientUpdatePromises, 
+            ...preparationUpdatePromises,
             ...newIngredientPromises,
             ...newPreparationPromises,
         ]);
@@ -598,6 +625,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   const currentRecipeData = isEditing ? editableRecipe : recipe;
   const currentIngredientsData = isEditing ? editableIngredients : ingredients;
+  const currentPreparationsData = isEditing ? editablePreparations : preparations;
   
   const {
     totalRecipeCost,
@@ -617,7 +645,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const ingredientsCost = (isEditing ? editableIngredients : ingredients).reduce((acc, item) => acc + (item.totalCost || 0), 0);
     const newIngredientsCost = newIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
-    const preparationsCost = preparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+    const preparationsCost = (isEditing ? editablePreparations : preparations).reduce((acc, item) => acc + (item.totalCost || 0), 0);
     const newPreparationsCost = newPreparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
     
     const totalCost = ingredientsCost + newIngredientsCost + preparationsCost + newPreparationsCost;
@@ -650,7 +678,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         foodCostPercentage: foodCostPercentageValue,
         multiplierCoefficient: multiplierCoefficientValue
     };
-  }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, newPreparations, isEditing]);
+  }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations, isEditing]);
 
 
   if (isLoading) {
@@ -953,11 +981,33 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {preparations.map(prep => (
+                            {currentPreparationsData.map(prep => (
                                 <TableRow key={prep.id}>
                                     <TableCell className="font-medium">{prep.name}</TableCell>
-                                    <TableCell>{prep.quantity}</TableCell>
-                                    <TableCell>{prep.unit}</TableCell>
+                                    <TableCell>
+                                      {isEditing ? (
+                                        <Input
+                                          type="number"
+                                          value={prep.quantity}
+                                          onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)}
+                                          className="w-20"
+                                        />
+                                      ) : (
+                                        prep.quantity
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                      {isEditing ? (
+                                        <Input
+                                          type="text"
+                                          value={prep.unit}
+                                          onChange={(e) => handlePreparationChange(prep.id, 'unit', e.target.value)}
+                                          className="w-24"
+                                        />
+                                      ) : (
+                                        prep.unit
+                                      )}
+                                    </TableCell>
                                     <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
                                     {isEditing && (
                                         <TableCell>
@@ -982,7 +1032,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
                                             <SelectContent>
                                                 {allPreparations.map(p => (
-                                                    p.id ? <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem> : null
+                                                    p.id && p.id !== recipeId ? <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem> : null
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -1008,7 +1058,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
                                 </TableRow>
                             ))}
-                            {preparations.length === 0 && newPreparations.length === 0 && (
+                            {currentPreparationsData.length === 0 && newPreparations.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">
                                         Aucune sous-recette ajoutée.
@@ -1258,7 +1308,7 @@ function RecipeDetailSkeleton() {
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
-              </CardHeader>
+              </Header>
               <CardContent className="space-y-2">
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-3/4" />
@@ -1273,5 +1323,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     

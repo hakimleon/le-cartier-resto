@@ -81,6 +81,17 @@ export async function updateRecipeIngredient(recipeIngredientId: string, data: {
     await updateDoc(recipeIngredientDoc, data);
 }
 
+export async function updateRecipePreparationLink(linkId: string, data: { quantity: number; unitUse: string; }) {
+    if (!linkId) {
+        throw new Error("L'identifiant de la liaison de préparation est requis.");
+    }
+    const linkDoc = doc(db, 'recipePreparationLinks', linkId);
+    await updateDoc(linkDoc, data);
+}
+
 export async function addRecipePreparationLink(link: Omit<RecipePreparationLink, 'id'>) {
     await addDoc(collection(db, "recipePreparationLinks"), link);
 }
+
+
+    
