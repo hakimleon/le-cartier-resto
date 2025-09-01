@@ -2,6 +2,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { FlaskConical } from "lucide-react";
 import DraftClient from "./DraftClient";
+import SubRecipeTestClient from "./SubRecipeTestClient";
 
 export default function DraftPage() {
   return (
@@ -17,6 +18,18 @@ export default function DraftPage() {
                 </div>
             </header>
             
+             <Card>
+                <CardHeader>
+                    <CardTitle>Test de calcul des Sous-Recettes</CardTitle>
+                    <CardDescription>
+                        Utilisez ce module pour tester le calcul des coûts des sous-recettes de manière isolée.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <SubRecipeTestClient />
+                </CardContent>
+            </Card>
+
             <Card>
                 <CardHeader>
                     <CardTitle>Outils de migration</CardTitle>
@@ -29,13 +42,6 @@ export default function DraftPage() {
                     <DraftClient />
                 </CardContent>
             </Card>
-
-            <div className="flex h-96 items-center justify-center rounded-lg border-2 border-dashed">
-                <p className="text-center text-muted-foreground">
-                    Prêt à tester de nouvelles idées !<br/>
-                    Demandez-moi d'ajouter des composants ici pour commencer.
-                </p>
-            </div>
         </div>
     </div>
   );
