@@ -1170,7 +1170,24 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <CardContent className="space-y-4">
                         <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Quantité Produite</span>
-                            <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+                             {isEditing ? (
+                                <div className="flex items-center gap-2">
+                                <Input 
+                                    type="number"
+                                    value={(editableRecipe as Preparation)?.productionQuantity}
+                                    onChange={(e) => handleRecipeDataChange('productionQuantity', parseInt(e.target.value) || 1)}
+                                    className="font-bold text-sm text-right w-24"
+                                />
+                                <Input 
+                                    type="text"
+                                    value={(editableRecipe as Preparation)?.productionUnit}
+                                    onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)}
+                                    className="font-bold text-sm text-right w-20"
+                                />
+                                </div>
+                            ) : (
+                                <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+                            )}
                         </div>
                          <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Coût Total Matières</span>
@@ -1241,7 +1258,7 @@ function RecipeDetailSkeleton() {
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
-              </Header>
+              </CardHeader>
               <CardContent className="space-y-2">
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-3/4" />
@@ -1256,3 +1273,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
