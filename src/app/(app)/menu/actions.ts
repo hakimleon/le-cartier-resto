@@ -3,7 +3,7 @@
 
 import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Recipe, RecipePreparationLink } from '@/lib/types';
+import { Recipe, RecipePreparationLink, Preparation } from '@/lib/types';
 
 export async function saveDish(recipe: Omit<Recipe, 'id'>, id: string | null) {
   if (id) {
@@ -64,11 +64,12 @@ export async function deleteRecipePreparationLink(linkId: string) {
     // onSnapshot will handle UI updates
   }
 
-export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe>) {
+export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe | Preparation>, type: 'Plat' | 'Préparation') {
     if (!recipeId) {
         throw new Error("L'identifiant de la recette est requis.");
     }
-    const recipeDoc = doc(db, 'recipes', recipeId);
+    const collectionName = type === 'Plat' ? 'recipes' : 'preparations';
+    const recipeDoc = doc(db, collectionName, recipeId);
     await updateDoc(recipeDoc, data);
 }
 

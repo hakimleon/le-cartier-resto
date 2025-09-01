@@ -152,7 +152,7 @@ export default function PreparationsClient() {
                       </TableCell>
                       <TableCell>
                           <div className="flex items-center justify-end gap-1">
-                            <Link href={`/menu/${prep.id}`}>
+                            <Link href={`/preparations/${prep.id}`}>
                                 <Button variant="ghost" size="icon" className="h-8 w-8" title="Voir la fiche technique">
                                     <FileText className="h-4 w-4" />
                                 </Button>
