@@ -191,6 +191,11 @@ export default function SubRecipeTestClient() {
     const conversionFactor = getConversionFactor(currentSelection.unit, costInfo.baseUnit);
     const totalCost = costInfo.cost * currentSelection.quantity * conversionFactor;
 
+    console.log(costInfo.cost)
+    console.log(currentSelection.quantity) 
+    console.log(conversionFactor)
+    console.log(totalCost)
+
     const newRow: SubRecipeRow = {
         id: `row-${Date.now()}`,
         preparationId: preparation.id!,
