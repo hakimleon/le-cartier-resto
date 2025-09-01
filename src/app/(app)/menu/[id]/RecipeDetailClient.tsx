@@ -608,10 +608,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     foodCostPercentage,
     multiplierCoefficient
   } = useMemo(() => {
-    if (!currentRecipeData) return {
-        totalRecipeCost: 0, costPerPortion: 0, priceHT: 0, grossMargin: 0,
-        grossMarginPercentage: 0, foodCostPercentage: 0, multiplierCoefficient: 0
-    };
+    if (!currentRecipeData) {
+        return {
+            totalRecipeCost: 0, costPerPortion: 0, priceHT: 0, grossMargin: 0,
+            grossMarginPercentage: 0, foodCostPercentage: 0, multiplierCoefficient: 0
+        };
+    }
 
     const ingredientsCost = (isEditing ? editableIngredients : ingredients).reduce((acc, item) => acc + (item.totalCost || 0), 0);
     const newIngredientsCost = newIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
@@ -1254,5 +1256,9 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
+
+    
 
     
