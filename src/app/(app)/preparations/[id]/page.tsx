@@ -1,5 +1,5 @@
 
-import RecipeDetailClient from '@/app/(app)/menu/[id]/RecipeDetailClient';
+import RecipeDetailClient from './RecipeDetailClient';
 
 export default async function PreparationDetailPage({ params }: { params: { id:string } }) {
   return (
