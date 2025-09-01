@@ -24,18 +24,22 @@ type SubRecipeRow = {
     totalCost: number;
 };
 
-const getConversionFactor = (purchaseUnit: string, usageUnit: string): number => {
-    if (!purchaseUnit || !usageUnit) return 1;
+type CostPerBaseUnit = Record<string, { cost: number; baseUnit: 'g' | 'ml' | 'pièce' }>;
+
+const getConversionFactor = (fromUnit: string, toUnit: string): number => {
+    if (!fromUnit || !toUnit) return 1;
   
-    const pUnit = purchaseUnit.toLowerCase().trim();
-    const uUnit = usageUnit.toLowerCase().trim();
+    const pUnit = fromUnit.toLowerCase().trim();
+    const uUnit = toUnit.toLowerCase().trim();
   
     if (pUnit === uUnit) return 1;
   
     const conversions: Record<string, Record<string, number>> = {
-      'kg': { 'g': 1000, 'kg': 1 },
-      'l': { 'ml': 1000, 'l': 1 },
-      'litre': { 'ml': 1000, 'l': 1 },
+      'kg': { 'g': 1000 },
+      'g': { 'kg': 0.001 },
+      'l': { 'ml': 1000 },
+      'litre': { 'ml': 1000 },
+      'ml': { 'l': 0.001 },
       'pièce': { 'pièce': 1 }
     };
   
@@ -43,20 +47,22 @@ const getConversionFactor = (purchaseUnit: string, usageUnit: string): number =>
       return conversions[pUnit][uUnit];
     }
   
-    for (const baseUnit in conversions) {
-      for (const targetUnit in conversions[baseUnit]) {
-        if (baseUnit === uUnit && targetUnit === pUnit) {
-          return 1 / conversions[baseUnit][targetUnit];
-        }
-      }
-    }
+    console.warn(`No conversion factor found between '${fromUnit}' and '${toUnit}'. Defaulting to 1.`);
     return 1;
-  };
+};
+
+const getBaseUnit = (unit: string): 'g' | 'ml' | 'pièce' => {
+    const lowerUnit = unit.toLowerCase();
+    if (lowerUnit === 'kg' || lowerUnit === 'g') return 'g';
+    if (lowerUnit === 'l' || lowerUnit === 'litre' || lowerUnit === 'ml') return 'ml';
+    return 'pièce';
+}
+
 
 export default function SubRecipeTestClient() {
   const [allPreparations, setAllPreparations] = useState<Preparation[]>([]);
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
-  const [preparationCosts, setPreparationCosts] = useState<Record<string, number>>({});
+  const [preparationCosts, setPreparationCosts] = useState<CostPerBaseUnit>({});
   
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,63 +70,72 @@ export default function SubRecipeTestClient() {
   const [selectedSubRecipes, setSelectedSubRecipes] = useState<SubRecipeRow[]>([]);
   const [currentSelection, setCurrentSelection] = useState({ prepId: '', quantity: 1, unit: 'g' });
   
-  const calculatePreparationCost = useCallback(async (
-    preparation: Preparation,
-    allIngredients: Ingredient[],
-    allPreparations: Preparation[],
-    allRecipeIngredients: RecipeIngredientLink[],
-    allRecipePreparationLinks: RecipePreparationLink[],
-    memo: Record<string, number>
-  ): Promise<number> => {
-      if (memo[preparation.id!]) {
-          return memo[preparation.id!];
-      }
-  
-      let totalCost = 0;
-  
-      // 1. Calculate cost from direct ingredients
-      const directIngredientLinks = allRecipeIngredients.filter(link => link.recipeId === preparation.id);
-      for (const link of directIngredientLinks) {
-          const ingredient = allIngredients.find(i => i.id === link.ingredientId);
-          if (ingredient && ingredient.unitPrice) {
-              const factor = getConversionFactor(ingredient.unitPurchase, link.unitUse);
-              const costPerUseUnit = ingredient.unitPrice / factor;
-              totalCost += (link.quantity || 0) * costPerUseUnit;
-          }
-      }
-  
-      // 2. Calculate cost from sub-preparations (recursive step)
-      const subPreparationLinks = allRecipePreparationLinks.filter(link => link.parentRecipeId === preparation.id);
-      for (const link of subPreparationLinks) {
-          const subPreparation = allPreparations.find(p => p.id === link.childPreparationId);
-          if (subPreparation) {
-              const subPrepCostPerUnit = await calculatePreparationCost(
-                  subPreparation, allIngredients, allPreparations, allRecipeIngredients, allRecipePreparationLinks, memo
-              );
-              totalCost += (link.quantity || 0) * subPrepCostPerUnit;
-          }
-      }
-      
-      const costPerUnit = (totalCost / (preparation.productionQuantity || 1)) || 0;
-      memo[preparation.id!] = costPerUnit; // Memoize the result
-      return costPerUnit;
-  }, []);
+  const calculateAllPreparationCosts = useCallback(async (
+    ingredients: Ingredient[],
+    preparations: Preparation[],
+    recipeIngredients: RecipeIngredientLink[],
+    recipePreparationLinks: RecipePreparationLink[]
+  ): Promise<CostPerBaseUnit> => {
+    const costs: CostPerBaseUnit = {};
+    const memo: Record<string, number> = {}; // Memoization for total cost of a preparation run
 
-  const calculateAllCosts = useCallback(async (
-      ingredients: Ingredient[],
-      preparations: Preparation[],
-      recipeIngredients: RecipeIngredientLink[],
-      recipePreparationLinks: RecipePreparationLink[]
-  ) => {
-      const costs: Record<string, number> = {};
-      const memo: Record<string, number> = {};
-      for (const prep of preparations) {
-          if (!prep.id) continue;
-          costs[prep.id] = await calculatePreparationCost(prep, ingredients, preparations, recipeIngredients, recipePreparationLinks, memo);
-      }
-      return costs;
-  }, [calculatePreparationCost]);
-  
+    const calculateCost = async (prep: Preparation): Promise<number> => {
+        if (!prep.id) return 0;
+        if (memo[prep.id]) return memo[prep.id];
+
+        let totalCost = 0;
+
+        // 1. Cost from direct ingredients
+        const directIngredientLinks = recipeIngredients.filter(link => link.recipeId === prep.id);
+        for (const link of directIngredientLinks) {
+            const ingredient = ingredients.find(i => i.id === link.ingredientId);
+            if (ingredient && ingredient.unitPrice) {
+                const factor = getConversionFactor(ingredient.unitPurchase, link.unitUse);
+                const costPerUseUnit = ingredient.unitPrice / factor;
+                totalCost += (link.quantity || 0) * costPerUseUnit;
+            }
+        }
+
+        // 2. Cost from sub-preparations (recursive)
+        const subPreparationLinks = recipePreparationLinks.filter(link => link.parentRecipeId === prep.id);
+        for (const link of subPreparationLinks) {
+            const subPrep = preparations.find(p => p.id === link.childPreparationId);
+            if (subPrep && subPrep.id) {
+                if (!costs[subPrep.id]) {
+                    // If sub-preparation cost not yet calculated, do it now
+                    await calculateCost(subPrep); 
+                }
+
+                const subPrepCostInfo = costs[subPrep.id];
+                if (subPrepCostInfo) {
+                    const factor = getConversionFactor(link.unitUse, subPrepCostInfo.baseUnit);
+                    totalCost += (link.quantity || 0) * subPrepCostInfo.cost * factor;
+                }
+            }
+        }
+        
+        memo[prep.id] = totalCost;
+
+        // Calculate cost per base unit
+        const baseUnit = getBaseUnit(prep.productionUnit);
+        const productionInBaseUnits = (prep.productionQuantity || 1) * getConversionFactor(prep.productionUnit, baseUnit);
+        costs[prep.id] = {
+            cost: totalCost / productionInBaseUnits,
+            baseUnit: baseUnit,
+        };
+        
+        return totalCost;
+    };
+    
+    // Iterate through all preparations to ensure all costs are calculated
+    for (const prep of preparations) {
+        if (!costs[prep.id!]) {
+            await calculateCost(prep);
+        }
+    }
+
+    return costs;
+  }, []);
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
@@ -146,7 +161,7 @@ export default function SubRecipeTestClient() {
             const recipePreparationLinksSnap = await getDocs(query(collection(db, "recipePreparationLinks")));
             const recipePreparationLinksList = recipePreparationLinksSnap.docs.map(doc => doc.data() as RecipePreparationLink);
             
-            const costs = await calculateAllCosts(ingredientsList, prepsList, recipeIngredientsList, recipePreparationLinksList);
+            const costs = await calculateAllPreparationCosts(ingredientsList, prepsList, recipeIngredientsList, recipePreparationLinksList);
             setPreparationCosts(costs);
 
             setError(null);
@@ -159,17 +174,19 @@ export default function SubRecipeTestClient() {
     };
 
     fetchAllData();
-  }, [calculateAllCosts]);
+  }, [calculateAllPreparationCosts]);
 
 
   const handleAddSubRecipe = () => {
     if (!currentSelection.prepId) return;
     
     const preparation = allPreparations.find(p => p.id === currentSelection.prepId);
-    if (!preparation) return;
+    const costInfo = preparationCosts[currentSelection.prepId];
 
-    const costPerUnit = preparationCosts[preparation.id!] || 0;
-    const totalCost = costPerUnit * currentSelection.quantity;
+    if (!preparation || !costInfo) return;
+
+    const conversionFactor = getConversionFactor(currentSelection.unit, costInfo.baseUnit);
+    const totalCost = costInfo.cost * currentSelection.quantity * conversionFactor;
 
     const newRow: SubRecipeRow = {
         id: `row-${Date.now()}`,
