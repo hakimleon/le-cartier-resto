@@ -1061,7 +1061,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             <TabsList>
                                 <TabsTrigger value="preparation">Préparation</TabsTrigger>
                                 <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
-                                <TabsTrigger value="service</TabsTrigger>
+                                <TabsTrigger value="service">Service</TabsTrigger>
                             </TabsList>
                             <TabsContent value="preparation" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">
                                 {recipe.procedure_preparation}
@@ -1258,8 +1258,3 @@ function RecipeDetailSkeleton() {
     );
   }
 
-    
-
-    
-
-    
