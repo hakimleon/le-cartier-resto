@@ -698,6 +698,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             type: recipe.type,
         });
 
+        console.log('AI Generation Result:', result);
+
         if (result) {
             if (!isEditing) {
                 setIsEditing(true);
@@ -1452,5 +1454,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
 
     
