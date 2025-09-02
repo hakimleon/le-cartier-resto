@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -39,6 +39,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ImageUploadDialog } from "@/app/(app)/menu/[id]/ImageUploadDialog";
+import { generateRecipe } from "@/ai/flows/suggestion-flow";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -102,6 +103,8 @@ const getConversionFactor = (purchaseUnit: string, usageUnit: string): number =>
       'kg': { 'g': 1000 },
       'l': { 'ml': 1000 },
       'litre': { 'ml': 1000 },
+      'piece': { 'pièce': 1 },
+      'pièce': { 'piece': 1 },
       // Add more standard conversions here
     };
   
@@ -153,6 +156,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -420,7 +424,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     setIsEditing(!isEditing);
   };
 
-  const handleRecipeDataChange = (field: keyof Recipe, value: any) => {
+  const handleRecipeDataChange = (field: keyof Recipe | keyof Preparation, value: any) => {
     if (editableRecipe) {
         setEditableRecipe({ ...editableRecipe, [field]: value });
     }
@@ -515,7 +519,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 childPreparationId: '',
                 name: '',
                 quantity: 0,
-                unit: 'g',
+                unit: '',
                 totalCost: 0,
                 _productionUnit: '',
             },
@@ -526,7 +530,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setNewPreparations(current => current.filter(p => p.id !== tempId));
     };
 
-    const handlePreparationChange = (linkId: string, field: 'quantity' | 'unit', value: any) => {
+    const handlePreparationChange = (linkId: string, field: 'quantity', value: any) => {
         setEditablePreparations(current => 
             current.map(prep => {
                 if (prep.id === linkId) {
@@ -552,16 +556,19 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         const selectedPrep = allPreparations.find(prep => prep.id === value);
                         if (selectedPrep) {
                             updatedPrep.name = selectedPrep.name;
-                            updatedPrep.unit = selectedPrep.productionUnit || 'g';
+                            // Set unit to usageUnit if available, otherwise fallback to productionUnit
+                            updatedPrep.unit = selectedPrep.usageUnit || selectedPrep.productionUnit || 'g';
                             updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0;
                             updatedPrep._productionUnit = selectedPrep.productionUnit || '';
                         }
                     }
                     
-                    const costPerProductionUnit = updatedPrep._costPerUnit || 0;
-                    const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
-                    const costPerUseUnit = costPerProductionUnit / conversionFactor;
-                    updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
+                    if (field === 'quantity' || field === 'childPreparationId') {
+                      const costPerProductionUnit = updatedPrep._costPerUnit || 0;
+                      const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
+                      const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                      updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
+                    }
 
                     return updatedPrep;
                 }
@@ -612,6 +619,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             } : {
                 productionQuantity: (editableRecipe as Preparation).productionQuantity,
                 productionUnit: (editableRecipe as Preparation).productionUnit,
+                usageUnit: (editableRecipe as Preparation).usageUnit,
             })
         };
         
@@ -627,7 +635,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const preparationUpdatePromises = editablePreparations.map(prep => {
             return updateRecipePreparationLink(prep.id, {
                 quantity: prep.quantity,
-                unitUse: prep.unit,
             });
         });
 
@@ -680,6 +687,71 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setIsSaving(false);
     }
   };
+
+  const handleGenerateRecipe = async () => {
+    if (!recipe) return;
+    setIsGenerating(true);
+    try {
+        const result = await generateRecipe({
+            name: recipe.name,
+            description: recipe.description,
+            type: 'Préparation'
+        });
+
+        if (result) {
+            if (!isEditing) {
+                setIsEditing(true);
+            }
+
+            setEditableRecipe(current => current ? ({
+                ...current,
+                procedure_preparation: result.procedure_preparation,
+                procedure_cuisson: result.procedure_cuisson,
+                procedure_service: result.procedure_service,
+                difficulty: result.difficulty,
+                duration: result.duration,
+            }) : null);
+
+            const generatedIngredients = result.ingredients.map(ing => {
+                // Heuristic to find matching ingredient in existing list
+                const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
+                return {
+                    id: `new-gen-${Date.now()}-${ing.name}`,
+                    ingredientId: existingIngredient?.id || '',
+                    name: ing.name,
+                    quantity: ing.quantity,
+                    unit: ing.unit,
+                    unitPrice: existingIngredient?.unitPrice || 0,
+                    unitPurchase: existingIngredient?.unitPurchase || '',
+                    totalCost: 0, // Will be recomputed
+                }
+            });
+
+            // Recompute cost for each new generated ingredient
+            const ingredientsWithCost = generatedIngredients.map(ing => {
+                const cost = recomputeIngredientCost(ing);
+                return { ...ing, totalCost: isNaN(cost) ? 0 : cost };
+            });
+
+            setNewIngredients(current => [...current, ...ingredientsWithCost]);
+            
+            toast({
+                title: "Recette générée !",
+                description: "La fiche technique a été pré-remplie. Veuillez vérifier les informations."
+            });
+        }
+    } catch(e) {
+        console.error("Failed to generate recipe with AI", e);
+        toast({
+            title: "Erreur de l'IA",
+            description: "Impossible de générer la recette. Veuillez réessayer.",
+            variant: 'destructive',
+        });
+    } finally {
+        setIsGenerating(false);
+    }
+  };
+
 
   const currentRecipeData = isEditing ? editableRecipe : recipe;
   const currentIngredientsData = isEditing ? editableIngredients : ingredients;
@@ -790,6 +862,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+            <Button variant="outline" onClick={handleGenerateRecipe} disabled={isGenerating || isEditing}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                {isGenerating ? 'Génération...' : 'Élaborer avec l\'IA'}
+            </Button>
             <Button variant="outline" onClick={handleToggleEditMode}>
                  {isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}
             </Button>
@@ -1055,16 +1131,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                       )}
                                     </TableCell>
                                     <TableCell>
-                                      {isEditing ? (
-                                        <Input
-                                          type="text"
-                                          value={prep.unit}
-                                          onChange={(e) => handlePreparationChange(prep.id, 'unit', e.target.value)}
-                                          className="w-24"
-                                        />
-                                      ) : (
-                                        prep.unit
-                                      )}
+                                        {prep.unit}
                                     </TableCell>
                                     <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
                                     {isEditing && (
@@ -1105,12 +1172,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         />
                                     </TableCell>
                                     <TableCell>
-                                        <Input 
-                                            placeholder="Unité" 
-                                            className="w-24" 
-                                            value={prep.unit}
-                                            onChange={(e) => handleNewPreparationChange(prep.id, 'unit', e.target.value)}
-                                        />
+                                       {prep.unit || "-"}
                                     </TableCell>
                                     <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
                                     <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
@@ -1276,35 +1338,42 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations de Production</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Quantité Produite</span>
-                             {isEditing ? (
-                                <div className="flex items-center gap-2">
-                                <Input 
-                                    type="number"
-                                    value={(editableRecipe as Preparation)?.productionQuantity}
-                                    onChange={(e) => handleRecipeDataChange('productionQuantity', parseInt(e.target.value) || 1)}
-                                    className="font-bold text-sm text-right w-24"
-                                />
-                                <Input 
+                       <div className="grid grid-cols-2 gap-y-2">
+                            <span className="text-muted-foreground">Qté Produite</span>
+                            <span className="font-semibold text-right">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+
+                            <span className="text-muted-foreground">Unité d'Utilisation</span>
+                             <span className="font-semibold text-right">{(currentRecipeData as Preparation).usageUnit || "-"}</span>
+
+                            <span className="text-muted-foreground pt-2 border-t col-span-2">Coût Total Matières</span>
+                             <span className="font-semibold pt-2 border-t text-right col-span-2">{totalRecipeCost.toFixed(2)}€</span>
+                            
+                            <span className="font-bold text-primary pt-2 border-t">Coût / {currentRecipeData.productionUnit}</span>
+                            <span className="font-bold text-primary pt-2 border-t text-right">{(costPerPortion).toFixed(2)}€</span>
+                        </div>
+                         {isEditing && (
+                            <div className="space-y-4 pt-4 border-t">
+                                 <div className="grid grid-cols-2 gap-2">
+                                     <Input 
+                                        type="number"
+                                        value={(editableRecipe as Preparation)?.productionQuantity}
+                                        onChange={(e) => handleRecipeDataChange('productionQuantity', parseInt(e.target.value) || 1)}
+                                    />
+                                    <Input 
+                                        type="text"
+                                        value={(editableRecipe as Preparation)?.productionUnit}
+                                        onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)}
+                                        placeholder="Unité Prod."
+                                    />
+                                 </div>
+                                 <Input 
                                     type="text"
-                                    value={(editableRecipe as Preparation)?.productionUnit}
-                                    onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)}
-                                    className="font-bold text-sm text-right w-20"
+                                    value={(editableRecipe as Preparation)?.usageUnit || ''}
+                                    onChange={(e) => handleRecipeDataChange('usageUnit', e.target.value)}
+                                    placeholder="Unité d'utilisation suggérée (ex: g, ml)"
                                 />
-                                </div>
-                            ) : (
-                                <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
-                            )}
-                        </div>
-                         <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Coût Total Matières</span>
-                            <span className="font-semibold">{totalRecipeCost.toFixed(2)}€</span>
-                        </div>
-                        <div className="flex justify-between items-center font-bold text-primary border-t pt-2">
-                            <span className="">Coût de revient / {currentRecipeData.productionUnit}</span>
-                            <span className="">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)}€</span>
-                        </div>
+                            </div>
+                         )}
                     </CardContent>
                 </Card>
             )}
@@ -1381,3 +1450,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    

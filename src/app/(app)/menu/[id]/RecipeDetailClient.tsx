@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -39,6 +39,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ImageUploadDialog } from "./ImageUploadDialog";
+import { generateRecipe, generateCommercialArgument } from "@/ai/flows/suggestion-flow";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -155,6 +156,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -422,7 +424,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     setIsEditing(!isEditing);
   };
 
-  const handleRecipeDataChange = (field: keyof Recipe, value: any) => {
+  const handleRecipeDataChange = (field: keyof Recipe | keyof Preparation, value: any) => {
     if (editableRecipe) {
         setEditableRecipe({ ...editableRecipe, [field]: value });
     }
@@ -687,6 +689,103 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }
   };
 
+    const handleGenerateRecipe = async () => {
+        if (!recipe) return;
+        setIsGenerating(true);
+        try {
+            const result = await generateRecipe({
+                name: recipe.name,
+                description: recipe.description,
+                type: 'Plat'
+            });
+
+            if (result) {
+                if (!isEditing) {
+                    setIsEditing(true);
+                }
+
+                setEditableRecipe(current => current ? ({
+                    ...current,
+                    procedure_preparation: result.procedure_preparation,
+                    procedure_cuisson: result.procedure_cuisson,
+                    procedure_service: result.procedure_service,
+                    difficulty: result.difficulty,
+                    duration: result.duration,
+                }) : null);
+
+                const generatedIngredients = result.ingredients.map(ing => {
+                    const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
+                    return {
+                        id: `new-gen-${Date.now()}-${ing.name}`,
+                        ingredientId: existingIngredient?.id || '',
+                        name: ing.name,
+                        quantity: ing.quantity,
+                        unit: ing.unit,
+                        unitPrice: existingIngredient?.unitPrice || 0,
+                        unitPurchase: existingIngredient?.unitPurchase || '',
+                        totalCost: 0,
+                    }
+                });
+
+                const ingredientsWithCost = generatedIngredients.map(ing => {
+                    const cost = recomputeIngredientCost(ing);
+                    return { ...ing, totalCost: isNaN(cost) ? 0 : cost };
+                });
+
+                setNewIngredients(current => [...current, ...ingredientsWithCost]);
+                
+                toast({
+                    title: "Recette générée !",
+                    description: "La fiche technique a été pré-remplie. Veuillez vérifier les informations."
+                });
+            }
+        } catch(e) {
+            console.error("Failed to generate recipe with AI", e);
+            toast({
+                title: "Erreur de l'IA",
+                description: "Impossible de générer la recette. Veuillez réessayer.",
+                variant: 'destructive',
+            });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleGenerateArgument = async () => {
+        if (!recipe || recipe.type !== 'Plat') return;
+        setIsGenerating(true);
+        try {
+            const ingredientsList = [...ingredients, ...newIngredients].map(i => i.name);
+
+            const result = await generateCommercialArgument({
+                name: recipe.name,
+                description: recipe.description,
+                ingredients: ingredientsList,
+            });
+
+            if (result && result.argument) {
+                 if (!isEditing) {
+                    setIsEditing(true);
+                }
+                handleRecipeDataChange('commercialArgument', result.argument);
+                toast({
+                    title: "Argumentaire généré !",
+                    description: "Le champ a été rempli avec la suggestion de l'IA."
+                });
+            }
+
+        } catch (e) {
+            console.error("Failed to generate commercial argument", e);
+            toast({
+                title: "Erreur de l'IA",
+                description: "Impossible de générer l'argumentaire. Veuillez réessayer.",
+                variant: 'destructive',
+            });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
   const currentRecipeData = isEditing ? editableRecipe : recipe;
   const currentIngredientsData = isEditing ? editableIngredients : ingredients;
   const currentPreparationsData = isEditing ? editablePreparations : preparations;
@@ -796,6 +895,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+             <Button variant="outline" onClick={handleGenerateRecipe} disabled={isGenerating || isEditing}>
+                <Sparkles className="mr-2 h-4 w-4" />
+                {isGenerating ? 'Génération...' : 'Élaborer avec l\'IA'}
+            </Button>
             <Button variant="outline" onClick={handleToggleEditMode}>
                  {isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}
             </Button>
@@ -1246,12 +1349,19 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-xl text-muted-foreground"><Euro className="h-5 w-5"/>Argumentaire Commercial</CardTitle>
+                            <CardTitle className="flex items-center gap-2 text-xl text-muted-foreground">
+                                Argumentaire Commercial
+                                {isEditing && (
+                                    <Button variant="ghost" size="icon" onClick={handleGenerateArgument} disabled={isGenerating}>
+                                        <Sparkles className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </CardTitle>
                         </CardHeader>
                         <CardContent className="prose prose-sm max-w-none text-muted-foreground">
                             {isEditing ? (
                                 <Textarea 
-                                    value={(editableRecipe as Recipe)?.commercialArgument}
+                                    value={(editableRecipe as Recipe)?.commercialArgument || ''}
                                     onChange={(e) => handleRecipeDataChange('commercialArgument', e.target.value)}
                                     rows={5}
                                 />
@@ -1268,35 +1378,42 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations de Production</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Quantité Produite</span>
-                             {isEditing ? (
-                                <div className="flex items-center gap-2">
-                                <Input 
-                                    type="number"
-                                    value={(editableRecipe as Preparation)?.productionQuantity}
-                                    onChange={(e) => handleRecipeDataChange('productionQuantity', parseInt(e.target.value) || 1)}
-                                    className="font-bold text-sm text-right w-24"
-                                />
-                                <Input 
+                       <div className="grid grid-cols-2 gap-y-2">
+                            <span className="text-muted-foreground">Qté Produite</span>
+                            <span className="font-semibold text-right">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+
+                            <span className="text-muted-foreground">Unité d'Utilisation</span>
+                             <span className="font-semibold text-right">{(currentRecipeData as Preparation).usageUnit || "-"}</span>
+
+                            <span className="text-muted-foreground pt-2 border-t col-span-2">Coût Total Matières</span>
+                             <span className="font-semibold pt-2 border-t text-right col-span-2">{totalRecipeCost.toFixed(2)}€</span>
+                            
+                            <span className="font-bold text-primary pt-2 border-t">Coût / {currentRecipeData.productionUnit}</span>
+                            <span className="font-bold text-primary pt-2 border-t text-right">{(costPerPortion).toFixed(2)}€</span>
+                        </div>
+                         {isEditing && (
+                            <div className="space-y-4 pt-4 border-t">
+                                 <div className="grid grid-cols-2 gap-2">
+                                     <Input 
+                                        type="number"
+                                        value={(editableRecipe as Preparation)?.productionQuantity}
+                                        onChange={(e) => handleRecipeDataChange('productionQuantity', parseInt(e.target.value) || 1)}
+                                    />
+                                    <Input 
+                                        type="text"
+                                        value={(editableRecipe as Preparation)?.productionUnit}
+                                        onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)}
+                                        placeholder="Unité Prod."
+                                    />
+                                 </div>
+                                 <Input 
                                     type="text"
-                                    value={(editableRecipe as Preparation)?.productionUnit}
-                                    onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)}
-                                    className="font-bold text-sm text-right w-20"
+                                    value={(editableRecipe as Preparation)?.usageUnit || ''}
+                                    onChange={(e) => handleRecipeDataChange('usageUnit', e.target.value)}
+                                    placeholder="Unité d'utilisation suggérée (ex: g, ml)"
                                 />
-                                </div>
-                            ) : (
-                                <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
-                            )}
-                        </div>
-                         <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Coût Total Matières</span>
-                            <span className="font-semibold">{totalRecipeCost.toFixed(2)}€</span>
-                        </div>
-                        <div className="flex justify-between items-center font-bold text-primary border-t pt-2">
-                            <span className="">Coût de revient / {currentRecipeData.productionUnit}</span>
-                            <span className="">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)}€</span>
-                        </div>
+                            </div>
+                         )}
                     </CardContent>
                 </Card>
             )}
@@ -1318,58 +1435,60 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 }
 
 function RecipeDetailSkeleton() {
-    return (
-      <div className="space-y-8">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-14 w-14 rounded-lg" />
-            <div className="space-y-2">
-              <Skeleton className="h-8 w-64" />
-              <Skeleton className="h-4 w-32" />
-            </div>
-          </div>
-          <Skeleton className="h-10 w-24" />
-        </header>
-  
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Column 1 & 2 Skeleton */}
-          <div className="lg:col-span-2 space-y-8">
-             <Card>
-                <CardContent className="p-0">
-                    <Skeleton className="w-full h-96" />
-                </CardContent>
-             </Card>
-             <Card>
-              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-              <CardContent><Skeleton className="h-40 w-full" /></CardContent>
-            </Card>
-            <Card>
-              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-              <CardContent><Skeleton className="h-40 w-full" /></CardContent>
-            </Card>
-          </div>
-  
-          {/* Column 3 Skeleton */}
-          <div className="space-y-8">
-            <Card>
-                <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
-                <CardContent><Skeleton className="h-48 w-full" /></CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-32" />
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-3/4" />
-              </CardContent>
-            </Card>
-             <Card>
-              <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
-              <CardContent><Skeleton className="h-10 w-full" /></CardContent>
-            </Card>
+  return (
+    <div className="space-y-8">
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-14 w-14 rounded-lg" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-32" />
           </div>
         </div>
+        <Skeleton className="h-10 w-24" />
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Column 1 & 2 Skeleton */}
+        <div className="lg:col-span-2 space-y-8">
+           <Card>
+              <CardContent className="p-0">
+                  <Skeleton className="w-full h-96" />
+              </CardContent>
+           </Card>
+           <Card>
+            <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+            <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+          </Card>
+          <Card>
+            <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+            <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+          </Card>
+        </div>
+
+        {/* Column 3 Skeleton */}
+        <div className="space-y-8">
+          <Card>
+              <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
+              <CardContent><Skeleton className="h-48 w-full" /></CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-3/4" />
+            </CardContent>
+          </Card>
+           <Card>
+            <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
+            <CardContent><Skeleton className="h-10 w-full" /></CardContent>
+          </Card>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+    
