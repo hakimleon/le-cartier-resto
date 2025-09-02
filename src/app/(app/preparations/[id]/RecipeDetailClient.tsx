@@ -637,10 +637,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 quantity: ing.quantity,
                 unitUse: ing.unit,
             })),
-            ...newIngredients.map(ing => ({
-                ingredientId: ing.ingredientId,
-                quantity: ing.quantity,
-                unitUse: ing.unit,
+            ...newIngredients
+                .filter(ing => ing.ingredientId) // Only save ingredients that have been linked
+                .map(ing => ({
+                    ingredientId: ing.ingredientId,
+                    quantity: ing.quantity,
+                    unitUse: ing.unit,
             })),
         ];
 
@@ -715,8 +717,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 setIsEditing(true);
             }
             
-            // Clear existing ingredients
+            // Clear existing ingredients (both states)
             setEditableIngredients([]);
+            setNewIngredients([]);
             
             // Update recipe details
             setEditableRecipe(current => current ? ({
@@ -1060,7 +1063,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             value={newIng.ingredientId}
                                             onValueChange={(value) => handleNewIngredientChange(newIng.id, 'ingredientId', value)}
                                         >
-                                            <SelectTrigger><SelectValue placeholder={newIng.name || "Choisir..."} /></SelectTrigger>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder={newIng.name || "Choisir..."} />
+                                            </SelectTrigger>
                                             <SelectContent>
                                                 {allIngredients.map(ing => (
                                                     ing.id ? <SelectItem key={ing.id} value={ing.id}>{ing.name}</SelectItem> : null
@@ -1472,3 +1477,4 @@ function RecipeDetailSkeleton() {
   }
 
     
+
