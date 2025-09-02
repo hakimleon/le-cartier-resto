@@ -75,6 +75,7 @@ type FullRecipePreparation = {
     unit: string;
     totalCost: number;
     _costPerUnit?: number;
+    _productionUnit: string;
 }
 
 type NewRecipePreparation = {
@@ -85,6 +86,7 @@ type NewRecipePreparation = {
     unit: string;
     totalCost: number;
     _costPerUnit?: number; // Internal: to recalculate cost
+    _productionUnit: string;
 };
 
 const getConversionFactor = (purchaseUnit: string, usageUnit: string): number => {
@@ -165,43 +167,75 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
     const costs: Record<string, number> = {};
-  
+    const prepDependencies: Record<string, string[]> = {};
+    const prepOrder: string[] = [];
+    const visited: Record<string, 'visiting' | 'visited'> = {};
+
+    // Build dependency graph
     for (const prep of preparationsList) {
         if (!prep.id) continue;
-        
-        let totalCost = 0;
-        try {
-            const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
-            const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
-    
-            for (const prepIngDoc of prepIngredientsSnap.docs) {
-                const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
-                const ingDoc = ingredientsList.find(i => i.id === prepIngData.ingredientId);
-    
-                if (ingDoc && ingDoc.unitPrice && ingDoc.unitPurchase && prepIngData.unitUse) {
-                    const factor = getConversionFactor(ingDoc.unitPurchase, prepIngData.unitUse);
-                    const costPerUseUnit = (ingDoc.unitPrice || 0) / factor;
-                    totalCost += (prepIngData.quantity || 0) * costPerUseUnit;
-                }
-            }
-            
-            const prepLinksQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", prep.id));
-            const prepLinksSnap = await getDocs(prepLinksQuery);
-
-            for (const prepLinkDoc of prepLinksSnap.docs) {
-                const prepLinkData = prepLinkDoc.data() as RecipePreparationLink;
-                const childPrepCost = costs[prepLinkData.childPreparationId];
-                if (childPrepCost !== undefined) {
-                    totalCost += (prepLinkData.quantity || 0) * childPrepCost;
-                }
-            }
-            
-            costs[prep.id] = (totalCost / (prep.productionQuantity || 1)) || 0;
-        } catch(e) {
-            console.error(`Error calculating cost for preparation ${prep.name} (${prep.id}):`, e);
-            costs[prep.id] = 0; // Default to 0 on error
-        }
+        const linksQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", prep.id));
+        const linksSnap = await getDocs(linksQuery);
+        prepDependencies[prep.id] = linksSnap.docs.map(d => (d.data() as RecipePreparationLink).childPreparationId);
     }
+    
+    // Topological sort to determine calculation order
+    function visit(prepId: string) {
+        if (visited[prepId] === 'visited') return;
+        if (visited[prepId] === 'visiting') {
+            console.error("Circular dependency detected involving preparation ID:", prepId);
+            return;
+        }
+        visited[prepId] = 'visiting';
+        for (const depId of prepDependencies[prepId] || []) {
+            visit(depId);
+        }
+        visited[prepId] = 'visited';
+        prepOrder.push(prepId);
+    }
+
+    for (const prep of preparationsList) {
+        if (prep.id) visit(prep.id);
+    }
+
+    // Calculate costs in topological order
+    for (const prepId of prepOrder) {
+        const prep = preparationsList.find(p => p.id === prepId);
+        if (!prep) continue;
+
+        let totalCost = 0;
+        // Cost of raw ingredients
+        const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
+        const ingredientsSnap = await getDocs(ingredientsQuery);
+        for (const ingDoc of ingredientsSnap.docs) {
+            const ingLink = ingDoc.data() as RecipeIngredientLink;
+            const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
+            if (ingData?.unitPrice && ingData?.unitPurchase && ingLink.unitUse) {
+                const factor = getConversionFactor(ingData.unitPurchase, ingLink.unitUse);
+                const costPerUseUnit = (ingData.unitPrice || 0) / factor;
+                totalCost += (ingLink.quantity || 0) * costPerUseUnit;
+            }
+        }
+
+        // Cost of sub-preparations
+        for (const depId of prepDependencies[prepId] || []) {
+            const depLinkQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", prepId), where("childPreparationId", "==", depId));
+            const depLinkSnap = await getDocs(depLinkQuery);
+            if (!depLinkSnap.empty) {
+                const linkData = depLinkSnap.docs[0].data() as RecipePreparationLink;
+                const childPrep = preparationsList.find(p => p.id === depId);
+                const childCostPerProductionUnit = costs[depId];
+                if (childPrep && childCostPerProductionUnit !== undefined) {
+                     const factor = getConversionFactor(childPrep.productionUnit, linkData.unitUse);
+                     const costPerUseUnit = childCostPerProductionUnit / factor;
+                     totalCost += (linkData.quantity || 0) * costPerUseUnit;
+                }
+            }
+        }
+        
+        costs[prepId] = (totalCost / (prep.productionQuantity || 1)) || 0;
+    }
+
     return costs;
 }, []);
 
@@ -328,15 +362,18 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     const childRecipeData = loadedPreparations.find(p => p.id === linkData.childPreparationId);
                     
                     if (childRecipeData && loadedCosts[linkData.childPreparationId] !== undefined) {
-                         const costPerUnit = loadedCosts[linkData.childPreparationId];
+                         const costPerProductionUnit = loadedCosts[linkData.childPreparationId];
+                         const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse);
+                         const costPerUseUnit = costPerProductionUnit / conversionFactor;
                         return {
                             id: linkDoc.id,
                             childPreparationId: linkData.childPreparationId,
                             name: childRecipeData.name,
                             quantity: linkData.quantity,
                             unit: linkData.unitUse,
-                            totalCost: costPerUnit * (linkData.quantity || 0),
-                            _costPerUnit: costPerUnit,
+                            totalCost: costPerUseUnit * (linkData.quantity || 0),
+                            _costPerUnit: costPerProductionUnit,
+                            _productionUnit: childRecipeData.productionUnit,
                         };
                     }
                     return null;
@@ -476,6 +513,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 quantity: 0,
                 unit: 'g',
                 totalCost: 0,
+                _productionUnit: '',
             },
         ]);
     };
@@ -489,8 +527,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             current.map(prep => {
                 if (prep.id === linkId) {
                     const updatedPrep = { ...prep, [field]: value };
-                    const costPerUnit = prep._costPerUnit || 0;
-                    updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUnit;
+                    const costPerProductionUnit = prep._costPerUnit || 0;
+                    const conversionFactor = getConversionFactor(prep._productionUnit, updatedPrep.unit);
+                    const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                    updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
                     return updatedPrep;
                 }
                 return prep;
@@ -510,11 +550,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             updatedPrep.name = selectedPrep.name;
                             updatedPrep.unit = selectedPrep.productionUnit || 'g';
                             updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0;
+                            updatedPrep._productionUnit = selectedPrep.productionUnit || '';
                         }
                     }
                     
-                    const costPerUnit = updatedPrep._costPerUnit || preparationsCosts[updatedPrep.childPreparationId] || 0;
-                    updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUnit;
+                    const costPerProductionUnit = updatedPrep._costPerUnit || 0;
+                    const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
+                    const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                    updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
 
                     return updatedPrep;
                 }
@@ -1334,6 +1377,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-
-    
