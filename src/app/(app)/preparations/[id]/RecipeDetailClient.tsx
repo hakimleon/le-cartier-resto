@@ -704,78 +704,74 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     if (!recipe) return;
     setIsGenerating(true);
     try {
-        const result = await generateRecipe({
-            name: recipe.name,
-            description: recipe.description,
-            type: recipe.type,
-        });
+      const result = await generateRecipe({
+        name: recipe.name,
+        description: recipe.description,
+        type: recipe.type,
+      });
 
-        if (result) {
-            if (!isEditing) {
-                setIsEditing(true);
-            }
-            
-            // Clear existing ingredients (both states)
-            setEditableIngredients([]);
-            setNewIngredients([]);
-            
-            // Update recipe details
-            setEditableRecipe(current => {
-                if (!current) return null;
-                const updated = {
-                    ...current,
-                    procedure_preparation: result.procedure_preparation,
-                    procedure_cuisson: result.procedure_cuisson,
-                    procedure_service: result.procedure_service,
-                    difficulty: result.difficulty,
-                    duration: result.duration,
-                };
-                if(updated.type === 'Préparation') {
-                    (updated as Preparation).productionQuantity = result.productionQuantity;
-                    (updated as Preparation).productionUnit = result.productionUnit;
-                    (updated as Preparation).usageUnit = result.usageUnit;
-                }
-                return updated;
-            });
-
-            // Process generated ingredients
-            const generatedIngredients = result.ingredients.map(ing => {
-                const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
-                return {
-                    id: `new-gen-${Date.now()}-${ing.name}`,
-                    ingredientId: existingIngredient?.id || '',
-                    name: ing.name, // Always use the AI-generated name for display
-                    quantity: ing.quantity,
-                    unit: ing.unit,
-                    unitPrice: existingIngredient?.unitPrice || 0,
-                    unitPurchase: existingIngredient?.unitPurchase || '',
-                    totalCost: 0, 
-                };
-            });
-
-            // Recompute cost for each new generated ingredient
-            const ingredientsWithCost = generatedIngredients.map(ing => {
-                const cost = recomputeIngredientCost(ing);
-                return { ...ing, totalCost: isNaN(cost) ? 0 : cost };
-            });
-
-            // Replace the new ingredients list
-            setNewIngredients(ingredientsWithCost);
-            
-            toast({
-                title: "Recette générée !",
-                description: "La fiche technique a été pré-remplie. Veuillez vérifier les informations."
-            });
+      if (result) {
+        if (!isEditing) {
+          setIsEditing(true);
         }
-    } catch(e) {
-        console.error("Failed to generate recipe with AI", e);
-        toast({
-            title: "Erreur de l'IA",
-            description: "Impossible de générer la recette. Veuillez réessayer.",
-            variant: 'destructive',
+
+        setEditableIngredients([]);
+        setNewIngredients([]);
+
+        setEditableRecipe(current => {
+            if (!current) return null;
+            const updated = {
+                ...current,
+                procedure_preparation: result.procedure_preparation,
+                procedure_cuisson: result.procedure_cuisson,
+                procedure_service: result.procedure_service,
+                difficulty: result.difficulty,
+                duration: result.duration,
+            };
+
+            if (updated.type === 'Préparation') {
+                (updated as Preparation).productionQuantity = result.productionQuantity;
+                (updated as Preparation).productionUnit = result.productionUnit;
+                (updated as Preparation).usageUnit = result.usageUnit;
+            }
+            return updated;
         });
+
+        const generatedIngredients = result.ingredients.map(ing => {
+          const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
+          return {
+            id: `new-gen-${Date.now()}-${ing.name}`,
+            ingredientId: existingIngredient?.id || '',
+            name: ing.name,
+            quantity: ing.quantity,
+            unit: ing.unit,
+            unitPrice: existingIngredient?.unitPrice || 0,
+            unitPurchase: existingIngredient?.unitPurchase || '',
+            totalCost: 0,
+          };
+        });
+
+        const ingredientsWithCost = generatedIngredients.map(ing => {
+          const cost = recomputeIngredientCost(ing);
+          return { ...ing, totalCost: isNaN(cost) ? 0 : cost };
+        });
+
+        setNewIngredients(ingredientsWithCost);
+
+        toast({
+          title: "Recette générée !",
+          description: "La fiche technique a été pré-remplie. Veuillez vérifier les informations."
+        });
+      }
+    } catch (e) {
+      console.error("Failed to generate recipe with AI", e);
+      toast({
+        title: "Erreur de l'IA",
+        description: "Impossible de générer la recette. Veuillez réessayer.",
+        variant: 'destructive',
+      });
     } finally {
-        setIsGenerating(false);
+      setIsGenerating(false);
     }
   };
 
@@ -1389,7 +1385,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                      <Input 
                                         type="number"
                                         value={(editableRecipe as Preparation)?.productionQuantity}
-                                        onChange={(e) => handleRecipeDataChange('productionQuantity', parseFloat(e.target.value) || 1)}
+                                        onChange={(e) => handleRecipeDataChange('productionQuantity', parseInt(e.target.value) || 1)}
                                     />
                                     <Input 
                                         type="text"
@@ -1482,7 +1478,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
-
-
