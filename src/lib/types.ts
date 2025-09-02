@@ -86,3 +86,10 @@ export type RecipePreparationLink = {
     quantity: number;
     unitUse: string;
 };
+
+// Types pour la génération de recette par l'IA
+export type GeneratedIngredient = {
+    name: string;
+    quantity: number;
+    unit: string;
+};
