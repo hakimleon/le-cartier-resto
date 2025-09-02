@@ -18,7 +18,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink } from "@/app/(app)/menu/actions";
+import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, addIngredientLink } from "@/app/(app)/menu/actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -40,12 +40,12 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ImageUploadDialog } from "@/app/(app)/menu/[id]/ImageUploadDialog";
 import { generateRecipe } from "@/ai/flows/suggestion-flow";
+import { IngredientModal } from "../../ingredients/IngredientModal";
 
 type RecipeDetailClientProps = {
   recipeId: string;
 };
 
-// Extends RecipeIngredient to include purchase unit details for conversion
 type FullRecipeIngredient = {
     id: string; // Ingredient ID
     recipeIngredientId: string; // The ID of the document in recipeIngredients collection
@@ -58,13 +58,13 @@ type FullRecipeIngredient = {
 };
 
 type NewRecipeIngredient = {
-    id: string; // Temporary client-side ID
-    ingredientId: string;
-    name: string;
+    tempId: string; // Temporary client-side ID
+    ingredientId?: string; // Linked ingredient ID from DB
+    name: string; // Name suggested by AI or entered by user
     quantity: number;
     unit: string;
     unitPrice: number;
-    unitPurchase: string; // From the selected ingredient
+    unitPurchase: string;
     totalCost: number;
 };
 
@@ -98,22 +98,18 @@ const getConversionFactor = (purchaseUnit: string, usageUnit: string): number =>
   
     if (pUnit === uUnit) return 1;
   
-    // Map: baseUnit -> { targetUnit: factor }
     const conversions: Record<string, Record<string, number>> = {
       'kg': { 'g': 1000 },
       'l': { 'ml': 1000 },
       'litre': { 'ml': 1000 },
       'piece': { 'pièce': 1 },
       'pièce': { 'piece': 1 },
-      // Add more standard conversions here
     };
   
-    // Direct conversion (e.g., kg to g)
     if (conversions[pUnit] && conversions[pUnit][uUnit]) {
       return conversions[pUnit][uUnit];
     }
   
-    // Reverse conversion (e.g., g to kg)
     for (const baseUnit in conversions) {
       for (const targetUnit in conversions[baseUnit]) {
         if (baseUnit === uUnit && targetUnit === pUnit) {
@@ -123,24 +119,15 @@ const getConversionFactor = (purchaseUnit: string, usageUnit: string): number =>
     }
   
     console.warn(`No conversion factor found between '${purchaseUnit}' and '${usageUnit}'. Defaulting to 1.`);
-    return 1; // Default if no conversion rule found
+    return 1;
   };
   
-
-const GAUGE_LEVELS = {
-  exceptionnel: { icon: Star },
-  excellent: { icon: CheckCircle2 },
-  bon: { icon: Shield },
-  moyen: { icon: AlertTriangle },
-  mauvais: { icon: CircleX },
-};
-
 const foodCostIndicators = [
-  { range: "< 25%", level: "Exceptionnel", description: "Performance rare. Maîtrise parfaite ou prix très élevés.", color: "text-green-500", icon: GAUGE_LEVELS.exceptionnel.icon },
-  { range: "25-30%", level: "Excellent", description: "Performance optimale. Très bonne maîtrise des coûts.", color: "text-emerald-500", icon: GAUGE_LEVELS.excellent.icon },
-  { range: "30-35%", level: "Bon", description: "Performance correcte. Standard du secteur.", color: "text-yellow-500", icon: GAUGE_LEVELS.bon.icon },
-  { range: "35-40%", level: "Moyen", description: "Acceptable mais perfectible. Surveillance requise.", color: "text-orange-500", icon: GAUGE_LEVELS.moyen.icon },
-  { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500", icon: GAUGE_LEVELS.mauvais.icon },
+  { range: "< 25%", level: "Exceptionnel", description: "Performance rare. Maîtrise parfaite ou prix très élevés.", color: "text-green-500" },
+  { range: "25-30%", level: "Excellent", description: "Performance optimale. Très bonne maîtrise des coûts.", color: "text-emerald-500" },
+  { range: "30-35%", level: "Bon", description: "Standard du secteur.", color: "text-yellow-500" },
+  { range: "35-40%", level: "Moyen", description: "Acceptable mais perfectible. Surveillance requise.", color: "text-orange-500" },
+  { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500" },
 ];
 
 export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
@@ -168,6 +155,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [allPreparations, setAllPreparations] = useState<Preparation[]>([]);
   const [preparationsCosts, setPreparationsCosts] = useState<Record<string, number>>({});
 
+  // State for the "add new ingredient" modal
+  const [isNewIngredientModalOpen, setIsNewIngredientModalOpen] = useState(false);
+  const [newIngredientDefaults, setNewIngredientDefaults] = useState<Partial<Ingredient> | null>(null);
+  const [currentTempId, setCurrentTempId] = useState<string | null>(null);
 
   const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
     const costs: Record<string, number> = {};
@@ -175,7 +166,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const prepOrder: string[] = [];
     const visited: Record<string, 'visiting' | 'visited'> = {};
 
-    // Build dependency graph
     for (const prep of preparationsList) {
         if (!prep.id) continue;
         const linksQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", prep.id));
@@ -183,10 +173,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         prepDependencies[prep.id] = linksSnap.docs.map(d => (d.data() as RecipePreparationLink).childPreparationId);
     }
     
-    // Topological sort to determine calculation order
     function visit(prepId: string) {
         if (!prepId || !preparationsList.find(p => p.id === prepId)) {
-            console.warn("Skipping visit for invalid or missing preparation ID:", prepId);
             return;
         }
         if (visited[prepId] === 'visited') return;
@@ -206,13 +194,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         if (prep.id) visit(prep.id);
     }
 
-    // Calculate costs in topological order
     for (const prepId of prepOrder) {
         const prep = preparationsList.find(p => p.id === prepId);
         if (!prep) continue;
 
         let totalCost = 0;
-        // Cost of raw ingredients
         const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
         const ingredientsSnap = await getDocs(ingredientsQuery);
         for (const ingDoc of ingredientsSnap.docs) {
@@ -225,7 +211,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             }
         }
 
-        // Cost of sub-preparations
         for (const depId of prepDependencies[prepId] || []) {
             const depLinkQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", prepId), where("childPreparationId", "==", depId));
             const depLinkSnap = await getDocs(depLinkQuery);
@@ -245,6 +230,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }
 
     return costs;
+}, []);
+
+const fetchAllIngredients = useCallback(async () => {
+    const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
+    const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+    setAllIngredients(ingredientsList);
 }, []);
 
 
@@ -267,16 +258,16 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const fetchAllData = async () => {
         try {
             setIsLoading(true);
-            const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
-            const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
-            if (!isMounted) return;
-            setAllIngredients(ingredientsList);
-
+            await fetchAllIngredients();
+            
             const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
             const allPrepsData = allPrepsSnap.docs.map(doc => ({...doc.data(), id: doc.id} as Preparation));
             if (!isMounted) return;
             setAllPreparations(allPrepsData);
             
+            // We need to pass the just-fetched ingredients to calculate costs
+            const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
+            const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
             const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
             if (!isMounted) return;
             setPreparationsCosts(costs);
@@ -293,7 +284,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     };
     
     const setupListeners = (loadedIngredients: Ingredient[], loadedCosts: Record<string, number>, loadedPreparations: Preparation[]) => {
-        
         const isLikelyPreparation = window.location.pathname.includes('/preparations/');
         const collectionName = isLikelyPreparation ? "preparations" : "recipes";
         const recipeDocRef = doc(db, collectionName, recipeId);
@@ -312,10 +302,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             setError(null);
         }, (e: any) => {
             console.error("Error with recipe snapshot: ", e);
-            if(isMounted) {
-                setError("Erreur de chargement de la fiche technique. " + e.message);
-                setIsLoading(false);
-            }
+            if(isMounted) setError("Erreur de chargement de la fiche technique. " + e.message);
         });
         unsubscribeCallbacks.push(unsubscribeRecipe);
 
@@ -351,12 +338,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 setError("Erreur de chargement des ingrédients de la recette. " + e.message);
             } finally {
                 if(isMounted) setIsLoading(false);
-            }
-        }, (e: any) => {
-            console.error("Error with recipe ingredients snapshot: ", e);
-            if(isMounted) {
-                setError("Erreur de chargement des ingrédients de la recette. " + e.message);
-                setIsLoading(false);
             }
         });
         unsubscribeCallbacks.push(unsubscribeRecipeIngredients);
@@ -395,12 +376,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             } finally {
                 if(isMounted) setIsLoading(false);
             }
-        }, (e: any) => {
-            console.error("Error with recipe preparations snapshot: ", e);
-            if (isMounted) {
-                setError("Erreur de chargement des sous-recettes. " + e.message);
-                setIsLoading(false);
-            }
         });
         unsubscribeCallbacks.push(unsubscribeRecipePreparations);
     };
@@ -411,7 +386,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       isMounted = false;
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId, calculatePreparationsCosts]); 
+  }, [recipeId, calculatePreparationsCosts, fetchAllIngredients]); 
 
   const handleToggleEditMode = () => {
     if (isEditing) {
@@ -449,27 +424,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         })
     );
   };
-
-  const handleAddNewIngredient = () => {
-    setNewIngredients([
-      ...newIngredients,
-      {
-        id: `new-${Date.now()}`,
-        ingredientId: '',
-        name: '',
-        quantity: 0,
-        unit: 'g',
-        unitPrice: 0,
-        unitPurchase: '',
-        totalCost: 0,
-      },
-    ]);
-  };
   
   const handleNewIngredientChange = (tempId: string, field: keyof NewRecipeIngredient, value: any) => {
     setNewIngredients(current =>
       current.map(ing => {
-        if (ing.id === tempId) {
+        if (ing.tempId === tempId) {
           const updatedIng = { ...ing, [field]: value };
           
           if (field === 'ingredientId') {
@@ -478,11 +437,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 updatedIng.name = selectedIngredient.name;
                 updatedIng.unitPrice = selectedIngredient.unitPrice;
                 updatedIng.unitPurchase = selectedIngredient.unitPurchase;
+            } else {
+                updatedIng.ingredientId = undefined; // Unlink if not found
             }
           }
-          
           updatedIng.totalCost = recomputeIngredientCost(updatedIng);
-
           return updatedIng;
         }
         return ing;
@@ -491,7 +450,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   };
   
   const handleRemoveNewIngredient = (tempId: string) => {
-    setNewIngredients(current => current.filter(ing => ing.id !== tempId));
+    setNewIngredients(current => current.filter(ing => ing.tempId !== tempId));
   };
   
   const handleRemoveExistingIngredient = async (recipeIngredientId: string, ingredientName: string) => {
@@ -510,6 +469,23 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         });
     }
   };
+
+  const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
+    // 1. Add the new ingredient to the master list
+    setAllIngredients(current => [...current, newIngredient]);
+    
+    // 2. Update the specific `newIngredients` row to link it
+    handleNewIngredientChange(tempId, 'ingredientId', newIngredient.id);
+  }
+
+  const openNewIngredientModal = (tempId: string) => {
+    const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId);
+    if(ingredientToCreate) {
+        setCurrentTempId(tempId);
+        setNewIngredientDefaults({ name: ingredientToCreate.name });
+        setIsNewIngredientModalOpen(true);
+    }
+  }
 
 
    const handleAddNewPreparation = () => {
@@ -557,7 +533,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         const selectedPrep = allPreparations.find(prep => prep.id === value);
                         if (selectedPrep) {
                             updatedPrep.name = selectedPrep.name;
-                            // Set unit to usageUnit if available, otherwise fallback to productionUnit
                             updatedPrep.unit = selectedPrep.usageUnit || selectedPrep.productionUnit || 'g';
                             updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0;
                             updatedPrep._productionUnit = selectedPrep.productionUnit || '';
@@ -626,32 +601,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         
         await updateRecipeDetails(recipeId, recipeDataToSave, editableRecipe.type);
         
-        // Delete all existing ingredients for this recipe first
-        const ingredientDeletePromises = ingredients.map(ing => deleteRecipeIngredient(ing.recipeIngredientId));
-        await Promise.all(ingredientDeletePromises);
-
-        // Then add all current ingredients (editable and new) as new links
-        const allCurrentIngredients = [
-            ...editableIngredients.map(ing => ({
-                ingredientId: ing.id,
+        const ingredientUpdatePromises = editableIngredients.map(ing => {
+            return updateRecipeIngredient(ing.recipeIngredientId, {
                 quantity: ing.quantity,
                 unitUse: ing.unit,
-            })),
-            ...newIngredients
-                .filter(ing => ing.ingredientId) // Only save ingredients that have been linked
-                .map(ing => ({
-                    ingredientId: ing.ingredientId,
-                    quantity: ing.quantity,
-                    unitUse: ing.unit,
-            })),
-        ];
+            });
+        });
 
-        const ingredientAddPromises = allCurrentIngredients
+        const newIngredientPromises = newIngredients
             .filter(ing => ing.ingredientId && ing.quantity > 0)
             .map(ing => {
-                return addDoc(collection(db, "recipeIngredients"), {
+                return addIngredientLink({
                     recipeId: recipeId,
-                    ...ing,
+                    ingredientId: ing.ingredientId!,
+                    quantity: ing.quantity,
+                    unitUse: ing.unit,
                 });
             });
 
@@ -674,7 +638,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             });
 
         await Promise.all([
-            ...ingredientAddPromises,
+            ...ingredientUpdatePromises,
+            ...newIngredientPromises,
             ...preparationUpdatePromises,
             ...newPreparationPromises,
         ]);
@@ -704,71 +669,88 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     if (!recipe) return;
     setIsGenerating(true);
     try {
-        const result = await generateRecipe({
-            name: recipe.name,
-            description: recipe.description,
-            type: recipe.type,
-        });
+      const result = await generateRecipe({
+        name: recipe.name,
+        description: recipe.description,
+        type: recipe.type,
+      });
 
-        console.log('AI Generation Result:', result);
+      console.log('AI Generation Result:', result);
 
-        if (result) {
-            if (!isEditing) {
-                setIsEditing(true);
-            }
-            
-            // Clear existing ingredients (both states)
-            setEditableIngredients([]);
-            setNewIngredients([]);
-            
-            // Update recipe details
-            setEditableRecipe(current => current ? ({
+      if (result) {
+        if (!isEditing) {
+          setIsEditing(true);
+        }
+
+        setEditableIngredients([]);
+        setNewIngredients([]);
+
+        setEditableRecipe(current => {
+            if (!current) return null;
+            const updated = {
                 ...current,
                 procedure_preparation: result.procedure_preparation,
                 procedure_cuisson: result.procedure_cuisson,
                 procedure_service: result.procedure_service,
                 difficulty: result.difficulty,
                 duration: result.duration,
-            }) : null);
+            };
 
-            // Process generated ingredients
-            const generatedIngredients = result.ingredients.map(ing => {
-                const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
-                return {
-                    id: `new-gen-${Date.now()}-${ing.name}`,
-                    ingredientId: existingIngredient?.id || '',
-                    name: ing.name, // Always use the AI-generated name for display
-                    quantity: ing.quantity,
-                    unit: ing.unit,
-                    unitPrice: existingIngredient?.unitPrice || 0,
-                    unitPurchase: existingIngredient?.unitPurchase || '',
-                    totalCost: 0, 
-                };
-            });
-
-            // Recompute cost for each new generated ingredient
-            const ingredientsWithCost = generatedIngredients.map(ing => {
-                const cost = recomputeIngredientCost(ing);
-                return { ...ing, totalCost: isNaN(cost) ? 0 : cost };
-            });
-
-            // Replace the new ingredients list
-            setNewIngredients(ingredientsWithCost);
-            
-            toast({
-                title: "Recette générée !",
-                description: "La fiche technique a été pré-remplie. Veuillez vérifier les informations."
-            });
-        }
-    } catch(e) {
-        console.error("Failed to generate recipe with AI", e);
-        toast({
-            title: "Erreur de l'IA",
-            description: "Impossible de générer la recette. Veuillez réessayer.",
-            variant: 'destructive',
+            if (updated.type === 'Préparation') {
+                (updated as Preparation).productionQuantity = result.productionQuantity;
+                (updated as Preparation).productionUnit = result.productionUnit;
+                (updated as Preparation).usageUnit = result.usageUnit;
+            }
+            return updated;
         });
+
+        const generatedIngredients: NewRecipeIngredient[] = result.ingredients.map(ing => {
+          const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
+          const tempId = `new-gen-${Date.now()}-${ing.name}`;
+          
+          let totalCost = 0;
+          if(existingIngredient) {
+            const tempNewIng: NewRecipeIngredient = {
+                tempId,
+                ingredientId: existingIngredient.id,
+                name: ing.name,
+                quantity: ing.quantity,
+                unit: ing.unit,
+                unitPrice: existingIngredient.unitPrice,
+                unitPurchase: existingIngredient.unitPurchase,
+                totalCost: 0,
+            }
+            totalCost = recomputeIngredientCost(tempNewIng)
+          }
+
+          return {
+            tempId,
+            ingredientId: existingIngredient?.id,
+            name: ing.name,
+            quantity: ing.quantity,
+            unit: ing.unit,
+            unitPrice: existingIngredient?.unitPrice || 0,
+            unitPurchase: existingIngredient?.unitPurchase || '',
+            totalCost: isNaN(totalCost) ? 0 : totalCost,
+          };
+        });
+
+        setNewIngredients(generatedIngredients);
+
+        toast({
+          title: "Recette générée !",
+          description: "La fiche technique a été pré-remplie. Veuillez vérifier les informations."
+        });
+      }
+    } catch (e) {
+      console.error("Failed to generate recipe with AI", e);
+      toast({
+        title: "Erreur de l'IA",
+        description: "Impossible de générer la recette. Veuillez réessayer.",
+        variant: 'destructive',
+      });
     } finally {
-        setIsGenerating(false);
+      setIsGenerating(false);
     }
   };
 
@@ -780,17 +762,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const {
     totalRecipeCost,
     costPerPortion,
-    priceHT,
-    grossMargin,
-    grossMarginPercentage,
-    foodCostPercentage,
-    multiplierCoefficient
   } = useMemo(() => {
     if (!currentRecipeData) {
-        return {
-            totalRecipeCost: 0, costPerPortion: 0, priceHT: 0, grossMargin: 0,
-            grossMarginPercentage: 0, foodCostPercentage: 0, multiplierCoefficient: 0
-        };
+        return { totalRecipeCost: 0, costPerPortion: 0 };
     }
 
     const ingredientsCost = (isEditing ? editableIngredients : ingredients).reduce((acc, item) => acc + (item.totalCost || 0), 0);
@@ -799,36 +773,17 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const newPreparationsCost = newPreparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
     
     const totalCost = ingredientsCost + newIngredientsCost + preparationsCost + newPreparationsCost;
-
+    
+    let costPerPortionValue = 0;
     if (currentRecipeData.type === 'Préparation') {
         const productionQuantity = (currentRecipeData as Preparation).productionQuantity || 1;
-        return {
-            totalRecipeCost: totalCost,
-            costPerPortion: (totalCost / productionQuantity),
-            priceHT: 0, grossMargin: 0, grossMarginPercentage: 0, foodCostPercentage: 0, multiplierCoefficient: 0
-        };
+        costPerPortionValue = totalCost / productionQuantity;
+    } else { // Plat
+        const portions = (currentRecipeData as Recipe).portions || 1;
+        costPerPortionValue = totalCost / portions;
     }
 
-    const portions = currentRecipeData.portions || 1;
-    const costPerPortionValue = portions > 0 ? totalCost / portions : 0;
-    const tvaRate = currentRecipeData.tvaRate || 10;
-    const price = currentRecipeData.price || 0;
-    const priceHTValue = price / (1 + tvaRate / 100);
-    
-    const grossMarginValue = priceHTValue > 0 ? priceHTValue - costPerPortionValue : 0;
-    const grossMarginPercentageValue = priceHTValue > 0 ? (grossMarginValue / priceHTValue) * 100 : 0;
-    const foodCostPercentageValue = priceHTValue > 0 ? (costPerPortionValue / priceHTValue) * 100 : 0;
-    const multiplierCoefficientValue = costPerPortionValue > 0 ? priceHTValue / costPerPortionValue : 0;
-
-    return {
-        totalRecipeCost: totalCost,
-        costPerPortion: costPerPortionValue,
-        priceHT: priceHTValue,
-        grossMargin: grossMarginValue,
-        grossMarginPercentage: grossMarginPercentageValue,
-        foodCostPercentage: foodCostPercentageValue,
-        multiplierCoefficient: multiplierCoefficientValue
-    };
+    return { totalRecipeCost: totalCost, costPerPortion: costPerPortionValue };
   }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations, isEditing]);
 
 
@@ -860,13 +815,22 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   return (
     <div className="space-y-4">
-       <ImageUploadDialog
-        isOpen={isImageUploadOpen}
-        onClose={() => setIsImageUploadOpen(false)}
-        onUploadComplete={(url) => {
-          handleRecipeDataChange('imageUrl', url);
-        }}
-      />
+      {isNewIngredientModalOpen && (
+        <IngredientModal
+            open={isNewIngredientModalOpen}
+            onOpenChange={setIsNewIngredientModalOpen}
+            ingredient={newIngredientDefaults}
+            onSuccess={(newDbIngredient) => {
+                if (newDbIngredient && currentTempId) {
+                    handleCreateAndLinkIngredient(currentTempId, newDbIngredient);
+                }
+                fetchAllIngredients(); // Refresh the list of all ingredients
+            }}
+        >
+            <div/>
+        </IngredientModal>
+      )}
+
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-4">
             <div className="bg-primary/10 text-primary rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
@@ -895,101 +859,27 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         </div>
       </header>
 
-      {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
-        {/* Column 1 & 2 (Left & Center): Main content */}
         <div className="lg:col-span-2 space-y-8">
-            {isPlat && (
-                <Card className="overflow-hidden">
-                    <CardContent className="p-0">
-                        <div className="relative w-full h-96">
-                             <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "contain"}} data-ai-hint="food image" />
-                             {isEditing && 
-                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
-                                    <Button variant="secondary" onClick={() => setIsImageUploadOpen(true)}><ImageIcon className="mr-2 h-4 w-4" />Changer la photo</Button>
-                                </div>
-                             }
-                        </div>
-                    </CardContent>
-                </Card>
-            )}
-
-            {isPlat && (
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations Financières</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted/50 rounded-lg">
-                       <div>
-                            <p className="text-sm text-muted-foreground">Vente TTC</p>
-                            {isEditing ? (
-                                <Input 
-                                    type="number"
-                                    value={(editableRecipe as Recipe)?.price || 0}
-                                    onChange={(e) => handleRecipeDataChange('price', parseFloat(e.target.value) || 0)}
-                                    className="font-bold text-lg text-center"
-                                />
-                            ) : (
-                                <p className="font-bold text-lg">{currentRecipeData.price ? currentRecipeData.price.toFixed(2) : 'N/A'}€</p>
-                            )}
-                       </div>
-                       <div>
-                            <p className="text-sm text-muted-foreground">Vente HT</p>
-                            <p className="font-bold text-lg">{priceHT.toFixed(2)}€</p>
-                       </div>
-                       <div>
-                            <p className="text-sm text-muted-foreground">Portions</p>
-                             {isEditing ? (
-                                <Input 
-                                    type="number"
-                                    value={(editableRecipe as Recipe)?.portions}
-                                    onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || 1)}
-                                    className="font-bold text-lg text-center"
-                                />
-                            ) : (
-                                <p className="font-bold text-lg">{currentRecipeData.portions}</p>
-                            )}
-                       </div>
-                   </div>
-                    <div className="space-y-2 text-sm border-t pt-4">
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Coût Matière / Portion</span>
-                            <span className="font-semibold">{costPerPortion.toFixed(2)}€</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Coefficient</span>
-                             <span className="font-semibold">x {multiplierCoefficient.toFixed(2)}</span>
-                        </div>
-                         <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Marge Brute</span>
-                            <span className="font-semibold">{grossMargin.toFixed(2)}€ ({grossMarginPercentage.toFixed(2)}%)</span>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-            )}
-
              <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>
-                         {isEditing && <Button variant="outline" size="sm" onClick={handleAddNewIngredient}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Ingrédient</Button>}
+                         {isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', unitPrice: 0, unitPurchase: '', totalCost: 0 }])}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Ingrédient</Button>}
                     </CardTitle>
                     <CardDescription>
                        Liste des matières premières nécessaires pour la recette.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-1/3">Ingrédient</TableHead>
+                                <TableHead className="w-[35%]">Ingrédient</TableHead>
                                 <TableHead>Quantité</TableHead>
                                 <TableHead>Unité</TableHead>
-                                <TableHead className="text-right">Coût total</TableHead>
+                                <TableHead className="text-right">Coût</TableHead>
                                 {isEditing && <TableHead className="w-[50px]"></TableHead>}
                             </TableRow>
                         </TableHeader>
@@ -1005,16 +895,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                           onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)}
                                           className="w-20"
                                         />
-                                      ) : (
-                                        ing.quantity
-                                      )}
+                                      ) : ing.quantity }
                                     </TableCell>
                                     <TableCell>
                                       {isEditing ? (
-                                        <Select
-                                            value={ing.unit}
-                                            onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)}
-                                        >
+                                        <Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} >
                                             <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="g">g</SelectItem>
@@ -1024,31 +909,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                                 <SelectItem value="pièce">pièce</SelectItem>
                                             </SelectContent>
                                         </Select>
-                                      ) : (
-                                        ing.unit
-                                      )}
+                                      ) : ing.unit }
                                     </TableCell>
                                     <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
                                     {isEditing && (
                                         <TableCell>
                                             <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon">
-                                                        <Trash2 className="h-4 w-4 text-red-500"/>
-                                                    </Button>
-                                                </AlertDialogTrigger>
+                                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger>
                                                 <AlertDialogContent>
                                                     <AlertDialogHeader>
                                                         <AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ?
-                                                        </AlertDialogDescription>
+                                                        <AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ?</AlertDialogDescription>
                                                     </AlertDialogHeader>
                                                     <AlertDialogFooter>
                                                         <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId, ing.name)}>
-                                                            Retirer
-                                                        </AlertDialogAction>
+                                                        <AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId, ing.name)}>Retirer</AlertDialogAction>
                                                     </AlertDialogFooter>
                                                 </AlertDialogContent>
                                             </AlertDialog>
@@ -1057,36 +932,29 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 </TableRow>
                             ))}
                              {isEditing && newIngredients.map((newIng) => (
-                                <TableRow key={newIng.id}>
+                                <TableRow key={newIng.tempId}>
                                     <TableCell>
-                                        <Select
-                                            value={newIng.ingredientId}
-                                            onValueChange={(value) => handleNewIngredientChange(newIng.id, 'ingredientId', value)}
-                                        >
-                                            <SelectTrigger>
-                                                <SelectValue placeholder={newIng.name || "Choisir..."} />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                {allIngredients.map(ing => (
-                                                    ing.id ? <SelectItem key={ing.id} value={ing.id}>{ing.name}</SelectItem> : null
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <div className="flex items-center gap-2">
+                                            <Select value={newIng.ingredientId || ''} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'ingredientId', value)} >
+                                                <SelectTrigger className={cn(!newIng.ingredientId && "text-muted-foreground")}>
+                                                    <SelectValue placeholder={newIng.name || "Choisir..."} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {allIngredients.map(ing => ( ing.id ? <SelectItem key={ing.id} value={ing.id}>{ing.name}</SelectItem> : null ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {!newIng.ingredientId && (
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={`Créer l'ingrédient "${newIng.name}"`}>
+                                                    <PlusCircle className="h-4 w-4 text-primary" />
+                                                </Button>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Input
-                                            type="number"
-                                            placeholder="Qté"
-                                            className="w-20"
-                                            value={newIng.quantity === 0 ? '' : newIng.quantity}
-                                            onChange={(e) => handleNewIngredientChange(newIng.id, 'quantity', parseFloat(e.target.value) || 0)}
-                                        />
+                                        <Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} />
                                     </TableCell>
                                     <TableCell>
-                                         <Select
-                                            value={newIng.unit}
-                                            onValueChange={(value) => handleNewIngredientChange(newIng.id, 'unit', value)}
-                                        >
+                                         <Select value={newIng.unit} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'unit', value)} >
                                             <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="g">g</SelectItem>
@@ -1097,21 +965,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell className="text-right font-semibold">
-                                        {newIng.totalCost.toFixed(2)}€
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.id)}>
-                                            <Trash2 className="h-4 w-4 text-red-500"/>
-                                        </Button>
-                                    </TableCell>
+                                    <TableCell className="text-right font-semibold">{newIng.totalCost.toFixed(2)}€</TableCell>
+                                    <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
                                 </TableRow>
                              ))}
-
                              {currentIngredientsData.length === 0 && newIngredients.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié à cette recette.</TableCell>
-                                </TableRow>
+                                <TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>
                              )}
                         </TableBody>
                     </Table>
@@ -1124,9 +983,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         <div className="flex items-center gap-2"><BookCopy className="h-5 w-5"/>Sous-Recettes</div>
                          {isEditing && <Button variant="outline" size="sm" onClick={handleAddNewPreparation}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Préparation</Button>}
                     </CardTitle>
-                    <CardDescription>
-                       Liste des préparations (fiches techniques internes) utilisées dans cette recette.
-                    </CardDescription>
+                    <CardDescription>Liste des préparations utilisées dans cette recette.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Table>
@@ -1144,20 +1001,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TableRow key={prep.id}>
                                     <TableCell className="font-medium">{prep.name}</TableCell>
                                     <TableCell>
-                                      {isEditing ? (
-                                        <Input
-                                          type="number"
-                                          value={prep.quantity}
-                                          onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)}
-                                          className="w-20"
-                                        />
-                                      ) : (
-                                        prep.quantity
-                                      )}
+                                      {isEditing ? ( <Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" />
+                                      ) : prep.quantity }
                                     </TableCell>
-                                    <TableCell>
-                                        {prep.unit}
-                                    </TableCell>
+                                    <TableCell>{prep.unit}</TableCell>
                                     <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
                                     {isEditing && (
                                         <TableCell>
@@ -1175,51 +1022,29 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             {isEditing && newPreparations.map((prep) => (
                                 <TableRow key={prep.id}>
                                     <TableCell>
-                                        <Select 
-                                            value={prep.childPreparationId}
-                                            onValueChange={(value) => handleNewPreparationChange(prep.id, 'childPreparationId', value)}
-                                        >
+                                        <Select value={prep.childPreparationId} onValueChange={(value) => handleNewPreparationChange(prep.id, 'childPreparationId', value)} >
                                             <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
                                             <SelectContent>
-                                                {allPreparations.map(p => (
-                                                    p.id && p.id !== recipeId ? <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem> : null
-                                                ))}
+                                                {allPreparations.map(p => ( p.id && p.id !== recipeId ? <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem> : null ))}
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell>
-                                        <Input 
-                                            type="number" 
-                                            placeholder="Qté" 
-                                            className="w-20" 
-                                            value={prep.quantity === 0 ? '' : prep.quantity}
-                                            onChange={(e) => handleNewPreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)}
-                                        />
-                                    </TableCell>
-                                    <TableCell>
-                                       {prep.unit || "-"}
-                                    </TableCell>
+                                    <TableCell><Input type="number" placeholder="Qté" className="w-20" value={prep.quantity === 0 ? '' : prep.quantity} onChange={(e) => handleNewPreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell>
+                                    <TableCell>{prep.unit || "-"}</TableCell>
                                     <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
                                     <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
                                 </TableRow>
                             ))}
                             {currentPreparationsData.length === 0 && newPreparations.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">
-                                        Aucune sous-recette ajoutée.
-                                    </TableCell>
-                                </TableRow>
+                                <TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>
                             )}
                         </TableBody>
                     </Table>
                 </CardContent>
             </Card>
 
-
             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/>Procédure</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/>Procédure</CardTitle></CardHeader>
                 <CardContent>
                    {isEditing ? (
                         <Tabs defaultValue="preparation">
@@ -1228,27 +1053,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
                                 <TabsTrigger value="service">Service</TabsTrigger>
                             </TabsList>
-                            <TabsContent value="preparation" className="pt-4">
-                                <Textarea 
-                                    value={editableRecipe?.procedure_preparation}
-                                    onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)}
-                                    rows={8}
-                                />
-                            </TabsContent>
-                            <TabsContent value="cuisson" className="pt-4">
-                               <Textarea 
-                                    value={editableRecipe?.procedure_cuisson}
-                                    onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)}
-                                    rows={8}
-                                />
-                            </TabsContent>
-                            <TabsContent value="service" className="pt-4">
-                                 <Textarea 
-                                    value={editableRecipe?.procedure_service}
-                                    onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)}
-                                    rows={8}
-                                />
-                            </TabsContent>
+                            <TabsContent value="preparation" className="pt-4"><Textarea value={editableRecipe?.procedure_preparation} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={8}/></TabsContent>
+                            <TabsContent value="cuisson" className="pt-4"><Textarea value={editableRecipe?.procedure_cuisson} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={8} /></TabsContent>
+                            <TabsContent value="service" className="pt-4"><Textarea value={editableRecipe?.procedure_service} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={8} /></TabsContent>
                         </Tabs>
                    ) : (
                         <Tabs defaultValue="preparation">
@@ -1257,27 +1064,18 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
                                 <TabsTrigger value="service">Service</TabsTrigger>
                             </TabsList>
-                            <TabsContent value="preparation" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">
-                                {recipe.procedure_preparation}
-                            </TabsContent>
-                            <TabsContent value="cuisson" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">
-                                {recipe.procedure_cuisson}
-                            </TabsContent>
-                            <TabsContent value="service" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">
-                                {recipe.procedure_service}
-                            </TabsContent>
+                            <TabsContent value="preparation" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">{recipe.procedure_preparation}</TabsContent>
+                            <TabsContent value="cuisson" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">{recipe.procedure_cuisson}</TabsContent>
+                            <TabsContent value="service" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">{recipe.procedure_service}</TabsContent>
                         </Tabs>
                    )}
                 </CardContent>
             </Card>
         </div>
 
-        {/* Column 3 (Right): Analysis & Details */}
         <div className="space-y-8">
             <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle>
-                </CardHeader>
+                <CardHeader><CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle></CardHeader>
                 <CardContent>
                      <div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)}€</div>
                      <p className="text-xs text-muted-foreground text-right mt-1">
@@ -1285,83 +1083,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                      </p>
                 </CardContent>
             </Card>
-            {isPlat && (
-                <>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="text-xl text-muted-foreground">Food Cost (%)</CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex items-center justify-center p-6">
-                            <GaugeChart 
-                                value={foodCostPercentage}
-                                unit="%"
-                            />
-                        </CardContent>
-                    </Card>
 
-                    <Card>
-                        <Accordion type="single" collapsible className="w-full">
-                            <AccordionItem value="item-1" className="border-b-0">
-                                <AccordionTrigger className="p-4 hover:no-underline">
-                                <div className="flex items-center gap-2 text-lg font-semibold text-muted-foreground"><ListChecks className="h-5 w-5"/>Indicateurs Food Cost</div>
-                                </AccordionTrigger>
-                                <AccordionContent className="px-4">
-                                    <ul className="space-y-3 text-sm">
-                                        {foodCostIndicators.map(indicator => {
-                                            const Icon = indicator.icon;
-                                            return (
-                                                <li key={indicator.level} className="flex items-start gap-3">
-                                                    <Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} />
-                                                    <div>
-                                                        <span className="font-semibold">{indicator.range} - {indicator.level}</span>:
-                                                        <p className="text-muted-foreground text-xs">{indicator.description}</p>
-                                                    </div>
-                                                </li>
-                                            )
-                                        })}
-                                    </ul>
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
-                    </Card>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center justify-between text-xl text-muted-foreground">
-                                <div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600"/>Allergènes</div>
-                                {isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4"/></Button>}
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="flex flex-wrap gap-2">
-                            {recipe.allergens && recipe.allergens.length > 0 ? 
-                                recipe.allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>)
-                                : <p className="text-sm text-muted-foreground">Aucun allergène spécifié.</p>
-                            }
-                        </CardContent>
-                    </Card>
-
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-xl text-muted-foreground"><Euro className="h-5 w-5"/>Argumentaire Commercial</CardTitle>
-                        </CardHeader>
-                        <CardContent className="prose prose-sm max-w-none text-muted-foreground">
-                            {isEditing ? (
-                                <Textarea 
-                                    value={(editableRecipe as Recipe)?.commercialArgument}
-                                    onChange={(e) => handleRecipeDataChange('commercialArgument', e.target.value)}
-                                    rows={5}
-                                />
-                            ) : (
-                                <p>{(recipe as Recipe).commercialArgument}</p>
-                            )}
-                        </CardContent>
-                    </Card>
-                </>
-            )}
             {!isPlat && (
                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations de Production</CardTitle>
-                    </CardHeader>
+                    <CardHeader><CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Informations de Production</CardTitle></CardHeader>
                     <CardContent className="space-y-4">
                        <div className="grid grid-cols-2 gap-y-2">
                             <span className="text-muted-foreground">Qté Produite</span>
@@ -1379,24 +1104,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                          {isEditing && (
                             <div className="space-y-4 pt-4 border-t">
                                  <div className="grid grid-cols-2 gap-2">
-                                     <Input 
-                                        type="number"
-                                        value={(editableRecipe as Preparation)?.productionQuantity}
-                                        onChange={(e) => handleRecipeDataChange('productionQuantity', parseInt(e.target.value) || 1)}
-                                    />
-                                    <Input 
-                                        type="text"
-                                        value={(editableRecipe as Preparation)?.productionUnit}
-                                        onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)}
-                                        placeholder="Unité Prod."
-                                    />
+                                     <Input type="number" value={(editableRecipe as Preparation)?.productionQuantity} onChange={(e) => handleRecipeDataChange('productionQuantity', parseInt(e.target.value) || 1)} />
+                                     <Input type="text" value={(editableRecipe as Preparation)?.productionUnit} onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)} placeholder="Unité Prod." />
                                  </div>
-                                 <Input 
-                                    type="text"
-                                    value={(editableRecipe as Preparation)?.usageUnit || ''}
-                                    onChange={(e) => handleRecipeDataChange('usageUnit', e.target.value)}
-                                    placeholder="Unité d'utilisation suggérée (ex: g, ml)"
-                                />
+                                 <Input type="text" value={(editableRecipe as Preparation)?.usageUnit || ''} onChange={(e) => handleRecipeDataChange('usageUnit', e.target.value)} placeholder="Unité d'utilisation suggérée" />
                             </div>
                          )}
                     </CardContent>
@@ -1425,56 +1136,24 @@ function RecipeDetailSkeleton() {
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <Skeleton className="h-14 w-14 rounded-lg" />
-            <div className="space-y-2">
-              <Skeleton className="h-8 w-64" />
-              <Skeleton className="h-4 w-32" />
-            </div>
+            <div className="space-y-2"><Skeleton className="h-8 w-64" /><Skeleton className="h-4 w-32" /></div>
           </div>
           <Skeleton className="h-10 w-24" />
         </header>
   
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Column 1 & 2 Skeleton */}
           <div className="lg:col-span-2 space-y-8">
-             <Card>
-                <CardContent className="p-0">
-                    <Skeleton className="w-full h-96" />
-                </CardContent>
-             </Card>
-             <Card>
-              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-              <CardContent><Skeleton className="h-40 w-full" /></CardContent>
-            </Card>
-            <Card>
-              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-              <CardContent><Skeleton className="h-40 w-full" /></CardContent>
-            </Card>
+             <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+             <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+             <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
           </div>
   
-          {/* Column 3 Skeleton */}
           <div className="space-y-8">
-            <Card>
-                <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
-                <CardContent><Skeleton className="h-48 w-full" /></CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-32" />
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-3/4" />
-              </CardContent>
-            </Card>
-             <Card>
-              <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
-              <CardContent><Skeleton className="h-10 w-full" /></CardContent>
-            </Card>
+            <Card><CardHeader><Skeleton className="h-6 w-24" /></CardHeader><CardContent><Skeleton className="h-20 w-full" /></CardContent></Card>
+            <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent className="space-y-2"><Skeleton className="h-5 w-full" /><Skeleton className="h-5 w-3/4" /></CardContent></Card>
+             <Card><CardHeader><Skeleton className="h-6 w-40" /></CardHeader><CardContent><Skeleton className="h-10 w-full" /></CardContent></Card>
           </div>
         </div>
       </div>
     );
-  }
-
-    
-
+}
