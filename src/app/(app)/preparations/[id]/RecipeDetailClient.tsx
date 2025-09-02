@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -630,7 +629,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         });
         
         const preparationUpdatePromises = editablePreparations.map(prep => {
-            // Only update quantity as unit is now static
+            // Only update quantity, as unit is not editable in this view
             return updateRecipePreparationLink(prep.id, {
                 quantity: prep.quantity,
             });
@@ -654,7 +653,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     parentRecipeId: recipeId,
                     childPreparationId: prep.childPreparationId,
                     quantity: prep.quantity,
-                    unitUse: prep.unit, // The unit is now auto-set
+                    unitUse: prep.unit,
                 });
             });
 

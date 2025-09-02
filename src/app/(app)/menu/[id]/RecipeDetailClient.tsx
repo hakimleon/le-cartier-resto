@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -554,7 +555,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         const selectedPrep = allPreparations.find(prep => prep.id === value);
                         if (selectedPrep) {
                             updatedPrep.name = selectedPrep.name;
-                            updatedPrep.unit = selectedPrep.productionUnit || 'g'; // Set unit to production unit by default
+                            updatedPrep.unit = selectedPrep.productionUnit || ''; // Auto-set unit
                             updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0;
                             updatedPrep._productionUnit = selectedPrep.productionUnit || '';
                         }
@@ -653,7 +654,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     parentRecipeId: recipeId,
                     childPreparationId: prep.childPreparationId,
                     quantity: prep.quantity,
-                    unitUse: prep.unit,
+                    unitUse: prep.unit, // The unit is now auto-set
                 });
             });
 
@@ -1330,7 +1331,6 @@ function RecipeDetailSkeleton() {
         </header>
   
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Column 1 & 2 Skeleton */}
           <div className="lg:col-span-2 space-y-8">
              <Card>
                 <CardContent className="p-0">
@@ -1347,7 +1347,6 @@ function RecipeDetailSkeleton() {
             </Card>
           </div>
   
-          {/* Column 3 Skeleton */}
           <div className="space-y-8">
             <Card>
                 <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
@@ -1356,7 +1355,7 @@ function RecipeDetailSkeleton() {
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
-              </Header>
+              </CardHeader>
               <CardContent className="space-y-2">
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-3/4" />
@@ -1370,5 +1369,5 @@ function RecipeDetailSkeleton() {
         </div>
       </div>
     );
-}
+  }
 
