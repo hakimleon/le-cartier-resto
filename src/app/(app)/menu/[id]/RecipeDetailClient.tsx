@@ -39,7 +39,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ImageUploadDialog } from "./ImageUploadDialog";
-import { generateRecipe, generateCommercialArgument } from "@/ai/flows/suggestion-flow";
+import { generateCommercialArgument } from "@/ai/flows/suggestion-flow";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -689,67 +689,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }
   };
 
-    const handleGenerateRecipe = async () => {
-        if (!recipe) return;
-        setIsGenerating(true);
-        try {
-            const result = await generateRecipe({
-                name: recipe.name,
-                description: recipe.description,
-                type: 'Plat'
-            });
-
-            if (result) {
-                if (!isEditing) {
-                    setIsEditing(true);
-                }
-
-                setEditableRecipe(current => current ? ({
-                    ...current,
-                    procedure_preparation: result.procedure_preparation,
-                    procedure_cuisson: result.procedure_cuisson,
-                    procedure_service: result.procedure_service,
-                    difficulty: result.difficulty,
-                    duration: result.duration,
-                }) : null);
-
-                const generatedIngredients = result.ingredients.map(ing => {
-                    const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
-                    return {
-                        id: `new-gen-${Date.now()}-${ing.name}`,
-                        ingredientId: existingIngredient?.id || '',
-                        name: ing.name,
-                        quantity: ing.quantity,
-                        unit: ing.unit,
-                        unitPrice: existingIngredient?.unitPrice || 0,
-                        unitPurchase: existingIngredient?.unitPurchase || '',
-                        totalCost: 0,
-                    }
-                });
-
-                const ingredientsWithCost = generatedIngredients.map(ing => {
-                    const cost = recomputeIngredientCost(ing);
-                    return { ...ing, totalCost: isNaN(cost) ? 0 : cost };
-                });
-
-                setNewIngredients(current => [...current, ...ingredientsWithCost]);
-                
-                toast({
-                    title: "Recette générée !",
-                    description: "La fiche technique a été pré-remplie. Veuillez vérifier les informations."
-                });
-            }
-        } catch(e) {
-            console.error("Failed to generate recipe with AI", e);
-            toast({
-                title: "Erreur de l'IA",
-                description: "Impossible de générer la recette. Veuillez réessayer.",
-                variant: 'destructive',
-            });
-        } finally {
-            setIsGenerating(false);
-        }
-    };
 
     const handleGenerateArgument = async () => {
         if (!recipe || recipe.type !== 'Plat') return;
@@ -895,10 +834,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-             <Button variant="outline" onClick={handleGenerateRecipe} disabled={isGenerating || isEditing}>
-                <Sparkles className="mr-2 h-4 w-4" />
-                {isGenerating ? 'Génération...' : 'Élaborer avec l\'IA'}
-            </Button>
             <Button variant="outline" onClick={handleToggleEditMode}>
                  {isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}
             </Button>
@@ -1435,60 +1370,60 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 }
 
 function RecipeDetailSkeleton() {
-  return (
-    <div className="space-y-8">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-14 w-14 rounded-lg" />
-          <div className="space-y-2">
-            <Skeleton className="h-8 w-64" />
-            <Skeleton className="h-4 w-32" />
+    return (
+      <div className="space-y-8">
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-14 w-14 rounded-lg" />
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-24" />
+        </header>
+  
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Column 1 & 2 Skeleton */}
+          <div className="lg:col-span-2 space-y-8">
+             <Card>
+                <CardContent className="p-0">
+                    <Skeleton className="w-full h-96" />
+                </CardContent>
+             </Card>
+             <Card>
+              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+              <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+            </Card>
+            <Card>
+              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+              <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+            </Card>
+          </div>
+  
+          {/* Column 3 Skeleton */}
+          <div className="space-y-8">
+            <Card>
+                <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
+                <CardContent><Skeleton className="h-48 w-full" /></CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <Skeleton className="h-5 w-full" />
+                <Skeleton className="h-5 w-3/4" />
+              </CardContent>
+            </Card>
+             <Card>
+              <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
+              <CardContent><Skeleton className="h-10 w-full" /></CardContent>
+            </Card>
           </div>
         </div>
-        <Skeleton className="h-10 w-24" />
-      </header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Column 1 & 2 Skeleton */}
-        <div className="lg:col-span-2 space-y-8">
-           <Card>
-              <CardContent className="p-0">
-                  <Skeleton className="w-full h-96" />
-              </CardContent>
-           </Card>
-           <Card>
-            <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-            <CardContent><Skeleton className="h-40 w-full" /></CardContent>
-          </Card>
-          <Card>
-            <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-            <CardContent><Skeleton className="h-40 w-full" /></CardContent>
-          </Card>
-        </div>
-
-        {/* Column 3 Skeleton */}
-        <div className="space-y-8">
-          <Card>
-              <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
-              <CardContent><Skeleton className="h-48 w-full" /></CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-32" />
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Skeleton className="h-5 w-full" />
-              <Skeleton className="h-5 w-3/4" />
-            </CardContent>
-          </Card>
-           <Card>
-            <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
-            <CardContent><Skeleton className="h-10 w-full" /></CardContent>
-          </Card>
-        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
     

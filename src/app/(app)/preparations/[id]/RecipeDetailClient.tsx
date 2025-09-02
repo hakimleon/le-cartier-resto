@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -39,6 +39,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { ImageUploadDialog } from "@/app/(app)/menu/[id]/ImageUploadDialog";
+import { generateRecipe } from "@/ai/flows/suggestion-flow";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -155,6 +156,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -686,6 +688,71 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }
   };
 
+  const handleGenerateRecipe = async () => {
+    if (!recipe) return;
+    setIsGenerating(true);
+    try {
+        const result = await generateRecipe({
+            name: recipe.name,
+            description: recipe.description,
+            type: recipe.type,
+        });
+
+        if (result) {
+            if (!isEditing) {
+                setIsEditing(true);
+            }
+
+            setEditableRecipe(current => current ? ({
+                ...current,
+                procedure_preparation: result.procedure_preparation,
+                procedure_cuisson: result.procedure_cuisson,
+                procedure_service: result.procedure_service,
+                difficulty: result.difficulty,
+                duration: result.duration,
+            }) : null);
+
+            const generatedIngredients = result.ingredients.map(ing => {
+                // Heuristic to find matching ingredient in existing list
+                const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
+                return {
+                    id: `new-gen-${Date.now()}-${ing.name}`,
+                    ingredientId: existingIngredient?.id || '',
+                    name: ing.name,
+                    quantity: ing.quantity,
+                    unit: ing.unit,
+                    unitPrice: existingIngredient?.unitPrice || 0,
+                    unitPurchase: existingIngredient?.unitPurchase || '',
+                    totalCost: 0, // Will be recomputed
+                }
+            });
+
+            // Recompute cost for each new generated ingredient
+            const ingredientsWithCost = generatedIngredients.map(ing => {
+                const cost = recomputeIngredientCost(ing);
+                return { ...ing, totalCost: isNaN(cost) ? 0 : cost };
+            });
+
+            setNewIngredients(current => [...current, ...ingredientsWithCost]);
+            
+            toast({
+                title: "Recette générée !",
+                description: "La fiche technique a été pré-remplie. Veuillez vérifier les informations."
+            });
+        }
+    } catch(e) {
+        console.error("Failed to generate recipe with AI", e);
+        toast({
+            title: "Erreur de l'IA",
+            description: "Impossible de générer la recette. Veuillez réessayer.",
+            variant: 'destructive',
+        });
+    } finally {
+        setIsGenerating(false);
+    }
+  };
+
+
   const currentRecipeData = isEditing ? editableRecipe : recipe;
   const currentIngredientsData = isEditing ? editableIngredients : ingredients;
   const currentPreparationsData = isEditing ? editablePreparations : preparations;
@@ -795,6 +862,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+            {!isPlat && (
+                <Button variant="outline" onClick={handleGenerateRecipe} disabled={isGenerating || isEditing}>
+                    <Sparkles className="mr-2 h-4 w-4" />
+                    {isGenerating ? 'Génération...' : 'Élaborer avec l\'IA'}
+                </Button>
+            )}
             <Button variant="outline" onClick={handleToggleEditMode}>
                  {isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}
             </Button>
@@ -1379,3 +1452,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+    
