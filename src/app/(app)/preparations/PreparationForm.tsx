@@ -34,8 +34,9 @@ const formSchema = z.object({
   difficulty: z.enum(["Facile", "Moyen", "Difficile"], {
     errorMap: () => ({ message: "Veuillez sélectionner une difficulté valide." }),
   }),
-  productionUnit: z.string().min(1, "L'unité de production est requise (ex: kg, l, pièce)."),
   productionQuantity: z.coerce.number().positive("La quantité produite doit être positive."),
+  productionUnit: z.string().min(1, "L'unité de production est requise (ex: kg, l, pièce)."),
+  usageUnit: z.string().optional(),
 });
 
 
@@ -55,22 +56,29 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
         description: preparation.description,
         difficulty: preparation.difficulty || "Moyen",
         duration: preparation.duration || 10,
-        productionUnit: preparation.productionUnit || 'kg',
         productionQuantity: preparation.productionQuantity || 1,
+        productionUnit: preparation.productionUnit || 'kg',
+        usageUnit: preparation.usageUnit || '',
     } : {
         name: "",
         description: "",
         difficulty: "Moyen",
         duration: 10,
-        productionUnit: 'kg',
         productionQuantity: 1,
+        productionUnit: 'kg',
+        usageUnit: '',
     }
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      await savePreparation(values, preparation?.id || null);
+      // Ensure usageUnit is stored as an empty string if not provided
+      const dataToSave = {
+        ...values,
+        usageUnit: values.usageUnit || ''
+      };
+      await savePreparation(dataToSave, preparation?.id || null);
       
       toast({
         title: "Succès",
@@ -136,19 +144,34 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
                 </FormItem>
                 )}
             />
-            <FormField
-                control={form.control}
-                name="productionUnit"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Unité de Production</FormLabel>
-                    <FormControl>
-                        <Input placeholder="Ex: kg, l, pièce" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
+            <div className="grid grid-cols-2 gap-2">
+                 <FormField
+                    control={form.control}
+                    name="productionUnit"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Unité Prod.</FormLabel>
+                        <FormControl>
+                            <Input placeholder="kg" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="usageUnit"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Unité Util.</FormLabel>
+                        <FormControl>
+                            <Input placeholder="g" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </div>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -196,4 +219,3 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
     </Form>
   );
 }
-

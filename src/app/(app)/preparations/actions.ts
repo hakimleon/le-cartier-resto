@@ -9,13 +9,18 @@ import type { Preparation } from '@/lib/types';
  * Sauvegarde une préparation (crée ou met à jour).
  */
 export async function savePreparation(preparation: Omit<Preparation, 'id'>, id: string | null) {
+  const dataToSave = {
+    ...preparation,
+    type: 'Préparation' as const, // Ensure type is always set
+  };
+
   if (id) {
     // Mettre à jour un document existant
     const preparationDoc = doc(db, 'preparations', id);
-    await setDoc(preparationDoc, preparation, { merge: true });
+    await setDoc(preparationDoc, dataToSave, { merge: true });
   } else {
     // Créer un nouveau document
-    await addDoc(collection(db, 'preparations'), preparation);
+    await addDoc(collection(db, 'preparations'), dataToSave);
   }
 }
 

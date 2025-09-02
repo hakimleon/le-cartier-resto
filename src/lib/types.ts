@@ -33,6 +33,7 @@ export type Preparation = {
   // Champs spécifiques à la Préparation
   productionQuantity: number; // Quantité produite
   productionUnit: string; // Unité de la quantité produite (kg, litre, pièce)
+  usageUnit?: string; // Unité d'utilisation suggérée (g, ml, pièce)
 };
 
 // Le type pour un plat final (fiche technique complète)
