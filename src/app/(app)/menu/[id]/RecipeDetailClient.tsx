@@ -102,6 +102,8 @@ const getConversionFactor = (purchaseUnit: string, usageUnit: string): number =>
       'kg': { 'g': 1000 },
       'l': { 'ml': 1000 },
       'litre': { 'ml': 1000 },
+      'piece': { 'pièce': 1 },
+      'pièce': { 'piece': 1 },
       // Add more standard conversions here
     };
   
@@ -526,7 +528,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setNewPreparations(current => current.filter(p => p.id !== tempId));
     };
 
-    const handlePreparationChange = (linkId: string, field: 'quantity' | 'unit', value: any) => {
+    const handlePreparationChange = (linkId: string, field: 'quantity', value: any) => {
         setEditablePreparations(current => 
             current.map(prep => {
                 if (prep.id === linkId) {
@@ -625,9 +627,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         });
         
         const preparationUpdatePromises = editablePreparations.map(prep => {
+            // Only update quantity, as unit is not editable in this view
             return updateRecipePreparationLink(prep.id, {
                 quantity: prep.quantity,
-                unitUse: prep.unit,
             });
         });
 
@@ -1054,18 +1056,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         prep.quantity
                                       )}
                                     </TableCell>
-                                    <TableCell>
-                                      {isEditing ? (
-                                        <Input
-                                          type="text"
-                                          value={prep.unit}
-                                          onChange={(e) => handlePreparationChange(prep.id, 'unit', e.target.value)}
-                                          className="w-24"
-                                        />
-                                      ) : (
-                                        prep.unit
-                                      )}
-                                    </TableCell>
+                                    <TableCell>{prep.unit}</TableCell>
                                     <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
                                     {isEditing && (
                                         <TableCell>
@@ -1105,12 +1096,19 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         />
                                     </TableCell>
                                     <TableCell>
-                                        <Input 
-                                            placeholder="Unité" 
-                                            className="w-24" 
+                                         <Select
                                             value={prep.unit}
-                                            onChange={(e) => handleNewPreparationChange(prep.id, 'unit', e.target.value)}
-                                        />
+                                            onValueChange={(value) => handleNewPreparationChange(prep.id, 'unit', value)}
+                                        >
+                                            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="g">g</SelectItem>
+                                                <SelectItem value="kg">kg</SelectItem>
+                                                <SelectItem value="ml">ml</SelectItem>
+                                                <SelectItem value="l">l</SelectItem>
+                                                <SelectItem value="pièce">pièce</SelectItem>
+                                            </SelectContent>
+                                        </Select>
                                     </TableCell>
                                     <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
                                     <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
@@ -1366,7 +1364,7 @@ function RecipeDetailSkeleton() {
           <Card>
             <CardHeader>
               <Skeleton className="h-6 w-32" />
-            </CardHeader>
+            </Header>
             <CardContent className="space-y-2">
               <Skeleton className="h-5 w-full" />
               <Skeleton className="h-5 w-3/4" />
@@ -1381,5 +1379,3 @@ function RecipeDetailSkeleton() {
     </div>
   );
 }
-
-    
