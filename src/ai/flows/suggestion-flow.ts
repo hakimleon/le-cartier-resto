@@ -102,7 +102,7 @@ const recipeGenerationPrompt = ai.definePrompt({
     output: { schema: RecipeOutputSchema },
     prompt: `
         Vous êtes un chef de cuisine expérimenté spécialisé dans la création de fiches techniques pour la restauration bistronomique.
-        Votre mission est de créer une fiche technique détaillée pour la demande suivante.
+        Votre mission est de créer une fiche technique détaillée pour la demande suivante, en vous basant sur la recette classique et fondamentale universellement reconnue pour ce nom. N'inventez pas de variations non pertinentes.
 
         Nom: {{{name}}}
         Description: {{{description}}}
@@ -110,7 +110,7 @@ const recipeGenerationPrompt = ai.definePrompt({
 
         Instructions:
         1.  Listez les ingrédients nécessaires avec des quantités et des unités réalistes pour un contexte de restaurant.
-        2.  Rédigez une procédure claire et concise, séparée en trois étapes distinctes : "Préparation", "Cuisson", et "Service". Si une étape n'est pas pertinente (ex: pas de cuisson pour une vinaigrette), laissez-la vide.
+        2.  Rédigez la procédure en trois étapes : "Préparation", "Cuisson", "Service". Si une étape n'est pas applicable, retournez une chaîne de caractères vide pour ce champ spécifique.
         3.  Estimez la durée totale de préparation en minutes.
         4.  Évaluez la difficulté de la recette (Facile, Moyen, Difficile).
         5.  Fournissez la sortie au format JSON structuré attendu.
