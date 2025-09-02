@@ -83,7 +83,7 @@ const RecipeOutputSchema = z.object({
     procedure_preparation: z.string().describe("Les étapes détaillées de la phase de préparation."),
     procedure_cuisson: z.string().describe("Les étapes détaillées de la phase de cuisson."),
     procedure_service: z.string().describe("Les étapes détaillées pour le service ou le dressage."),
-    duration: z.number().int().positive().describe("La durée totale de préparation en minutes."),
+    duration: z.number().int().describe("La durée totale de préparation en minutes."),
     difficulty: z.enum(['Facile', 'Moyen', 'Difficile']).describe("Le niveau de difficulté de la recette."),
 });
 export type RecipeOutput = z.infer<typeof RecipeOutputSchema>;
