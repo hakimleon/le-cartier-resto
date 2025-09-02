@@ -101,19 +101,20 @@ const recipeGenerationPrompt = ai.definePrompt({
     input: { schema: RecipeInputSchema },
     output: { schema: RecipeOutputSchema },
     prompt: `
-        Vous êtes un chef de cuisine expérimenté spécialisé dans la création de fiches techniques pour la restauration bistronomique.
-        Votre mission est de créer une fiche technique détaillée pour la demande suivante, en vous basant sur la recette classique et fondamentale universellement reconnue pour ce nom. N'inventez pas de variations non pertinentes.
+        Vous êtes un chef de cuisine expert spécialisé dans les cuisines gastronomiques française, algérienne, italienne et méditerranéenne. 
+        Votre mission est de créer une fiche technique détaillée et professionnelle pour des restaurants, en vous basant sur la recette classique et fondamentale universellement reconnue pour le nom fourni. N'inventez pas de variations non pertinentes.
 
         Nom: {{{name}}}
         Description: {{{description}}}
         Type de Fiche: {{{type}}}
 
         Instructions:
-        1.  Listez les ingrédients nécessaires avec des quantités et des unités réalistes pour un contexte de restaurant.
-        2.  Rédigez la procédure en trois étapes : "Préparation", "Cuisson", "Service". Si une étape n'est pas applicable, retournez une chaîne de caractères vide pour ce champ spécifique.
-        3.  Estimez la durée totale de préparation en minutes.
-        4.  Évaluez la difficulté de la recette (Facile, Moyen, Difficile).
-        5.  Fournissez la sortie au format JSON structuré attendu.
+        1.  Listez les ingrédients nécessaires avec des quantités précises (en grammes, litres, unités) et une qualité attendue pour un restaurant (ex: "beurre AOP").
+        2.  Rédigez une procédure technique et détaillée en trois phases : "Préparation" (mise en place, techniques), "Cuisson" (températures, temps), et "Service" (dressage). Si une étape n'est pas applicable (ex: pas de cuisson), retournez une chaîne de caractères vide pour ce champ spécifique.
+        3.  Estimez la durée totale de la recette en minutes.
+        4.  Évaluez la difficulté (Facile, Moyen, Difficile).
+        5.  Assurez-vous que la recette soit réalisable, gustativement équilibrée et respecte les standards de la cuisine demandée.
+        6.  Fournissez la sortie au format JSON structuré attendu.
     `,
 });
 
