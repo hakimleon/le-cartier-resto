@@ -126,3 +126,29 @@ const generateRecipeFlow = ai.defineFlow({
     const { output } = await recipeGenerationPrompt(input);
     return output!;
 });
+
+// Ajout du flow d'argumentaire commercial, que je place en bas pour garder la logique de recette en premier.
+const suggestArgumentFlow = ai.defineFlow(
+  {
+    name: 'suggestArgumentFlow',
+    inputSchema: CommercialArgumentInputSchema,
+    outputSchema: CommercialArgumentOutputSchema,
+  },
+  async (input) => {
+    const { output } = await ai.generate({
+      prompt: `En tant qu'expert en marketing culinaire, créez un argumentaire de vente court et percutant pour un plat.
+      Plat : ${input.name}
+      Description : ${input.description}
+      Ingrédients : ${input.ingredients.join(', ')}
+      `,
+      output: { schema: CommercialArgumentOutputSchema },
+    });
+    return output!;
+  }
+);
+
+export async function suggestArgument(
+  input: CommercialArgumentInput
+): Promise<CommercialArgumentOutput> {
+  return suggestArgumentFlow(input);
+}
