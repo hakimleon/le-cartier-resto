@@ -1,20 +1,25 @@
+
 'use server';
 
 import { collection, addDoc, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Ingredient } from '@/lib/types';
-import { revalidatePath } from 'next/cache';
 
-export async function saveIngredient(ingredient: Omit<Ingredient, 'id'>, id: string | null) {
+export async function saveIngredient(ingredient: Omit<Ingredient, 'id'>, id: string | null): Promise<Ingredient> {
+  let savedIngredient: Ingredient;
+
   if (id) {
     // Update existing document
     const ingredientDoc = doc(db, 'ingredients', id);
     await setDoc(ingredientDoc, ingredient, { merge: true });
+    savedIngredient = { id, ...ingredient };
   } else {
     // Create new document
-    await addDoc(collection(db, 'ingredients'), ingredient);
+    const docRef = await addDoc(collection(db, 'ingredients'), ingredient);
+    savedIngredient = { id: docRef.id, ...ingredient };
   }
-  // No revalidation needed, onSnapshot handles updates on the client
+  
+  return savedIngredient;
 }
 
 export async function deleteIngredient(id: string) {

@@ -3,7 +3,7 @@
 
 import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { Recipe, RecipePreparationLink, Preparation } from '@/lib/types';
+import { Recipe, RecipePreparationLink, Preparation, RecipeIngredientLink } from '@/lib/types';
 
 export async function saveDish(recipe: Omit<Recipe, 'id'>, id: string | null) {
   if (id) {
@@ -79,6 +79,10 @@ export async function updateRecipeIngredient(recipeIngredientId: string, data: {
     }
     const recipeIngredientDoc = doc(db, 'recipeIngredients', recipeIngredientId);
     await updateDoc(recipeIngredientDoc, data);
+}
+
+export async function addIngredientLink(link: Omit<RecipeIngredientLink, 'id'>) {
+    await addDoc(collection(db, "recipeIngredients"), link);
 }
 
 export async function updateRecipePreparationLink(linkId: string, data: { quantity: number; }) {

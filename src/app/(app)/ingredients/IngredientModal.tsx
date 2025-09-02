@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -7,6 +8,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogClose,
 } from "@/components/ui/dialog";
 import { IngredientForm } from "./IngredientForm";
 import { Ingredient } from "@/lib/types";
@@ -14,28 +16,36 @@ import { ReactNode, useState } from "react";
 
 type IngredientModalProps = {
   children: ReactNode;
-  ingredient: Ingredient | null;
-  onSuccess: () => void;
+  ingredient: Partial<Ingredient> | null;
+  onSuccess: (newIngredient?: Ingredient) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export function IngredientModal({ children, ingredient, onSuccess }: IngredientModalProps) {
-    const [isOpen, setIsOpen] = useState(false);
+export function IngredientModal({ children, ingredient, onSuccess, open, onOpenChange }: IngredientModalProps) {
+    const [internalOpen, setInternalOpen] = useState(false);
 
-    const handleSuccess = () => {
+    const isOpen = open !== undefined ? open : internalOpen;
+    const setIsOpen = onOpenChange !== undefined ? onOpenChange : setInternalOpen;
+
+    const handleSuccess = (newIngredient?: Ingredient) => {
         setIsOpen(false);
-        onSuccess();
+        onSuccess(newIngredient);
     }
+    
+    const title = ingredient?.id ? "Modifier l'ingrédient" : "Nouvel ingrédient";
+    const description = ingredient?.id
+      ? "Modifiez les détails de l'ingrédient ci-dessous."
+      : "Ajoutez un nouvel ingrédient à votre inventaire.";
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle>{ingredient ? "Modifier l'ingrédient" : "Nouvel ingrédient"}</DialogTitle>
+          <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
-            {ingredient
-              ? "Modifiez les détails de l'ingrédient ci-dessous."
-              : "Ajoutez un nouvel ingrédient à votre inventaire."}
+            {description}
           </DialogDescription>
         </DialogHeader>
         <IngredientForm ingredient={ingredient} onSuccess={handleSuccess} />

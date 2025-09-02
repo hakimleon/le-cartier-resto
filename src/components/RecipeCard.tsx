@@ -37,6 +37,7 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
     const duration = recipe.duration || 25;
     const difficulty = recipe.difficulty || 'Moyen';
     const tags = recipe.tags || []; 
+    const detailUrl = isPreparation ? `/preparations/${recipe.id}` : `/menu/${recipe.id}`;
 
     const EditModal = () => {
         if (recipe.type === 'Plat') {
@@ -68,13 +69,15 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
             
             <CardHeader className="p-0">
                 <div className="relative w-full h-40">
-                    <Image
-                        src={recipe.imageUrl || placeholderImage}
-                        alt={recipe.name}
-                        fill
-                        className="object-cover"
-                        data-ai-hint={isPreparation ? "sauce food" : "food image"}
-                    />
+                     <Link href={detailUrl}>
+                        <Image
+                            src={recipe.imageUrl || placeholderImage}
+                            alt={recipe.name}
+                            fill
+                            className="object-cover"
+                            data-ai-hint={isPreparation ? "sauce food" : "food image"}
+                        />
+                    </Link>
                     {status && (
                          <Badge variant={status === 'Actif' ? 'default' : 'secondary'} className={cn(
                             "absolute bottom-2 right-2",
@@ -85,7 +88,9 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
             </CardHeader>
             <CardContent className="flex-grow p-4 space-y-3">
                 <div>
-                    <h3 className="text-lg font-bold tracking-tight">{recipe.name}</h3>
+                     <Link href={detailUrl} className="hover:underline">
+                        <h3 className="text-lg font-bold tracking-tight">{recipe.name}</h3>
+                     </Link>
                      {isPreparation && (
                         <Badge variant="outline" className="mt-1">Préparation</Badge>
                      )}
@@ -117,10 +122,10 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
             
             <CardFooter className="p-4 bg-muted/50 flex justify-between items-center">
                 <div className="text-xl font-bold text-foreground">
-                    {!isPreparation ? `${(recipe as Recipe).price.toFixed(2)} €` : ' '}
+                    {!isPreparation && recipe.price ? `${(recipe as Recipe).price.toFixed(2)} €` : ' '}
                 </div>
                 <div className="flex gap-1">
-                     <Link href={`/menu/${recipe.id}`}>
+                     <Link href={detailUrl}>
                         <Button variant="ghost" size="icon" className="h-8 w-8" title="Voir la fiche technique">
                             <FileText className="h-4 w-4" />
                         </Button>

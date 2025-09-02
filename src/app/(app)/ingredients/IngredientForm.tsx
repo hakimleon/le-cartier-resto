@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -29,8 +30,8 @@ const formSchema = z.object({
 });
 
 type IngredientFormProps = {
-  ingredient: Ingredient | null;
-  onSuccess: () => void;
+  ingredient: Partial<Ingredient> | null;
+  onSuccess: (newIngredient?: Ingredient) => void;
 };
 
 export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
@@ -58,13 +59,13 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
         supplier: values.supplier || "", // Ensure supplier is always a string
       };
 
-      await saveIngredient(ingredientToSave, ingredient?.id || null);
+      const savedIngredient = await saveIngredient(ingredientToSave, ingredient?.id || null);
       
       toast({
         title: "Succès",
         description: `L'ingrédient "${values.name}" a été sauvegardé.`,
       });
-      onSuccess();
+      onSuccess(savedIngredient);
     } catch (error) {
       console.error("Error saving ingredient:", error);
       toast({
