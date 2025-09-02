@@ -431,6 +431,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   };
   
   const recomputeIngredientCost = (ingredient: FullRecipeIngredient | NewRecipeIngredient) => {
+    if(!ingredient.unitPrice || !ingredient.unitPurchase || !ingredient.unit) return 0;
     const conversionFactor = getConversionFactor(ingredient.unitPurchase, ingredient.unit);
     const costPerUseUnit = ingredient.unitPrice / conversionFactor;
     return (ingredient.quantity || 0) * costPerUseUnit;
@@ -624,30 +625,42 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         };
         
         await updateRecipeDetails(recipeId, recipeDataToSave, editableRecipe.type);
+        
+        // Delete all existing ingredients for this recipe first
+        const ingredientDeletePromises = ingredients.map(ing => deleteRecipeIngredient(ing.recipeIngredientId));
+        await Promise.all(ingredientDeletePromises);
 
-        const ingredientUpdatePromises = editableIngredients.map(ing => {
-            return updateRecipeIngredient(ing.recipeIngredientId, {
+        // Then add all current ingredients (editable and new) as new links
+        const allCurrentIngredients = [
+            ...editableIngredients.map(ing => ({
+                ingredientId: ing.id,
                 quantity: ing.quantity,
                 unitUse: ing.unit,
+            })),
+            ...newIngredients
+                .filter(ing => ing.ingredientId) // Only save ingredients that have been linked
+                .map(ing => ({
+                    ingredientId: ing.ingredientId,
+                    quantity: ing.quantity,
+                    unitUse: ing.unit,
+            })),
+        ];
+
+        const ingredientAddPromises = allCurrentIngredients
+            .filter(ing => ing.ingredientId && ing.quantity > 0)
+            .map(ing => {
+                return addDoc(collection(db, "recipeIngredients"), {
+                    recipeId: recipeId,
+                    ...ing,
+                });
             });
-        });
+
         
         const preparationUpdatePromises = editablePreparations.map(prep => {
             return updateRecipePreparationLink(prep.id, {
                 quantity: prep.quantity,
             });
         });
-
-        const newIngredientPromises = newIngredients
-            .filter(ing => ing.ingredientId && ing.quantity > 0)
-            .map(ing => {
-                return addDoc(collection(db, "recipeIngredients"), {
-                    recipeId: recipeId,
-                    ingredientId: ing.ingredientId,
-                    quantity: ing.quantity,
-                    unitUse: ing.unit,
-                });
-            });
 
         const newPreparationPromises = newPreparations
             .filter(prep => prep.childPreparationId && prep.quantity > 0)
@@ -661,9 +674,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             });
 
         await Promise.all([
-            ...ingredientUpdatePromises, 
+            ...ingredientAddPromises,
             ...preparationUpdatePromises,
-            ...newIngredientPromises,
             ...newPreparationPromises,
         ]);
 
@@ -698,35 +710,47 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             type: recipe.type,
         });
 
-        console.log('AI Generation Result:', result);
-
         if (result) {
             if (!isEditing) {
                 setIsEditing(true);
             }
+            
+            // Clear existing ingredients (both states)
+            setEditableIngredients([]);
+            setNewIngredients([]);
+            
+            // Update recipe details
+            setEditableRecipe(current => {
+                if (!current) return null;
+                const updated = {
+                    ...current,
+                    procedure_preparation: result.procedure_preparation,
+                    procedure_cuisson: result.procedure_cuisson,
+                    procedure_service: result.procedure_service,
+                    difficulty: result.difficulty,
+                    duration: result.duration,
+                };
+                if(updated.type === 'Préparation') {
+                    (updated as Preparation).productionQuantity = result.productionQuantity;
+                    (updated as Preparation).productionUnit = result.productionUnit;
+                    (updated as Preparation).usageUnit = result.usageUnit;
+                }
+                return updated;
+            });
 
-            setEditableRecipe(current => current ? ({
-                ...current,
-                procedure_preparation: result.procedure_preparation,
-                procedure_cuisson: result.procedure_cuisson,
-                procedure_service: result.procedure_service,
-                difficulty: result.difficulty,
-                duration: result.duration,
-            }) : null);
-
+            // Process generated ingredients
             const generatedIngredients = result.ingredients.map(ing => {
-                // Heuristic to find matching ingredient in existing list
                 const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
                 return {
                     id: `new-gen-${Date.now()}-${ing.name}`,
                     ingredientId: existingIngredient?.id || '',
-                    name: ing.name,
+                    name: ing.name, // Always use the AI-generated name for display
                     quantity: ing.quantity,
                     unit: ing.unit,
                     unitPrice: existingIngredient?.unitPrice || 0,
                     unitPurchase: existingIngredient?.unitPurchase || '',
-                    totalCost: 0, // Will be recomputed
-                }
+                    totalCost: 0, 
+                };
             });
 
             // Recompute cost for each new generated ingredient
@@ -735,7 +759,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 return { ...ing, totalCost: isNaN(cost) ? 0 : cost };
             });
 
-            setNewIngredients(current => [...current, ...ingredientsWithCost]);
+            // Replace the new ingredients list
+            setNewIngredients(ingredientsWithCost);
             
             toast({
                 title: "Recette générée !",
@@ -783,9 +808,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const totalCost = ingredientsCost + newIngredientsCost + preparationsCost + newPreparationsCost;
 
     if (currentRecipeData.type === 'Préparation') {
+        const productionQuantity = (currentRecipeData as Preparation).productionQuantity || 1;
         return {
             totalRecipeCost: totalCost,
-            costPerPortion: (totalCost / (currentRecipeData.productionQuantity || 1)),
+            costPerPortion: (totalCost / productionQuantity),
             priceHT: 0, grossMargin: 0, grossMarginPercentage: 0, foodCostPercentage: 0, multiplierCoefficient: 0
         };
     }
@@ -1044,7 +1070,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             value={newIng.ingredientId}
                                             onValueChange={(value) => handleNewIngredientChange(newIng.id, 'ingredientId', value)}
                                         >
-                                            <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
+                                            <SelectTrigger>
+                                                <SelectValue placeholder={newIng.name || "Choisir..."} />
+                                            </SelectTrigger>
                                             <SelectContent>
                                                 {allIngredients.map(ing => (
                                                     ing.id ? <SelectItem key={ing.id} value={ing.id}>{ing.name}</SelectItem> : null
@@ -1361,7 +1389,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                      <Input 
                                         type="number"
                                         value={(editableRecipe as Preparation)?.productionQuantity}
-                                        onChange={(e) => handleRecipeDataChange('productionQuantity', parseInt(e.target.value) || 1)}
+                                        onChange={(e) => handleRecipeDataChange('productionQuantity', parseFloat(e.target.value) || 1)}
                                     />
                                     <Input 
                                         type="text"
@@ -1439,7 +1467,7 @@ function RecipeDetailSkeleton() {
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
-              </CardHeader>
+              </Header>
               <CardContent className="space-y-2">
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-3/4" />
@@ -1457,4 +1485,4 @@ function RecipeDetailSkeleton() {
 
     
 
-    
+

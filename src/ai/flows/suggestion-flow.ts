@@ -85,6 +85,9 @@ const RecipeOutputSchema = z.object({
     procedure_service: z.string().describe("Les étapes détaillées pour le service ou le dressage."),
     duration: z.number().int().describe("La durée totale de préparation en minutes."),
     difficulty: z.enum(['Facile', 'Moyen', 'Difficile']).describe("Le niveau de difficulté de la recette."),
+    productionQuantity: z.number().describe("La quantité totale que la recette produit."),
+    productionUnit: z.string().describe("L'unité de la quantité produite (ex: kg, l, pièces)."),
+    usageUnit: z.string().describe("L'unité suggérée pour l'utilisation de cette préparation dans d'autres recettes (ex: g, ml, pièce)."),
 });
 export type RecipeOutput = z.infer<typeof RecipeOutputSchema>;
 
@@ -113,8 +116,9 @@ const recipeGenerationPrompt = ai.definePrompt({
         2.  Rédigez une procédure technique et détaillée en trois phases : "Préparation" (mise en place, techniques), "Cuisson" (températures, temps), et "Service" (dressage). Si une étape n'est pas applicable (ex: pas de cuisson), retournez une chaîne de caractères vide pour ce champ spécifique.
         3.  Estimez la durée totale de la recette en minutes.
         4.  Évaluez la difficulté (Facile, Moyen, Difficile).
-        5.  Assurez-vous que la recette soit réalisable, gustativement équilibrée et respecte les standards de la cuisine demandée.
-        6.  Fournissez la sortie au format JSON structuré attendu.
+        5.  Déduisez et fournissez la quantité totale que la recette produit (productionQuantity), son unité (productionUnit), et l'unité d'utilisation suggérée (usageUnit). Par exemple, une sauce peut produire 1 litre (production) et être utilisée en grammes (usage).
+        6.  Assurez-vous que la recette soit réalisable, gustativement équilibrée et respecte les standards de la cuisine demandée.
+        7.  Fournissez la sortie au format JSON structuré attendu.
     `,
 });
 
