@@ -181,6 +181,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     
     // Topological sort to determine calculation order
     function visit(prepId: string) {
+        if (!prepId || !preparationsList.find(p => p.id === prepId)) {
+            console.warn("Skipping visit for invalid or missing preparation ID:", prepId);
+            return;
+        }
         if (visited[prepId] === 'visited') return;
         if (visited[prepId] === 'visiting') {
             console.error("Circular dependency detected involving preparation ID:", prepId);
@@ -1362,7 +1366,7 @@ function RecipeDetailSkeleton() {
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
-              </Header>
+              </CardHeader>
               <CardContent className="space-y-2">
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-3/4" />
@@ -1378,7 +1382,3 @@ function RecipeDetailSkeleton() {
     );
   }
 
-
-    
-
-    

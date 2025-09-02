@@ -181,6 +181,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     
     // Topological sort to determine calculation order
     function visit(prepId: string) {
+        if (!prepId || !preparationsList.find(p => p.id === prepId)) {
+            console.warn("Skipping visit for invalid or missing preparation ID:", prepId);
+            return;
+        }
         if (visited[prepId] === 'visited') return;
         if (visited[prepId] === 'visiting') {
             console.error("Circular dependency detected involving preparation ID:", prepId);
@@ -619,7 +623,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 unitUse: ing.unit,
             });
         });
-
+        
         const preparationUpdatePromises = editablePreparations.map(prep => {
             return updateRecipePreparationLink(prep.id, {
                 quantity: prep.quantity,
@@ -1322,58 +1326,60 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 }
 
 function RecipeDetailSkeleton() {
-    return (
-      <div className="space-y-8">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-14 w-14 rounded-lg" />
-            <div className="space-y-2">
-              <Skeleton className="h-8 w-64" />
-              <Skeleton className="h-4 w-32" />
-            </div>
-          </div>
-          <Skeleton className="h-10 w-24" />
-        </header>
-  
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Column 1 & 2 Skeleton */}
-          <div className="lg:col-span-2 space-y-8">
-             <Card>
-                <CardContent className="p-0">
-                    <Skeleton className="w-full h-96" />
-                </CardContent>
-             </Card>
-             <Card>
-              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-              <CardContent><Skeleton className="h-40 w-full" /></CardContent>
-            </Card>
-            <Card>
-              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-              <CardContent><Skeleton className="h-40 w-full" /></CardContent>
-            </Card>
-          </div>
-  
-          {/* Column 3 Skeleton */}
-          <div className="space-y-8">
-            <Card>
-                <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
-                <CardContent><Skeleton className="h-48 w-full" /></CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-32" />
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-3/4" />
-              </CardContent>
-            </Card>
-             <Card>
-              <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
-              <CardContent><Skeleton className="h-10 w-full" /></CardContent>
-            </Card>
+  return (
+    <div className="space-y-8">
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-14 w-14 rounded-lg" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-32" />
           </div>
         </div>
+        <Skeleton className="h-10 w-24" />
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Column 1 & 2 Skeleton */}
+        <div className="lg:col-span-2 space-y-8">
+           <Card>
+              <CardContent className="p-0">
+                  <Skeleton className="w-full h-96" />
+              </CardContent>
+           </Card>
+           <Card>
+            <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+            <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+          </Card>
+          <Card>
+            <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+            <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+          </Card>
+        </div>
+
+        {/* Column 3 Skeleton */}
+        <div className="space-y-8">
+          <Card>
+              <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
+              <CardContent><Skeleton className="h-48 w-full" /></CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-3/4" />
+            </CardContent>
+          </Card>
+           <Card>
+            <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
+            <CardContent><Skeleton className="h-10 w-full" /></CardContent>
+          </Card>
+        </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
+    
