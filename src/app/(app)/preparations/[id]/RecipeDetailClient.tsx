@@ -682,8 +682,8 @@ const fetchAllIngredients = useCallback(async () => {
           setIsEditing(true);
         }
 
+        // This is the correct way to reset the state and avoid duplications
         setEditableIngredients([]);
-        setNewIngredients([]);
 
         setEditableRecipe(current => {
             if (!current) return null;
@@ -706,7 +706,7 @@ const fetchAllIngredients = useCallback(async () => {
 
         const generatedIngredients: NewRecipeIngredient[] = result.ingredients.map(ing => {
           const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
-          const tempId = `new-gen-${Date.now()}-${ing.name}`;
+          const tempId = `new-gen-${Date.now()}-${Math.random()}`;
           
           let totalCost = 0;
           if(existingIngredient) {
@@ -1156,4 +1156,6 @@ function RecipeDetailSkeleton() {
         </div>
       </div>
     );
-  }
+}
+
+    
