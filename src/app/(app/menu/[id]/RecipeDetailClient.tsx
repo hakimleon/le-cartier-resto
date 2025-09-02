@@ -19,7 +19,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink } from "../actions";
+import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink } from "../actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -75,6 +75,8 @@ type FullRecipePreparation = {
     quantity: number;
     unit: string;
     totalCost: number;
+    _costPerUnit?: number;
+    _productionUnit: string;
 }
 
 type NewRecipePreparation = {
@@ -85,6 +87,7 @@ type NewRecipePreparation = {
     unit: string;
     totalCost: number;
     _costPerUnit?: number; // Internal: to recalculate cost
+    _productionUnit: string;
 };
 
 const getConversionFactor = (purchaseUnit: string, usageUnit: string): number => {
@@ -100,6 +103,8 @@ const getConversionFactor = (purchaseUnit: string, usageUnit: string): number =>
       'kg': { 'g': 1000 },
       'l': { 'ml': 1000 },
       'litre': { 'ml': 1000 },
+      'piece': { 'pièce': 1 },
+      'pièce': { 'piece': 1 },
       // Add more standard conversions here
     };
   
@@ -146,6 +151,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [editableIngredients, setEditableIngredients] = useState<FullRecipeIngredient[]>([]);
   
   const [preparations, setPreparations] = useState<FullRecipePreparation[]>([]);
+  const [editablePreparations, setEditablePreparations] = useState<FullRecipePreparation[]>([]);
   const [newPreparations, setNewPreparations] = useState<NewRecipePreparation[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
@@ -164,32 +170,79 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
     const costs: Record<string, number> = {};
-  
+    const prepDependencies: Record<string, string[]> = {};
+    const prepOrder: string[] = [];
+    const visited: Record<string, 'visiting' | 'visited'> = {};
+
+    // Build dependency graph
     for (const prep of preparationsList) {
         if (!prep.id) continue;
-        
+        const linksQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", prep.id));
+        const linksSnap = await getDocs(linksQuery);
+        prepDependencies[prep.id] = linksSnap.docs.map(d => (d.data() as RecipePreparationLink).childPreparationId);
+    }
+    
+    // Topological sort to determine calculation order
+    function visit(prepId: string) {
+        if (!prepId || !preparationsList.find(p => p.id === prepId)) {
+            console.warn("Skipping visit for invalid or missing preparation ID:", prepId);
+            return;
+        }
+        if (visited[prepId] === 'visited') return;
+        if (visited[prepId] === 'visiting') {
+            console.error("Circular dependency detected involving preparation ID:", prepId);
+            return;
+        }
+        visited[prepId] = 'visiting';
+        for (const depId of prepDependencies[prepId] || []) {
+            visit(depId);
+        }
+        visited[prepId] = 'visited';
+        prepOrder.push(prepId);
+    }
+
+    for (const prep of preparationsList) {
+        if (prep.id) visit(prep.id);
+    }
+
+    // Calculate costs in topological order
+    for (const prepId of prepOrder) {
+        const prep = preparationsList.find(p => p.id === prepId);
+        if (!prep) continue;
+
         let totalCost = 0;
-        try {
-            const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
-            const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
-    
-            for (const prepIngDoc of prepIngredientsSnap.docs) {
-                const prepIngData = prepIngDoc.data() as RecipeIngredientLink;
-                const ingDoc = ingredientsList.find(i => i.id === prepIngData.ingredientId);
-    
-                if (ingDoc && ingDoc.unitPrice && ingDoc.unitPurchase && prepIngData.unitUse) {
-                    const factor = getConversionFactor(ingDoc.unitPurchase, prepIngData.unitUse);
-                    const costPerUseUnit = (ingDoc.unitPrice || 0) / factor;
-                    totalCost += (prepIngData.quantity || 0) * costPerUseUnit;
+        // Cost of raw ingredients
+        const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
+        const ingredientsSnap = await getDocs(ingredientsQuery);
+        for (const ingDoc of ingredientsSnap.docs) {
+            const ingLink = ingDoc.data() as RecipeIngredientLink;
+            const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
+            if (ingData?.unitPrice && ingData?.unitPurchase && ingLink.unitUse) {
+                const factor = getConversionFactor(ingData.unitPurchase, ingLink.unitUse);
+                const costPerUseUnit = (ingData.unitPrice || 0) / factor;
+                totalCost += (ingLink.quantity || 0) * costPerUseUnit;
+            }
+        }
+
+        // Cost of sub-preparations
+        for (const depId of prepDependencies[prepId] || []) {
+            const depLinkQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", prepId), where("childPreparationId", "==", depId));
+            const depLinkSnap = await getDocs(depLinkQuery);
+            if (!depLinkSnap.empty) {
+                const linkData = depLinkSnap.docs[0].data() as RecipePreparationLink;
+                const childPrep = preparationsList.find(p => p.id === depId);
+                const childCostPerProductionUnit = costs[depId];
+                if (childPrep && childCostPerProductionUnit !== undefined) {
+                     const factor = getConversionFactor(childPrep.productionUnit, linkData.unitUse);
+                     const costPerUseUnit = childCostPerProductionUnit / factor;
+                     totalCost += (linkData.quantity || 0) * costPerUseUnit;
                 }
             }
-            
-            costs[prep.id] = (totalCost / (prep.productionQuantity || 1)) || 0;
-        } catch(e) {
-            console.error(`Error calculating cost for preparation ${prep.name} (${prep.id}):`, e);
-            costs[prep.id] = 0; // Default to 0 on error
         }
+        
+        costs[prepId] = (totalCost / (prep.productionQuantity || 1)) || 0;
     }
+
     return costs;
 }, []);
 
@@ -316,20 +369,25 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     const childRecipeData = loadedPreparations.find(p => p.id === linkData.childPreparationId);
                     
                     if (childRecipeData && loadedCosts[linkData.childPreparationId] !== undefined) {
-                         const costPerUnit = loadedCosts[linkData.childPreparationId];
+                         const costPerProductionUnit = loadedCosts[linkData.childPreparationId];
+                         const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse);
+                         const costPerUseUnit = costPerProductionUnit / conversionFactor;
                         return {
                             id: linkDoc.id,
                             childPreparationId: linkData.childPreparationId,
                             name: childRecipeData.name,
                             quantity: linkData.quantity,
                             unit: linkData.unitUse,
-                            totalCost: costPerUnit * (linkData.quantity || 0),
+                            totalCost: costPerUseUnit * (linkData.quantity || 0),
+                            _costPerUnit: costPerProductionUnit,
+                            _productionUnit: childRecipeData.productionUnit,
                         };
                     }
                     return null;
                 }).filter(Boolean) as FullRecipePreparation[];
                 
                 setPreparations(preparationsData);
+                setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
             } catch (e: any) {
                 console.error("Error processing recipe preparations snapshot:", e);
                 setError("Erreur de chargement des sous-recettes. " + e.message);
@@ -358,6 +416,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     if (isEditing) {
         if(recipe) setEditableRecipe(JSON.parse(JSON.stringify(recipe)));
         if(ingredients) setEditableIngredients(JSON.parse(JSON.stringify(ingredients)));
+        if(preparations) setEditablePreparations(JSON.parse(JSON.stringify(preparations)));
         setNewIngredients([]);
         setNewPreparations([]);
     }
@@ -459,14 +518,31 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 childPreparationId: '',
                 name: '',
                 quantity: 0,
-                unit: 'g',
+                unit: '',
                 totalCost: 0,
+                _productionUnit: '',
             },
         ]);
     };
 
     const handleRemoveNewPreparation = (tempId: string) => {
         setNewPreparations(current => current.filter(p => p.id !== tempId));
+    };
+
+    const handlePreparationChange = (linkId: string, field: 'quantity', value: any) => {
+        setEditablePreparations(current => 
+            current.map(prep => {
+                if (prep.id === linkId) {
+                    const updatedPrep = { ...prep, [field]: value };
+                    const costPerProductionUnit = prep._costPerUnit || 0;
+                    const conversionFactor = getConversionFactor(prep._productionUnit, updatedPrep.unit);
+                    const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                    updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
+                    return updatedPrep;
+                }
+                return prep;
+            })
+        );
     };
 
     const handleNewPreparationChange = (tempId: string, field: keyof NewRecipePreparation, value: any) => {
@@ -479,13 +555,18 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         const selectedPrep = allPreparations.find(prep => prep.id === value);
                         if (selectedPrep) {
                             updatedPrep.name = selectedPrep.name;
-                            updatedPrep.unit = selectedPrep.productionUnit || 'g';
+                            updatedPrep.unit = selectedPrep.productionUnit || ''; // Auto-set unit
                             updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0;
+                            updatedPrep._productionUnit = selectedPrep.productionUnit || '';
                         }
                     }
                     
-                    const costPerUnit = updatedPrep._costPerUnit || preparationsCosts[updatedPrep.childPreparationId] || 0;
-                    updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUnit;
+                    if (field === 'quantity' || field === 'childPreparationId') {
+                      const costPerProductionUnit = updatedPrep._costPerUnit || 0;
+                      const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
+                      const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                      updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
+                    }
 
                     return updatedPrep;
                 }
@@ -547,6 +628,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 unitUse: ing.unit,
             });
         });
+        
+        const preparationUpdatePromises = editablePreparations.map(prep => {
+            // Only update quantity as unit is now static
+            return updateRecipePreparationLink(prep.id, {
+                quantity: prep.quantity,
+            });
+        });
 
         const newIngredientPromises = newIngredients
             .filter(ing => ing.ingredientId && ing.quantity > 0)
@@ -566,12 +654,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     parentRecipeId: recipeId,
                     childPreparationId: prep.childPreparationId,
                     quantity: prep.quantity,
-                    unitUse: prep.unit,
+                    unitUse: prep.unit, // The unit is now auto-set
                 });
             });
 
         await Promise.all([
             ...ingredientUpdatePromises, 
+            ...preparationUpdatePromises,
             ...newIngredientPromises,
             ...newPreparationPromises,
         ]);
@@ -599,6 +688,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   const currentRecipeData = isEditing ? editableRecipe : recipe;
   const currentIngredientsData = isEditing ? editableIngredients : ingredients;
+  const currentPreparationsData = isEditing ? editablePreparations : preparations;
   
   const {
     totalRecipeCost,
@@ -618,7 +708,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const ingredientsCost = (isEditing ? editableIngredients : ingredients).reduce((acc, item) => acc + (item.totalCost || 0), 0);
     const newIngredientsCost = newIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
-    const preparationsCost = preparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+    const preparationsCost = (isEditing ? editablePreparations : preparations).reduce((acc, item) => acc + (item.totalCost || 0), 0);
     const newPreparationsCost = newPreparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
     
     const totalCost = ingredientsCost + newIngredientsCost + preparationsCost + newPreparationsCost;
@@ -651,7 +741,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         foodCostPercentage: foodCostPercentageValue,
         multiplierCoefficient: multiplierCoefficientValue
     };
-  }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, newPreparations, isEditing]);
+  }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations, isEditing]);
 
 
   if (isLoading) {
@@ -954,11 +1044,24 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {preparations.map(prep => (
+                            {currentPreparationsData.map(prep => (
                                 <TableRow key={prep.id}>
                                     <TableCell className="font-medium">{prep.name}</TableCell>
-                                    <TableCell>{prep.quantity}</TableCell>
-                                    <TableCell>{prep.unit}</TableCell>
+                                    <TableCell>
+                                      {isEditing ? (
+                                        <Input
+                                          type="number"
+                                          value={prep.quantity}
+                                          onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)}
+                                          className="w-20"
+                                        />
+                                      ) : (
+                                        prep.quantity
+                                      )}
+                                    </TableCell>
+                                    <TableCell>
+                                        {prep.unit}
+                                    </TableCell>
                                     <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
                                     {isEditing && (
                                         <TableCell>
@@ -983,7 +1086,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
                                             <SelectContent>
                                                 {allPreparations.map(p => (
-                                                    p.id ? <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem> : null
+                                                    p.id && p.id !== recipeId ? <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem> : null
                                                 ))}
                                             </SelectContent>
                                         </Select>
@@ -998,18 +1101,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         />
                                     </TableCell>
                                     <TableCell>
-                                        <Input 
-                                            placeholder="Unité" 
-                                            className="w-24" 
-                                            value={prep.unit}
-                                            onChange={(e) => handleNewPreparationChange(prep.id, 'unit', e.target.value)}
-                                        />
+                                       {prep.unit || "-"}
                                     </TableCell>
                                     <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
                                     <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
                                 </TableRow>
                             ))}
-                            {preparations.length === 0 && newPreparations.length === 0 && (
+                            {currentPreparationsData.length === 0 && newPreparations.length === 0 && (
                                 <TableRow>
                                     <TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">
                                         Aucune sous-recette ajoutée.
@@ -1171,7 +1269,24 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <CardContent className="space-y-4">
                         <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Quantité Produite</span>
-                            <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+                             {isEditing ? (
+                                <div className="flex items-center gap-2">
+                                <Input 
+                                    type="number"
+                                    value={(editableRecipe as Preparation)?.productionQuantity}
+                                    onChange={(e) => handleRecipeDataChange('productionQuantity', parseInt(e.target.value) || 1)}
+                                    className="font-bold text-sm text-right w-24"
+                                />
+                                <Input 
+                                    type="text"
+                                    value={(editableRecipe as Preparation)?.productionUnit}
+                                    onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)}
+                                    className="font-bold text-sm text-right w-20"
+                                />
+                                </div>
+                            ) : (
+                                <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+                            )}
                         </div>
                          <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Coût Total Matières</span>
@@ -1257,4 +1372,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-

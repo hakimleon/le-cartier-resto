@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -517,7 +518,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 childPreparationId: '',
                 name: '',
                 quantity: 0,
-                unit: 'g',
+                unit: '',
                 totalCost: 0,
                 _productionUnit: '',
             },
@@ -554,16 +555,18 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         const selectedPrep = allPreparations.find(prep => prep.id === value);
                         if (selectedPrep) {
                             updatedPrep.name = selectedPrep.name;
-                            updatedPrep.unit = selectedPrep.productionUnit || 'g';
+                            updatedPrep.unit = selectedPrep.productionUnit || ''; // Auto-set unit
                             updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0;
                             updatedPrep._productionUnit = selectedPrep.productionUnit || '';
                         }
                     }
                     
-                    const costPerProductionUnit = updatedPrep._costPerUnit || 0;
-                    const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
-                    const costPerUseUnit = costPerProductionUnit / conversionFactor;
-                    updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
+                    if (field === 'quantity' || field === 'childPreparationId') {
+                      const costPerProductionUnit = updatedPrep._costPerUnit || 0;
+                      const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
+                      const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                      updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
+                    }
 
                     return updatedPrep;
                 }
@@ -627,7 +630,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         });
         
         const preparationUpdatePromises = editablePreparations.map(prep => {
-            // Only update quantity, as unit is not editable in this view
+            // Only update quantity as unit is now static
             return updateRecipePreparationLink(prep.id, {
                 quantity: prep.quantity,
             });
@@ -651,7 +654,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     parentRecipeId: recipeId,
                     childPreparationId: prep.childPreparationId,
                     quantity: prep.quantity,
-                    unitUse: prep.unit,
+                    unitUse: prep.unit, // The unit is now auto-set
                 });
             });
 
@@ -1056,7 +1059,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         prep.quantity
                                       )}
                                     </TableCell>
-                                    <TableCell>{prep.unit}</TableCell>
+                                    <TableCell>
+                                        {prep.unit}
+                                    </TableCell>
                                     <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
                                     {isEditing && (
                                         <TableCell>
@@ -1096,19 +1101,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         />
                                     </TableCell>
                                     <TableCell>
-                                         <Select
-                                            value={prep.unit}
-                                            onValueChange={(value) => handleNewPreparationChange(prep.id, 'unit', value)}
-                                        >
-                                            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="g">g</SelectItem>
-                                                <SelectItem value="kg">kg</SelectItem>
-                                                <SelectItem value="ml">ml</SelectItem>
-                                                <SelectItem value="l">l</SelectItem>
-                                                <SelectItem value="pièce">pièce</SelectItem>
-                                            </SelectContent>
-                                        </Select>
+                                       {prep.unit || "-"}
                                     </TableCell>
                                     <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
                                     <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
@@ -1364,7 +1357,7 @@ function RecipeDetailSkeleton() {
           <Card>
             <CardHeader>
               <Skeleton className="h-6 w-32" />
-            </Header>
+            </CardHeader>
             <CardContent className="space-y-2">
               <Skeleton className="h-5 w-full" />
               <Skeleton className="h-5 w-3/4" />
