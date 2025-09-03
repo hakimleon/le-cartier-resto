@@ -55,6 +55,28 @@ export async function deleteRecipeIngredient(recipeIngredientId: string) {
   // No revalidation needed, onSnapshot handles updates on the client
 }
 
+export async function replaceRecipeIngredients(recipeId: string, ingredients: Omit<RecipeIngredientLink, 'recipeId'>[]) {
+    const batch = writeBatch(db);
+
+    // 1. Delete all existing ingredient links for this recipe
+    const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
+    const querySnapshot = await getDocs(ingredientsQuery);
+    querySnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+    });
+
+    // 2. Add all the new ingredient links
+    ingredients.forEach((ingredient) => {
+        if (ingredient.ingredientId) { // Ensure we don't add links without an ingredient
+            const newLinkRef = doc(collection(db, "recipeIngredients"));
+            batch.set(newLinkRef, { recipeId, ...ingredient });
+        }
+    });
+
+    // 3. Commit the batch
+    await batch.commit();
+}
+
 export async function deleteRecipePreparationLink(linkId: string) {
     if (!linkId) {
       throw new Error("L'identifiant de la liaison est requis pour la suppression.");
@@ -96,3 +118,5 @@ export async function updateRecipePreparationLink(linkId: string, data: { quanti
 export async function addRecipePreparationLink(link: Omit<RecipePreparationLink, 'id'>) {
     await addDoc(collection(db, "recipePreparationLinks"), link);
 }
+
+    
