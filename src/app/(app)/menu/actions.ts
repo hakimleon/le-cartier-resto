@@ -5,7 +5,7 @@ import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch, quer
 import { db } from '@/lib/firebase';
 import { Recipe, RecipePreparationLink, Preparation, RecipeIngredientLink } from '@/lib/types';
 
-export async function saveDish(recipe: Omit<Recipe, 'id'>, id: string | null) {
+export async function saveDish(recipe: Partial<Omit<Recipe, 'id'>> & { type: 'Plat', name: string }, id: string | null) {
   if (id) {
     // Update existing document
     const recipeDoc = doc(db, 'recipes', id);

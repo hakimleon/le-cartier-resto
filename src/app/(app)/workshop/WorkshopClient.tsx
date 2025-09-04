@@ -1,13 +1,13 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FlaskConical, Sparkles } from "lucide-react";
+import { FlaskConical, Sparkles, PlusCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
@@ -21,6 +21,7 @@ export default function WorkshopClient() {
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
     const router = useRouter();
+    const formRef = useRef<HTMLFormElement>(null);
 
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -74,6 +75,7 @@ export default function WorkshopClient() {
                 description: generatedConcept.description,
                 imageUrl: generatedConcept.imageUrl,
                 procedure_preparation: generatedConcept.procedure,
+                procedure_cuisson: "", // La procédure de l'atelier ne sépare pas cuisson et prépa
                 procedure_service: generatedConcept.plating,
                 // Default values that can be edited later
                 price: 0,
@@ -102,6 +104,11 @@ export default function WorkshopClient() {
             setIsSaving(false);
         }
     };
+    
+    const handleNewRecipe = () => {
+        setGeneratedConcept(null);
+        formRef.current?.reset();
+    };
 
 
     return (
@@ -124,7 +131,7 @@ export default function WorkshopClient() {
                             <CardDescription>Décrivez le plat que vous imaginez.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handleSubmit} className="space-y-4">
+                            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
                                 <div>
                                     <Label htmlFor="dishName">Nom du plat</Label>
                                     <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." />
@@ -151,9 +158,17 @@ export default function WorkshopClient() {
                 </div>
                 <div className="lg:col-span-2">
                     <Card className="min-h-[500px]">
-                        <CardHeader>
-                            <CardTitle>Proposition de l'IA</CardTitle>
-                            <CardDescription>Voici le concept de plat généré par l'IA.</CardDescription>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Proposition de l'IA</CardTitle>
+                                <CardDescription>Voici le concept de plat généré par l'IA.</CardDescription>
+                            </div>
+                             {generatedConcept && (
+                                <Button variant="outline" onClick={handleNewRecipe}>
+                                    <PlusCircle className="mr-2 h-4 w-4" />
+                                    Nouvelle Recette
+                                </Button>
+                            )}
                         </CardHeader>
                         <CardContent>
                             {isLoading ? (
@@ -167,7 +182,7 @@ export default function WorkshopClient() {
                             ) : generatedConcept ? (
                                 <div className="space-y-6">
                                      <div className="relative w-full h-80 rounded-lg overflow-hidden border">
-                                        <Image src={generatedConcept.imageUrl} alt={generatedConcept.name} layout="fill" objectFit="cover" data-ai-hint="artistic food plating" />
+                                        <Image src={generatedConcept.imageUrl} alt={generatedConcept.name} fill style={{ objectFit: 'cover' }} data-ai-hint="artistic food plating" />
                                     </div>
                                     <div>
                                         <h3 className="text-xl font-bold">{generatedConcept.name}</h3>
