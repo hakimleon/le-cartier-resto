@@ -977,7 +977,7 @@ const fetchAllIngredients = useCallback(async () => {
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-[35%]">Ingrédient</TableHead>
+                                <TableHead className="w-[45%]">Ingrédient</TableHead>
                                 <TableHead>Quantité</TableHead>
                                 <TableHead>Unité</TableHead>
                                 <TableHead className="text-right">Coût</TableHead>
@@ -1445,3 +1445,6 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
+
+
+    
