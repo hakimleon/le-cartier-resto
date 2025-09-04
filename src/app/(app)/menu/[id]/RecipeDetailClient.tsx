@@ -1430,7 +1430,7 @@ function RecipeDetailSkeleton() {
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
-              </CardHeader>
+              </Header>
               <CardContent className="space-y-2">
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-3/4" />
@@ -1444,7 +1444,4 @@ function RecipeDetailSkeleton() {
         </div>
       </div>
     );
-  }
-
-
-    
+}
