@@ -18,7 +18,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, addIngredientLink, replaceRecipeIngredients, clearSuggestedIngredients } from "../actions";
+import { replaceRecipeIngredients, updateRecipeDetails, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, clearSuggestedIngredients } from "../actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -536,7 +536,7 @@ const fetchAllIngredients = useCallback(async () => {
     setNewIngredients(current => current.filter(ing => ing.tempId !== tempId));
   };
   
-  const handleRemoveExistingIngredient = async (recipeIngredientId: string) => {
+  const handleRemoveExistingIngredient = (recipeIngredientId: string) => {
     setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId));
   };
 
@@ -1423,7 +1423,7 @@ function RecipeDetailSkeleton() {
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
-              </CardHeader>
+              </Header>
               <CardContent className="space-y-2">
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-3/4" />

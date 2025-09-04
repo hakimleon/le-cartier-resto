@@ -46,14 +46,6 @@ export async function deleteDish(id: string) {
     // onSnapshot will handle UI updates
 }
 
-export async function deleteRecipeIngredient(recipeIngredientId: string) {
-  if (!recipeIngredientId) {
-    throw new Error("L'identifiant de la liaison est requis pour la suppression.");
-  }
-  const recipeIngredientDoc = doc(db, 'recipeIngredients', recipeIngredientId);
-  await deleteDoc(recipeIngredientDoc);
-  // No revalidation needed, onSnapshot handles updates on the client
-}
 
 export async function replaceRecipeIngredients(recipeId: string, ingredients: Omit<RecipeIngredientLink, 'id' | 'recipeId'>[]) {
     const batch = writeBatch(db);

@@ -18,7 +18,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, addIngredientLink, replaceRecipeIngredients } from "@/app/(app)/menu/actions";
+import { updateRecipeDetails, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, replaceRecipeIngredients } from "@/app/(app)/menu/actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -453,7 +453,7 @@ const fetchAllIngredients = useCallback(async () => {
     setNewIngredients(current => current.filter(ing => ing.tempId !== tempId));
   };
   
-  const handleRemoveExistingIngredient = async (recipeIngredientId: string, ingredientName: string) => {
+  const handleRemoveExistingIngredient = (recipeIngredientId: string) => {
     setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId));
   };
 
@@ -591,7 +591,7 @@ const fetchAllIngredients = useCallback(async () => {
         const allCurrentIngredients = [
             ...editableIngredients.map(ing => ({ ingredientId: ing.id, quantity: ing.quantity, unitUse: ing.unit })),
             ...newIngredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: ing.quantity, unitUse: ing.unit }))
-        ].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'recipeId'>[];
+        ].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'id' | 'recipeId'>[];
 
         await replaceRecipeIngredients(recipeId, allCurrentIngredients);
         
@@ -891,14 +891,14 @@ const fetchAllIngredients = useCallback(async () => {
                                                 </AlertDialogHeader>
                                                 <AlertDialogFooter>
                                                     <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                    <AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId, ing.name)}>Retirer</AlertDialogAction>
+                                                    <AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction>
                                                 </AlertDialogFooter>
                                             </AlertDialogContent>
                                         </AlertDialog>
                                     </TableCell>
                                 </TableRow>
                             ))}
-                            {!isEditing && ingredients.map(ing => (
+                             {!isEditing && ingredients.map(ing => (
                                 <TableRow key={ing.recipeIngredientId}>
                                   <TableCell className="font-medium">{ing.name}</TableCell>
                                   <TableCell>{ing.quantity}</TableCell>
