@@ -9,7 +9,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const DishConceptInputSchema = z.object({
-    dishName: z.string().describe("Le nom ou l'idée de base du plat. Peut être vide."),
+    dishName: z.string().optional().describe("Le nom ou l'idée de base du plat. Peut être vide."),
     mainIngredients: z.string().optional().describe("Les ingrédients principaux à intégrer."),
     excludedIngredients: z.string().optional().describe("Les ingrédients à ne jamais utiliser."),
     recommendations: z.string().optional().describe("Directives sur le style, la saisonnalité, ou le type de cuisine souhaité."),
