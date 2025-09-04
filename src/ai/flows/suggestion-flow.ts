@@ -112,11 +112,11 @@ const recipeGenerationPrompt = ai.definePrompt({
         Type de Fiche: {{{type}}}
 
         Instructions:
-        1.  Listez les ingrédients nécessaires avec des quantités précises (en grammes, litres, unités) et une qualité attendue pour un restaurant (ex: "beurre AOP").
+        1.  Listez les ingrédients nécessaires avec des quantités précises (en grammes, litres, unités) et une qualité attendue pour un restaurant (ex: "beurre").
         2.  Rédigez une procédure technique et détaillée en trois phases : "Préparation" (mise en place, techniques), "Cuisson" (températures, temps), et "Service" (dressage). Si une étape n'est pas applicable (ex: pas de cuisson), retournez une chaîne de caractères vide pour ce champ spécifique.
         3.  Estimez la durée totale de la recette en minutes.
         4.  Évaluez la difficulté (Facile, Moyen, Difficile).
-        5.  Déduisez et fournissez la quantité totale que la recette produit (productionQuantity), son unité (productionUnit), et l'unité d'utilisation suggérée (usageUnit). Par exemple, une sauce peut produire 1 litre (production) et être utilisée en grammes (usage).
+        5.  Déduisez et fournissez la quantité totale que la recette produite (productionQuantity), son unité (productionUnit), et l'unité d'utilisation suggérée (usageUnit). Par exemple, une sauce peut produire 1 litre (production) et être utilisée en grammes (usage).
         6.  Assurez-vous que la recette soit réalisable, gustativement équilibrée et respecte les standards de la cuisine demandée.
         7.  Fournissez la sortie au format JSON structuré attendu.
     `,
@@ -131,29 +131,3 @@ const generateRecipeFlow = ai.defineFlow({
     const { output } = await recipeGenerationPrompt(input);
     return output!;
 });
-
-// Ajout du flow d'argumentaire commercial, que je place en bas pour garder la logique de recette en premier.
-const suggestArgumentFlow = ai.defineFlow(
-  {
-    name: 'suggestArgumentFlow',
-    inputSchema: CommercialArgumentInputSchema,
-    outputSchema: CommercialArgumentOutputSchema,
-  },
-  async (input) => {
-    const { output } = await ai.generate({
-      prompt: `En tant qu'expert en marketing culinaire, créez un argumentaire de vente court et percutant pour un plat.
-      Plat : ${input.name}
-      Description : ${input.description}
-      Ingrédients : ${input.ingredients.join(', ')}
-      `,
-      output: { schema: CommercialArgumentOutputSchema },
-    });
-    return output!;
-  }
-);
-
-export async function suggestArgument(
-  input: CommercialArgumentInput
-): Promise<CommercialArgumentOutput> {
-  return suggestArgumentFlow(input);
-}

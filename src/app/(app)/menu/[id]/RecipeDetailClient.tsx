@@ -1284,10 +1284,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2 text-xl text-muted-foreground">
-                                Argumentaire Commercial
+                            <CardTitle className="flex items-center justify-between text-xl text-muted-foreground">
+                                <div className="flex items-center gap-2">Argumentaire Commercial</div>
                                 {isEditing && (
-                                    <Button variant="ghost" size="icon" onClick={handleGenerateArgument} disabled={isGenerating}>
+                                    <Button variant="ghost" size="icon" onClick={handleGenerateArgument} disabled={isGenerating} title="Générer avec l'IA">
                                         <Sparkles className="h-4 w-4" />
                                     </Button>
                                 )}
@@ -1299,9 +1299,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     value={(editableRecipe as Recipe)?.commercialArgument || ''}
                                     onChange={(e) => handleRecipeDataChange('commercialArgument', e.target.value)}
                                     rows={5}
+                                    placeholder="Un argumentaire de vente concis et alléchant..."
                                 />
                             ) : (
-                                <p>{(recipe as Recipe).commercialArgument}</p>
+                                <p>{(recipe as Recipe).commercialArgument || 'Aucun argumentaire défini.'}</p>
                             )}
                         </CardContent>
                     </Card>
@@ -1410,7 +1411,7 @@ function RecipeDetailSkeleton() {
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
-              </CardHeader>
+              </Header>
               <CardContent className="space-y-2">
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-3/4" />
