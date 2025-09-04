@@ -364,10 +364,8 @@ const fetchAllIngredients = useCallback(async () => {
                 }).filter(Boolean) as FullRecipeIngredient[];
 
                 setIngredients(ingredientsData);
-                // Only set editable ingredients if not currently editing, to avoid overwriting user changes
-                if(!isEditing) {
-                    setEditableIngredients(JSON.parse(JSON.stringify(ingredientsData)));
-                }
+                setEditableIngredients(JSON.parse(JSON.stringify(ingredientsData)));
+
             } catch (e: any) {
                 console.error("Error processing recipe ingredients snapshot:", e);
                 setError("Erreur de chargement des ingrédients de la recette. " + e.message);
@@ -410,9 +408,8 @@ const fetchAllIngredients = useCallback(async () => {
                 }).filter(Boolean) as FullRecipePreparation[];
                 
                 setPreparations(preparationsData);
-                if(!isEditing) {
-                    setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
-                }
+                setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
+
             } catch (e: any) {
                 console.error("Error processing recipe preparations snapshot:", e);
                 setError("Erreur de chargement des sous-recettes. " + e.message);
@@ -435,7 +432,7 @@ const fetchAllIngredients = useCallback(async () => {
       isMounted = false;
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId, calculatePreparationsCosts, fetchAllIngredients, isEditing]); 
+  }, [recipeId, calculatePreparationsCosts, fetchAllIngredients]); 
 
   const processSuggestedIngredients = (suggested: GeneratedIngredient[], currentAllIngredients: Ingredient[]) => {
       setIsEditing(true); // Automatically enter edit mode
@@ -1449,6 +1446,6 @@ function RecipeDetailSkeleton() {
         </div>
       </div>
     );
-}
+  }
 
     

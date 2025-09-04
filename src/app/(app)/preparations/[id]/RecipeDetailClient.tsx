@@ -230,14 +230,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }
 
     return costs;
-}, []);
+  }, []);
 
-const fetchAllIngredients = useCallback(async () => {
+  const fetchAllIngredients = useCallback(async () => {
     const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
     const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
     setAllIngredients(ingredientsList);
-}, []);
-
+  }, []);
 
   useEffect(() => {
     if (!recipeId) {
@@ -265,7 +264,6 @@ const fetchAllIngredients = useCallback(async () => {
             if (!isMounted) return;
             setAllPreparations(allPrepsData);
             
-            // We need to pass the just-fetched ingredients to calculate costs
             const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
             const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
             const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
@@ -458,11 +456,11 @@ const fetchAllIngredients = useCallback(async () => {
   };
 
   const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
-    // 1. Add the new ingredient to the master list
+    // 1. Add the new ingredient to the master list in the state
     setAllIngredients(current => [...current, newIngredient]);
     
     // 2. Update the specific `newIngredients` row to link it
-    handleNewIngredientChange(tempId, 'ingredientId', newIngredient.id);
+    handleNewIngredientChange(tempId, 'ingredientId', newIngredient.id!);
   }
 
   const openNewIngredientModal = (tempId: string) => {
@@ -797,7 +795,6 @@ const fetchAllIngredients = useCallback(async () => {
                 if (newDbIngredient && currentTempId) {
                     handleCreateAndLinkIngredient(currentTempId, newDbIngredient);
                 }
-                fetchAllIngredients(); // Refresh the list of all ingredients
             }}
         >
             <div/>
@@ -1132,3 +1129,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
