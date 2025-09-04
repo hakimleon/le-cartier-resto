@@ -2,9 +2,9 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
-import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation } from "@/lib/types";
+import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation, GeneratedIngredient } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, addIngredientLink } from "@/app/(app)/menu/actions";
+import { updateRecipeDetails, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, replaceRecipeIngredients } from "@/app/(app)/menu/actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -230,14 +230,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }
 
     return costs;
-}, []);
+  }, []);
 
-const fetchAllIngredients = useCallback(async () => {
+  const fetchAllIngredients = useCallback(async () => {
     const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
     const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
     setAllIngredients(ingredientsList);
-}, []);
-
+  }, []);
 
   useEffect(() => {
     if (!recipeId) {
@@ -265,7 +264,6 @@ const fetchAllIngredients = useCallback(async () => {
             if (!isMounted) return;
             setAllPreparations(allPrepsData);
             
-            // We need to pass the just-fetched ingredients to calculate costs
             const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
             const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
             const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
@@ -453,29 +451,16 @@ const fetchAllIngredients = useCallback(async () => {
     setNewIngredients(current => current.filter(ing => ing.tempId !== tempId));
   };
   
-  const handleRemoveExistingIngredient = async (recipeIngredientId: string, ingredientName: string) => {
-    try {
-        await deleteRecipeIngredient(recipeIngredientId);
-        toast({
-            title: "Succès",
-            description: `L'ingrédient "${ingredientName}" a été retiré.`,
-        });
-    } catch (error) {
-        console.error("Error deleting recipe ingredient:", error);
-        toast({
-            title: "Erreur",
-            description: "La suppression de l'ingrédient a échoué.",
-            variant: "destructive",
-        });
-    }
+  const handleRemoveExistingIngredient = (recipeIngredientId: string) => {
+    setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId));
   };
 
   const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
-    // 1. Add the new ingredient to the master list
-    setAllIngredients(current => [...current, newIngredient]);
+    // 1. Re-fetch all ingredients to get the latest list including the new one.
+    fetchAllIngredients();
     
     // 2. Update the specific `newIngredients` row to link it
-    handleNewIngredientChange(tempId, 'ingredientId', newIngredient.id);
+    handleNewIngredientChange(tempId, 'ingredientId', newIngredient.id!);
   }
 
   const openNewIngredientModal = (tempId: string) => {
@@ -601,24 +586,12 @@ const fetchAllIngredients = useCallback(async () => {
         
         await updateRecipeDetails(recipeId, recipeDataToSave, editableRecipe.type);
         
-        const ingredientUpdatePromises = editableIngredients.map(ing => {
-            return updateRecipeIngredient(ing.recipeIngredientId, {
-                quantity: ing.quantity,
-                unitUse: ing.unit,
-            });
-        });
+        const allCurrentIngredients = [
+            ...editableIngredients.map(ing => ({ ingredientId: ing.id, quantity: ing.quantity, unitUse: ing.unit })),
+            ...newIngredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: ing.quantity, unitUse: ing.unit }))
+        ].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'id' | 'recipeId'>[];
 
-        const newIngredientPromises = newIngredients
-            .filter(ing => ing.ingredientId && ing.quantity > 0)
-            .map(ing => {
-                return addIngredientLink({
-                    recipeId: recipeId,
-                    ingredientId: ing.ingredientId!,
-                    quantity: ing.quantity,
-                    unitUse: ing.unit,
-                });
-            });
-
+        await replaceRecipeIngredients(recipeId, allCurrentIngredients);
         
         const preparationUpdatePromises = editablePreparations.map(prep => {
             return updateRecipePreparationLink(prep.id, {
@@ -638,8 +611,6 @@ const fetchAllIngredients = useCallback(async () => {
             });
 
         await Promise.all([
-            ...ingredientUpdatePromises,
-            ...newIngredientPromises,
             ...preparationUpdatePromises,
             ...newPreparationPromises,
         ]);
@@ -706,7 +677,7 @@ const fetchAllIngredients = useCallback(async () => {
 
         const generatedIngredients: NewRecipeIngredient[] = result.ingredients.map(ing => {
           const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
-          const tempId = `new-gen-${Date.now()}-${ing.name}`;
+          const tempId = `new-gen-${Date.now()}-${Math.random()}`;
           
           let totalCost = 0;
           if(existingIngredient) {
@@ -824,7 +795,6 @@ const fetchAllIngredients = useCallback(async () => {
                 if (newDbIngredient && currentTempId) {
                     handleCreateAndLinkIngredient(currentTempId, newDbIngredient);
                 }
-                fetchAllIngredients(); // Refresh the list of all ingredients
             }}
         >
             <div/>
@@ -884,51 +854,53 @@ const fetchAllIngredients = useCallback(async () => {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {currentIngredientsData.map(ing => (
+                            {isEditing && currentIngredientsData.map(ing => (
                                 <TableRow key={ing.recipeIngredientId}>
                                     <TableCell className="font-medium">{ing.name}</TableCell>
                                     <TableCell>
-                                      {isEditing ? (
-                                        <Input
-                                          type="number"
-                                          value={ing.quantity}
-                                          onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)}
-                                          className="w-20"
-                                        />
-                                      ) : ing.quantity }
+                                      <Input
+                                        type="number"
+                                        value={ing.quantity}
+                                        onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)}
+                                        className="w-20"
+                                      />
                                     </TableCell>
                                     <TableCell>
-                                      {isEditing ? (
-                                        <Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} >
-                                            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="g">g</SelectItem>
-                                                <SelectItem value="kg">kg</SelectItem>
-                                                <SelectItem value="ml">ml</SelectItem>
-                                                <SelectItem value="l">l</SelectItem>
-                                                <SelectItem value="pièce">pièce</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                      ) : ing.unit }
+                                      <Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} >
+                                          <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                                          <SelectContent>
+                                              <SelectItem value="g">g</SelectItem>
+                                              <SelectItem value="kg">kg</SelectItem>
+                                              <SelectItem value="ml">ml</SelectItem>
+                                              <SelectItem value="l">l</SelectItem>
+                                              <SelectItem value="pièce">pièce</SelectItem>
+                                          </SelectContent>
+                                      </Select>
                                     </TableCell>
                                     <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
-                                    {isEditing && (
-                                        <TableCell>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle>
-                                                        <AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ?</AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId, ing.name)}>Retirer</AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </TableCell>
-                                    )}
+                                    <TableCell>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle>
+                                                    <AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                             {!isEditing && ingredients.map(ing => (
+                                <TableRow key={ing.recipeIngredientId}>
+                                  <TableCell className="font-medium">{ing.name}</TableCell>
+                                  <TableCell>{ing.quantity}</TableCell>
+                                  <TableCell>{ing.unit}</TableCell>
+                                  <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
                                 </TableRow>
                             ))}
                              {isEditing && newIngredients.map((newIng) => (
@@ -969,7 +941,7 @@ const fetchAllIngredients = useCallback(async () => {
                                     <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
                                 </TableRow>
                              ))}
-                             {currentIngredientsData.length === 0 && newIngredients.length === 0 && (
+                             {currentIngredientsData.length === 0 && newIngredients.length === 0 && !isEditing && (
                                 <TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>
                              )}
                         </TableBody>
