@@ -37,7 +37,7 @@ export async function generateDishConcept(input: DishConceptInput): Promise<Dish
 const recipeConceptPrompt = ai.definePrompt({
     name: 'recipeConceptPrompt',
     input: { schema: DishConceptInputSchema },
-    output: { schema: Omit(DishConceptOutputSchema.shape, ['imageUrl']) }, // On exclut l'URL de l'image ici
+    output: { schema: DishConceptOutputSchema.omit({ imageUrl: true }) }, // On exclut l'URL de l'image ici
     prompt: `
         Vous êtes un chef cuisinier créatif et un styliste culinaire de renommée mondiale, travaillant pour un restaurant gastronomique.
         Votre mission est de transformer une idée brute en un concept de plat complet, professionnel et inspirant.
