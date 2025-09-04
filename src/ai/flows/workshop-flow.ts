@@ -83,10 +83,13 @@ const generateDishConceptFlow = ai.defineFlow(
             L'assiette est dressée de manière artistique sur une table élégante. Éclairage de studio, faible profondeur de champ, détails nets et couleurs vibrantes.
         `;
 
-        // 3. Générer l'image
+        // 3. Générer l'image avec gemini-2.5-flash-image-preview
         const { media } = await ai.generate({
-            model: 'googleai/imagen-4.0-fast-generate-001',
+            model: 'googleai/gemini-2.5-flash-image-preview',
             prompt: imagePrompt,
+            config: {
+                responseModalities: ['TEXT', 'IMAGE'],
+            }
         });
         
         if (!media || !media.url) {
