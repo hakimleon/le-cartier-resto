@@ -9,7 +9,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
 const DishConceptInputSchema = z.object({
-    dishName: z.string().describe("Le nom ou l'idée de base du plat."),
+    dishName: z.string().describe("Le nom ou l'idée de base du plat. Peut être vide."),
     mainIngredients: z.string().optional().describe("Les ingrédients principaux à intégrer."),
     excludedIngredients: z.string().optional().describe("Les ingrédients à ne jamais utiliser."),
     recommendations: z.string().optional().describe("Directives sur le style, la saisonnalité, ou le type de cuisine souhaité."),
@@ -38,23 +38,29 @@ export async function generateDishConcept(input: DishConceptInput): Promise<Dish
 const recipeConceptPrompt = ai.definePrompt({
     name: 'recipeConceptPrompt',
     input: { schema: DishConceptInputSchema },
-    output: { schema: DishConceptOutputSchema.omit({ imageUrl: true, name: true }) }, // On exclut l'URL et le nom ici
+    output: { schema: DishConceptOutputSchema.omit({ imageUrl: true }) },
     prompt: `
         Vous êtes un chef cuisinier créatif et un styliste culinaire de renommée mondiale, travaillant pour un restaurant gastronomique.
-        Votre mission est de transformer une idée brute en un concept de plat complet, professionnel et inspirant pour le plat nommé : {{{dishName}}}.
+        Votre mission est de transformer une idée brute en un concept de plat complet, professionnel et inspirant.
 
         Voici les instructions du chef de l'établissement :
-        - Nom du plat à conserver : {{{dishName}}}
+        {{#if dishName}}
+        - Le nom du plat est imposé : {{{dishName}}}. Vous devez le conserver.
+        {{else}}
+        - Vous avez carte blanche pour inventer un nom de plat créatif et alléchant.
+        {{/if}}
+        
         {{#if mainIngredients}}- Ingrédients à utiliser : {{{mainIngredients}}}{{else}}- Ingrédients principaux: Vous avez carte blanche pour les choisir. Soyez créatif.{{/if}}
         {{#if excludedIngredients}}- Ingrédients à **ABSOLUMENT EXCLURE** : {{{excludedIngredients}}}{{/if}}
         {{#if recommendations}}- Recommandations et style : {{{recommendations}}}{{/if}}
 
-        Votre tâche est de générer les éléments suivants (SANS modifier le nom du plat) :
-        1.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
-        2.  **ingredients**: Une liste simple des ingrédients bruts nécessaires. Ne mettez pas les quantités, juste les noms.
-        3.  **subRecipes**: Déduisez de la recette que vous créez la liste des préparations ou sous-recettes qui devront être réalisées à l'avance (ex: "Fond de veau", "Sauce vierge", "Purée de carottes", "Vinaigrette balsamique").
-        4.  **procedure**: Une procédure claire et concise, comme si vous l'écriviez pour votre brigade.
-        5.  **plating**: Des instructions de dressage précises pour créer une assiette visuellement spectaculaire, digne d'un grand restaurant.
+        Votre tâche est de générer les éléments suivants :
+        1.  **name**: {{#if dishName}}Conservez impérativement le nom "{{{dishName}}}".{{else}}Inventez un nom marketing et séduisant pour le plat.{{/if}}
+        2.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
+        3.  **ingredients**: Une liste simple des ingrédients bruts nécessaires. Ne mettez pas les quantités, juste les noms.
+        4.  **subRecipes**: Déduisez de la recette que vous créez la liste des préparations ou sous-recettes qui devront être réalisées à l'avance (ex: "Fond de veau", "Sauce vierge", "Purée de carottes", "Vinaigrette balsamique").
+        5.  **procedure**: Une procédure claire et concise, comme si vous l'écriviez pour votre brigade.
+        6.  **plating**: Des instructions de dressage précises pour créer une assiette visuellement spectaculaire, digne d'un grand restaurant.
 
         Soyez créatif, audacieux et respectez les contraintes à la lettre.
     `,
@@ -81,7 +87,7 @@ const generateDishConceptFlow = ai.defineFlow(
             // 2. Créer un prompt pour l'image basé sur la recette générée
             const imagePrompt = `
                 Photographie culinaire professionnelle et ultra-réaliste, style magazine gastronomique.
-                Plat : "${input.dishName}".
+                Plat : "${recipeConcept.name}".
                 Description : "${recipeConcept.description}".
                 Dressage : "${recipeConcept.plating}".
                 L'assiette est dressée de manière artistique sur une table élégante. Éclairage de studio, faible profondeur de champ, détails nets et couleurs vibrantes.
@@ -109,7 +115,6 @@ const generateDishConceptFlow = ai.defineFlow(
 
         // 4. Combiner le texte et l'image (réelle ou de substitution) dans la sortie finale
         return {
-            name: input.dishName, // On réutilise le nom d'entrée
             ...recipeConcept,
             imageUrl: imageUrl,
         };

@@ -32,15 +32,6 @@ export default function WorkshopClient() {
         const excludedIngredients = formData.get("excludedIngredients") as string;
         const recommendations = formData.get("recommendations") as string;
 
-        if (!dishName) {
-            toast({
-                title: "Champ requis",
-                description: "Veuillez renseigner le nom du plat.",
-                variant: "destructive",
-            });
-            return;
-        }
-
         setIsLoading(true);
         setGeneratedConcept(null);
 
@@ -123,8 +114,8 @@ export default function WorkshopClient() {
                         <CardContent>
                             <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <Label htmlFor="dishName">Nom du plat <span className="text-destructive">*</span></Label>
-                                    <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." required />
+                                    <Label htmlFor="dishName">Nom du plat (Optionnel)</Label>
+                                    <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." />
                                 </div>
                                 <div>
                                     <Label htmlFor="mainIngredients">Ingrédients principaux (Optionnel)</Label>
