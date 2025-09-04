@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation } from "@/lib/types";
+import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation, GeneratedIngredient } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -454,7 +454,6 @@ const fetchAllIngredients = useCallback(async () => {
   };
   
   const handleRemoveExistingIngredient = async (recipeIngredientId: string, ingredientName: string) => {
-    // This will now just remove from the editable list, not from DB. DB is handled on save.
     setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId));
   };
 
@@ -564,7 +563,6 @@ const fetchAllIngredients = useCallback(async () => {
 
     setIsSaving(true);
     try {
-        // 1. Save general recipe details
         const recipeDataToSave = {
             name: editableRecipe.name,
             description: editableRecipe.description,
@@ -587,24 +585,22 @@ const fetchAllIngredients = useCallback(async () => {
                 usageUnit: (editableRecipe as Preparation).usageUnit,
             })
         };
+        
         await updateRecipeDetails(recipeId, recipeDataToSave, editableRecipe.type);
         
-        // 2. Prepare the full new list of ingredients to be saved
         const allCurrentIngredients = [
             ...editableIngredients.map(ing => ({ ingredientId: ing.id, quantity: ing.quantity, unitUse: ing.unit })),
             ...newIngredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: ing.quantity, unitUse: ing.unit }))
         ].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'recipeId'>[];
 
-        // 3. Replace all ingredients in the database with the new list
         await replaceRecipeIngredients(recipeId, allCurrentIngredients);
-
-
-        // 4. (Optional) Save preparation links - current logic can remain for now if it works
+        
         const preparationUpdatePromises = editablePreparations.map(prep => {
             return updateRecipePreparationLink(prep.id, {
                 quantity: prep.quantity,
             });
         });
+
         const newPreparationPromises = newPreparations
             .filter(prep => prep.childPreparationId && prep.quantity > 0)
             .map(prep => {
@@ -615,8 +611,11 @@ const fetchAllIngredients = useCallback(async () => {
                     unitUse: prep.unit,
                 });
             });
-        await Promise.all([...preparationUpdatePromises, ...newPreparationPromises]);
 
+        await Promise.all([
+            ...preparationUpdatePromises,
+            ...newPreparationPromises,
+        ]);
 
         toast({
             title: "Succès",
@@ -656,8 +655,8 @@ const fetchAllIngredients = useCallback(async () => {
           setIsEditing(true);
         }
 
-        // This is the correct way to reset the state and avoid duplications
         setEditableIngredients([]);
+        setNewIngredients([]);
 
         setEditableRecipe(current => {
             if (!current) return null;
@@ -1133,5 +1132,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    

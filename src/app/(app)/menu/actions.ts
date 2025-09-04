@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch, query, where, getDocs, serverTimestamp, FieldValue } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Recipe, RecipePreparationLink, Preparation, RecipeIngredientLink } from '@/lib/types';
 
@@ -119,4 +119,14 @@ export async function addRecipePreparationLink(link: Omit<RecipePreparationLink,
     await addDoc(collection(db, "recipePreparationLinks"), link);
 }
 
-    
+// New function to clear the temporary ingredient data from a recipe
+export async function clearSuggestedIngredients(recipeId: string) {
+    if (!recipeId) return;
+    const recipeDoc = doc(db, 'recipes', recipeId);
+    // We update the document to remove the field.
+    // Using `deleteField()` is not available on the client-side `firebase` package,
+    // so we set it to an empty array or null.
+    await updateDoc(recipeDoc, {
+        suggestedIngredients: [] 
+    });
+}

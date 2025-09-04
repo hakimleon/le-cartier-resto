@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation } from "@/lib/types";
+import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation, GeneratedIngredient } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -18,7 +18,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, addIngredientLink, replaceRecipeIngredients } from "../actions";
+import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, addIngredientLink, replaceRecipeIngredients, clearSuggestedIngredients } from "../actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -40,9 +40,11 @@ import {
 } from "@/components/ui/alert-dialog"
 import { ImageUploadDialog } from "./ImageUploadDialog";
 import { generateCommercialArgument } from "@/ai/flows/suggestion-flow";
+import { IngredientModal } from "../../ingredients/IngredientModal";
 
 type RecipeDetailClientProps = {
   recipeId: string;
+  fromWorkshop?: boolean;
 };
 
 // Extends RecipeIngredient to include purchase unit details for conversion
@@ -58,13 +60,13 @@ type FullRecipeIngredient = {
 };
 
 type NewRecipeIngredient = {
-    id: string; // Temporary client-side ID
-    ingredientId: string;
-    name: string;
+    tempId: string; // Temporary client-side ID
+    ingredientId?: string; // Linked ingredient ID from DB
+    name: string; // Name suggested by AI or entered by user
     quantity: number;
     unit: string;
     unitPrice: number;
-    unitPurchase: string; // From the selected ingredient
+    unitPurchase: string;
     totalCost: number;
 };
 
@@ -143,7 +145,7 @@ const foodCostIndicators = [
   { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500", icon: GAUGE_LEVELS.mauvais.icon },
 ];
 
-export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
+export default function RecipeDetailClient({ recipeId, fromWorkshop = false }: RecipeDetailClientProps) {
   const [recipe, setRecipe] = useState<Recipe | Preparation | null>(null);
   const [editableRecipe, setEditableRecipe] = useState<Recipe | Preparation | null>(null);
   
@@ -168,6 +170,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [allPreparations, setAllPreparations] = useState<Preparation[]>([]);
   const [preparationsCosts, setPreparationsCosts] = useState<Record<string, number>>({});
 
+  const [isNewIngredientModalOpen, setIsNewIngredientModalOpen] = useState(false);
+  const [newIngredientDefaults, setNewIngredientDefaults] = useState<Partial<Ingredient> | null>(null);
+  const [currentTempId, setCurrentTempId] = useState<string | null>(null);
 
   const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
     const costs: Record<string, number> = {};
@@ -247,6 +252,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return costs;
 }, []);
 
+const fetchAllIngredients = useCallback(async () => {
+    const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
+    const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+    setAllIngredients(ingredientsList);
+    return ingredientsList;
+}, []);
+
 
   useEffect(() => {
     if (!recipeId) {
@@ -267,10 +279,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const fetchAllData = async () => {
         try {
             setIsLoading(true);
-            const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
-            const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
-            if (!isMounted) return;
-            setAllIngredients(ingredientsList);
+            const ingredientsList = await fetchAllIngredients();
 
             const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
             const allPrepsData = allPrepsSnap.docs.map(doc => ({...doc.data(), id: doc.id} as Preparation));
@@ -309,6 +318,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe | Preparation;
             setRecipe(fetchedRecipe);
             setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
+            
+            // If coming from workshop, process the suggested ingredients
+            if (fromWorkshop && fetchedRecipe.type === 'Plat' && (fetchedRecipe as Recipe).suggestedIngredients) {
+                processSuggestedIngredients((fetchedRecipe as Recipe).suggestedIngredients!, loadedIngredients);
+                // We clear the field in the database so it's only processed once
+                clearSuggestedIngredients(recipeId); 
+            }
+            
             setError(null);
         }, (e: any) => {
             console.error("Error with recipe snapshot: ", e);
@@ -411,7 +428,48 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       isMounted = false;
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId, calculatePreparationsCosts]); 
+  }, [recipeId, fromWorkshop, calculatePreparationsCosts, fetchAllIngredients]); 
+
+  const processSuggestedIngredients = (suggested: GeneratedIngredient[], currentAllIngredients: Ingredient[]) => {
+      setIsEditing(true); // Automatically enter edit mode
+      
+      const newIngs: NewRecipeIngredient[] = suggested.map(sugIng => {
+          const existing = currentAllIngredients.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
+          const tempId = `new-ws-${Date.now()}-${Math.random()}`;
+          let totalCost = 0;
+
+          if (existing) {
+              const tempNew: NewRecipeIngredient = {
+                  tempId,
+                  ingredientId: existing.id,
+                  name: existing.name,
+                  quantity: sugIng.quantity,
+                  unit: sugIng.unit,
+                  unitPrice: existing.unitPrice,
+                  unitPurchase: existing.unitPurchase,
+                  totalCost: 0,
+              };
+              totalCost = recomputeIngredientCost(tempNew);
+          }
+
+          return {
+              tempId,
+              ingredientId: existing?.id,
+              name: existing?.name || sugIng.name,
+              quantity: sugIng.quantity,
+              unit: sugIng.unit,
+              unitPrice: existing?.unitPrice || 0,
+              unitPurchase: existing?.unitPurchase || '',
+              totalCost: isNaN(totalCost) ? 0 : totalCost,
+          };
+      });
+
+      setNewIngredients(newIngs);
+      toast({
+          title: "Fiche technique importée !",
+          description: "Vérifiez les ingrédients suggérés et liez-les ou créez-les si nécessaire."
+      })
+  };
 
   const handleToggleEditMode = () => {
     if (isEditing) {
@@ -431,6 +489,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   };
   
   const recomputeIngredientCost = (ingredient: FullRecipeIngredient | NewRecipeIngredient) => {
+    if(!ingredient.unitPrice || !ingredient.unitPurchase || !ingredient.unit) return 0;
     const conversionFactor = getConversionFactor(ingredient.unitPurchase, ingredient.unit);
     const costPerUseUnit = ingredient.unitPrice / conversionFactor;
     return (ingredient.quantity || 0) * costPerUseUnit;
@@ -448,27 +507,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         })
     );
   };
-
-  const handleAddNewIngredient = () => {
-    setNewIngredients([
-      ...newIngredients,
-      {
-        id: `new-${Date.now()}`,
-        ingredientId: '',
-        name: '',
-        quantity: 0,
-        unit: 'g',
-        unitPrice: 0,
-        unitPurchase: '',
-        totalCost: 0,
-      },
-    ]);
-  };
   
   const handleNewIngredientChange = (tempId: string, field: keyof NewRecipeIngredient, value: any) => {
     setNewIngredients(current =>
       current.map(ing => {
-        if (ing.id === tempId) {
+        if (ing.tempId === tempId) {
           const updatedIng = { ...ing, [field]: value };
           
           if (field === 'ingredientId') {
@@ -477,11 +520,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 updatedIng.name = selectedIngredient.name;
                 updatedIng.unitPrice = selectedIngredient.unitPrice;
                 updatedIng.unitPurchase = selectedIngredient.unitPurchase;
+            } else {
+                updatedIng.ingredientId = undefined; // Unlink if not found
             }
           }
-          
           updatedIng.totalCost = recomputeIngredientCost(updatedIng);
-
           return updatedIng;
         }
         return ing;
@@ -490,25 +533,26 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   };
   
   const handleRemoveNewIngredient = (tempId: string) => {
-    setNewIngredients(current => current.filter(ing => ing.id !== tempId));
+    setNewIngredients(current => current.filter(ing => ing.tempId !== tempId));
   };
   
-  const handleRemoveExistingIngredient = async (recipeIngredientId: string, ingredientName: string) => {
-    try {
-        await deleteRecipeIngredient(recipeIngredientId);
-        toast({
-            title: "Succès",
-            description: `L'ingrédient "${ingredientName}" a été retiré.`,
-        });
-    } catch (error) {
-        console.error("Error deleting recipe ingredient:", error);
-        toast({
-            title: "Erreur",
-            description: "La suppression de l'ingrédient a échoué.",
-            variant: "destructive",
-        });
-    }
+  const handleRemoveExistingIngredient = async (recipeIngredientId: string) => {
+    setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId));
   };
+
+   const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
+    setAllIngredients(current => [...current, newIngredient]);
+    handleNewIngredientChange(tempId, 'ingredientId', newIngredient.id);
+  }
+
+  const openNewIngredientModal = (tempId: string) => {
+    const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId);
+    if(ingredientToCreate) {
+        setCurrentTempId(tempId);
+        setNewIngredientDefaults({ name: ingredientToCreate.name });
+        setIsNewIngredientModalOpen(true);
+    }
+  }
 
 
    const handleAddNewPreparation = () => {
@@ -794,6 +838,19 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   return (
     <div className="space-y-4">
+       <IngredientModal
+            open={isNewIngredientModalOpen}
+            onOpenChange={setIsNewIngredientModalOpen}
+            ingredient={newIngredientDefaults}
+            onSuccess={(newDbIngredient) => {
+                if (newDbIngredient && currentTempId) {
+                    handleCreateAndLinkIngredient(currentTempId, newDbIngredient);
+                }
+                fetchAllIngredients(); // Refresh the list of all ingredients
+            }}
+        >
+            <div/>
+        </IngredientModal>
        <ImageUploadDialog
         isOpen={isImageUploadOpen}
         onClose={() => setIsImageUploadOpen(false)}
@@ -903,116 +960,97 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardHeader>
                     <CardTitle className="flex items-center justify-between">
                         <div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>
-                         {isEditing && <Button variant="outline" size="sm" onClick={handleAddNewIngredient}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Ingrédient</Button>}
+                         {isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', unitPrice: 0, unitPurchase: '', totalCost: 0 }])}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Ingrédient</Button>}
                     </CardTitle>
                     <CardDescription>
                        Liste des matières premières nécessaires pour la recette.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    
                     <Table>
                         <TableHeader>
                             <TableRow>
-                                <TableHead className="w-1/3">Ingrédient</TableHead>
+                                <TableHead className="w-[35%]">Ingrédient</TableHead>
                                 <TableHead>Quantité</TableHead>
                                 <TableHead>Unité</TableHead>
-                                <TableHead className="text-right">Coût total</TableHead>
+                                <TableHead className="text-right">Coût</TableHead>
                                 {isEditing && <TableHead className="w-[50px]"></TableHead>}
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {currentIngredientsData.map(ing => (
+                            {isEditing && currentIngredientsData.map(ing => (
                                 <TableRow key={ing.recipeIngredientId}>
                                     <TableCell className="font-medium">{ing.name}</TableCell>
                                     <TableCell>
-                                      {isEditing ? (
-                                        <Input
-                                          type="number"
-                                          value={ing.quantity}
-                                          onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)}
-                                          className="w-20"
-                                        />
-                                      ) : (
-                                        ing.quantity
-                                      )}
+                                      <Input
+                                        type="number"
+                                        value={ing.quantity}
+                                        onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)}
+                                        className="w-20"
+                                      />
                                     </TableCell>
                                     <TableCell>
-                                      {isEditing ? (
-                                        <Select
-                                            value={ing.unit}
-                                            onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)}
-                                        >
-                                            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="g">g</SelectItem>
-                                                <SelectItem value="kg">kg</SelectItem>
-                                                <SelectItem value="ml">ml</SelectItem>
-                                                <SelectItem value="l">l</SelectItem>
-                                                <SelectItem value="pièce">pièce</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                      ) : (
-                                        ing.unit
-                                      )}
+                                      <Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} >
+                                          <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                                          <SelectContent>
+                                              <SelectItem value="g">g</SelectItem>
+                                              <SelectItem value="kg">kg</SelectItem>
+                                              <SelectItem value="ml">ml</SelectItem>
+                                              <SelectItem value="l">l</SelectItem>
+                                              <SelectItem value="pièce">pièce</SelectItem>
+                                          </SelectContent>
+                                      </Select>
                                     </TableCell>
                                     <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
-                                    {isEditing && (
-                                        <TableCell>
-                                            <AlertDialog>
-                                                <AlertDialogTrigger asChild>
-                                                    <Button variant="ghost" size="icon">
-                                                        <Trash2 className="h-4 w-4 text-red-500"/>
-                                                    </Button>
-                                                </AlertDialogTrigger>
-                                                <AlertDialogContent>
-                                                    <AlertDialogHeader>
-                                                        <AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle>
-                                                        <AlertDialogDescription>
-                                                            Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ?
-                                                        </AlertDialogDescription>
-                                                    </AlertDialogHeader>
-                                                    <AlertDialogFooter>
-                                                        <AlertDialogCancel>Annuler</AlertDialogCancel>
-                                                        <AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId, ing.name)}>
-                                                            Retirer
-                                                        </AlertDialogAction>
-                                                    </AlertDialogFooter>
-                                                </AlertDialogContent>
-                                            </AlertDialog>
-                                        </TableCell>
-                                    )}
+                                    <TableCell>
+                                        <AlertDialog>
+                                            <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger>
+                                            <AlertDialogContent>
+                                                <AlertDialogHeader>
+                                                    <AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle>
+                                                    <AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription>
+                                                </AlertDialogHeader>
+                                                <AlertDialogFooter>
+                                                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                                                    <AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction>
+                                                </AlertDialogFooter>
+                                            </AlertDialogContent>
+                                        </AlertDialog>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                            {!isEditing && ingredients.map(ing => (
+                                <TableRow key={ing.recipeIngredientId}>
+                                  <TableCell className="font-medium">{ing.name}</TableCell>
+                                  <TableCell>{ing.quantity}</TableCell>
+                                  <TableCell>{ing.unit}</TableCell>
+                                  <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
                                 </TableRow>
                             ))}
                              {isEditing && newIngredients.map((newIng) => (
-                                <TableRow key={newIng.id}>
+                                <TableRow key={newIng.tempId}>
                                     <TableCell>
-                                        <Select
-                                            value={newIng.ingredientId}
-                                            onValueChange={(value) => handleNewIngredientChange(newIng.id, 'ingredientId', value)}
-                                        >
-                                            <SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger>
-                                            <SelectContent>
-                                                {allIngredients.map(ing => (
-                                                    ing.id ? <SelectItem key={ing.id} value={ing.id}>{ing.name}</SelectItem> : null
-                                                ))}
-                                            </SelectContent>
-                                        </Select>
+                                        <div className="flex items-center gap-2">
+                                            <Select value={newIng.ingredientId || ''} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'ingredientId', value)} >
+                                                <SelectTrigger className={cn(!newIng.ingredientId && "text-muted-foreground")}>
+                                                    <SelectValue placeholder={newIng.name || "Choisir..."} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    {allIngredients.map(ing => ( ing.id ? <SelectItem key={ing.id} value={ing.id}>{ing.name}</SelectItem> : null ))}
+                                                </SelectContent>
+                                            </Select>
+                                            {!newIng.ingredientId && (
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={`Créer l'ingrédient "${newIng.name}"`}>
+                                                    <PlusCircle className="h-4 w-4 text-primary" />
+                                                </Button>
+                                            )}
+                                        </div>
                                     </TableCell>
                                     <TableCell>
-                                        <Input
-                                            type="number"
-                                            placeholder="Qté"
-                                            className="w-20"
-                                            value={newIng.quantity === 0 ? '' : newIng.quantity}
-                                            onChange={(e) => handleNewIngredientChange(newIng.id, 'quantity', parseFloat(e.target.value) || 0)}
-                                        />
+                                        <Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} />
                                     </TableCell>
                                     <TableCell>
-                                         <Select
-                                            value={newIng.unit}
-                                            onValueChange={(value) => handleNewIngredientChange(newIng.id, 'unit', value)}
-                                        >
+                                         <Select value={newIng.unit} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'unit', value)} >
                                             <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
                                             <SelectContent>
                                                 <SelectItem value="g">g</SelectItem>
@@ -1023,21 +1061,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell className="text-right font-semibold">
-                                        {newIng.totalCost.toFixed(2)}€
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.id)}>
-                                            <Trash2 className="h-4 w-4 text-red-500"/>
-                                        </Button>
-                                    </TableCell>
+                                    <TableCell className="text-right font-semibold">{newIng.totalCost.toFixed(2)}€</TableCell>
+                                    <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
                                 </TableRow>
                              ))}
-
-                             {currentIngredientsData.length === 0 && newIngredients.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié à cette recette.</TableCell>
-                                </TableRow>
+                             {currentIngredientsData.length === 0 && newIngredients.length === 0 && !isEditing && (
+                                <TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>
                              )}
                         </TableBody>
                     </Table>
@@ -1409,6 +1438,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
   }
-
-    
-

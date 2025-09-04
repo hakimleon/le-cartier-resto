@@ -1,4 +1,5 @@
 
+
 // Le type pour un ingrédient de base
 export type Ingredient = {
     id?: string;
@@ -10,6 +11,14 @@ export type Ingredient = {
     unitPrice: number;
     supplier: string;
 };
+
+// Types pour la génération de recette par l'IA
+export type GeneratedIngredient = {
+    name: string;
+    quantity: number;
+    unit: string;
+};
+
 
 // Le type pour une préparation/sous-recette (fiche technique de base)
 export type Preparation = {
@@ -68,6 +77,9 @@ export type Recipe = {
   | 'Élixirs & Rafraîchissements';
   status: 'Actif' | 'Inactif';
   tvaRate?: number; // en pourcentage (ex: 10 pour 10%)
+
+  // Champ temporaire pour le flux de l'atelier
+  suggestedIngredients?: GeneratedIngredient[];
 };
 
 // Lien entre une recette/préparation et un ingrédient brut
@@ -85,11 +97,4 @@ export type RecipePreparationLink = {
     childPreparationId: string; // L'ID de la "Préparation"
     quantity: number;
     unitUse: string;
-};
-
-// Types pour la génération de recette par l'IA
-export type GeneratedIngredient = {
-    name: string;
-    quantity: number;
-    unit: string;
 };

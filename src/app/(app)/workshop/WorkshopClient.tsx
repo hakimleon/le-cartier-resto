@@ -70,7 +70,8 @@ export default function WorkshopClient() {
                     title: "Recette enregistrée !",
                     description: `"${generatedConcept.name}" a été ajouté au menu.`,
                 });
-                router.push(`/menu/${newDishId}`);
+                // Redirect to the new dish page with a flag to process ingredients
+                router.push(`/menu/${newDishId}?from_workshop=true`);
             } else {
                  throw new Error("L'ID du plat n'a pas été retourné après la création.");
             }
