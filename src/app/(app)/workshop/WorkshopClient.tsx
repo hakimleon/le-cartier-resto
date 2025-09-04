@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FlaskConical, Sparkles, PlusCircle } from "lucide-react";
+import { FlaskConical, Sparkles, PlusCircle, NotebookText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
@@ -190,11 +190,21 @@ export default function WorkshopClient() {
                                         <h3 className="text-xl font-bold">{generatedConcept.name}</h3>
                                         <p className="text-muted-foreground mt-2">{generatedConcept.description}</p>
                                     </div>
-                                    <div>
-                                        <h4 className="font-semibold">Ingrédients suggérés</h4>
-                                        <ul className="list-disc list-inside text-muted-foreground mt-2">
-                                            {generatedConcept.ingredients.map((ing: string) => <li key={ing}>{ing}</li>)}
-                                        </ul>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div>
+                                            <h4 className="font-semibold">Ingrédients suggérés</h4>
+                                            <ul className="list-disc list-inside text-muted-foreground mt-2">
+                                                {generatedConcept.ingredients.map((ing: string) => <li key={ing}>{ing}</li>)}
+                                            </ul>
+                                        </div>
+                                         {generatedConcept.subRecipes && generatedConcept.subRecipes.length > 0 && (
+                                            <div>
+                                                <h4 className="font-semibold">Sous-Recettes Nécessaires</h4>
+                                                <ul className="list-disc list-inside text-muted-foreground mt-2">
+                                                    {generatedConcept.subRecipes.map((prep: string) => <li key={prep}>{prep}</li>)}
+                                                </ul>
+                                            </div>
+                                         )}
                                     </div>
                                      <div>
                                         <h4 className="font-semibold">Procédure</h4>

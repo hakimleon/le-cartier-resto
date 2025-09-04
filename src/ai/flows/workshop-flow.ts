@@ -20,6 +20,7 @@ const DishConceptOutputSchema = z.object({
     name: z.string().describe("Le nom final et marketing du plat."),
     description: z.string().describe("Une description alléchante et créative du plat."),
     ingredients: z.array(z.string()).describe("La liste des ingrédients nécessaires pour la recette."),
+    subRecipes: z.array(z.string()).describe("La liste des sous-recettes ou préparations nécessaires (ex: 'Sauce Vierge', 'Fond de veau')."),
     procedure: z.string().describe("Les étapes détaillées de la préparation et de la cuisson."),
     plating: z.string().describe("Les instructions pour un dressage artistique et professionnel du plat."),
     imageUrl: z.string().url().describe("L'URL d'une image générée représentant le plat final."),
@@ -50,9 +51,10 @@ const recipeConceptPrompt = ai.definePrompt({
 
         Votre tâche est de générer les éléments suivants (SANS modifier le nom du plat) :
         1.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
-        2.  **ingredients**: Une liste simple des ingrédients nécessaires. Ne mettez pas les quantités, juste les noms.
-        3.  **procedure**: Une procédure claire et concise, comme si vous l'écriviez pour votre brigade.
-        4.  **plating**: Des instructions de dressage précises pour créer une assiette visuellement spectaculaire, digne d'un grand restaurant.
+        2.  **ingredients**: Une liste simple des ingrédients bruts nécessaires. Ne mettez pas les quantités, juste les noms.
+        3.  **subRecipes**: Déduisez de la recette que vous créez la liste des préparations ou sous-recettes qui devront être réalisées à l'avance (ex: "Fond de veau", "Sauce vierge", "Purée de carottes", "Vinaigrette balsamique").
+        4.  **procedure**: Une procédure claire et concise, comme si vous l'écriviez pour votre brigade.
+        5.  **plating**: Des instructions de dressage précises pour créer une assiette visuellement spectaculaire, digne d'un grand restaurant.
 
         Soyez créatif, audacieux et respectez les contraintes à la lettre.
     `,
