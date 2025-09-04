@@ -1,9 +1,9 @@
 
 'use server';
 
-import { collection, addDoc, doc, getDocs, writeBatch, query, where } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Ingredient, Recipe, RecipeIngredientLink } from '@/lib/types';
+import type { Recipe } from '@/lib/types';
 import type { DishConceptOutput } from '@/ai/flows/workshop-flow';
 
 /**
@@ -14,7 +14,7 @@ import type { DishConceptOutput } from '@/ai/flows/workshop-flow';
  */
 export async function createDishFromWorkshop(concept: DishConceptOutput): Promise<string> {
     try {
-        const dishData: Omit<Recipe, 'id'> = {
+        const dishData: Omit<Recipe, 'id' | 'suggestedIngredients'> = {
             type: 'Plat',
             name: concept.name,
             description: concept.description,
@@ -30,8 +30,6 @@ export async function createDishFromWorkshop(concept: DishConceptOutput): Promis
             status: 'Inactif',
             category: 'Plats et Grillades',
             tvaRate: 10,
-            // Store the full list of suggested ingredients
-            suggestedIngredients: concept.ingredients, 
         };
 
         const recipesCol = collection(db, 'recipes');

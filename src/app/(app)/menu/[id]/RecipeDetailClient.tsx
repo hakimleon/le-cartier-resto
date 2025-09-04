@@ -18,7 +18,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { replaceRecipeIngredients, updateRecipeDetails, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, clearSuggestedIngredients } from "../actions";
+import { replaceRecipeIngredients, updateRecipeDetails, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink } from "../actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -41,10 +41,12 @@ import {
 import { ImageUploadDialog } from "./ImageUploadDialog";
 import { generateCommercialArgument } from "@/ai/flows/suggestion-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
+import { DishConceptOutput } from "@/ai/flows/workshop-flow";
+
+const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
 type RecipeDetailClientProps = {
   recipeId: string;
-  fromWorkshop?: boolean;
 };
 
 // Extends RecipeIngredient to include purchase unit details for conversion
@@ -145,7 +147,7 @@ const foodCostIndicators = [
   { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500", icon: GAUGE_LEVELS.mauvais.icon },
 ];
 
-export default function RecipeDetailClient({ recipeId, fromWorkshop = false }: RecipeDetailClientProps) {
+export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
   const [recipe, setRecipe] = useState<Recipe | Preparation | null>(null);
   const [editableRecipe, setEditableRecipe] = useState<Recipe | Preparation | null>(null);
   
@@ -281,6 +283,14 @@ const fetchAllIngredients = useCallback(async () => {
             setIsLoading(true);
             const ingredientsList = await fetchAllIngredients();
 
+            // Try to get data from sessionStorage
+            const conceptJSON = sessionStorage.getItem(WORKSHOP_CONCEPT_KEY);
+            if(conceptJSON){
+                const concept: DishConceptOutput = JSON.parse(conceptJSON);
+                processSuggestedIngredients(concept.ingredients, ingredientsList);
+                sessionStorage.removeItem(WORKSHOP_CONCEPT_KEY);
+            }
+
             const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
             const allPrepsData = allPrepsSnap.docs.map(doc => ({...doc.data(), id: doc.id} as Preparation));
             if (!isMounted) return;
@@ -318,14 +328,6 @@ const fetchAllIngredients = useCallback(async () => {
             const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe | Preparation;
             setRecipe(fetchedRecipe);
             setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
-            
-            // If coming from workshop, process the suggested ingredients
-            if (fromWorkshop && fetchedRecipe.type === 'Plat' && (fetchedRecipe as Recipe).suggestedIngredients) {
-                processSuggestedIngredients((fetchedRecipe as Recipe).suggestedIngredients!, loadedIngredients);
-                // We clear the field in the database so it's only processed once
-                clearSuggestedIngredients(recipeId); 
-            }
-            
             setError(null);
         }, (e: any) => {
             console.error("Error with recipe snapshot: ", e);
@@ -362,7 +364,10 @@ const fetchAllIngredients = useCallback(async () => {
                 }).filter(Boolean) as FullRecipeIngredient[];
 
                 setIngredients(ingredientsData);
-                setEditableIngredients(JSON.parse(JSON.stringify(ingredientsData)));
+                // Only set editable ingredients if not currently editing, to avoid overwriting user changes
+                if(!isEditing) {
+                    setEditableIngredients(JSON.parse(JSON.stringify(ingredientsData)));
+                }
             } catch (e: any) {
                 console.error("Error processing recipe ingredients snapshot:", e);
                 setError("Erreur de chargement des ingrédients de la recette. " + e.message);
@@ -405,7 +410,9 @@ const fetchAllIngredients = useCallback(async () => {
                 }).filter(Boolean) as FullRecipePreparation[];
                 
                 setPreparations(preparationsData);
-                setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
+                if(!isEditing) {
+                    setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
+                }
             } catch (e: any) {
                 console.error("Error processing recipe preparations snapshot:", e);
                 setError("Erreur de chargement des sous-recettes. " + e.message);
@@ -428,7 +435,7 @@ const fetchAllIngredients = useCallback(async () => {
       isMounted = false;
       unsubscribeCallbacks.forEach(unsub => unsub());
     };
-  }, [recipeId, fromWorkshop, calculatePreparationsCosts, fetchAllIngredients]); 
+  }, [recipeId, calculatePreparationsCosts, fetchAllIngredients, isEditing]); 
 
   const processSuggestedIngredients = (suggested: GeneratedIngredient[], currentAllIngredients: Ingredient[]) => {
       setIsEditing(true); // Automatically enter edit mode
@@ -1337,7 +1344,7 @@ const fetchAllIngredients = useCallback(async () => {
                              <span className="font-semibold pt-2 border-t text-right col-span-2">{totalRecipeCost.toFixed(2)}€</span>
                             
                             <span className="font-bold text-primary pt-2 border-t">Coût / {currentRecipeData.productionUnit}</span>
-                            <span className="font-bold text-primary pt-2 border-t text-right">{(costPerPortion).toFixed(2)}€</span>
+                            <span className="font-bold text-primary pt-2 border-t text-right">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)}€</span>
                         </div>
                          {isEditing && (
                             <div className="space-y-4 pt-4 border-t">
@@ -1423,7 +1430,7 @@ function RecipeDetailSkeleton() {
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
-              </Header>
+              </CardHeader>
               <CardContent className="space-y-2">
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-3/4" />

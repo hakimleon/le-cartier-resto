@@ -110,15 +110,3 @@ export async function updateRecipePreparationLink(linkId: string, data: { quanti
 export async function addRecipePreparationLink(link: Omit<RecipePreparationLink, 'id'>) {
     await addDoc(collection(db, "recipePreparationLinks"), link);
 }
-
-// New function to clear the temporary ingredient data from a recipe
-export async function clearSuggestedIngredients(recipeId: string) {
-    if (!recipeId) return;
-    const recipeDoc = doc(db, 'recipes', recipeId);
-    // We update the document to remove the field.
-    // Using `deleteField()` is not available on the client-side `firebase` package,
-    // so we set it to an empty array or null.
-    await updateDoc(recipeDoc, {
-        suggestedIngredients: [] 
-    });
-}

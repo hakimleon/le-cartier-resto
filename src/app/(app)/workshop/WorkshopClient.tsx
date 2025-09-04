@@ -18,6 +18,8 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 
+const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
+
 export default function WorkshopClient() {
     const [isLoading, setIsLoading] = useState(false);
     const [generatedConcept, setGeneratedConcept] = useState<DishConceptOutput | null>(null);
@@ -63,15 +65,19 @@ export default function WorkshopClient() {
 
         setIsSaving(true);
         try {
+            // 1. Create the dish in Firestore without the ingredients
             const newDishId = await createDishFromWorkshop(generatedConcept);
 
             if (newDishId) {
+                 // 2. Store the full concept in sessionStorage to pass it to the next page
+                sessionStorage.setItem(WORKSHOP_CONCEPT_KEY, JSON.stringify(generatedConcept));
+
                 toast({
                     title: "Recette enregistrée !",
                     description: `"${generatedConcept.name}" a été ajouté au menu.`,
                 });
-                // Redirect to the new dish page with a flag to process ingredients
-                router.push(`/menu/${newDishId}?from_workshop=true`);
+                // 3. Redirect to the new dish page. The page itself will handle the ingredients.
+                router.push(`/menu/${newDishId}`);
             } else {
                  throw new Error("L'ID du plat n'a pas été retourné après la création.");
             }
@@ -80,7 +86,7 @@ export default function WorkshopClient() {
             console.error("Error saving dish from workshop:", error);
             toast({
                 title: "Erreur de sauvegarde",
-                description: "Impossible d'enregistrer le plat et ses ingrédients.",
+                description: "Impossible d'enregistrer le plat.",
                 variant: "destructive",
             });
         } finally {

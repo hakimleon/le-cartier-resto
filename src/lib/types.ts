@@ -78,8 +78,8 @@ export type Recipe = {
   status: 'Actif' | 'Inactif';
   tvaRate?: number; // en pourcentage (ex: 10 pour 10%)
 
-  // Champ temporaire pour le flux de l'atelier
-  suggestedIngredients?: GeneratedIngredient[];
+  // Ce champ n'est plus utilisé pour le passage de données
+  // suggestedIngredients?: GeneratedIngredient[];
 };
 
 // Lien entre une recette/préparation et un ingrédient brut
