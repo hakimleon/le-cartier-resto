@@ -74,32 +74,42 @@ const generateDishConceptFlow = ai.defineFlow(
             throw new Error("La génération du concept de la recette a échoué.");
         }
 
-        // 2. Créer un prompt pour l'image basé sur la recette générée
-        const imagePrompt = `
-            Photographie culinaire professionnelle et ultra-réaliste, style magazine gastronomique.
-            Plat : "${recipeConcept.name}".
-            Description : "${recipeConcept.description}".
-            Dressage : "${recipeConcept.plating}".
-            L'assiette est dressée de manière artistique sur une table élégante. Éclairage de studio, faible profondeur de champ, détails nets et couleurs vibrantes.
-        `;
+        let imageUrl = "https://picsum.photos/1024/768"; // Image de substitution par défaut
 
-        // 3. Générer l'image avec gemini-2.5-flash-image-preview
-        const { media } = await ai.generate({
-            model: 'googleai/gemini-2.5-flash-image-preview',
-            prompt: imagePrompt,
-            config: {
-                responseModalities: ['TEXT', 'IMAGE'],
+        try {
+            // 2. Créer un prompt pour l'image basé sur la recette générée
+            const imagePrompt = `
+                Photographie culinaire professionnelle et ultra-réaliste, style magazine gastronomique.
+                Plat : "${recipeConcept.name}".
+                Description : "${recipeConcept.description}".
+                Dressage : "${recipeConcept.plating}".
+                L'assiette est dressée de manière artistique sur une table élégante. Éclairage de studio, faible profondeur de champ, détails nets et couleurs vibrantes.
+            `;
+
+            // 3. Essayer de générer l'image avec gemini-2.5-flash-image-preview
+            const { media } = await ai.generate({
+                model: 'googleai/gemini-2.5-flash-image-preview',
+                prompt: imagePrompt,
+                config: {
+                    responseModalities: ['TEXT', 'IMAGE'],
+                }
+            });
+            
+            if (media && media.url) {
+                imageUrl = media.url; // Utiliser l'image de l'IA si elle a été générée avec succès
+            } else {
+                console.warn("La génération de l'image a retourné une réponse vide, utilisation de l'image de substitution.");
             }
-        });
-        
-        if (!media || !media.url) {
-            throw new Error("La génération de l'image a échoué.");
+        } catch (error) {
+            // Si la génération d'image échoue (quota, etc.), on log l'erreur mais on ne bloque pas le processus.
+            console.error("Erreur lors de la génération de l'image, utilisation de l'image de substitution.", error);
         }
 
-        // 4. Combiner le texte et l'image dans la sortie finale
+
+        // 4. Combiner le texte et l'image (réelle ou de substitution) dans la sortie finale
         return {
             ...recipeConcept,
-            imageUrl: media.url,
+            imageUrl: imageUrl,
         };
     }
 );
