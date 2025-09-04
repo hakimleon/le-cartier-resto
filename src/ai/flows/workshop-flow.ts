@@ -61,11 +61,11 @@ const recipeConceptPrompt = ai.definePrompt({
         Votre tâche est de générer une fiche technique détaillée avec les éléments suivants :
         1.  **name**: {{#if dishName}}Conservez impérativement le nom "{{{dishName}}}".{{else}}Inventez un nom marketing et séduisant pour le plat.{{/if}}
         2.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
-        3.  **ingredients**: Une liste des ingrédients bruts nécessaires, incluant le nom, une quantité réaliste et l'unité de mesure (g, kg, ml, l, pièce, etc.).
-        4.  **subRecipes**: Déduisez de la recette que vous créez la liste des préparations ou sous-recettes qui devront être réalisées à l'avance (ex: "Fond de veau", "Sauce vierge", "Purée de carottes", "Vinaigrette balsamique"). Si aucune n'est évidente, retournez un tableau vide.
+        3.  **ingredients**: Une liste des ingrédients bruts nécessaires **uniquement pour l'assemblage final du plat**. N'incluez PAS ici les ingrédients qui appartiennent à une sous-recette.
+        4.  **subRecipes**: Déduisez de la recette que vous créez la liste des **noms** des préparations ou sous-recettes qui devront être réalisées à l'avance (ex: "Fond de veau", "Sauce vierge", "Purée de carottes", "Vinaigrette balsamique"). Si aucune n'est évidente, retournez un tableau vide. C'est un point crucial.
         5.  **procedure_preparation**: Les étapes claires pour la mise en place. Utilisez le format Markdown (titres avec '###', listes avec '-', sous-listes).
         6.  **procedure_cuisson**: Les étapes techniques pour la cuisson. Utilisez le format Markdown. Si le plat est cru, indiquez "Aucune cuisson nécessaire.".
-        7.  **procedure_service**: Les instructions de dressage précises pour une assiette spectaculaire. Utilisez le format Markdown. Par exemple: "### Dressage\n1. Déposer la purée...\n2. Placer le poisson..."
+        7.  **procedure_service**: Les instructions de dressage précises pour une assiette spectaculaire. Utilisez le format Markdown. Par exemple: "### Dressage\\n1. Déposer la purée...\\n2. Placer le poisson..."
         8.  **duration**: Estimez la durée totale de préparation en minutes (nombre entier).
         9.  **difficulty**: Évaluez la difficulté de la recette ('Facile', 'Moyen', 'Difficile').
         10. **portions**: Estimez le nombre de portions que cette recette produit (ex: 1, 2, 4...).

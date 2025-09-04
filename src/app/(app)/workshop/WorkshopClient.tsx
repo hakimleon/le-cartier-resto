@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, Weight } from "lucide-react";
+import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, Weight, BookCopy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
@@ -201,20 +201,24 @@ export default function WorkshopClient() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                                         <div>
-                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients Suggérés</h4>
-                                            <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
-                                                {generatedConcept.ingredients.map((ing) => (
-                                                    <li key={ing.name}>
-                                                        <span className="font-medium text-foreground">{ing.quantity} {ing.unit}</span> - {ing.name}
-                                                    </li>
-                                                ))}
-                                            </ul>
+                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients d'assemblage</h4>
+                                            {generatedConcept.ingredients && generatedConcept.ingredients.length > 0 ? (
+                                                <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                                                    {generatedConcept.ingredients.map((ing) => (
+                                                        <li key={ing.name}>
+                                                            <span className="font-medium text-foreground">{ing.quantity} {ing.unit}</span> - {ing.name}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="text-sm text-muted-foreground pl-5">Aucun ingrédient brut pour l'assemblage.</p>
+                                            )}
                                         </div>
                                          {generatedConcept.subRecipes && generatedConcept.subRecipes.length > 0 && (
                                             <div>
-                                                <h4 className="font-semibold mb-2">Sous-Recettes</h4>
+                                                <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Sous-Recettes Requises</h4>
                                                 <div className="flex flex-wrap gap-2">
-                                                    {generatedConcept.subRecipes.map((prep: string) => <Badge key={prep} variant="outline" className="text-primary border-primary/50">{prep}</Badge>)}
+                                                    {generatedConcept.subRecipes.map((prep: string) => <Badge key={prep} variant="outline" className="text-sm">{prep}</Badge>)}
                                                 </div>
                                             </div>
                                          )}
@@ -222,16 +226,14 @@ export default function WorkshopClient() {
                                     
                                     <div>
                                         <h4 className="font-semibold mb-2 flex items-center gap-2"><FileText className="h-4 w-4"/>Procédure Technique</h4>
-                                        <Tabs defaultValue="preparation" className="w-full">
-                                            <TabsList>
-                                                <TabsTrigger value="preparation">Préparation</TabsTrigger>
-                                                <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
-                                                <TabsTrigger value="service">Service & Dressage</TabsTrigger>
-                                            </TabsList>
-                                            <TabsContent value="preparation" className="text-sm text-muted-foreground whitespace-pre-wrap p-4 border rounded-md mt-2">{generatedConcept.procedure_preparation}</TabsContent>
-                                            <TabsContent value="cuisson" className="text-sm text-muted-foreground whitespace-pre-wrap p-4 border rounded-md mt-2">{generatedConcept.procedure_cuisson}</TabsContent>
-                                            <TabsContent value="service" className="text-sm text-muted-foreground whitespace-pre-wrap p-4 border rounded-md mt-2">{generatedConcept.procedure_service}</TabsContent>
-                                        </Tabs>
+                                        <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap p-4 border rounded-md mt-2">
+                                            <h3>Préparation</h3>
+                                            <p>{generatedConcept.procedure_preparation}</p>
+                                            <h3>Cuisson</h3>
+                                            <p>{generatedConcept.procedure_cuisson}</p>
+                                            <h3>Service & Dressage</h3>
+                                            <p>{generatedConcept.procedure_service}</p>
+                                        </div>
                                     </div>
                                     
                                     <Separator />
