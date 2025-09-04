@@ -548,8 +548,14 @@ const fetchAllIngredients = useCallback(async () => {
   };
 
    const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
-    setAllIngredients(current => [...current, newIngredient]);
-    handleNewIngredientChange(tempId, 'ingredientId', newIngredient.id);
+    // Re-fetch all ingredients to get a clean, updated list from DB
+    fetchAllIngredients().then(updatedList => {
+        // Find the newly created ingredient in the updated list
+        const newlyAdded = updatedList.find(i => i.id === newIngredient.id);
+        if (newlyAdded) {
+            handleNewIngredientChange(tempId, 'ingredientId', newlyAdded.id);
+        }
+    });
   }
 
   const openNewIngredientModal = (tempId: string) => {
@@ -853,7 +859,6 @@ const fetchAllIngredients = useCallback(async () => {
                 if (newDbIngredient && currentTempId) {
                     handleCreateAndLinkIngredient(currentTempId, newDbIngredient);
                 }
-                fetchAllIngredients(); // Refresh the list of all ingredients
             }}
         >
             <div/>
