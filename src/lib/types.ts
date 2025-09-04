@@ -77,13 +77,11 @@ export type Recipe = {
   | 'Élixirs & Rafraîchissements';
   status: 'Actif' | 'Inactif';
   tvaRate?: number; // en pourcentage (ex: 10 pour 10%)
-
-  // Ce champ n'est plus utilisé pour le passage de données
-  // suggestedIngredients?: GeneratedIngredient[];
 };
 
 // Lien entre une recette/préparation et un ingrédient brut
 export type RecipeIngredientLink = {
+    id?: string;
     recipeId: string; // ID de la recette (Plat) OU de la préparation
     ingredientId: string;
     quantity: number;
