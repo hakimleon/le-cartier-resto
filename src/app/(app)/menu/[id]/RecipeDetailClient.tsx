@@ -18,7 +18,7 @@ import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink } from "../actions";
+import { deleteRecipeIngredient, updateRecipeDetails, updateRecipeIngredient, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, addIngredientLink, replaceRecipeIngredients } from "../actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -625,30 +625,18 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         
         await updateRecipeDetails(recipeId, recipeDataToSave, editableRecipe.type);
 
-        const ingredientUpdatePromises = editableIngredients.map(ing => {
-            return updateRecipeIngredient(ing.recipeIngredientId, {
-                quantity: ing.quantity,
-                unitUse: ing.unit,
-            });
-        });
+        const allCurrentIngredients = [
+            ...editableIngredients.map(ing => ({ ingredientId: ing.id, quantity: ing.quantity, unitUse: ing.unit })),
+            ...newIngredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: ing.quantity, unitUse: ing.unit }))
+        ].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'id' | 'recipeId'>[];
+        
+        await replaceRecipeIngredients(recipeId, allCurrentIngredients);
         
         const preparationUpdatePromises = editablePreparations.map(prep => {
-            // Only update quantity as unit is now static
             return updateRecipePreparationLink(prep.id, {
                 quantity: prep.quantity,
             });
         });
-
-        const newIngredientPromises = newIngredients
-            .filter(ing => ing.ingredientId && ing.quantity > 0)
-            .map(ing => {
-                return addDoc(collection(db, "recipeIngredients"), {
-                    recipeId: recipeId,
-                    ingredientId: ing.ingredientId,
-                    quantity: ing.quantity,
-                    unitUse: ing.unit,
-                });
-            });
 
         const newPreparationPromises = newPreparations
             .filter(prep => prep.childPreparationId && prep.quantity > 0)
@@ -662,9 +650,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             });
 
         await Promise.all([
-            ...ingredientUpdatePromises, 
             ...preparationUpdatePromises,
-            ...newIngredientPromises,
             ...newPreparationPromises,
         ]);
 
@@ -691,21 +677,18 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
 
     const handleGenerateArgument = async () => {
-        if (!recipe || recipe.type !== 'Plat') return;
+        if (!editableRecipe || editableRecipe.type !== 'Plat') return;
         setIsGenerating(true);
         try {
-            const ingredientsList = [...ingredients, ...newIngredients].map(i => i.name);
+            const ingredientsList = [...editableIngredients, ...newIngredients].map(i => i.name).filter(Boolean);
 
             const result = await generateCommercialArgument({
-                name: recipe.name,
-                description: recipe.description,
+                name: editableRecipe.name,
+                description: editableRecipe.description,
                 ingredients: ingredientsList,
             });
 
             if (result && result.argument) {
-                 if (!isEditing) {
-                    setIsEditing(true);
-                }
                 handleRecipeDataChange('commercialArgument', result.argument);
                 toast({
                     title: "Argumentaire généré !",
@@ -1284,11 +1267,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center justify-between text-xl text-muted-foreground">
+                             <CardTitle className="flex items-center justify-between text-xl text-muted-foreground">
                                 <div className="flex items-center gap-2">Argumentaire Commercial</div>
                                 {isEditing && (
                                     <Button variant="ghost" size="icon" onClick={handleGenerateArgument} disabled={isGenerating} title="Générer avec l'IA">
-                                        <Sparkles className="h-4 w-4" />
+                                        <Sparkles className={cn("h-4 w-4", isGenerating && "animate-spin")}/>
                                     </Button>
                                 )}
                             </CardTitle>
@@ -1411,7 +1394,7 @@ function RecipeDetailSkeleton() {
             <Card>
               <CardHeader>
                 <Skeleton className="h-6 w-32" />
-              </Header>
+              </CardHeader>
               <CardContent className="space-y-2">
                 <Skeleton className="h-5 w-full" />
                 <Skeleton className="h-5 w-3/4" />
@@ -1428,3 +1411,4 @@ function RecipeDetailSkeleton() {
   }
 
     
+

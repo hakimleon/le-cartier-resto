@@ -55,7 +55,7 @@ export async function deleteRecipeIngredient(recipeIngredientId: string) {
   // No revalidation needed, onSnapshot handles updates on the client
 }
 
-export async function replaceRecipeIngredients(recipeId: string, ingredients: Omit<RecipeIngredientLink, 'recipeId'>[]) {
+export async function replaceRecipeIngredients(recipeId: string, ingredients: Omit<RecipeIngredientLink, 'id' | 'recipeId'>[]) {
     const batch = writeBatch(db);
 
     // 1. Delete all existing ingredient links for this recipe
