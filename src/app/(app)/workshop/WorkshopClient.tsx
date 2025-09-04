@@ -7,13 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FlaskConical, Sparkles, PlusCircle, NotebookText } from "lucide-react";
+import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { generateDishConcept, DishConceptOutput } from "@/ai/flows/workshop-flow";
 import { useRouter } from "next/navigation";
 import { createDishFromWorkshop } from "./actions";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function WorkshopClient() {
     const [isLoading, setIsLoading] = useState(false);
@@ -142,7 +144,7 @@ export default function WorkshopClient() {
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle>Proposition de l'IA</CardTitle>
-                                <CardDescription>Voici le concept de plat généré par l'IA.</CardDescription>
+                                <CardDescription>Voici la fiche technique générée par l'IA.</CardDescription>
                             </div>
                              {generatedConcept && (
                                 <Button variant="outline" onClick={handleNewRecipe}>
@@ -153,9 +155,14 @@ export default function WorkshopClient() {
                         </CardHeader>
                         <CardContent>
                             {isLoading ? (
-                                <div className="space-y-4">
+                                <div className="space-y-4 p-4">
                                     <Skeleton className="w-full h-64 rounded-lg" />
                                     <Skeleton className="h-6 w-3/4" />
+                                    <div className="flex gap-4">
+                                        <Skeleton className="h-5 w-20" />
+                                        <Skeleton className="h-5 w-20" />
+                                        <Skeleton className="h-5 w-20" />
+                                    </div>
                                     <Skeleton className="h-4 w-full" />
                                     <Skeleton className="h-4 w-full" />
                                     <Skeleton className="h-4 w-1/2" />
@@ -166,35 +173,63 @@ export default function WorkshopClient() {
                                         <Image src={generatedConcept.imageUrl} alt={generatedConcept.name} fill style={{ objectFit: 'cover' }} data-ai-hint="artistic food plating" />
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold">{generatedConcept.name}</h3>
-                                        <p className="text-muted-foreground mt-2">{generatedConcept.description}</p>
+                                        <h3 className="text-2xl font-bold">{generatedConcept.name}</h3>
+                                        <p className="text-muted-foreground mt-1">{generatedConcept.description}</p>
                                     </div>
+                                    <div className="grid grid-cols-3 gap-4 text-center p-2 rounded-lg border bg-muted/50">
+                                        <div className="flex flex-col items-center gap-1">
+                                            <Clock className="h-5 w-5 text-muted-foreground"/>
+                                            <span className="text-sm font-semibold">{generatedConcept.duration} min</span>
+                                        </div>
+                                        <div className="flex flex-col items-center gap-1">
+                                            <Soup className="h-5 w-5 text-muted-foreground"/>
+                                            <span className="text-sm font-semibold">{generatedConcept.difficulty}</span>
+                                        </div>
+                                        <div className="flex flex-col items-center gap-1">
+                                            <Users className="h-5 w-5 text-muted-foreground"/>
+                                            <span className="text-sm font-semibold">{generatedConcept.portions} portion{generatedConcept.portions > 1 ? 's' : ''}</span>
+                                        </div>
+                                    </div>
+
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div>
-                                            <h4 className="font-semibold">Ingrédients suggérés</h4>
-                                            <ul className="list-disc list-inside text-muted-foreground mt-2">
-                                                {generatedConcept.ingredients.map((ing: string) => <li key={ing}>{ing}</li>)}
-                                            </ul>
+                                            <h4 className="font-semibold mb-2">Ingrédients Suggérés</h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {generatedConcept.ingredients.map((ing: string) => <Badge key={ing} variant="secondary">{ing}</Badge>)}
+                                            </div>
                                         </div>
                                          {generatedConcept.subRecipes && generatedConcept.subRecipes.length > 0 && (
                                             <div>
-                                                <h4 className="font-semibold">Sous-Recettes Nécessaires</h4>
-                                                <ul className="list-disc list-inside text-muted-foreground mt-2">
-                                                    {generatedConcept.subRecipes.map((prep: string) => <li key={prep}>{prep}</li>)}
-                                                </ul>
+                                                <h4 className="font-semibold mb-2">Sous-Recettes</h4>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {generatedConcept.subRecipes.map((prep: string) => <Badge key={prep} variant="outline" className="text-primary border-primary/50">{prep}</Badge>)}
+                                                </div>
                                             </div>
                                          )}
                                     </div>
-                                     <div>
-                                        <h4 className="font-semibold">Procédure</h4>
-                                        <p className="text-muted-foreground mt-2 whitespace-pre-wrap">{generatedConcept.procedure}</p>
+                                    
+                                    <div>
+                                        <h4 className="font-semibold mb-2 flex items-center gap-2"><FileText className="h-4 w-4"/>Procédure Technique</h4>
+                                        <Tabs defaultValue="preparation" className="w-full">
+                                            <TabsList>
+                                                <TabsTrigger value="preparation">Préparation</TabsTrigger>
+                                                <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
+                                                <TabsTrigger value="service">Service & Dressage</TabsTrigger>
+                                            </TabsList>
+                                            <TabsContent value="preparation" className="text-sm text-muted-foreground whitespace-pre-wrap p-2">{generatedConcept.procedure_preparation}</TabsContent>
+                                            <TabsContent value="cuisson" className="text-sm text-muted-foreground whitespace-pre-wrap p-2">{generatedConcept.procedure_cuisson}</TabsContent>
+                                            <TabsContent value="service" className="text-sm text-muted-foreground whitespace-pre-wrap p-2">{generatedConcept.procedure_service}</TabsContent>
+                                        </Tabs>
                                     </div>
-                                      <div>
-                                        <h4 className="font-semibold">Dressage</h4>
-                                        <p className="text-muted-foreground mt-2">{generatedConcept.plating}</p>
+
+                                    <div>
+                                        <h4 className="font-semibold mb-2 flex items-center gap-2"><MessageSquareQuote className="h-4 w-4"/>Argumentaire Commercial</h4>
+                                        <p className="text-sm text-muted-foreground italic border-l-2 pl-4">{generatedConcept.commercialArgument}</p>
                                     </div>
+
                                     <Button className="w-full" onClick={handleSaveToMenu} disabled={isSaving}>
-                                        {isSaving ? "Enregistrement..." : "Enregistrer la recette au menu"}
+                                        <NotebookText className="mr-2 h-4 w-4" />
+                                        {isSaving ? "Enregistrement..." : "Créer la Fiche Technique & Enregistrer au Menu"}
                                     </Button>
                                 </div>
                             ) : (

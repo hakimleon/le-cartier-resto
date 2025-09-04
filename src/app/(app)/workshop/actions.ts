@@ -14,22 +14,23 @@ import type { DishConceptOutput } from '@/ai/flows/workshop-flow';
  */
 export async function createDishFromWorkshop(concept: DishConceptOutput): Promise<string> {
     try {
-        // 1. Create the base recipe document
+        // 1. Create the base recipe document with all available details from the AI
         const dishData: Omit<Recipe, 'id'> = {
             type: 'Plat',
             name: concept.name,
             description: concept.description,
             imageUrl: concept.imageUrl,
-            procedure_preparation: concept.procedure,
-            procedure_cuisson: "", // To be filled in later
-            procedure_service: concept.plating,
-            price: 0,
-            portions: 1,
+            procedure_preparation: concept.procedure_preparation,
+            procedure_cuisson: concept.procedure_cuisson,
+            procedure_service: concept.procedure_service,
+            difficulty: concept.difficulty,
+            duration: concept.duration,
+            portions: concept.portions,
+            commercialArgument: concept.commercialArgument,
+            price: 0, // Default price, to be set manually
             status: 'Inactif', // Start as inactive
-            category: 'Plats et Grillades', // Default category
-            difficulty: 'Moyen',
-            duration: 30, // Default duration
-            tvaRate: 10,
+            category: 'Plats et Grillades', // Default category, can be changed
+            tvaRate: 10, // Default TVA rate
         };
 
         const recipesCol = collection(db, 'recipes');
@@ -51,8 +52,8 @@ export async function createDishFromWorkshop(concept: DishConceptOutput): Promis
             
             if (existingIngredient && existingIngredient.id) {
                 // If a match is found, create a link
-                const linkRef = doc(recipeIngredientsCol); // Create a new document reference in the subcollection
-                const newLink: RecipeIngredientLink = {
+                const linkRef = doc(recipeIngredientsCol);
+                const newLink: Omit<RecipeIngredientLink, 'id'> = {
                     recipeId: newDishId,
                     ingredientId: existingIngredient.id,
                     quantity: 0, // Default quantity to 0, to be filled in by the user
