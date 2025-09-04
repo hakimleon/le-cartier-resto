@@ -41,7 +41,7 @@ const commercialArgumentFlow = ai.defineFlow(
   },
   async (input) => {
     const prompt = `
-        Vous êtes un expert en marketing culinaire pour un restaurant bistronomique.
+        Vous êtes un expert en marketing culinaire pour un restaurant gastronomique et/ou bistronomique.
         Votre tâche est de rédiger un argumentaire commercial court, percutant et alléchant pour le plat suivant.
         Mettez en avant la qualité des produits et l'aspect savoureux du plat.
 
