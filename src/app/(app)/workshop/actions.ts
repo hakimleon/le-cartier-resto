@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, addDoc, query, where, getDocs, writeBatch } from 'firebase/firestore';
+import { collection, addDoc, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Preparation, Recipe } from '@/lib/types';
 import type { DishConceptOutput } from '@/ai/flows/workshop-flow';
