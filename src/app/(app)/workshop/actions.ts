@@ -46,18 +46,18 @@ export async function createDishFromWorkshop(concept: DishConceptOutput): Promis
         const batch = writeBatch(db);
         const recipeIngredientsCol = collection(db, 'recipeIngredients');
 
-        for (const ingredientName of concept.ingredients) {
+        for (const ingredient of concept.ingredients) {
             // Find an existing ingredient that matches the name (case-insensitive)
-            const existingIngredient = allIngredients.find(dbIng => dbIng.name.toLowerCase() === ingredientName.toLowerCase());
+            const existingIngredient = allIngredients.find(dbIng => dbIng.name.toLowerCase() === ingredient.name.toLowerCase());
             
             if (existingIngredient && existingIngredient.id) {
-                // If a match is found, create a link
+                // If a match is found, create a link with quantity and unit
                 const linkRef = doc(recipeIngredientsCol);
                 const newLink: Omit<RecipeIngredientLink, 'id'> = {
                     recipeId: newDishId,
                     ingredientId: existingIngredient.id,
-                    quantity: 0, // Default quantity to 0, to be filled in by the user
-                    unitUse: 'g', // Default unit
+                    quantity: ingredient.quantity || 0,
+                    unitUse: ingredient.unit || 'g',
                 };
                 batch.set(linkRef, newLink);
             }

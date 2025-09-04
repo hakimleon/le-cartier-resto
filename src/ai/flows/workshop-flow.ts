@@ -19,7 +19,11 @@ export type DishConceptInput = z.infer<typeof DishConceptInputSchema>;
 const DishConceptOutputSchema = z.object({
     name: z.string().describe("Le nom final et marketing du plat."),
     description: z.string().describe("Une description alléchante et créative du plat."),
-    ingredients: z.array(z.string()).describe("La liste des ingrédients nécessaires pour la recette."),
+    ingredients: z.array(z.object({
+        name: z.string().describe("Le nom de l'ingrédient."),
+        quantity: z.number().describe("La quantité nécessaire."),
+        unit: z.string().describe("L'unité de mesure (ex: g, kg, ml, l, pièce).")
+    })).describe("La liste des ingrédients pour la recette, avec quantités."),
     subRecipes: z.array(z.string()).describe("La liste des sous-recettes ou préparations nécessaires (ex: 'Sauce Vierge', 'Fond de veau')."),
     procedure_preparation: z.string().describe("Les étapes détaillées de la phase de préparation (mise en place)."),
     procedure_cuisson: z.string().describe("Les étapes détaillées de la phase de cuisson."),
@@ -57,7 +61,7 @@ const recipeConceptPrompt = ai.definePrompt({
         Votre tâche est de générer une fiche technique détaillée avec les éléments suivants :
         1.  **name**: {{#if dishName}}Conservez impérativement le nom "{{{dishName}}}".{{else}}Inventez un nom marketing et séduisant pour le plat.{{/if}}
         2.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
-        3.  **ingredients**: Une liste simple des ingrédients bruts nécessaires. Ne mettez pas les quantités, juste les noms.
+        3.  **ingredients**: Une liste des ingrédients bruts nécessaires, incluant le nom, une quantité réaliste et l'unité de mesure (g, kg, ml, l, pièce, etc.).
         4.  **subRecipes**: Déduisez de la recette que vous créez la liste des préparations ou sous-recettes qui devront être réalisées à l'avance (ex: "Fond de veau", "Sauce vierge", "Purée de carottes", "Vinaigrette balsamique"). Si aucune n'est évidente, retournez un tableau vide.
         5.  **procedure_preparation**: Les étapes claires pour la mise en place et la préparation des composants.
         6.  **procedure_cuisson**: Les étapes techniques pour la cuisson. Si le plat est cru, indiquez "Aucune cuisson nécessaire.".

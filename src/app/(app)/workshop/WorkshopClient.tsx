@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText } from "lucide-react";
+import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, Weight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { createDishFromWorkshop } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Separator } from "@/components/ui/separator";
 
 export default function WorkshopClient() {
     const [isLoading, setIsLoading] = useState(false);
@@ -191,12 +192,16 @@ export default function WorkshopClient() {
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                                         <div>
-                                            <h4 className="font-semibold mb-2">Ingrédients Suggérés</h4>
-                                            <div className="flex flex-wrap gap-2">
-                                                {generatedConcept.ingredients.map((ing: string) => <Badge key={ing} variant="secondary">{ing}</Badge>)}
-                                            </div>
+                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients Suggérés</h4>
+                                            <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
+                                                {generatedConcept.ingredients.map((ing) => (
+                                                    <li key={ing.name}>
+                                                        <span className="font-medium text-foreground">{ing.quantity} {ing.unit}</span> - {ing.name}
+                                                    </li>
+                                                ))}
+                                            </ul>
                                         </div>
                                          {generatedConcept.subRecipes && generatedConcept.subRecipes.length > 0 && (
                                             <div>
@@ -216,11 +221,13 @@ export default function WorkshopClient() {
                                                 <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
                                                 <TabsTrigger value="service">Service & Dressage</TabsTrigger>
                                             </TabsList>
-                                            <TabsContent value="preparation" className="text-sm text-muted-foreground whitespace-pre-wrap p-2">{generatedConcept.procedure_preparation}</TabsContent>
-                                            <TabsContent value="cuisson" className="text-sm text-muted-foreground whitespace-pre-wrap p-2">{generatedConcept.procedure_cuisson}</TabsContent>
-                                            <TabsContent value="service" className="text-sm text-muted-foreground whitespace-pre-wrap p-2">{generatedConcept.procedure_service}</TabsContent>
+                                            <TabsContent value="preparation" className="text-sm text-muted-foreground whitespace-pre-wrap p-4 border rounded-md mt-2">{generatedConcept.procedure_preparation}</TabsContent>
+                                            <TabsContent value="cuisson" className="text-sm text-muted-foreground whitespace-pre-wrap p-4 border rounded-md mt-2">{generatedConcept.procedure_cuisson}</TabsContent>
+                                            <TabsContent value="service" className="text-sm text-muted-foreground whitespace-pre-wrap p-4 border rounded-md mt-2">{generatedConcept.procedure_service}</TabsContent>
                                         </Tabs>
                                     </div>
+                                    
+                                    <Separator />
 
                                     <div>
                                         <h4 className="font-semibold mb-2 flex items-center gap-2"><MessageSquareQuote className="h-4 w-4"/>Argumentaire Commercial</h4>
