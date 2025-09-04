@@ -25,9 +25,9 @@ const DishConceptOutputSchema = z.object({
         unit: z.string().describe("L'unité de mesure (ex: g, kg, ml, l, pièce).")
     })).describe("La liste des ingrédients pour la recette, avec quantités."),
     subRecipes: z.array(z.string()).describe("La liste des sous-recettes ou préparations nécessaires (ex: 'Sauce Vierge', 'Fond de veau')."),
-    procedure_preparation: z.string().describe("Les étapes détaillées de la phase de préparation (mise en place)."),
-    procedure_cuisson: z.string().describe("Les étapes détaillées de la phase de cuisson."),
-    procedure_service: z.string().describe("Les étapes détaillées pour le service et le dressage artistique."),
+    procedure_preparation: z.string().describe("Les étapes détaillées de la phase de préparation (mise en place). Doit être formaté en Markdown."),
+    procedure_cuisson: z.string().describe("Les étapes détaillées de la phase de cuisson. Doit être formaté en Markdown."),
+    procedure_service: z.string().describe("Les étapes détaillées pour le service et le dressage artistique. Doit être formaté en Markdown."),
     duration: z.number().int().describe("La durée totale de préparation en minutes."),
     difficulty: z.enum(['Facile', 'Moyen', 'Difficile']).describe("Le niveau de difficulté de la recette."),
     portions: z.number().int().describe("Le nombre de portions que la recette produit."),
@@ -63,9 +63,9 @@ const recipeConceptPrompt = ai.definePrompt({
         2.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
         3.  **ingredients**: Une liste des ingrédients bruts nécessaires, incluant le nom, une quantité réaliste et l'unité de mesure (g, kg, ml, l, pièce, etc.).
         4.  **subRecipes**: Déduisez de la recette que vous créez la liste des préparations ou sous-recettes qui devront être réalisées à l'avance (ex: "Fond de veau", "Sauce vierge", "Purée de carottes", "Vinaigrette balsamique"). Si aucune n'est évidente, retournez un tableau vide.
-        5.  **procedure_preparation**: Les étapes claires pour la mise en place et la préparation des composants.
-        6.  **procedure_cuisson**: Les étapes techniques pour la cuisson. Si le plat est cru, indiquez "Aucune cuisson nécessaire.".
-        7.  **procedure_service**: Les instructions de dressage précises pour créer une assiette visuellement spectaculaire.
+        5.  **procedure_preparation**: Les étapes claires pour la mise en place. Utilisez le format Markdown (titres avec '###', listes avec '-', sous-listes).
+        6.  **procedure_cuisson**: Les étapes techniques pour la cuisson. Utilisez le format Markdown. Si le plat est cru, indiquez "Aucune cuisson nécessaire.".
+        7.  **procedure_service**: Les instructions de dressage précises pour une assiette spectaculaire. Utilisez le format Markdown. Par exemple: "### Dressage\n1. Déposer la purée...\n2. Placer le poisson..."
         8.  **duration**: Estimez la durée totale de préparation en minutes (nombre entier).
         9.  **difficulty**: Évaluez la difficulté de la recette ('Facile', 'Moyen', 'Difficile').
         10. **portions**: Estimez le nombre de portions que cette recette produit (ex: 1, 2, 4...).
