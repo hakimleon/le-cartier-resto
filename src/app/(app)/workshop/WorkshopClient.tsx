@@ -32,10 +32,10 @@ export default function WorkshopClient() {
         const excludedIngredients = formData.get("excludedIngredients") as string;
         const recommendations = formData.get("recommendations") as string;
 
-        if (!dishName || !mainIngredients) {
+        if (!dishName) {
             toast({
-                title: "Champs requis",
-                description: "Veuillez renseigner au moins le nom du plat et les ingrédients principaux.",
+                title: "Champ requis",
+                description: "Veuillez renseigner le nom du plat.",
                 variant: "destructive",
             });
             return;
@@ -107,7 +107,9 @@ export default function WorkshopClient() {
     
     const handleNewRecipe = () => {
         setGeneratedConcept(null);
-        formRef.current?.reset();
+        if (formRef.current) {
+            formRef.current.reset();
+        }
     };
 
 
@@ -133,20 +135,20 @@ export default function WorkshopClient() {
                         <CardContent>
                             <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
                                 <div>
-                                    <Label htmlFor="dishName">Nom du plat</Label>
-                                    <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." />
+                                    <Label htmlFor="dishName">Nom du plat <span className="text-destructive">*</span></Label>
+                                    <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." required />
                                 </div>
                                 <div>
-                                    <Label htmlFor="mainIngredients">Ingrédients principaux</Label>
+                                    <Label htmlFor="mainIngredients">Ingrédients principaux (Optionnel)</Label>
                                     <Input id="mainIngredients" name="mainIngredients" placeholder="Ex: Bar, Orange, Fenouil" />
                                 </div>
                                 <div>
-                                    <Label htmlFor="excludedIngredients">Ingrédients à exclure</Label>
+                                    <Label htmlFor="excludedIngredients">Ingrédients à exclure (Optionnel)</Label>
                                     <Input id="excludedIngredients" name="excludedIngredients" placeholder="Ex: Vin, crème, porc" />
                                 </div>
                                 <div>
-                                    <Label htmlFor="recommendations">Recommandations</Label>
-                                    <Textarea id="recommendations" name="recommendations" placeholder="Ex: Un plat frais, méditerranéen, avec un dressage très graphique..." />
+                                    <Label htmlFor="recommendations">Recommandations (Optionnel)</Label>
+                                    <Textarea id="recommendations" name="recommendations" placeholder="Ex: Un plat frais, méditerranéen..." />
                                 </div>
                                 <Button type="submit" className="w-full" disabled={isLoading}>
                                     <Sparkles className="mr-2 h-4 w-4" />

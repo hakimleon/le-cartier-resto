@@ -10,7 +10,7 @@ import { z } from 'zod';
 
 const DishConceptInputSchema = z.object({
     dishName: z.string().describe("Le nom ou l'idée de base du plat."),
-    mainIngredients: z.string().describe("Les ingrédients principaux à intégrer obligatoirement."),
+    mainIngredients: z.string().optional().describe("Les ingrédients principaux à intégrer. Ce champ est maintenant optionnel."),
     excludedIngredients: z.string().optional().describe("Les ingrédients à ne jamais utiliser."),
     recommendations: z.string().optional().describe("Directives sur le style, la saisonnalité, ou le type de cuisine souhaité."),
 });
@@ -44,7 +44,7 @@ const recipeConceptPrompt = ai.definePrompt({
 
         Voici les instructions du chef de l'établissement :
         - Nom de l'idée : {{{dishName}}}
-        - Ingrédients à utiliser : {{{mainIngredients}}}
+        {{#if mainIngredients}}- Ingrédients à utiliser : {{{mainIngredients}}}{{else}}- Ingrédients principaux: Vous avez carte blanche pour les choisir. Soyez créatif.{{/if}}
         {{#if excludedIngredients}}- Ingrédients à **ABSOLUMENT EXCLURE** : {{{excludedIngredients}}}{{/if}}
         {{#if recommendations}}- Recommandations et style : {{{recommendations}}}{{/if}}
 
