@@ -1,4 +1,5 @@
 
+import RecipeDetailClient from './RecipeDetailClient';
 
 // Add searchParams to the page props
 export default async function RecipeDetailPage({ params, searchParams }: { params: { id: string }, searchParams: { [key: string]: string | string[] | undefined } }) {
