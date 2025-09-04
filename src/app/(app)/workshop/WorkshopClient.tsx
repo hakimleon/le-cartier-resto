@@ -13,7 +13,7 @@ import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { generateDishConcept, DishConceptOutput } from "@/ai/flows/workshop-flow";
 import { useRouter } from "next/navigation";
-import { saveDish } from "../menu/actions";
+import { createDishFromWorkshop } from "./actions";
 
 export default function WorkshopClient() {
     const [isLoading, setIsLoading] = useState(false);
@@ -69,35 +69,23 @@ export default function WorkshopClient() {
 
         setIsSaving(true);
         try {
-            await saveDish({
-                type: 'Plat',
-                name: generatedConcept.name,
-                description: generatedConcept.description,
-                imageUrl: generatedConcept.imageUrl,
-                procedure_preparation: generatedConcept.procedure,
-                procedure_cuisson: "", // La procédure de l'atelier ne sépare pas cuisson et prépa
-                procedure_service: generatedConcept.plating,
-                // Default values that can be edited later
-                price: 0,
-                portions: 1,
-                status: 'Inactif',
-                category: 'Plats et Grillades',
-                difficulty: 'Moyen',
-                duration: 30,
-                tvaRate: 10,
-            }, null);
+            const newDishId = await createDishFromWorkshop(generatedConcept);
 
-            toast({
-                title: "Recette enregistrée !",
-                description: `"${generatedConcept.name}" a été ajouté au menu en tant que plat inactif.`,
-            });
-            router.push('/menu');
+            if (newDishId) {
+                toast({
+                    title: "Recette enregistrée !",
+                    description: `"${generatedConcept.name}" a été ajouté au menu.`,
+                });
+                router.push(`/menu/${newDishId}`);
+            } else {
+                 throw new Error("L'ID du plat n'a pas été retourné après la création.");
+            }
 
         } catch (error) {
-            console.error("Error saving dish:", error);
+            console.error("Error saving dish from workshop:", error);
             toast({
                 title: "Erreur de sauvegarde",
-                description: "Impossible d'enregistrer le plat dans le menu.",
+                description: "Impossible d'enregistrer le plat et ses ingrédients.",
                 variant: "destructive",
             });
         } finally {
