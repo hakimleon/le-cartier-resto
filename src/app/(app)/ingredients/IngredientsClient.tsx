@@ -197,7 +197,7 @@ export default function IngredientsClient() {
                                 {isLowStock ? "Stock bas" : "En stock"}
                             </Badge>
                         </TableCell>
-                        <TableCell className="text-right">{ingredient.unitPrice.toFixed(2)} DZD</TableCell>
+                        <TableCell className="text-right">{Math.round(ingredient.unitPrice)} DZD</TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-2">
                             <IngredientModal ingredient={ingredient} onSuccess={() => { /* onSnapshot handles updates */ }}>

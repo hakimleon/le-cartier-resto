@@ -122,7 +122,7 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
             
             <CardFooter className="p-4 bg-muted/50 flex justify-between items-center">
                 <div className="text-xl font-bold text-foreground">
-                    {!isPreparation && recipe.price ? `${(recipe as Recipe).price.toFixed(2)} €` : ' '}
+                    {!isPreparation && recipe.price ? `${Math.round(recipe.price)} DZD` : ' '}
                 </div>
                 <div className="flex gap-1">
                      <Link href={detailUrl}>

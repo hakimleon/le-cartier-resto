@@ -140,9 +140,9 @@ export function DishForm({ dish, onSuccess }: DishFormProps) {
             name="price"
             render={({ field }) => (
             <FormItem>
-                <FormLabel>Prix (€)</FormLabel>
+                <FormLabel>Prix (DZD)</FormLabel>
                 <FormControl>
-                <Input type="number" step="0.01" placeholder="Ex: 12.50" {...field} />
+                <Input type="number" step="1" placeholder="Ex: 1200" {...field} />
                 </FormControl>
                 <FormMessage />
             </FormItem>
@@ -257,4 +257,3 @@ export function DishForm({ dish, onSuccess }: DishFormProps) {
     </Form>
   );
 }
-

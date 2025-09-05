@@ -877,7 +877,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                           </SelectContent>
                                       </Select>
                                     </TableCell>
-                                    <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
+                                    <TableCell className="text-right font-semibold">{Math.round(ing.totalCost)} DZD</TableCell>
                                     <TableCell>
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger>
@@ -900,7 +900,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                   <TableCell className="font-medium">{ing.name}</TableCell>
                                   <TableCell>{ing.quantity}</TableCell>
                                   <TableCell>{ing.unit}</TableCell>
-                                  <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
+                                  <TableCell className="text-right font-semibold">{Math.round(ing.totalCost)} DZD</TableCell>
                                 </TableRow>
                             ))}
                              {isEditing && newIngredients.map((newIng) => (
@@ -937,7 +937,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell className="text-right font-semibold">{newIng.totalCost.toFixed(2)}€</TableCell>
+                                    <TableCell className="text-right font-semibold">{Math.round(newIng.totalCost)} DZD</TableCell>
                                     <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
                                 </TableRow>
                              ))}
@@ -977,7 +977,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                       ) : prep.quantity }
                                     </TableCell>
                                     <TableCell>{prep.unit}</TableCell>
-                                    <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
+                                    <TableCell className="text-right font-semibold">{Math.round(prep.totalCost)} DZD</TableCell>
                                     {isEditing && (
                                         <TableCell>
                                             <AlertDialog>
@@ -1003,7 +1003,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     </TableCell>
                                     <TableCell><Input type="number" placeholder="Qté" className="w-20" value={prep.quantity === 0 ? '' : prep.quantity} onChange={(e) => handleNewPreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell>
                                     <TableCell>{prep.unit || "-"}</TableCell>
-                                    <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
+                                    <TableCell className="text-right font-semibold">{Math.round(prep.totalCost)} DZD</TableCell>
                                     <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
                                 </TableRow>
                             ))}
@@ -1055,9 +1055,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             <Card>
                 <CardHeader><CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle></CardHeader>
                 <CardContent>
-                     <div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)}€</div>
+                     <div className="text-3xl font-bold text-right">{Math.round(totalRecipeCost)} DZD</div>
                      <p className="text-xs text-muted-foreground text-right mt-1">
-                        {isPlat ? "Coût par portion : " + costPerPortion.toFixed(2) + "€" : "Coût par " + ((recipe as Preparation).productionUnit || 'unité') + " : " + (costPerPortion).toFixed(2) + "€"}
+                        {isPlat ? "Coût par portion : " + Math.round(costPerPortion) + " DZD" : "Coût par " + ((recipe as Preparation).productionUnit || 'unité') + " : " + Math.round(costPerPortion) + " DZD"}
                      </p>
                 </CardContent>
             </Card>
@@ -1074,10 +1074,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                              <span className="font-semibold text-right">{(currentRecipeData as Preparation).usageUnit || "-"}</span>
 
                             <span className="text-muted-foreground pt-2 border-t col-span-2">Coût Total Matières</span>
-                             <span className="font-semibold pt-2 border-t text-right col-span-2">{totalRecipeCost.toFixed(2)}€</span>
+                             <span className="font-semibold pt-2 border-t text-right col-span-2">{Math.round(totalRecipeCost)} DZD</span>
                             
                             <span className="font-bold text-primary pt-2 border-t">Coût / {currentRecipeData.productionUnit}</span>
-                            <span className="font-bold text-primary pt-2 border-t text-right">{(costPerPortion).toFixed(2)}€</span>
+                            <span className="font-bold text-primary pt-2 border-t text-right">{Math.round(totalRecipeCost / (currentRecipeData.productionQuantity || 1))} DZD</span>
                         </div>
                          {isEditing && (
                             <div className="space-y-4 pt-4 border-t">
@@ -1109,29 +1109,29 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 }
 
 function RecipeDetailSkeleton() {
-  return (
-    <div className="space-y-8">
-      <header className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Skeleton className="h-14 w-14 rounded-lg" />
-          <div className="space-y-2"><Skeleton className="h-8 w-64" /><Skeleton className="h-4 w-32" /></div>
-        </div>
-        <Skeleton className="h-10 w-24" />
-      </header>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-8">
-           <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
-           <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
-           <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
-        </div>
-
-        <div className="space-y-8">
-          <Card><CardHeader><Skeleton className="h-6 w-24" /></CardHeader><CardContent><Skeleton className="h-20 w-full" /></CardContent></Card>
-          <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent className="space-y-2"><Skeleton className="h-5 w-full" /><Skeleton className="h-5 w-3/4" /></CardContent></Card>
-           <Card><CardHeader><Skeleton className="h-6 w-40" /></CardHeader><CardContent><Skeleton className="h-10 w-full" /></CardContent></Card>
+    return (
+      <div className="space-y-8">
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-14 w-14 rounded-lg" />
+            <div className="space-y-2"><Skeleton className="h-8 w-64" /><Skeleton className="h-4 w-32" /></div>
+          </div>
+          <Skeleton className="h-10 w-24" />
+        </header>
+  
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+             <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+             <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+             <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+          </div>
+  
+          <div className="space-y-8">
+            <Card><CardHeader><Skeleton className="h-6 w-24" /></CardHeader><CardContent><Skeleton className="h-20 w-full" /></CardContent></Card>
+            <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent className="space-y-2"><Skeleton className="h-5 w-full" /><Skeleton className="h-5 w-3/4" /></CardContent></Card>
+             <Card><CardHeader><Skeleton className="h-6 w-40" /></CardHeader><CardContent><Skeleton className="h-10 w-full" /></CardContent></Card>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
 }

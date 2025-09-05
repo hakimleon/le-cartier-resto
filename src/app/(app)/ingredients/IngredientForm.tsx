@@ -157,7 +157,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                 <FormItem>
                     <FormLabel>Prix unitaire (DZD)</FormLabel>
                     <FormControl>
-                    <Input type="number" step="0.01" placeholder="Ex: 150.50" {...field} />
+                    <Input type="number" step="1" placeholder="Ex: 150" {...field} />
                     </FormControl>
                     <FormMessage />
                 </FormItem>

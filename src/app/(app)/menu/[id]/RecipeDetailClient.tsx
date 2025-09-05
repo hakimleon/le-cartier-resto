@@ -926,12 +926,12 @@ const fetchAllIngredients = useCallback(async () => {
                                     className="font-bold text-lg text-center"
                                 />
                             ) : (
-                                <p className="font-bold text-lg">{currentRecipeData.price ? currentRecipeData.price.toFixed(2) : 'N/A'}€</p>
+                                <p className="font-bold text-lg">{currentRecipeData.price ? Math.round(currentRecipeData.price) : 'N/A'} DZD</p>
                             )}
                        </div>
                        <div>
                             <p className="text-sm text-muted-foreground">Vente HT</p>
-                            <p className="font-bold text-lg">{priceHT.toFixed(2)}€</p>
+                            <p className="font-bold text-lg">{Math.round(priceHT)} DZD</p>
                        </div>
                        <div>
                             <p className="text-sm text-muted-foreground">Portions</p>
@@ -950,7 +950,7 @@ const fetchAllIngredients = useCallback(async () => {
                     <div className="space-y-2 text-sm border-t pt-4">
                         <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Coût Matière / Portion</span>
-                            <span className="font-semibold">{costPerPortion.toFixed(2)}€</span>
+                            <span className="font-semibold">{Math.round(costPerPortion)} DZD</span>
                         </div>
                         <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Coefficient</span>
@@ -958,7 +958,7 @@ const fetchAllIngredients = useCallback(async () => {
                         </div>
                          <div className="flex justify-between items-center">
                             <span className="text-muted-foreground">Marge Brute</span>
-                            <span className="font-semibold">{grossMargin.toFixed(2)}€ ({grossMarginPercentage.toFixed(2)}%)</span>
+                            <span className="font-semibold">{Math.round(grossMargin)} DZD ({grossMarginPercentage.toFixed(0)}%)</span>
                         </div>
                     </div>
                 </CardContent>
@@ -1010,7 +1010,7 @@ const fetchAllIngredients = useCallback(async () => {
                                           </SelectContent>
                                       </Select>
                                     </TableCell>
-                                    <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
+                                    <TableCell className="text-right font-semibold">{Math.round(ing.totalCost)} DZD</TableCell>
                                     <TableCell>
                                         <AlertDialog>
                                             <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger>
@@ -1033,7 +1033,7 @@ const fetchAllIngredients = useCallback(async () => {
                                   <TableCell className="font-medium">{ing.name}</TableCell>
                                   <TableCell>{ing.quantity}</TableCell>
                                   <TableCell>{ing.unit}</TableCell>
-                                  <TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)}€</TableCell>
+                                  <TableCell className="text-right font-semibold">{Math.round(ing.totalCost)} DZD</TableCell>
                                 </TableRow>
                             ))}
                              {isEditing && newIngredients.map((newIng) => (
@@ -1070,7 +1070,7 @@ const fetchAllIngredients = useCallback(async () => {
                                             </SelectContent>
                                         </Select>
                                     </TableCell>
-                                    <TableCell className="text-right font-semibold">{newIng.totalCost.toFixed(2)}€</TableCell>
+                                    <TableCell className="text-right font-semibold">{Math.round(newIng.totalCost)} DZD</TableCell>
                                     <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
                                 </TableRow>
                              ))}
@@ -1122,7 +1122,7 @@ const fetchAllIngredients = useCallback(async () => {
                                     <TableCell>
                                         {prep.unit}
                                     </TableCell>
-                                    <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
+                                    <TableCell className="text-right font-semibold">{Math.round(prep.totalCost)} DZD</TableCell>
                                     {isEditing && (
                                         <TableCell>
                                             <AlertDialog>
@@ -1163,7 +1163,7 @@ const fetchAllIngredients = useCallback(async () => {
                                     <TableCell>
                                        {prep.unit || "-"}
                                     </TableCell>
-                                    <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)}€</TableCell>
+                                    <TableCell className="text-right font-semibold">{Math.round(prep.totalCost)} DZD</TableCell>
                                     <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
                                 </TableRow>
                             ))}
@@ -1243,9 +1243,9 @@ const fetchAllIngredients = useCallback(async () => {
                     <CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle>
                 </CardHeader>
                 <CardContent>
-                     <div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)}€</div>
+                     <div className="text-3xl font-bold text-right">{Math.round(totalRecipeCost)} DZD</div>
                      <p className="text-xs text-muted-foreground text-right mt-1">
-                        {isPlat ? "Coût par portion : " + costPerPortion.toFixed(2) + "€" : "Coût par " + ((recipe as Preparation).productionUnit || 'unité') + " : " + (costPerPortion).toFixed(2) + "€"}
+                        {isPlat ? "Coût par portion : " + Math.round(costPerPortion) + " DZD" : "Coût par " + ((recipe as Preparation).productionUnit || 'unité') + " : " + Math.round(costPerPortion) + " DZD"}
                      </p>
                 </CardContent>
             </Card>
@@ -1343,10 +1343,10 @@ const fetchAllIngredients = useCallback(async () => {
                              <span className="font-semibold text-right">{(currentRecipeData as Preparation).usageUnit || "-"}</span>
 
                             <span className="text-muted-foreground pt-2 border-t col-span-2">Coût Total Matières</span>
-                             <span className="font-semibold pt-2 border-t text-right col-span-2">{totalRecipeCost.toFixed(2)}€</span>
+                             <span className="font-semibold pt-2 border-t text-right col-span-2">{Math.round(totalRecipeCost)} DZD</span>
                             
                             <span className="font-bold text-primary pt-2 border-t">Coût / {currentRecipeData.productionUnit}</span>
-                            <span className="font-bold text-primary pt-2 border-t text-right">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)}€</span>
+                            <span className="font-bold text-primary pt-2 border-t text-right">{Math.round(totalRecipeCost / (currentRecipeData.productionQuantity || 1))} DZD</span>
                         </div>
                          {isEditing && (
                             <div className="space-y-4 pt-4 border-t">
