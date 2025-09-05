@@ -854,7 +854,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {isEditing && currentIngredientsData.map(ing => (
+                            {isEditing && editableIngredients.map(ing => (
                                 <TableRow key={ing.recipeIngredientId}>
                                     <TableCell className="font-medium">{ing.name}</TableCell>
                                     <TableCell>
@@ -1036,9 +1036,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
                                 <TabsTrigger value="service">Service</TabsTrigger>
                             </TabsList>
-                            <TabsContent value="preparation" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">{recipe.procedure_preparation}</TabsContent>
-                            <TabsContent value="cuisson" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">{recipe.procedure_cuisson}</TabsContent>
-                            <TabsContent value="service" className="prose prose-sm max-w-none pt-4 whitespace-pre-wrap">{recipe.procedure_service}</TabsContent>
+                            <TabsContent value="preparation" className="prose prose-sm max-w-none pt-4" dangerouslySetInnerHTML={{ __html: recipe.procedure_preparation?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            <TabsContent value="cuisson" className="prose prose-sm max-w-none pt-4" dangerouslySetInnerHTML={{ __html: recipe.procedure_cuisson?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            <TabsContent value="service" className="prose prose-sm max-w-none pt-4" dangerouslySetInnerHTML={{ __html: recipe.procedure_service?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
                         </Tabs>
                    )}
                 </CardContent>
@@ -1129,5 +1129,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
