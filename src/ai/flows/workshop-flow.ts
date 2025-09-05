@@ -50,7 +50,7 @@ const recipeConceptPrompt = ai.definePrompt({
     output: { schema: DishConceptOutputSchema.omit({ imageUrl: true }) },
     prompt: `
         Vous êtes un chef cuisinier créatif et un styliste culinaire de renommée mondiale, chargé de créer une fiche technique quasi-complète pour un nouveau plat.
-        Votre mission est de transformer une idée brute en un concept de plat professionnel, inspirant et structuré.
+        Votre mission est de transformer une idée brute en un concept de plat professionnel, inspirant et structuré, adapté à un usage en restaurant.
 
         Voici les instructions du chef de l'établissement :
         {{#if dishName}}- Le nom du plat est imposé : {{{dishName}}}. Vous devez le conserver.{{else}}- Vous avez carte blanche pour inventer un nom de plat créatif et alléchant.{{/if}}
@@ -61,9 +61,9 @@ const recipeConceptPrompt = ai.definePrompt({
         Votre tâche est de générer une fiche technique détaillée avec les éléments suivants :
         1.  **name**: {{#if dishName}}Conservez impérativement le nom "{{{dishName}}}".{{else}}Inventez un nom marketing et séduisant pour le plat.{{/if}}
         2.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
-        3.  **ingredients**: Une liste des ingrédients bruts nécessaires **uniquement pour l'assemblage final du plat**. N'incluez PAS ici les ingrédients qui appartiennent à une sous-recette.
-        4.  **subRecipes**: Déduisez de la recette que vous créez la liste des **noms** des préparations ou sous-recettes qui devront être réalisées à l'avance (ex: "Fond de veau", "Sauce vierge", "Purée de carottes", "Vinaigrette balsamique"). Si aucune n'est évidente, retournez un tableau vide. C'est un point crucial.
-        5.  **procedure_preparation**: Les étapes claires pour la mise en place. Utilisez le format Markdown (titres avec '###', listes avec '-', sous-listes).
+        3.  **ingredients**: Une liste de TOUS les ingrédients bruts nécessaires pour réaliser la recette complète, y compris ceux pour les "préparations minute" (comme une vinaigrette). Ne séparez PAS les ingrédients d'une préparation unique si elle n'est destinée qu'à ce plat.
+        4.  **subRecipes**: Déduisez de la recette que vous créez la liste des **noms** des préparations qui sont des **BASES STANDARDS, COMPLEXES et RÉUTILISABLES** (ex: "Fond de veau", "Sauce hollandaise", "Pâte feuilletée"). N'incluez PAS ici les préparations simples ou "minute" (ex: "Vinaigrette", "Purée de carottes", "Sauce vierge") car leurs étapes doivent être intégrées directement dans la procédure principale. Si aucune base complexe n'est nécessaire, retournez un tableau vide. C'est un point crucial.
+        5.  **procedure_preparation**: Les étapes claires pour la mise en place. Intégrez ici les étapes des préparations simples (vinaigrette, purée, etc.). Utilisez le format Markdown (titres avec '###', listes avec '-', sous-listes).
         6.  **procedure_cuisson**: Les étapes techniques pour la cuisson. Utilisez le format Markdown. Si le plat est cru, indiquez "Aucune cuisson nécessaire.".
         7.  **procedure_service**: Les instructions de dressage précises pour une assiette spectaculaire. Utilisez le format Markdown. Par exemple: "### Dressage\\n1. Déposer la purée...\\n2. Placer le poisson..."
         8.  **duration**: Estimez la durée totale de préparation en minutes (nombre entier).
