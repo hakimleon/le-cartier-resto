@@ -1,77 +1,82 @@
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { DollarSign, ShoppingCart, AlertTriangle, Percent } from "lucide-react";
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import { Ingredient, Recipe, Preparation } from '@/lib/types';
+import DashboardClient from './DashboardClient';
+import { BookCopy, ChefHat, Package, AlertTriangle } from 'lucide-react';
 
-export default function DashboardPage() {
+async function getDashboardData() {
+    try {
+        const recipesQuery = query(collection(db, "recipes"), where("type", "==", "Plat"));
+        const recipesSnapshot = await getDocs(recipesQuery);
+        const totalDishes = recipesSnapshot.size;
+
+        const preparationsSnapshot = await getDocs(collection(db, "preparations"));
+        const totalPreparations = preparationsSnapshot.size;
+
+        const ingredientsSnapshot = await getDocs(collection(db, "ingredients"));
+        const allIngredients = ingredientsSnapshot.docs.map(doc => doc.data() as Ingredient);
+        const totalIngredients = allIngredients.length;
+        
+        const lowStockIngredients = allIngredients.filter(
+            ing => ing.stockQuantity <= ing.lowStockThreshold
+        ).length;
+
+        return { 
+            totalDishes, 
+            totalPreparations, 
+            totalIngredients, 
+            lowStockIngredients,
+            error: null 
+        };
+
+    } catch (error) {
+        console.error("Error fetching dashboard data:", error);
+        const errorMessage = error instanceof Error ? error.message : "Une erreur inconnue est survenue.";
+        return { 
+            totalDishes: 0, 
+            totalPreparations: 0, 
+            totalIngredients: 0, 
+            lowStockIngredients: 0,
+            error: `Impossible de charger les données du tableau de bord: ${errorMessage}`
+        };
+    }
+}
+
+
+export default async function DashboardPage() {
+    const { totalDishes, totalPreparations, totalIngredients, lowStockIngredients, error } = await getDashboardData();
+    
+    const stats = [
+        {
+            title: "Plats au Menu",
+            value: totalDishes,
+            icon: ChefHat,
+            description: "Nombre total de plats actifs et inactifs."
+        },
+        {
+            title: "Préparations",
+            value: totalPreparations,
+            icon: BookCopy,
+            description: "Nombre de fiches techniques de base."
+        },
+        {
+            title: "Ingrédients",
+            value: totalIngredients,
+            icon: Package,
+            description: "Nombre d'ingrédients dans l'inventaire."
+        },
+        {
+            title: "Stock Critique",
+            value: lowStockIngredients,
+            icon: AlertTriangle,
+            description: "Ingrédients en dessous du seuil d'alerte.",
+            isCritical: true,
+        },
+    ]
   return (
     <div className="container mx-auto py-10">
-        <div className="space-y-6">
-            <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Dashboard</h1>
-                    <p className="text-muted-foreground">Vue d'ensemble de votre activité.</p>
-                </div>
-            </header>
-            
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                        CA Aujourd'hui
-                        </CardTitle>
-                        <DollarSign className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">1,825.40 €</div>
-                        <p className="text-xs text-muted-foreground">
-                        +12% par rapport à hier
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                        Commandes
-                        </CardTitle>
-                        <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">+72</div>
-                        <p className="text-xs text-muted-foreground">
-                        +8% par rapport à hier
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Marge Moyenne</CardTitle>
-                        <Percent className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">42.5%</div>
-                        <p className="text-xs text-muted-foreground">
-                        -1.2% par rapport à la semaine dernière
-                        </p>
-                    </CardContent>
-                </Card>
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Stock Critique</CardTitle>
-                        <AlertTriangle className="h-4 w-4 text-destructive" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">5</div>
-                        <p className="text-xs text-muted-foreground">
-                        Produits en dessous du seuil
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
-
-            <div className="flex h-[300px] items-center justify-center rounded-lg border-2 border-dashed">
-                <p className="text-muted-foreground">Graphique & alertes à venir.</p>
-            </div>
-        </div>
+        <DashboardClient stats={stats} error={error} />
     </div>
   );
 }
