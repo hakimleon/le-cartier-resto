@@ -456,8 +456,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   };
 
   const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
-    // 1. Add the new ingredient to the master list in the state
-    setAllIngredients(current => [...current, newIngredient]);
+    // 1. Re-fetch all ingredients to get the latest list including the new one.
+    fetchAllIngredients();
     
     // 2. Update the specific `newIngredients` row to link it
     handleNewIngredientChange(tempId, 'ingredientId', newIngredient.id!);
@@ -797,7 +797,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 }
             }}
         >
-            <div/>
+          <div/>
         </IngredientModal>
       )}
 
@@ -1036,9 +1036,15 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
                                 <TabsTrigger value="service">Service</TabsTrigger>
                             </TabsList>
-                            <TabsContent value="preparation" className="prose prose-sm max-w-none pt-4" dangerouslySetInnerHTML={{ __html: recipe.procedure_preparation?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
-                            <TabsContent value="cuisson" className="prose prose-sm max-w-none pt-4" dangerouslySetInnerHTML={{ __html: recipe.procedure_cuisson?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
-                            <TabsContent value="service" className="prose prose-sm max-w-none pt-4" dangerouslySetInnerHTML={{ __html: recipe.procedure_service?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            <TabsContent value="preparation" className="pt-4">
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: recipe.procedure_preparation?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            </TabsContent>
+                            <TabsContent value="cuisson" className="pt-4">
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: recipe.procedure_cuisson?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            </TabsContent>
+                            <TabsContent value="service" className="pt-4">
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: recipe.procedure_service?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            </TabsContent>
                         </Tabs>
                    )}
                 </CardContent>
@@ -1103,29 +1109,29 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 }
 
 function RecipeDetailSkeleton() {
-    return (
-      <div className="space-y-8">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-14 w-14 rounded-lg" />
-            <div className="space-y-2"><Skeleton className="h-8 w-64" /><Skeleton className="h-4 w-32" /></div>
-          </div>
-          <Skeleton className="h-10 w-24" />
-        </header>
-  
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-             <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
-             <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
-             <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
-          </div>
-  
-          <div className="space-y-8">
-            <Card><CardHeader><Skeleton className="h-6 w-24" /></CardHeader><CardContent><Skeleton className="h-20 w-full" /></CardContent></Card>
-            <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent className="space-y-2"><Skeleton className="h-5 w-full" /><Skeleton className="h-5 w-3/4" /></CardContent></Card>
-             <Card><CardHeader><Skeleton className="h-6 w-40" /></CardHeader><CardContent><Skeleton className="h-10 w-full" /></CardContent></Card>
-          </div>
+  return (
+    <div className="space-y-8">
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-14 w-14 rounded-lg" />
+          <div className="space-y-2"><Skeleton className="h-8 w-64" /><Skeleton className="h-4 w-32" /></div>
+        </div>
+        <Skeleton className="h-10 w-24" />
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-8">
+           <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+           <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+           <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card>
+        </div>
+
+        <div className="space-y-8">
+          <Card><CardHeader><Skeleton className="h-6 w-24" /></CardHeader><CardContent><Skeleton className="h-20 w-full" /></CardContent></Card>
+          <Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent className="space-y-2"><Skeleton className="h-5 w-full" /><Skeleton className="h-5 w-3/4" /></CardContent></Card>
+           <Card><CardHeader><Skeleton className="h-6 w-40" /></CardHeader><CardContent><Skeleton className="h-10 w-full" /></CardContent></Card>
         </div>
       </div>
-    );
+    </div>
+  );
 }

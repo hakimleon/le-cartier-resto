@@ -858,7 +858,7 @@ const fetchAllIngredients = useCallback(async () => {
                 }
             }}
         >
-            <div/>
+          <div/>
         </IngredientModal>
        <ImageUploadDialog
         isOpen={isImageUploadOpen}
@@ -1221,9 +1221,15 @@ const fetchAllIngredients = useCallback(async () => {
                                 <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
                                 <TabsTrigger value="service">Service</TabsTrigger>
                             </TabsList>
-                            <TabsContent value="preparation" className="prose prose-sm max-w-none pt-4" dangerouslySetInnerHTML={{ __html: recipe.procedure_preparation?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
-                            <TabsContent value="cuisson" className="prose prose-sm max-w-none pt-4" dangerouslySetInnerHTML={{ __html: recipe.procedure_cuisson?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
-                            <TabsContent value="service" className="prose prose-sm max-w-none pt-4" dangerouslySetInnerHTML={{ __html: recipe.procedure_service?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                             <TabsContent value="preparation" className="pt-4">
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: recipe.procedure_preparation?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            </TabsContent>
+                            <TabsContent value="cuisson" className="pt-4">
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: recipe.procedure_cuisson?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            </TabsContent>
+                            <TabsContent value="service" className="pt-4">
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: recipe.procedure_service?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            </TabsContent>
                         </Tabs>
                    )}
                 </CardContent>
@@ -1386,58 +1392,58 @@ const fetchAllIngredients = useCallback(async () => {
 }
 
 function RecipeDetailSkeleton() {
-    return (
-      <div className="space-y-8">
-        <header className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-14 w-14 rounded-lg" />
-            <div className="space-y-2">
-              <Skeleton className="h-8 w-64" />
-              <Skeleton className="h-4 w-32" />
-            </div>
-          </div>
-          <Skeleton className="h-10 w-24" />
-        </header>
-  
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Column 1 & 2 Skeleton */}
-          <div className="lg:col-span-2 space-y-8">
-             <Card>
-                <CardContent className="p-0">
-                    <Skeleton className="w-full h-96" />
-                </CardContent>
-             </Card>
-             <Card>
-              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-              <CardContent><Skeleton className="h-40 w-full" /></CardContent>
-            </Card>
-            <Card>
-              <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
-              <CardContent><Skeleton className="h-40 w-full" /></CardContent>
-            </Card>
-          </div>
-  
-          {/* Column 3 Skeleton */}
-          <div className="space-y-8">
-            <Card>
-                <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
-                <CardContent><Skeleton className="h-24 w-full" /></CardContent>
-            </Card>
-            <Card>
-              <CardHeader>
-                <Skeleton className="h-6 w-32" />
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <Skeleton className="h-5 w-full" />
-                <Skeleton className="h-5 w-3/4" />
-              </CardContent>
-            </Card>
-             <Card>
-              <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
-              <CardContent><Skeleton className="h-10 w-full" /></CardContent>
-            </Card>
+  return (
+    <div className="space-y-8">
+      <header className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Skeleton className="h-14 w-14 rounded-lg" />
+          <div className="space-y-2">
+            <Skeleton className="h-8 w-64" />
+            <Skeleton className="h-4 w-32" />
           </div>
         </div>
+        <Skeleton className="h-10 w-24" />
+      </header>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Column 1 & 2 Skeleton */}
+        <div className="lg:col-span-2 space-y-8">
+           <Card>
+              <CardContent className="p-0">
+                  <Skeleton className="w-full h-96" />
+              </CardContent>
+           </Card>
+           <Card>
+            <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+            <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+          </Card>
+          <Card>
+            <CardHeader><Skeleton className="h-6 w-32" /></CardHeader>
+            <CardContent><Skeleton className="h-40 w-full" /></CardContent>
+          </Card>
+        </div>
+
+        {/* Column 3 Skeleton */}
+        <div className="space-y-8">
+          <Card>
+              <CardHeader><Skeleton className="h-6 w-24" /></CardHeader>
+              <CardContent><Skeleton className="h-24 w-full" /></CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-32" />
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-5 w-3/4" />
+            </CardContent>
+          </Card>
+           <Card>
+            <CardHeader><Skeleton className="h-6 w-40" /></CardHeader>
+            <CardContent><Skeleton className="h-10 w-full" /></CardContent>
+          </Card>
+        </div>
       </div>
-    );
+    </div>
+  );
 }
