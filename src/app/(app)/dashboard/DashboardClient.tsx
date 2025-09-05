@@ -74,8 +74,8 @@ export default function DashboardClient({ stats, categoryDistribution, error }: 
             })}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-            <Card className="col-span-12 lg:col-span-4">
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <Card className="lg:col-span-3">
                 <CardHeader>
                     <CardTitle>Répartition par Catégorie</CardTitle>
                     <CardDescription>Visualisation du nombre de plats dans chaque catégorie du menu.</CardDescription>
@@ -84,7 +84,7 @@ export default function DashboardClient({ stats, categoryDistribution, error }: 
                     <CategoryChart data={categoryDistribution} />
                 </CardContent>
             </Card>
-            <Card className="col-span-12 lg:col-span-3">
+            <Card className="lg:col-span-2">
                  <CardHeader>
                     <CardTitle>Activité Récente</CardTitle>
                      <CardDescription>Les derniers mouvements et modifications.</CardDescription>

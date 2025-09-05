@@ -52,9 +52,11 @@ export function CategoryChart({ data }: CategoryChartProps) {
             height={48} 
             iconType="circle"
             layout="horizontal"
+            align="center"
             wrapperStyle={{
                 fontSize: '12px',
-                paddingTop: '20px'
+                paddingLeft: '20px', // Add some padding
+                paddingRight: '20px'
             }}
           />
           <Pie
