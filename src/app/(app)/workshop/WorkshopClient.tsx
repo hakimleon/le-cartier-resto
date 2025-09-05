@@ -65,7 +65,7 @@ export default function WorkshopClient() {
 
         setIsSaving(true);
         try {
-            // 1. Create the dish in Firestore without the ingredients
+            // 1. Create the dish in Firestore (without ingredients/preps)
             const newDishId = await createDishFromWorkshop(generatedConcept);
 
             if (newDishId) {
@@ -76,7 +76,7 @@ export default function WorkshopClient() {
                     title: "Recette enregistrée !",
                     description: `"${generatedConcept.name}" a été ajouté au menu.`,
                 });
-                // 3. Redirect to the new dish page. The page itself will handle the ingredients.
+                // 3. Redirect to the new dish page for finalization.
                 router.push(`/menu/${newDishId}`);
             } else {
                  throw new Error("L'ID du plat n'a pas été retourné après la création.");
@@ -201,7 +201,7 @@ export default function WorkshopClient() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                                         <div>
-                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients d'assemblage</h4>
+                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients suggérés</h4>
                                             {generatedConcept.ingredients && generatedConcept.ingredients.length > 0 ? (
                                                 <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
                                                     {generatedConcept.ingredients.map((ing) => (
@@ -216,7 +216,7 @@ export default function WorkshopClient() {
                                         </div>
                                          {generatedConcept.subRecipes && generatedConcept.subRecipes.length > 0 && (
                                             <div>
-                                                <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Sous-Recettes Requises</h4>
+                                                <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Sous-Recettes suggérées</h4>
                                                 <div className="flex flex-wrap gap-2">
                                                     {generatedConcept.subRecipes.map((prep: string) => <Badge key={prep} variant="outline" className="text-sm">{prep}</Badge>)}
                                                 </div>
@@ -226,14 +226,7 @@ export default function WorkshopClient() {
                                     
                                     <div>
                                         <h4 className="font-semibold mb-2 flex items-center gap-2"><FileText className="h-4 w-4"/>Procédure Technique</h4>
-                                        <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap p-4 border rounded-md mt-2">
-                                            <h3>Préparation</h3>
-                                            <p>{generatedConcept.procedure_preparation}</p>
-                                            <h3>Cuisson</h3>
-                                            <p>{generatedConcept.procedure_cuisson}</p>
-                                            <h3>Service & Dressage</h3>
-                                            <p>{generatedConcept.procedure_service}</p>
-                                        </div>
+                                         <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap p-4 border rounded-md mt-2" dangerouslySetInnerHTML={{ __html: `${generatedConcept.procedure_preparation}<br/><br/>${generatedConcept.procedure_cuisson}<br/><br/>${generatedConcept.procedure_service}`.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') }} />
                                     </div>
                                     
                                     <Separator />
@@ -245,7 +238,7 @@ export default function WorkshopClient() {
 
                                     <Button className="w-full" onClick={handleSaveToMenu} disabled={isSaving}>
                                         <NotebookText className="mr-2 h-4 w-4" />
-                                        {isSaving ? "Enregistrement..." : "Créer la Fiche Technique & Enregistrer au Menu"}
+                                        {isSaving ? "Enregistrement..." : "Créer la Fiche Technique pour Finalisation"}
                                     </Button>
                                 </div>
                             ) : (
