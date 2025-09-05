@@ -14,7 +14,6 @@ export async function saveDish(recipe: Partial<Omit<Recipe, 'id'>> & { type: 'Pl
     // Create new document
     await addDoc(collection(db, 'recipes'), recipe);
   }
-  // No revalidation needed, onSnapshot handles updates on the client
 }
 
 export async function deleteDish(id: string) {
@@ -24,48 +23,56 @@ export async function deleteDish(id: string) {
   
     const batch = writeBatch(db);
   
-    // 1. Delete the recipe itself
     const recipeDoc = doc(db, 'recipes', id);
     batch.delete(recipeDoc);
   
-    // 2. Find and delete all related ingredient links
     const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", id));
     const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
     recipeIngredientsSnap.forEach(doc => batch.delete(doc.ref));
 
-    // 3. Find and delete all related preparation links (where this recipe is the PARENT)
     const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", id));
     const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
     recipePreparationsSnap.forEach(doc => batch.delete(doc.ref));
 
-    // NOTE: A "Plat" cannot be a child, so no need to look for child links.
-  
-    // 4. Commit the batch
     await batch.commit();
-    
-    // onSnapshot will handle UI updates
 }
 
 
 export async function replaceRecipeIngredients(recipeId: string, ingredients: Omit<RecipeIngredientLink, 'id' | 'recipeId'>[]) {
     const batch = writeBatch(db);
 
-    // 1. Delete all existing ingredient links for this recipe
     const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
     const querySnapshot = await getDocs(ingredientsQuery);
     querySnapshot.forEach((doc) => {
         batch.delete(doc.ref);
     });
 
-    // 2. Add all the new ingredient links
     ingredients.forEach((ingredient) => {
-        if (ingredient.ingredientId && ingredient.quantity > 0) { // Ensure we don't add links without an ingredient or quantity
+        if (ingredient.ingredientId && ingredient.quantity > 0) {
             const newLinkRef = doc(collection(db, "recipeIngredients"));
             batch.set(newLinkRef, { recipeId, ...ingredient });
         }
     });
 
-    // 3. Commit the batch
+    await batch.commit();
+}
+
+export async function replaceRecipePreparations(recipeId: string, preparations: Omit<RecipePreparationLink, 'id' | 'parentRecipeId'>[]) {
+    const batch = writeBatch(db);
+
+    const prepsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
+    const querySnapshot = await getDocs(prepsQuery);
+    querySnapshot.forEach((doc) => {
+        batch.delete(doc.ref);
+    });
+
+    preparations.forEach((prep) => {
+        if (prep.childPreparationId && prep.quantity > 0) {
+            const newLinkRef = doc(collection(db, "recipePreparationLinks"));
+            batch.set(newLinkRef, { parentRecipeId: recipeId, ...prep });
+        }
+    });
+
     await batch.commit();
 }
 
@@ -76,8 +83,7 @@ export async function deleteRecipePreparationLink(linkId: string) {
     }
     const recipePreparationLinkDoc = doc(db, 'recipePreparationLinks', linkId);
     await deleteDoc(recipePreparationLinkDoc);
-    // onSnapshot will handle UI updates
-  }
+}
 
 export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe | Preparation>, type: 'Plat' | 'Préparation') {
     if (!recipeId) {
@@ -111,3 +117,5 @@ export async function updateRecipePreparationLink(linkId: string, data: { quanti
 export async function addRecipePreparationLink(link: Omit<RecipePreparationLink, 'id'>) {
     await addDoc(collection(db, "recipePreparationLinks"), link);
 }
+
+    

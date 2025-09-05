@@ -46,3 +46,37 @@ export async function createDishFromWorkshop(concept: DishConceptOutput): Promis
         throw new Error("An unknown error occurred while creating the dish from the workshop concept.");
     }
 }
+
+/**
+ * Creates a new preparation (recipe of type 'Préparation')
+ * @param prepData - The preparation data.
+ * @returns The ID of the newly created preparation.
+ */
+export async function createPreparation(prepData: Partial<Omit<Preparation, 'id'>>): Promise<string> {
+     try {
+        const dataToSave: Omit<Preparation, 'id'> = {
+            type: 'Préparation',
+            name: prepData.name || 'Nouvelle Préparation',
+            description: prepData.description || '',
+            difficulty: prepData.difficulty || 'Moyen',
+            duration: prepData.duration || 10,
+            productionQuantity: prepData.productionQuantity || 1,
+            productionUnit: prepData.productionUnit || 'kg',
+            ...prepData,
+        };
+        
+        const prepsCol = collection(db, 'preparations');
+        const prepDocRef = await addDoc(prepsCol, dataToSave);
+        
+        return prepDocRef.id;
+
+    } catch (error) {
+        console.error("Error creating preparation:", error);
+        if (error instanceof Error) {
+            throw new Error(`Failed to create preparation: ${error.message}`);
+        }
+        throw new Error("An unknown error occurred while creating the preparation.");
+    }
+}
+
+    
