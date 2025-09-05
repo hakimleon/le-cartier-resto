@@ -112,7 +112,7 @@ const recipeGenerationPrompt = ai.definePrompt({
         Type de Fiche: {{{type}}}
 
         Instructions:
-        1.  Listez les ingrédients nécessaires avec des quantités précises (en grammes, litres, unités) et une qualité attendue pour un restaurant (ex: "beurre").
+        1.  Listez les ingrédients nécessaires. Règle impérative: **privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes, plutôt que des "pièces" ou "unités" lorsque c'est possible.** Utilisez les litres/ml pour les liquides et "pièce" uniquement quand c'est indispensable (ex: 1 oeuf).
         2.  Rédigez une procédure technique et détaillée en trois phases : "Préparation" (mise en place, techniques), "Cuisson" (températures, temps), et "Service" (dressage). Si une étape n'est pas applicable (ex: pas de cuisson), retournez une chaîne de caractères vide pour ce champ spécifique.
         3.  Estimez la durée totale de la recette en minutes.
         4.  Évaluez la difficulté (Facile, Moyen, Difficile).
