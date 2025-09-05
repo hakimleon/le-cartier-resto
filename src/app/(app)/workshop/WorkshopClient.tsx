@@ -254,3 +254,5 @@ export default function WorkshopClient() {
         </div>
     );
 }
+
+    

@@ -41,8 +41,8 @@ const formSchema = z.object({
 
 
 type PreparationFormProps = {
-  preparation: Preparation | null;
-  onSuccess: () => void;
+  preparation: Partial<Preparation> | null;
+  onSuccess: (newPreparation?: Preparation) => void;
 };
 
 export function PreparationForm({ preparation, onSuccess }: PreparationFormProps) {
@@ -52,8 +52,8 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: preparation ? {
-        name: preparation.name,
-        description: preparation.description,
+        name: preparation.name || "",
+        description: preparation.description || "",
         difficulty: preparation.difficulty || "Moyen",
         duration: preparation.duration || 10,
         productionQuantity: preparation.productionQuantity || 1,
@@ -78,13 +78,13 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
         ...values,
         usageUnit: values.usageUnit || ''
       };
-      await savePreparation(dataToSave, preparation?.id || null);
+      const savedPreparation = await savePreparation(dataToSave, preparation?.id || null);
       
       toast({
         title: "Succès",
         description: `La préparation "${values.name}" a été sauvegardée.`,
       });
-      onSuccess();
+      onSuccess(savedPreparation);
     } catch (error) {
       console.error("Error saving preparation:", error);
       toast({
@@ -219,3 +219,5 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
     </Form>
   );
 }
+
+    

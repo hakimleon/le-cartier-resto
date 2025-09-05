@@ -8,20 +8,25 @@ import type { Preparation } from '@/lib/types';
 /**
  * Sauvegarde une préparation (crée ou met à jour).
  */
-export async function savePreparation(preparation: Omit<Preparation, 'id'>, id: string | null) {
+export async function savePreparation(preparation: Partial<Omit<Preparation, 'id'>>, id: string | null): Promise<Preparation> {
   const dataToSave = {
     ...preparation,
     type: 'Préparation' as const, // Ensure type is always set
   };
 
+  let savedPreparation: Preparation;
+
   if (id) {
     // Mettre à jour un document existant
     const preparationDoc = doc(db, 'preparations', id);
     await setDoc(preparationDoc, dataToSave, { merge: true });
+    savedPreparation = { id, ...dataToSave } as Preparation;
   } else {
     // Créer un nouveau document
-    await addDoc(collection(db, 'preparations'), dataToSave);
+    const docRef = await addDoc(collection(db, 'preparations'), dataToSave);
+    savedPreparation = { id: docRef.id, ...dataToSave } as Preparation;
   }
+  return savedPreparation;
 }
 
 /**
@@ -57,3 +62,5 @@ export async function deletePreparation(id: string) {
   // 5. Exécuter le batch
   await batch.commit();
 }
+
+    

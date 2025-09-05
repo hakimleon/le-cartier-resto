@@ -14,20 +14,25 @@ import { ReactNode, useState } from "react";
 
 type PreparationModalProps = {
   children: ReactNode;
-  preparation: Preparation | null;
-  onSuccess: () => void;
+  preparation: Partial<Preparation> | null;
+  onSuccess: (newPreparation?: Preparation) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
-export function PreparationModal({ children, preparation, onSuccess }: PreparationModalProps) {
-    const [isOpen, setIsOpen] = useState(false);
+export function PreparationModal({ children, preparation, onSuccess, open, onOpenChange }: PreparationModalProps) {
+    const [internalOpen, setInternalOpen] = useState(false);
 
-    const handleSuccess = () => {
+    const isOpen = open !== undefined ? open : internalOpen;
+    const setIsOpen = onOpenChange !== undefined ? onOpenChange : setInternalOpen;
+    
+    const handleSuccess = (newPreparation?: Preparation) => {
         setIsOpen(false);
-        onSuccess();
+        onSuccess(newPreparation);
     }
     
-    const title = preparation ? `Modifier la préparation` : `Nouvelle préparation`;
-    const description = preparation
+    const title = preparation?.id ? `Modifier la préparation` : `Nouvelle préparation`;
+    const description = preparation?.id
       ? `Modifiez les détails de la préparation ci-dessous.`
       : `Ajoutez une nouvelle préparation à votre base de données.`;
 
@@ -46,3 +51,5 @@ export function PreparationModal({ children, preparation, onSuccess }: Preparati
     </Dialog>
   );
 }
+
+    

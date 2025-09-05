@@ -431,7 +431,7 @@ const fetchAllPreparations = useCallback(async () => {
   
   const handleRemoveNewIngredient = (tempId: string) => { setNewIngredients(current => current.filter(ing => ing.tempId !== tempId)); };
   const handleRemoveExistingIngredient = (recipeIngredientId: string) => { setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId)); };
-  const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => { fetchAllIngredients().then(updatedList => { const newlyAdded = updatedList.find(i => i.id === newIngredient.id); if (newlyAdded) { handleNewIngredientChange(tempId, 'ingredientId', newlyAdded.id); } }); };
+  const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => { fetchAllIngredients().then(updatedList => { const newlyAdded = updatedList.find(i => i.id === newIngredient.id); if (newlyAdded) { handleNewIngredientChange(tempId, 'ingredientId', newlyAdded.id!); } }); };
   const openNewIngredientModal = (tempId: string) => { const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId); if(ingredientToCreate) { setCurrentTempId(tempId); setNewIngredientDefaults({ name: ingredientToCreate.name }); setIsNewIngredientModalOpen(true); } }
 
   // --- PREPARATION HANDLERS ---
@@ -448,7 +448,7 @@ const fetchAllPreparations = useCallback(async () => {
     fetchAllPreparations().then(updatedList => {
         const newlyAdded = updatedList.find(p => p.id === newPreparation.id);
         if (newlyAdded) {
-            handleNewPreparationChange(tempId, 'childPreparationId', newlyAdded.id);
+            handleNewPreparationChange(tempId, 'childPreparationId', newlyAdded.id!);
         }
     })
   }
@@ -498,7 +498,7 @@ const fetchAllPreparations = useCallback(async () => {
         existingLinksSnap.forEach(doc => batch.delete(doc.ref));
         allPrepLinks.forEach(link => {
             const newLinkRef = doc(collection(db, 'recipePreparationLinks'));
-            batch.set(newLinkRef, link);
+            batch.set(newLinkRef, link as any);
         });
         await batch.commit();
 
@@ -624,7 +624,7 @@ const fetchAllPreparations = useCallback(async () => {
             </Card>
 
             <Card>
-                <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><BookCopy className="h-5 w-5"/>Sous-Recettes</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewPreparations([...newPreparations, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0 }])}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Préparation</Button>}</CardTitle><CardDescription>Liste des préparations (fiches techniques internes) utilisées dans cette recette.</CardDescription></CardHeader>
+                <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><BookCopy className="h-5 w-5"/>Sous-Recettes</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewPreparations([...newPreparations, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, _productionUnit: '' }])}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Préparation</Button>}</CardTitle><CardDescription>Liste des préparations (fiches techniques internes) utilisées dans cette recette.</CardDescription></CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
