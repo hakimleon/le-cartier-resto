@@ -59,7 +59,7 @@ export async function replaceRecipeIngredients(recipeId: string, ingredients: Om
 
     // 2. Add all the new ingredient links
     ingredients.forEach((ingredient) => {
-        if (ingredient.ingredientId) { // Ensure we don't add links without an ingredient
+        if (ingredient.ingredientId && ingredient.quantity > 0) { // Ensure we don't add links without an ingredient or quantity
             const newLinkRef = doc(collection(db, "recipeIngredients"));
             batch.set(newLinkRef, { recipeId, ...ingredient });
         }
@@ -68,6 +68,7 @@ export async function replaceRecipeIngredients(recipeId: string, ingredients: Om
     // 3. Commit the batch
     await batch.commit();
 }
+
 
 export async function deleteRecipePreparationLink(linkId: string) {
     if (!linkId) {

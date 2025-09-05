@@ -112,11 +112,13 @@ const recipeGenerationPrompt = ai.definePrompt({
         Type de Fiche: {{{type}}}
 
         Instructions:
-        1.  Listez les ingrédients nécessaires. Règle impérative: **privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes, plutôt que des "pièces" ou "unités" lorsque c'est possible.** Utilisez les litres/ml pour les liquides et "pièce" uniquement quand c'est indispensable (ex: 1 oeuf).
+        1.  **Listez les ingrédients nécessaires.**
+            -   **Règle impérative sur les noms :** Utilisez des noms d'ingrédients génériques et standards (ex: "Tomate", "Oignon", "Poulet"). Évitez les termes trop spécifiques ou poétiques (ex: "Tomate Cœur de Bœuf juteuse", "Cuisse de poulet fermier"). L'utilisateur liera cet ingrédient à son produit spécifique plus tard.
+            -   **Règle impérative sur les unités :** Privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes. Utilisez les litres/ml pour les liquides et "pièce" uniquement quand c'est indispensable (ex: 1 oeuf).
         2.  Rédigez une procédure technique et détaillée en trois phases : "Préparation" (mise en place, techniques), "Cuisson" (températures, temps), et "Service" (dressage). Si une étape n'est pas applicable (ex: pas de cuisson), retournez une chaîne de caractères vide pour ce champ spécifique.
         3.  Estimez la durée totale de la recette en minutes.
         4.  Évaluez la difficulté (Facile, Moyen, Difficile).
-        5.  Déduisez et fournissez la quantité totale que la recette produite (productionQuantity), son unité (productionUnit), et l'unité d'utilisation suggérée (usageUnit). Par exemple, une sauce peut produire 1 litre (production) et être utilisée en grammes (usage).
+        5.  Déduisez et fournissez la quantité totale que la recette produit (productionQuantity), son unité (productionUnit), et l'unité d'utilisation suggérée (usageUnit). Par exemple, une sauce peut produire 1 litre (production) et être utilisée en grammes (usage).
         6.  Assurez-vous que la recette soit réalisable, gustativement équilibrée et respecte les standards de la cuisine demandée.
         7.  Fournissez la sortie au format JSON structuré attendu.
     `,
