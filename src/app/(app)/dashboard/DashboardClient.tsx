@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { LucideIcon, AlertTriangle, ChefHat, BookCopy, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { CategoryChart } from "./CategoryChart";
 
 // Map string identifiers to actual icon components
 const iconMap: Record<string, LucideIcon> = {
@@ -25,10 +26,11 @@ interface StatCard {
 
 interface DashboardClientProps {
     stats: StatCard[];
+    categoryDistribution: { name: string; value: number }[];
     error: string | null;
 }
 
-export default function DashboardClient({ stats, error }: DashboardClientProps) {
+export default function DashboardClient({ stats, categoryDistribution, error }: DashboardClientProps) {
   return (
     <div className="space-y-6">
         <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -72,8 +74,27 @@ export default function DashboardClient({ stats, error }: DashboardClientProps) 
             })}
         </div>
 
-        <div className="flex h-[300px] items-center justify-center rounded-lg border-2 border-dashed">
-            <p className="text-muted-foreground">Graphiques & analyses à venir.</p>
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+            <Card className="col-span-12 lg:col-span-4">
+                <CardHeader>
+                    <CardTitle>Répartition par Catégorie</CardTitle>
+                    <CardDescription>Visualisation du nombre de plats dans chaque catégorie du menu.</CardDescription>
+                </CardHeader>
+                <CardContent className="pl-2">
+                    <CategoryChart data={categoryDistribution} />
+                </CardContent>
+            </Card>
+            <Card className="col-span-12 lg:col-span-3">
+                 <CardHeader>
+                    <CardTitle>Activité Récente</CardTitle>
+                     <CardDescription>Les derniers mouvements et modifications.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex h-[300px] items-center justify-center rounded-lg border-2 border-dashed">
+                        <p className="text-muted-foreground text-sm">À venir...</p>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     </div>
   );

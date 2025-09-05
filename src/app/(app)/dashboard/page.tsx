@@ -5,11 +5,28 @@ import { Ingredient, Recipe, Preparation } from '@/lib/types';
 import DashboardClient from './DashboardClient';
 import { BookCopy, ChefHat, Package, AlertTriangle } from 'lucide-react';
 
+type CategoryDistribution = {
+    name: string;
+    value: number;
+}[];
+
 async function getDashboardData() {
     try {
         const recipesQuery = query(collection(db, "recipes"), where("type", "==", "Plat"));
         const recipesSnapshot = await getDocs(recipesQuery);
-        const totalDishes = recipesSnapshot.size;
+        const allRecipes = recipesSnapshot.docs.map(doc => doc.data() as Recipe);
+        const totalDishes = allRecipes.length;
+
+        // Calculate category distribution
+        const categoryCounts = allRecipes.reduce((acc, recipe) => {
+            if (recipe.category) {
+                acc[recipe.category] = (acc[recipe.category] || 0) + 1;
+            }
+            return acc;
+        }, {} as Record<string, number>);
+
+        const categoryDistribution: CategoryDistribution = Object.entries(categoryCounts).map(([name, value]) => ({ name, value }));
+
 
         const preparationsSnapshot = await getDocs(collection(db, "preparations"));
         const totalPreparations = preparationsSnapshot.size;
@@ -27,6 +44,7 @@ async function getDashboardData() {
             totalPreparations, 
             totalIngredients, 
             lowStockIngredients,
+            categoryDistribution,
             error: null 
         };
 
@@ -38,6 +56,7 @@ async function getDashboardData() {
             totalPreparations: 0, 
             totalIngredients: 0, 
             lowStockIngredients: 0,
+            categoryDistribution: [],
             error: `Impossible de charger les données du tableau de bord: ${errorMessage}`
         };
     }
@@ -45,7 +64,7 @@ async function getDashboardData() {
 
 
 export default async function DashboardPage() {
-    const { totalDishes, totalPreparations, totalIngredients, lowStockIngredients, error } = await getDashboardData();
+    const { totalDishes, totalPreparations, totalIngredients, lowStockIngredients, categoryDistribution, error } = await getDashboardData();
     
     const stats = [
         {
@@ -76,7 +95,7 @@ export default async function DashboardPage() {
     ]
   return (
     <div className="container mx-auto py-10">
-        <DashboardClient stats={stats} error={error} />
+        <DashboardClient stats={stats} categoryDistribution={categoryDistribution} error={error} />
     </div>
   );
 }
