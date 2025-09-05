@@ -1,9 +1,9 @@
 
 'use server';
 
-import { collection, addDoc, query, where, getDocs, writeBatch, doc } from 'firebase/firestore';
+import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Preparation, Recipe } from '@/lib/types';
+import type { Recipe } from '@/lib/types';
 import type { DishConceptOutput } from '@/ai/flows/workshop-flow';
 
 /**
@@ -46,5 +46,3 @@ export async function createDishFromWorkshop(concept: DishConceptOutput): Promis
         throw new Error("An unknown error occurred while creating the dish from the workshop concept.");
     }
 }
-
-    
