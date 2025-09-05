@@ -3,13 +3,22 @@
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { LucideIcon, AlertTriangle } from "lucide-react";
+import { LucideIcon, AlertTriangle, ChefHat, BookCopy, Package } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+// Map string identifiers to actual icon components
+const iconMap: Record<string, LucideIcon> = {
+    'chef-hat': ChefHat,
+    'book-copy': BookCopy,
+    'package': Package,
+    'alert-triangle': AlertTriangle,
+};
+
 
 interface StatCard {
     title: string;
     value: number;
-    icon: LucideIcon;
+    icon: string; // Now a string identifier
     description: string;
     isCritical?: boolean;
 }
@@ -40,24 +49,27 @@ export default function DashboardClient({ stats, error }: DashboardClientProps) 
         )}
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            {stats.map((stat) => (
-                <Card key={stat.title}>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">
-                            {stat.title}
-                        </CardTitle>
-                        <stat.icon className={cn("h-4 w-4 text-muted-foreground", stat.isCritical && stat.value > 0 && "text-destructive")} />
-                    </CardHeader>
-                    <CardContent>
-                        <div className={cn("text-2xl font-bold", stat.isCritical && stat.value > 0 && "text-destructive")}>
-                            {stat.value}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            {stat.description}
-                        </p>
-                    </CardContent>
-                </Card>
-            ))}
+            {stats.map((stat) => {
+                const Icon = iconMap[stat.icon];
+                return (
+                    <Card key={stat.title}>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">
+                                {stat.title}
+                            </CardTitle>
+                            {Icon && <Icon className={cn("h-4 w-4 text-muted-foreground", stat.isCritical && stat.value > 0 && "text-destructive")} />}
+                        </CardHeader>
+                        <CardContent>
+                            <div className={cn("text-2xl font-bold", stat.isCritical && stat.value > 0 && "text-destructive")}>
+                                {stat.value}
+                            </div>
+                            <p className="text-xs text-muted-foreground">
+                                {stat.description}
+                            </p>
+                        </CardContent>
+                    </Card>
+                )
+            })}
         </div>
 
         <div className="flex h-[300px] items-center justify-center rounded-lg border-2 border-dashed">

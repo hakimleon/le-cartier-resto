@@ -51,25 +51,25 @@ export default async function DashboardPage() {
         {
             title: "Plats au Menu",
             value: totalDishes,
-            icon: ChefHat,
+            icon: "chef-hat",
             description: "Nombre total de plats actifs et inactifs."
         },
         {
             title: "Préparations",
             value: totalPreparations,
-            icon: BookCopy,
+            icon: "book-copy",
             description: "Nombre de fiches techniques de base."
         },
         {
             title: "Ingrédients",
             value: totalIngredients,
-            icon: Package,
+            icon: "package",
             description: "Nombre d'ingrédients dans l'inventaire."
         },
         {
             title: "Stock Critique",
             value: lowStockIngredients,
-            icon: AlertTriangle,
+            icon: "alert-triangle",
             description: "Ingrédients en dessous du seuil d'alerte.",
             isCritical: true,
         },
