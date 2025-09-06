@@ -642,10 +642,20 @@ const fetchAllPreparations = useCallback(async () => {
                         </Tabs>
                    ) : (
                         <Tabs defaultValue="preparation">
-                            <TabsList><TabsTrigger value="preparation">Préparation</TabsTrigger><TabsTrigger value="cuisson">Cuisson</TabsTrigger><TabsTrigger value="service">Service</TabsTrigger></TabsList>
-                            <TabsContent value="preparation" className="pt-4 prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: recipe.procedure_preparation?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
-                            <TabsContent value="cuisson" className="pt-4 prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: recipe.procedure_cuisson?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
-                            <TabsContent value="service" className="pt-4 prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: recipe.procedure_service?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            <TabsList>
+                                <TabsTrigger value="preparation">Préparation</TabsTrigger>
+                                <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
+                                <TabsTrigger value="service">Service</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="preparation" className="pt-4">
+                                <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: recipe.procedure_preparation?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            </TabsContent>
+                             <TabsContent value="cuisson" className="pt-4">
+                                <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: recipe.procedure_cuisson?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            </TabsContent>
+                             <TabsContent value="service" className="pt-4">
+                                <div className="prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: recipe.procedure_service?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            </TabsContent>
                         </Tabs>
                    )}
                 </CardContent>
