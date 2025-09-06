@@ -496,6 +496,10 @@ const fetchAllPreparations = useCallback(async () => {
         } finally { setIsGenerating(false); }
     };
 
+    const sortedIngredients = useMemo(() => {
+        return [...allIngredients].sort((a, b) => a.name.localeCompare(b.name));
+    }, [allIngredients]);
+
   const currentRecipeData = isEditing ? editableRecipe : recipe;
   const currentIngredientsData = isEditing ? editableIngredients : ingredients;
   const currentPreparationsData = isEditing ? editablePreparations : preparations;
@@ -593,7 +597,7 @@ const fetchAllPreparations = useCallback(async () => {
                                 <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{Math.round(ing.totalCost)} DZD</TableCell></TableRow>
                             ))}
                              {isEditing && newIngredients.map((newIng) => (
-                                <TableRow key={newIng.tempId}><TableCell><div className="flex items-center gap-2"><Select value={newIng.ingredientId || ''} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'ingredientId', value)} ><SelectTrigger className={cn(!newIng.ingredientId && "text-muted-foreground")}><SelectValue placeholder={newIng.name || "Choisir..."} /></SelectTrigger><SelectContent>{allIngredients.map(ing => ( ing.id ? <SelectItem key={ing.id} value={ing.id}>{ing.name}</SelectItem> : null ))}</SelectContent></Select>{!newIng.ingredientId && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={`Créer l'ingrédient "${newIng.name}"`}><PlusCircle className="h-4 w-4 text-primary" /></Button>)}</div></TableCell><TableCell><Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell><TableCell><Select value={newIng.unit} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell><TableCell className="text-right font-semibold">{Math.round(newIng.totalCost)} DZD</TableCell><TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell></TableRow>
+                                <TableRow key={newIng.tempId}><TableCell><div className="flex items-center gap-2"><Select value={newIng.ingredientId || ''} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'ingredientId', value)} ><SelectTrigger className={cn(!newIng.ingredientId && "text-muted-foreground")}><SelectValue placeholder={newIng.name || "Choisir..."} /></SelectTrigger><SelectContent>{sortedIngredients.map(ing => ( ing.id ? <SelectItem key={ing.id} value={ing.id}>{ing.name}</SelectItem> : null ))}</SelectContent></Select>{!newIng.ingredientId && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={`Créer l'ingrédient "${newIng.name}"`}><PlusCircle className="h-4 w-4 text-primary" /></Button>)}</div></TableCell><TableCell><Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell><TableCell><Select value={newIng.unit} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell><TableCell className="text-right font-semibold">{Math.round(newIng.totalCost)} DZD</TableCell><TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell></TableRow>
                              ))}
                              {currentIngredientsData.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
                         </TableBody>
@@ -677,5 +681,3 @@ function RecipeDetailSkeleton() {
     </div>
   );
 }
-
-    
