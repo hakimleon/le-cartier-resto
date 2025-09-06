@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, onSnapshot, query, getDocs } from "firebase/firestore";
+import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -25,7 +25,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
     AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 
 const formatCategory = (category?: string) => {
     if (!category) return "";
@@ -44,8 +44,11 @@ const sortCategories = (categories: string[]) => {
   ];
 
   return [...categories].sort((a, b) => {
-    const indexA = customOrder.indexOf(a);
-    const indexB = customOrder.indexOf(b);
+    const normalizedA = a.toLowerCase().trim();
+    const normalizedB = b.toLowerCase().trim();
+    
+    const indexA = customOrder.findIndex(item => item.toLowerCase().trim() === normalizedA);
+    const indexB = customOrder.findIndex(item => item.toLowerCase().trim() === normalizedB);
 
     if (indexA === -1 && indexB === -1) {
         return a.localeCompare(b);
@@ -78,17 +81,28 @@ export default function MenuClient() {
     
     setIsLoading(true);
     const recipesCol = collection(db, "recipes");
-    const q = query(recipesCol);
+    const q = query(recipesCol, where("type", "==", "Plat"));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         try {
             const recipesData = querySnapshot.docs.map(
                 (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
-            ).filter(recipe => !recipe.type || recipe.type === 'Plat'); // Filter for plats client-side
+            );
             
             setRecipes(recipesData);
 
-            const uniqueCategories = [...new Set(recipesData.map(recipe => recipe.category).filter(Boolean) as string[])];
+            // Normalize categories to prevent duplicates due to case or spacing differences
+            const categoryMap = new Map<string, string>();
+            recipesData.forEach(recipe => {
+                if (recipe.category) {
+                    const normalizedCategory = recipe.category.toLowerCase().trim();
+                    if (!categoryMap.has(normalizedCategory)) {
+                        categoryMap.set(normalizedCategory, recipe.category);
+                    }
+                }
+            });
+            
+            const uniqueCategories = Array.from(categoryMap.values());
             const sortedCategories = sortCategories(uniqueCategories);
 
             setCategories(["Tous", ...sortedCategories]);
@@ -151,7 +165,7 @@ export default function MenuClient() {
     
     // Then apply category filter
     if (selectedCategory !== 'Tous') {
-        recipesToFilter = recipesToFilter.filter(recipe => recipe.category === selectedCategory);
+        recipesToFilter = recipesToFilter.filter(recipe => recipe.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
     }
     
     return recipesToFilter;
@@ -247,9 +261,11 @@ export default function MenuClient() {
               </TabsTrigger>
             ))}
           </TabsList>
-          <TabsContent value={selectedCategory} className="pt-4">
-              {renderRecipeList(filteredRecipes)}
-          </TabsContent>
+            {categories.map((category) => (
+                <TabsContent key={category} value={category} className="pt-4">
+                    {renderRecipeList(filteredRecipes)}
+                </TabsContent>
+            ))}
       </Tabs>
 
     </div>
