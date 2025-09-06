@@ -80,9 +80,9 @@ const RecipeOutputSchema = z.object({
         quantity: z.number().describe("La quantité nécessaire."),
         unit: z.string().describe("L'unité de mesure (ex: g, kg, ml, l, pièce).")
     })).describe("La liste des ingrédients pour la recette."),
-    procedure_preparation: z.string().describe("Les étapes détaillées de la phase de préparation."),
-    procedure_cuisson: z.string().describe("Les étapes détaillées de la phase de cuisson."),
-    procedure_service: z.string().describe("Les étapes détaillées pour le service ou le dressage."),
+    procedure_preparation: z.string().describe("Les étapes détaillées de la phase de préparation. Doit être formaté en Markdown."),
+    procedure_cuisson: z.string().describe("Les étapes détaillées de la phase de cuisson. Doit être formaté en Markdown."),
+    procedure_service: z.string().describe("Les étapes détaillées pour le service ou le dressage. Doit être formaté en Markdown."),
     duration: z.number().int().describe("La durée totale de préparation en minutes."),
     difficulty: z.enum(['Facile', 'Moyen', 'Difficile']).describe("Le niveau de difficulté de la recette."),
     productionQuantity: z.number().describe("La quantité totale que la recette produit."),
@@ -115,7 +115,7 @@ const recipeGenerationPrompt = ai.definePrompt({
         1.  **Listez les ingrédients nécessaires.**
             -   **Règle impérative sur les noms :** Utilisez des noms d'ingrédients génériques et standards (ex: "Tomate", "Oignon", "Poulet"). Évitez les termes trop spécifiques ou poétiques (ex: "Tomate Cœur de Bœuf juteuse", "Cuisse de poulet fermier"). L'utilisateur liera cet ingrédient à son produit spécifique plus tard.
             -   **Règle impérative sur les unités :** Privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes. Utilisez les litres/ml pour les liquides et "pièce" uniquement quand c'est indispensable (ex: 1 oeuf).
-        2.  Rédigez une procédure technique et détaillée en trois phases : "Préparation" (mise en place, techniques), "Cuisson" (températures, temps), et "Service" (dressage). Si une étape n'est pas applicable (ex: pas de cuisson), retournez une chaîne de caractères vide pour ce champ spécifique.
+        2.  Rédigez une procédure technique et détaillée en trois phases : "Préparation" (mise en place, techniques), "Cuisson" (températures, temps), et "Service" (dressage). Si une étape n'est pas applicable (ex: pas de cuisson), retournez une chaîne de caractères vide pour ce champ spécifique. **Utilisez le format Markdown (titres avec '###', listes à puces avec '-') pour la procédure.**
         3.  Estimez la durée totale de la recette en minutes.
         4.  Évaluez la difficulté (Facile, Moyen, Difficile).
         5.  Déduisez et fournissez la quantité totale que la recette produit (productionQuantity), son unité (productionUnit), et l'unité d'utilisation suggérée (usageUnit). Par exemple, une sauce peut produire 1 litre (production) et être utilisée en grammes (usage).
