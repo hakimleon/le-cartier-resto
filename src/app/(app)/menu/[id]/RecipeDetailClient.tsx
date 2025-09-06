@@ -524,12 +524,6 @@ const fetchAllPreparations = useCallback(async () => {
   if (!recipe || !currentRecipeData) { return ( <div className="container mx-auto py-10 text-center"><p>Fiche technique non trouvée ou erreur de chargement.</p></div> ); }
   
   const isPlat = currentRecipeData.type === 'Plat';
-
-  const formatProcedure = (text: string | undefined) => {
-    if (!text) return { __html: '' };
-    const html = text.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />');
-    return { __html: html };
-  };
   
 
   return (
@@ -649,9 +643,9 @@ const fetchAllPreparations = useCallback(async () => {
                    ) : (
                         <Tabs defaultValue="preparation">
                             <TabsList><TabsTrigger value="preparation">Préparation</TabsTrigger><TabsTrigger value="cuisson">Cuisson</TabsTrigger><TabsTrigger value="service">Service</TabsTrigger></TabsList>
-                            <TabsContent value="preparation" className="pt-4 prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={formatProcedure(recipe.procedure_preparation)} />
-                            <TabsContent value="cuisson" className="pt-4 prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={formatProcedure(recipe.procedure_cuisson)} />
-                            <TabsContent value="service" className="pt-4 prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={formatProcedure(recipe.procedure_service)} />
+                            <TabsContent value="preparation" className="pt-4 prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: recipe.procedure_preparation?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            <TabsContent value="cuisson" className="pt-4 prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: recipe.procedure_cuisson?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
+                            <TabsContent value="service" className="pt-4 prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={{ __html: recipe.procedure_service?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} />
                         </Tabs>
                    )}
                 </CardContent>
@@ -690,5 +684,7 @@ function RecipeDetailSkeleton() {
     </div>
   );
 }
+
+    
 
     
