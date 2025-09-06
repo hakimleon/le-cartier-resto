@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -41,6 +41,8 @@ import {
 import { ImageUploadDialog } from "@/app/(app)/menu/[id]/ImageUploadDialog";
 import { generateRecipe } from "@/ai/flows/suggestion-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -495,9 +497,84 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20"/></TableCell><TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell><TableCell className="text-right font-semibold">{Math.round(ing.totalCost)} DZD</TableCell><TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>
                             ))}
                             {!isEditing && ingredients.map(ing => ( <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{Math.round(ing.totalCost)} DZD</TableCell></TableRow>))}
-                            {isEditing && newIngredients.map((newIng) => (
-                                <TableRow key={newIng.tempId}><TableCell><div className="flex items-center gap-2"><Select value={newIng.ingredientId || ''} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'ingredientId', value)} ><SelectTrigger className={cn(!newIng.ingredientId && "text-muted-foreground")}><SelectValue placeholder={newIng.name || "Choisir..."} /></SelectTrigger><SelectContent>{sortedIngredients.map(ing => ( ing.id ? <SelectItem key={ing.id} value={ing.id}>{ing.name}</SelectItem> : null ))}</SelectContent></Select>{!newIng.ingredientId && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={`Créer l'ingrédient "${newIng.name}"`}><PlusCircle className="h-4 w-4 text-primary" /></Button>)}</div></TableCell><TableCell><Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell><TableCell><Select value={newIng.unit} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell><TableCell className="text-right font-semibold">{Math.round(newIng.totalCost)} DZD</TableCell><TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell></TableRow>
-                            ))}
+                            {isEditing && newIngredients.map((newIng) => {
+                                const [openCombobox, setOpenCombobox] = useState(false);
+                                return (
+                                <TableRow key={newIng.tempId}>
+                                    <TableCell>
+                                    <div className="flex items-center gap-2">
+                                        <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={openCombobox}
+                                                    className="w-full justify-between"
+                                                >
+                                                    {newIng.ingredientId
+                                                        ? sortedIngredients.find((ing) => ing.id === newIng.ingredientId)?.name
+                                                        : newIng.name || "Choisir..."}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[300px] p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="Rechercher un ingrédient..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                                        <CommandGroup>
+                                                        {sortedIngredients.map((ing) => (
+                                                            ing.id ?
+                                                            <CommandItem
+                                                                key={ing.id}
+                                                                value={ing.name}
+                                                                onSelect={() => {
+                                                                    handleNewIngredientChange(newIng.tempId, 'ingredientId', ing.id!);
+                                                                    setOpenCombobox(false);
+                                                                }}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {ing.name}
+                                                            </CommandItem>
+                                                            : null
+                                                        ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+
+                                        {!newIng.ingredientId && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={`Créer l'ingrédient "${newIng.name}"`}>
+                                                <PlusCircle className="h-4 w-4 text-primary" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Select value={newIng.unit} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'unit', value)} >
+                                            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="g">g</SelectItem>
+                                                <SelectItem value="kg">kg</SelectItem>
+                                                <SelectItem value="ml">ml</SelectItem>
+                                                <SelectItem value="l">l</SelectItem>
+                                                <SelectItem value="pièce">pièce</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
+                                    <TableCell className="text-right font-semibold">{Math.round(newIng.totalCost)} DZD</TableCell>
+                                    <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
+                                </TableRow>
+                            )})}
                             {currentIngredientsData.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
                         </TableBody>
                     </Table>
@@ -535,9 +612,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                    ) : (
                         <Tabs defaultValue="preparation">
                             <TabsList><TabsTrigger value="preparation">Préparation</TabsTrigger><TabsTrigger value="cuisson">Cuisson</TabsTrigger><TabsTrigger value="service">Service</TabsTrigger></TabsList>
-                            <TabsContent value="preparation" className="pt-4"><div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: recipe.procedure_preparation?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} /></TabsContent>
-                            <TabsContent value="cuisson" className="pt-4"><div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: recipe.procedure_cuisson?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} /></TabsContent>
-                            <TabsContent value="service" className="pt-4"><div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: recipe.procedure_service?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') || '' }} /></TabsContent>
+                            <TabsContent value="preparation" className="pt-4"><div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: recipe.procedure_preparation?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\\n/g, '<br />') || '' }} /></TabsContent>
+                            <TabsContent value="cuisson" className="pt-4"><div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: recipe.procedure_cuisson?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\\n/g, '<br />') || '' }} /></TabsContent>
+                            <TabsContent value="service" className="pt-4"><div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: recipe.procedure_service?.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\\n/g, '<br />') || '' }} /></TabsContent>
                         </Tabs>
                    )}
                 </CardContent>
@@ -566,3 +643,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
