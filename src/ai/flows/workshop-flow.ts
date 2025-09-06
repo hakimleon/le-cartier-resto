@@ -9,11 +9,13 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { v2 as cloudinary } from 'cloudinary';
 
+// La configuration est déjà présente, assurons-nous que les variables d'env sont chargées
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
+
 
 const DishConceptInputSchema = z.object({
     dishName: z.string().optional().describe("Le nom ou l'idée de base du plat. Peut être vide."),
@@ -144,7 +146,7 @@ const generateDishConceptFlow = ai.defineFlow(
             throw new Error("La génération du concept de la recette a échoué.");
         }
 
-        let imageUrl = "https://picsum.photos/1024/768"; // Image de substitution par défaut
+        let imageUrl = "https://placehold.co/1024x768.png"; // Image de substitution par défaut
 
         try {
             // 2. Créer un prompt pour l'image basé sur la recette générée
@@ -158,11 +160,8 @@ const generateDishConceptFlow = ai.defineFlow(
 
             // 3. Essayer de générer l'image avec le modèle approprié
             const { media } = await ai.generate({
-                model: 'googleai/gemini-2.5-flash-image-preview',
+                model: 'googleai/imagen-4.0-fast-generate-001',
                 prompt: imagePrompt,
-                config: {
-                    responseModalities: ['TEXT', 'IMAGE'],
-                }
             });
             
             if (media && media.url) {
@@ -188,3 +187,5 @@ const generateDishConceptFlow = ai.defineFlow(
         };
     }
 );
+
+    
