@@ -88,13 +88,14 @@ const recipeConceptPrompt = ai.definePrompt({
         - Riz pilaf / riz safrané
         - Pâtes fraîches
         - Pates a ravioli
-        - Base de tajine
-        - Base bolognaise
         - Farce ricotta / herbes
         - Crème de pistache
+        - Base de tajine
+        - Base bolognaise
+
 
         Voici les instructions du chef de l'établissement :
-        {{#if dishName}}- Le nom du plat est imposé : {{{dishName}}}. Vous devez le conserver.{{else}}- Vous avez carte blanche pour inventer un nom de plat créatif et alléchant.{{/if}}
+        {{#if dishName}}- Le nom du plat est imposé : {{{dishName}}}. Vous devez le conserver.{{else}}- Vous devez inventer un nom de plat. Pour une carte gastronomique, un intitulé clair, sobre et précis inspire plus confiance que des noms trop lyriques.{{/if}}
         {{#if mainIngredients}}- Ingrédients à utiliser : {{{mainIngredients}}}{{else}}- Ingrédients principaux: Vous avez carte blanche pour les choisir. Soyez créatif.{{/if}}
         {{#if excludedIngredients}}- Ingrédients à **ABSOLUMENT EXCLURE** : {{{excludedIngredients}}}{{/if}}
         {{#if recommendations}}- Recommandations et style : {{{recommendations}}}{{/if}}
@@ -116,7 +117,7 @@ const recipeConceptPrompt = ai.definePrompt({
 
 
         Votre tâche est de générer une fiche technique détaillée avec les éléments suivants :
-        1.  **name**: {{#if dishName}}Conservez impérativement le nom "{{{dishName}}}".{{else}}Inventez un nom marketing et séduisant pour le plat.{{/if}}
+        1.  **name**: {{#if dishName}}Conservez impérativement le nom "{{{dishName}}}".{{else}}Inventez un nom de plat. Rappel : Pour une carte gastronomique, un intitulé clair, sobre et précis inspire plus confiance que des noms trop lyriques.{{/if}}
         2.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
         3.  **ingredients**: Une liste de TOUS les ingrédients bruts nécessaires pour réaliser la recette complète. Règle impérative : **privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes, plutôt que "pièce" ou "unité".** Réservez "pièce" uniquement lorsque c'est indispensable (ex: 1 œuf). Si une préparation n'est PAS dans la liste des bases autorisées (ex: une garniture simple), ses ingrédients doivent être listés ici.
         4.  **subRecipes**: Listez ici UNIQUEMENT les noms des préparations de la recette qui correspondent EXACTEMENT à un nom dans la LISTE DES PRÉPARations DE BASE AUTORISÉES fournie au début. Si aucune base de la liste n'est utilisée, retournez un tableau vide. C'est un point crucial.
@@ -188,3 +189,5 @@ const generateDishConceptFlow = ai.defineFlow(
         };
     }
 );
+
+    
