@@ -26,9 +26,10 @@ import { PreparationModal } from "@/app/(app)/preparations/PreparationModal";
 type RecipeCardProps = {
     recipe: Recipe | Preparation;
     onDelete: () => void;
+    allCategories?: string[]; // Make it optional for preparations
 };
 
-export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
+export function RecipeCard({ recipe, onDelete, allCategories = [] }: RecipeCardProps) {
     const placeholderImage = "https://placehold.co/600x400.png";
     
     const isPreparation = recipe.type === 'Préparation';
@@ -42,7 +43,7 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
     const EditModal = () => {
         if (recipe.type === 'Plat') {
             return (
-                <DishModal dish={recipe as Recipe} allCategories={[]} onSuccess={() => { /* onSnapshot handles updates */ }}>
+                <DishModal dish={recipe as Recipe} allCategories={allCategories} onSuccess={() => { /* onSnapshot handles updates */ }}>
                     <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier">
                         <Pencil className="h-4 w-4" />
                     </Button>

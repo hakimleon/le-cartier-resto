@@ -163,14 +163,19 @@ export default function MenuClient() {
       );
     }
     
-    // Then apply category filter
+    // Then apply category filter to the whole group for display under tabs
+    let recipesByCategory: { [key: string]: Recipe[] } = {};
+
+    categories.slice(1).forEach(category => {
+        recipesByCategory[category] = recipesToFilter.filter(recipe => recipe.category?.toLowerCase().trim() === category.toLowerCase().trim());
+    })
+    
     if (selectedCategory !== 'Tous') {
         recipesToFilter = recipesToFilter.filter(recipe => recipe.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
     }
     
     return recipesToFilter;
-  }, [recipes, searchTerm, selectedCategory]);
-
+  }, [recipes, searchTerm, selectedCategory, categories]);
 
   const renderRecipeList = (recipeList: Recipe[]) => {
     if (isLoading) {
@@ -189,7 +194,7 @@ export default function MenuClient() {
       );
     }
     if (recipeList.length === 0) {
-      return <div className="text-center text-muted-foreground pt-12">Aucun plat ne correspond à votre recherche.</div>;
+      return <div className="text-center text-muted-foreground pt-12">Aucun plat ne correspond à votre recherche ou dans cette catégorie.</div>;
     }
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -197,6 +202,7 @@ export default function MenuClient() {
           <RecipeCard 
             key={recipe.id} 
             recipe={recipe} 
+            allCategories={categories.filter(c => c !== "Tous")}
             onDelete={() => handleDelete(recipe.id!, recipe.name)}
           />
         ))}
@@ -233,7 +239,7 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <DishModal dish={null} allCategories={categories.filter(c => c !== "Tous")} onSuccess={() => { /* onSnapshot handles updates */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat
@@ -263,7 +269,11 @@ export default function MenuClient() {
           </TabsList>
             {categories.map((category) => (
                 <TabsContent key={category} value={category} className="pt-4">
-                    {renderRecipeList(filteredRecipes)}
+                    {renderRecipeList(
+                        category === 'Tous'
+                        ? filteredRecipes
+                        : filteredRecipes.filter(r => r.category?.toLowerCase().trim() === category.toLowerCase().trim())
+                    )}
                 </TabsContent>
             ))}
       </Tabs>
