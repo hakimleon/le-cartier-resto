@@ -87,6 +87,7 @@ const recipeConceptPrompt = ai.definePrompt({
         - Légumes grillés / rôtis
         - Riz pilaf / riz safrané
         - Pâtes fraîches
+        - Pates a ravioli
         - Base de tajine
         - Base bolognaise
         - Farce ricotta / herbes
@@ -187,5 +188,3 @@ const generateDishConceptFlow = ai.defineFlow(
         };
     }
 );
-
-    
