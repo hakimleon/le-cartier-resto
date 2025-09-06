@@ -26,6 +26,9 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { generateRecipe } from "@/ai/flows/suggestion-flow";
+import { Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
@@ -47,6 +50,7 @@ type PreparationFormProps = {
 
 export function PreparationForm({ preparation, onSuccess }: PreparationFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -69,6 +73,45 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
         usageUnit: '',
     }
   });
+
+  const handleGenerate = async () => {
+      const name = form.getValues("name");
+      const description = form.getValues("description");
+      if (!name) {
+          toast({
+              title: "Nom manquant",
+              description: "Veuillez entrer un nom pour la préparation avant d'utiliser l'IA.",
+              variant: "destructive"
+          });
+          return;
+      }
+      setIsGenerating(true);
+      try {
+          const result = await generateRecipe({ name, description, type: 'Préparation' });
+          if(result) {
+              form.setValue("description", result.description || form.getValues("description"));
+              form.setValue("duration", result.duration);
+              form.setValue("difficulty", result.difficulty);
+              form.setValue("productionQuantity", result.productionQuantity);
+              form.setValue("productionUnit", result.productionUnit);
+              form.setValue("usageUnit", result.usageUnit);
+              toast({
+                  title: "Suggestion de l'IA appliquée !",
+                  description: "Les champs du formulaire ont été pré-remplis."
+              })
+          }
+      } catch (e) {
+          console.error("Failed to generate recipe with AI", e);
+          toast({
+              title: "Erreur de l'IA",
+              description: "Impossible de générer la recette. Veuillez réessayer.",
+              variant: 'destructive',
+          });
+      } finally {
+          setIsGenerating(false);
+      }
+  };
+
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -106,9 +149,21 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
           render={({ field }) => (
             <FormItem>
               <FormLabel>Nom</FormLabel>
-              <FormControl>
-                <Input placeholder="Ex: Sauce tomate maison" {...field} />
-              </FormControl>
+              <div className="flex items-center gap-2">
+                <FormControl>
+                  <Input placeholder="Ex: Sauce tomate maison" {...field} />
+                </FormControl>
+                <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="icon" 
+                    onClick={handleGenerate} 
+                    disabled={isGenerating}
+                    title="Élaborer avec l'IA"
+                >
+                    <Sparkles className={cn("h-4 w-4", isGenerating && "animate-spin")} />
+                </Button>
+              </div>
               <FormMessage />
             </FormItem>
           )}
@@ -194,7 +249,7 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
                 render={({ field }) => (
                 <FormItem>
                     <FormLabel>Difficulté</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                     <FormControl>
                         <SelectTrigger>
                         <SelectValue placeholder="Sélectionnez un niveau" />
@@ -219,5 +274,3 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
     </Form>
   );
 }
-
-    
