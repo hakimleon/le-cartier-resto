@@ -132,6 +132,49 @@ const foodCostIndicators = [
   { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500" },
 ];
 
+
+const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
+    if (!text) return null;
+
+    const lines = text.split('\n');
+    const elements: React.ReactNode[] = [];
+    let listItems: string[] = [];
+
+    const flushList = () => {
+        if (listItems.length > 0) {
+            elements.push(
+                <ul key={`ul-${elements.length}`} className="list-disc pl-5 space-y-1">
+                    {listItems.map((item, index) => (
+                        <li key={index}>{item}</li>
+                    ))}
+                </ul>
+            );
+            listItems = [];
+        }
+    };
+
+    lines.forEach((line, index) => {
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith('### ')) {
+            flushList();
+            elements.push(<h3 key={index} className="font-semibold mt-4 mb-2 text-lg">{trimmedLine.substring(4)}</h3>);
+        } else if (trimmedLine.startsWith('- ')) {
+            listItems.push(trimmedLine.substring(2));
+        } else if (trimmedLine === '') {
+            flushList();
+            elements.push(<br key={`br-${index}`} />);
+        } else {
+            flushList();
+            elements.push(<p key={index}>{trimmedLine}</p>);
+        }
+    });
+
+    flushList(); // Flush any remaining list items
+
+    return <div className="prose prose-sm max-w-none">{elements}</div>;
+};
+
+
 const NewIngredientRow = ({
     newIng,
     sortedIngredients,
@@ -561,17 +604,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return { totalRecipeCost: totalCost, costPerPortion: costPerPortionValue };
   }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations, isEditing]);
 
-    const formatProcedureToHtml = (text: string | undefined) => {
-        if (!text) return '';
-        return text
-            .replace(/### (.*)/g, '<h3>$1</h3>') // Convert ### to <h3>
-            .replace(/- (.*)/g, '<li>$1</li>') // Convert - to <li>
-            .replace(/<\/li><li>/g, '</li><li>') // fix spacing
-            .replace(/<li>/g, '<ul><li>')
-            .replace(/<\/li>/g, '</li></ul>')
-            .replace(/<\/ul><ul>/g, '')
-            .replace(/\n/g, '<br />'); // Keep line breaks
-    };
 
   if (isLoading) { return <RecipeDetailSkeleton />; }
   if (error) { return ( <div className="container mx-auto py-10"><Alert variant="destructive" className="max-w-2xl mx-auto my-10"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erreur</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></div> ); }
@@ -667,13 +699,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TabsTrigger value="service">Service</TabsTrigger>
                             </TabsList>
                             <TabsContent value="preparation" className="pt-4">
-                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: formatProcedureToHtml(recipe.procedure_preparation) }} />
+                                <MarkdownRenderer text={recipe.procedure_preparation} />
                             </TabsContent>
-                             <TabsContent value="cuisson" className="pt-4">
-                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: formatProcedureToHtml(recipe.procedure_cuisson) }} />
+                            <TabsContent value="cuisson" className="pt-4">
+                                <MarkdownRenderer text={recipe.procedure_cuisson} />
                             </TabsContent>
-                             <TabsContent value="service" className="pt-4">
-                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: formatProcedureToHtml(recipe.procedure_service) }} />
+                            <TabsContent value="service" className="pt-4">
+                                <MarkdownRenderer text={recipe.procedure_service} />
                             </TabsContent>
                         </Tabs>
                    )}
