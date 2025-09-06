@@ -561,6 +561,17 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return { totalRecipeCost: totalCost, costPerPortion: costPerPortionValue };
   }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations, isEditing]);
 
+    const formatProcedureToHtml = (text: string | undefined) => {
+        if (!text) return '';
+        return text
+            .replace(/### (.*)/g, '<h3>$1</h3>') // Convert ### to <h3>
+            .replace(/- (.*)/g, '<li>$1</li>') // Convert - to <li>
+            .replace(/<\/li><li>/g, '</li><li>') // fix spacing
+            .replace(/<li>/g, '<ul><li>')
+            .replace(/<\/li>/g, '</li></ul>')
+            .replace(/<\/ul><ul>/g, '')
+            .replace(/\n/g, '<br />'); // Keep line breaks
+    };
 
   if (isLoading) { return <RecipeDetailSkeleton />; }
   if (error) { return ( <div className="container mx-auto py-10"><Alert variant="destructive" className="max-w-2xl mx-auto my-10"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erreur</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></div> ); }
@@ -655,14 +666,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
                                 <TabsTrigger value="service">Service</TabsTrigger>
                             </TabsList>
-                            <TabsContent value="preparation" className="max-w-none pt-4 whitespace-pre-wrap text-sm text-muted-foreground">
-                                {recipe.procedure_preparation}
+                            <TabsContent value="preparation" className="pt-4">
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: formatProcedureToHtml(recipe.procedure_preparation) }} />
                             </TabsContent>
-                             <TabsContent value="cuisson" className="max-w-none pt-4 whitespace-pre-wrap text-sm text-muted-foreground">
-                                {recipe.procedure_cuisson}
+                             <TabsContent value="cuisson" className="pt-4">
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: formatProcedureToHtml(recipe.procedure_cuisson) }} />
                             </TabsContent>
-                             <TabsContent value="service" className="max-w-none pt-4 whitespace-pre-wrap text-sm text-muted-foreground">
-                                {recipe.procedure_service}
+                             <TabsContent value="service" className="pt-4">
+                                <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: formatProcedureToHtml(recipe.procedure_service) }} />
                             </TabsContent>
                         </Tabs>
                    )}
@@ -692,8 +703,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
-
-    
-
