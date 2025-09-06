@@ -17,26 +17,12 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 
 const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
-  description: z.string().min(10, "La description doit contenir au moins 10 caractères."),
-  duration: z.coerce.number().int().positive("La durée doit être un nombre entier positif.").optional(),
-  difficulty: z.enum(["Facile", "Moyen", "Difficile"], {
-    errorMap: () => ({ message: "Veuillez sélectionner une difficulté valide." }),
-  }),
-  productionQuantity: z.coerce.number().positive("La quantité produite doit être positive."),
-  productionUnit: z.string().min(1, "L'unité de production est requise (ex: kg, l, pièce)."),
-  usageUnit: z.string().optional(),
+  description: z.string().optional(),
 });
 
 
@@ -51,22 +37,9 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: preparation ? {
-        name: preparation.name || "",
-        description: preparation.description || "",
-        difficulty: preparation.difficulty || "Moyen",
-        duration: preparation.duration || 10,
-        productionQuantity: preparation.productionQuantity || 1,
-        productionUnit: preparation.productionUnit || 'kg',
-        usageUnit: preparation.usageUnit || '',
-    } : {
-        name: "",
-        description: "",
-        difficulty: "Moyen",
-        duration: 10,
-        productionQuantity: 1,
-        productionUnit: 'kg',
-        usageUnit: '',
+    defaultValues: {
+        name: preparation?.name || "",
+        description: preparation?.description || "",
     }
   });
 
@@ -74,11 +47,15 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      // Ensure usageUnit is stored as an empty string if not provided
-      const dataToSave = {
+      // Build a partial preparation object. The rest will be filled by the AI.
+      const dataToSave: Partial<Omit<Preparation, 'id'>> = {
         ...values,
-        usageUnit: values.usageUnit || ''
+        difficulty: 'Moyen',
+        duration: 0,
+        productionQuantity: 1,
+        productionUnit: 'pièce',
       };
+
       const savedPreparation = await savePreparation(dataToSave, preparation?.id || null);
       
       toast({
@@ -119,7 +96,7 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
           name="description"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Description</FormLabel>
+              <FormLabel>Description (Optionnel)</FormLabel>
               <FormControl>
                 <Textarea
                   placeholder="Ex: Une délicieuse base pour vos plats..."
@@ -130,92 +107,10 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
             </FormItem>
           )}
         />
-
-        <div className="grid grid-cols-2 gap-4">
-            <FormField
-                control={form.control}
-                name="productionQuantity"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Quantité Produite</FormLabel>
-                    <FormControl>
-                    <Input type="number" step="0.1" placeholder="Ex: 5" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            <div className="grid grid-cols-2 gap-2">
-                 <FormField
-                    control={form.control}
-                    name="productionUnit"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Unité Prod.</FormLabel>
-                        <FormControl>
-                            <Input placeholder="kg" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="usageUnit"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Unité Util.</FormLabel>
-                        <FormControl>
-                            <Input placeholder="g" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-            </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-            <FormField
-                control={form.control}
-                name="duration"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Durée (min)</FormLabel>
-                    <FormControl>
-                    <Input type="number" placeholder="Ex: 30" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="difficulty"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Difficulté</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value} value={form.getValues("difficulty")}>
-                    <FormControl>
-                        <SelectTrigger>
-                        <SelectValue placeholder="Sélectionnez un niveau" />
-                        </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                        <SelectItem value="Facile">Facile</SelectItem>
-                        <SelectItem value="Moyen">Moyen</SelectItem>
-                        <SelectItem value="Difficile">Difficile</SelectItem>
-                    </SelectContent>
-                    </Select>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-        </div>
         
         <div className="flex justify-end pt-4">
             <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting ? "Sauvegarde..." : "Sauvegarder la préparation"}
+            {isSubmitting ? "Sauvegarde..." : "Sauvegarder et continuer"}
             </Button>
         </div>
       </form>
