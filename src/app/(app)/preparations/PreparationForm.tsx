@@ -47,13 +47,9 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      // Build a partial preparation object. The rest will be filled by the AI.
+      // Build a partial preparation object. The rest will be filled by the AI on the detail page.
       const dataToSave: Partial<Omit<Preparation, 'id'>> = {
         ...values,
-        difficulty: 'Moyen',
-        duration: 0,
-        productionQuantity: 1,
-        productionUnit: 'pièce',
       };
 
       const savedPreparation = await savePreparation(dataToSave, preparation?.id || null);

@@ -10,8 +10,14 @@ import type { Preparation } from '@/lib/types';
  */
 export async function savePreparation(preparation: Partial<Omit<Preparation, 'id'>>, id: string | null): Promise<Preparation> {
   const dataToSave = {
-    ...preparation,
-    type: 'Préparation' as const, // Ensure type is always set
+    name: preparation.name || 'Nouvelle Préparation',
+    description: preparation.description || '',
+    type: 'Préparation' as const,
+    difficulty: 'Moyen',
+    duration: 0,
+    productionQuantity: 1,
+    productionUnit: 'Unité',
+    usageUnit: 'g',
   };
 
   let savedPreparation: Preparation;
@@ -62,5 +68,3 @@ export async function deletePreparation(id: string) {
   // 5. Exécuter le batch
   await batch.commit();
 }
-
-    
