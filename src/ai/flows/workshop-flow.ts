@@ -7,6 +7,13 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const DishConceptInputSchema = z.object({
     dishName: z.string().optional().describe("Le nom ou l'idée de base du plat. Peut être vide."),
@@ -159,17 +166,22 @@ const generateDishConceptFlow = ai.defineFlow(
             });
             
             if (media && media.url) {
-                imageUrl = media.url;
+                // 4. Téléverser l'image sur Cloudinary
+                const uploadResult = await cloudinary.uploader.upload(media.url, {
+                    folder: "le-singulier-ai-generated",
+                    resource_type: "image",
+                });
+                imageUrl = uploadResult.secure_url;
             } else {
                 console.warn("La génération de l'image a retourné une réponse vide, utilisation de l'image de substitution.");
             }
         } catch (error) {
-            // Si la génération d'image échoue (quota, etc.), on log l'erreur mais on ne bloque pas le processus.
-            console.error("Erreur lors de la génération de l'image, utilisation de l'image de substitution.", error);
+            // Si la génération d'image ou le téléversement échoue, on log l'erreur mais on ne bloque pas le processus.
+            console.error("Erreur lors de la génération ou du téléversement de l'image, utilisation de l'image de substitution.", error);
         }
 
 
-        // 4. Combiner le texte et l'image (réelle ou de substitution) dans la sortie finale
+        // 5. Combiner le texte et l'URL de l'image (réelle ou de substitution) dans la sortie finale
         return {
             ...recipeConcept,
             imageUrl: imageUrl,
