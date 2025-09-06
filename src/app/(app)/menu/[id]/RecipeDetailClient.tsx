@@ -526,13 +526,9 @@ const fetchAllPreparations = useCallback(async () => {
   const isPlat = currentRecipeData.type === 'Plat';
 
   const formatProcedure = (text: string | undefined) => {
-    if (!text) return '';
-    return text
-      .replace(/###\s*(.*)/g, '<h3>$1</h3>') // Titles
-      .replace(/-\s*(.*)/g, '<li>$1</li>') // List items
-      .replace(/(\<li\>.*\<\/li\>)/g, '<ul>$1</ul>') // Wrap lists
-      .replace(/\<\/ul\>\n?\<ul\>/g, '') // Merge adjacent lists
-      .replace(/\n/g, '<br />'); // Newlines
+    if (!text) return { __html: '' };
+    const html = text.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />');
+    return { __html: html };
   };
   
 
@@ -653,9 +649,9 @@ const fetchAllPreparations = useCallback(async () => {
                    ) : (
                         <Tabs defaultValue="preparation">
                             <TabsList><TabsTrigger value="preparation">Préparation</TabsTrigger><TabsTrigger value="cuisson">Cuisson</TabsTrigger><TabsTrigger value="service">Service</TabsTrigger></TabsList>
-                            <TabsContent value="preparation" className="pt-4"><div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: formatProcedure(recipe.procedure_preparation) }} /></TabsContent>
-                            <TabsContent value="cuisson" className="pt-4"><div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: formatProcedure(recipe.procedure_cuisson) }} /></TabsContent>
-                            <TabsContent value="service" className="pt-4"><div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: formatProcedure(recipe.procedure_service) }} /></TabsContent>
+                            <TabsContent value="preparation" className="pt-4 prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={formatProcedure(recipe.procedure_preparation)} />
+                            <TabsContent value="cuisson" className="pt-4 prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={formatProcedure(recipe.procedure_cuisson)} />
+                            <TabsContent value="service" className="pt-4 prose prose-sm max-w-none text-muted-foreground" dangerouslySetInnerHTML={formatProcedure(recipe.procedure_service)} />
                         </Tabs>
                    )}
                 </CardContent>
@@ -694,3 +690,5 @@ function RecipeDetailSkeleton() {
     </div>
   );
 }
+
+    
