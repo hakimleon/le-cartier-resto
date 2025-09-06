@@ -28,17 +28,7 @@ export default function WorkshopClient() {
 
     const initialFormRef = useRef<HTMLFormElement>(null);
     const refinementFormRef = useRef<HTMLFormElement>(null);
-
-    const initialInstructions = useMemo(() => {
-        if (!initialFormRef.current) return null;
-        const formData = new FormData(initialFormRef.current);
-        return {
-            dishName: formData.get("dishName") as string,
-            mainIngredients: formData.get("mainIngredients") as string,
-            excludedIngredients: formData.get("excludedIngredients") as string,
-            recommendations: formData.get("recommendations") as string,
-        };
-    }, [generatedConcept]); // Recalculate when a new concept is generated
+    const [initialInstructions, setInitialInstructions] = useState<DishConceptInput | null>(null);
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>, isRefinement = false) => {
         e.preventDefault();
@@ -46,24 +36,25 @@ export default function WorkshopClient() {
         let instructions: DishConceptInput = {};
 
         if (isRefinement) {
-            if (!initialInstructions) return; // Should not happen
+            if (!initialInstructions) return;
             const formData = new FormData(e.currentTarget);
             instructions = {
                 ...initialInstructions,
-                refinementInstructions: formData.get("refinementInstructions") as string,
+                refinementInstructions: formData.get("refinementInstructions") as string || '',
             };
         } else {
             const formData = new FormData(e.currentTarget);
             instructions = {
-                dishName: formData.get("dishName") as string,
-                mainIngredients: formData.get("mainIngredients") as string,
-                excludedIngredients: formData.get("excludedIngredients") as string,
-                recommendations: formData.get("recommendations") as string,
+                dishName: formData.get("dishName") as string || '',
+                mainIngredients: formData.get("mainIngredients") as string || '',
+                excludedIngredients: formData.get("excludedIngredients") as string || '',
+                recommendations: formData.get("recommendations") as string || '',
             };
+            setInitialInstructions(instructions);
         }
 
         setIsLoading(true);
-        if(!isRefinement) setGeneratedConcept(null); // Reset only on initial generation
+        if(!isRefinement) setGeneratedConcept(null);
 
         try {
             const result = await generateDishConcept(instructions);
@@ -109,6 +100,7 @@ export default function WorkshopClient() {
     
     const handleNewRecipe = () => {
         setGeneratedConcept(null);
+        setInitialInstructions(null);
         if (initialFormRef.current) initialFormRef.current.reset();
         if (refinementFormRef.current) refinementFormRef.current.reset();
     };
@@ -136,19 +128,19 @@ export default function WorkshopClient() {
                             <form ref={initialFormRef} onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
                                 <div>
                                     <Label htmlFor="dishName">Nom du plat (Optionnel)</Label>
-                                    <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." disabled={isLoading}/>
+                                    <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." disabled={isLoading || !!generatedConcept}/>
                                 </div>
                                 <div>
                                     <Label htmlFor="mainIngredients">Ingrédients principaux (Optionnel)</Label>
-                                    <Input id="mainIngredients" name="mainIngredients" placeholder="Ex: Bar, Orange, Fenouil" disabled={isLoading}/>
+                                    <Input id="mainIngredients" name="mainIngredients" placeholder="Ex: Bar, Orange, Fenouil" disabled={isLoading || !!generatedConcept}/>
                                 </div>
                                 <div>
                                     <Label htmlFor="excludedIngredients">Ingrédients à exclure (Optionnel)</Label>
-                                    <Input id="excludedIngredients" name="excludedIngredients" placeholder="Ex: Vin, crème, porc" disabled={isLoading}/>
+                                    <Input id="excludedIngredients" name="excludedIngredients" placeholder="Ex: Vin, crème, porc" disabled={isLoading || !!generatedConcept}/>
                                 </div>
                                 <div>
                                     <Label htmlFor="recommendations">Recommandations (Optionnel)</Label>
-                                    <Textarea id="recommendations" name="recommendations" placeholder="Ex: Un plat frais, méditerranéen..." disabled={isLoading}/>
+                                    <Textarea id="recommendations" name="recommendations" placeholder="Ex: Un plat frais, méditerranéen..." disabled={isLoading || !!generatedConcept}/>
                                 </div>
                                 <Button type="submit" className="w-full" disabled={isLoading || !!generatedConcept}>
                                     <Sparkles className="mr-2 h-4 w-4" />
@@ -264,3 +256,5 @@ export default function WorkshopClient() {
         </div>
     );
 }
+
+    
