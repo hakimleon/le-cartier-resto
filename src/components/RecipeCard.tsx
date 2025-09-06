@@ -42,7 +42,7 @@ export function RecipeCard({ recipe, onDelete }: RecipeCardProps) {
     const EditModal = () => {
         if (recipe.type === 'Plat') {
             return (
-                <DishModal dish={recipe as Recipe} onSuccess={() => { /* onSnapshot handles updates */ }}>
+                <DishModal dish={recipe as Recipe} allCategories={[]} onSuccess={() => { /* onSnapshot handles updates */ }}>
                     <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier">
                         <Pencil className="h-4 w-4" />
                     </Button>

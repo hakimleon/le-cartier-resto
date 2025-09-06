@@ -39,19 +39,18 @@ const formSchema = z.object({
     }),
     type: z.literal('Plat'),
     price: z.coerce.number().positive("Le prix doit être un nombre positif."),
-    category: z.enum(["Entrées froides et chaudes", "Plats et Grillades", "Les mets de chez nous", "Symphonie de pâtes", "Nos Burgers Bistronomiques", "Dessert", "Élixirs & Rafraîchissements"], {
-        errorMap: () => ({ message: "Veuillez sélectionner une catégorie valide." }),
-    }),
+    category: z.string().min(1, "Veuillez sélectionner une catégorie."),
     status: z.enum(["Actif", "Inactif"]),
     portions: z.coerce.number().int().positive("Le nombre de portions doit être un entier positif."),
 });
 
 type DishFormProps = {
   dish: Recipe | null;
+  allCategories: string[];
   onSuccess: () => void;
 };
 
-export function DishForm({ dish, onSuccess }: DishFormProps) {
+export function DishForm({ dish, allCategories, onSuccess }: DishFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -161,13 +160,9 @@ export function DishForm({ dish, onSuccess }: DishFormProps) {
                     </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                    <SelectItem value="Entrées froides et chaudes">Entrées froides et chaudes</SelectItem>
-                    <SelectItem value="Plats et Grillades">Plats et Grillades</SelectItem>
-                    <SelectItem value="Les mets de chez nous">Les mets de chez nous</SelectItem>
-                    <SelectItem value="Symphonie de pâtes">Symphonie de pâtes</SelectItem>
-                    <SelectItem value="Nos Burgers Bistronomiques">Nos Burgers Bistronomiques</SelectItem>
-                    <SelectItem value="Dessert">Dessert</SelectItem>
-                    <SelectItem value="Élixirs & Rafraîchissements">Élixirs & Rafraîchissements</SelectItem>
+                    {allCategories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
                 </SelectContent>
                 </Select>
                 <FormMessage />
