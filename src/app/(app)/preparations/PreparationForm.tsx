@@ -89,6 +89,7 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
       try {
           const result = await generateRecipe({ name, description, type: 'Préparation' });
           if(result) {
+              // Using setValue to update form fields reactively
               form.setValue("description", result.description || form.getValues("description"));
               form.setValue("duration", result.duration);
               form.setValue("difficulty", result.difficulty);
@@ -148,7 +149,7 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
           name="name"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Nom</FormLabel>
+              <FormLabel>Nom de la préparation</FormLabel>
               <div className="flex items-center gap-2">
                 <FormControl>
                   <Input placeholder="Ex: Sauce tomate maison" {...field} />
@@ -267,9 +268,11 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
             />
         </div>
         
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Sauvegarde..." : "Sauvegarder"}
-        </Button>
+        <div className="flex justify-end pt-4">
+            <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Sauvegarde..." : "Sauvegarder la préparation"}
+            </Button>
+        </div>
       </form>
     </Form>
   );
