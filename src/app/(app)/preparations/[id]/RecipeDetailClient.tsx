@@ -176,8 +176,11 @@ const NewIngredientRow = ({
                                         <CommandItem
                                             key={ing.id}
                                             value={ing.name}
-                                            onSelect={() => {
-                                                handleNewIngredientChange(newIng.tempId, 'ingredientId', ing.id!);
+                                            onSelect={(currentValue) => {
+                                                const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
+                                                if (selected) {
+                                                    handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!);
+                                                }
                                                 setOpenCombobox(false);
                                             }}
                                         >
@@ -508,8 +511,18 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setEditableIngredients([]); setNewIngredients([]);
         setEditableRecipe(current => {
             if (!current) return null;
-            const updated = { ...current, procedure_preparation: result.procedure_preparation, procedure_cuisson: result.procedure_cuisson, procedure_service: result.procedure_service, difficulty: result.difficulty, duration: result.duration, };
-            if (updated.type === 'Préparation') { (updated as Preparation).productionQuantity = result.productionQuantity; (updated as Preparation).productionUnit = result.productionUnit; (updated as Preparation).usageUnit = result.usageUnit; }
+            const updated = { ...current,
+                 procedure_preparation: result.procedure_preparation, 
+                 procedure_cuisson: result.procedure_cuisson, 
+                 procedure_service: result.procedure_service, 
+                 difficulty: result.difficulty, 
+                 duration: result.duration, 
+            };
+            if (updated.type === 'Préparation') { 
+                (updated as Preparation).productionQuantity = result.productionQuantity; 
+                (updated as Preparation).productionUnit = result.productionUnit; 
+                (updated as Preparation).usageUnit = result.usageUnit;
+            }
             return updated;
         });
 
