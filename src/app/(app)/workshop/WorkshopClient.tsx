@@ -1,21 +1,20 @@
 
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, Weight, BookCopy } from "lucide-react";
+import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, Weight, BookCopy, ChevronsRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
-import { generateDishConcept, DishConceptOutput } from "@/ai/flows/workshop-flow";
+import { generateDishConcept, DishConceptOutput, DishConceptInput } from "@/ai/flows/workshop-flow";
 import { useRouter } from "next/navigation";
 import { createDishFromWorkshop } from "./actions";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
@@ -26,28 +25,52 @@ export default function WorkshopClient() {
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
     const router = useRouter();
-    const formRef = useRef<HTMLFormElement>(null);
 
+    const initialFormRef = useRef<HTMLFormElement>(null);
+    const refinementFormRef = useRef<HTMLFormElement>(null);
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const initialInstructions = useMemo(() => {
+        if (!initialFormRef.current) return null;
+        const formData = new FormData(initialFormRef.current);
+        return {
+            dishName: formData.get("dishName") as string,
+            mainIngredients: formData.get("mainIngredients") as string,
+            excludedIngredients: formData.get("excludedIngredients") as string,
+            recommendations: formData.get("recommendations") as string,
+        };
+    }, [generatedConcept]); // Recalculate when a new concept is generated
+
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>, isRefinement = false) => {
         e.preventDefault();
-        const formData = new FormData(e.currentTarget);
-        const dishName = formData.get("dishName") as string;
-        const mainIngredients = formData.get("mainIngredients") as string;
-        const excludedIngredients = formData.get("excludedIngredients") as string;
-        const recommendations = formData.get("recommendations") as string;
+        
+        let instructions: DishConceptInput = {};
+
+        if (isRefinement) {
+            if (!initialInstructions) return; // Should not happen
+            const formData = new FormData(e.currentTarget);
+            instructions = {
+                ...initialInstructions,
+                refinementInstructions: formData.get("refinementInstructions") as string,
+            };
+        } else {
+            const formData = new FormData(e.currentTarget);
+            instructions = {
+                dishName: formData.get("dishName") as string,
+                mainIngredients: formData.get("mainIngredients") as string,
+                excludedIngredients: formData.get("excludedIngredients") as string,
+                recommendations: formData.get("recommendations") as string,
+            };
+        }
 
         setIsLoading(true);
-        setGeneratedConcept(null);
+        if(!isRefinement) setGeneratedConcept(null); // Reset only on initial generation
 
         try {
-            const result = await generateDishConcept({
-                dishName,
-                mainIngredients,
-                excludedIngredients,
-                recommendations,
-            });
+            const result = await generateDishConcept(instructions);
             setGeneratedConcept(result);
+            if (refinementFormRef.current) {
+                refinementFormRef.current.reset();
+            }
         } catch (error) {
             console.error("Error generating dish concept:", error);
             toast({
@@ -65,30 +88,20 @@ export default function WorkshopClient() {
 
         setIsSaving(true);
         try {
-            // 1. Create the dish in Firestore (without ingredients/preps)
             const newDishId = await createDishFromWorkshop(generatedConcept);
-
             if (newDishId) {
-                 // 2. Store the full concept in sessionStorage to pass it to the next page
                 sessionStorage.setItem(WORKSHOP_CONCEPT_KEY, JSON.stringify(generatedConcept));
-
                 toast({
                     title: "Recette enregistrée !",
                     description: `"${generatedConcept.name}" a été ajouté au menu.`,
                 });
-                // 3. Redirect to the new dish page for finalization.
                 router.push(`/menu/${newDishId}`);
             } else {
                  throw new Error("L'ID du plat n'a pas été retourné après la création.");
             }
-
         } catch (error) {
             console.error("Error saving dish from workshop:", error);
-            toast({
-                title: "Erreur de sauvegarde",
-                description: "Impossible d'enregistrer le plat.",
-                variant: "destructive",
-            });
+            toast({ title: "Erreur de sauvegarde", description: "Impossible d'enregistrer le plat.", variant: "destructive" });
         } finally {
             setIsSaving(false);
         }
@@ -96,9 +109,8 @@ export default function WorkshopClient() {
     
     const handleNewRecipe = () => {
         setGeneratedConcept(null);
-        if (formRef.current) {
-            formRef.current.reset();
-        }
+        if (initialFormRef.current) initialFormRef.current.reset();
+        if (refinementFormRef.current) refinementFormRef.current.reset();
     };
 
 
@@ -115,37 +127,57 @@ export default function WorkshopClient() {
             </header>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-1">
+                <div className="lg:col-span-1 space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Vos Instructions</CardTitle>
-                            <CardDescription>Décrivez le plat que vous imaginez.</CardDescription>
+                            <CardTitle>1. Vos Instructions Initiales</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
+                            <form ref={initialFormRef} onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
                                 <div>
                                     <Label htmlFor="dishName">Nom du plat (Optionnel)</Label>
-                                    <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." />
+                                    <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." disabled={isLoading}/>
                                 </div>
                                 <div>
                                     <Label htmlFor="mainIngredients">Ingrédients principaux (Optionnel)</Label>
-                                    <Input id="mainIngredients" name="mainIngredients" placeholder="Ex: Bar, Orange, Fenouil" />
+                                    <Input id="mainIngredients" name="mainIngredients" placeholder="Ex: Bar, Orange, Fenouil" disabled={isLoading}/>
                                 </div>
                                 <div>
                                     <Label htmlFor="excludedIngredients">Ingrédients à exclure (Optionnel)</Label>
-                                    <Input id="excludedIngredients" name="excludedIngredients" placeholder="Ex: Vin, crème, porc" />
+                                    <Input id="excludedIngredients" name="excludedIngredients" placeholder="Ex: Vin, crème, porc" disabled={isLoading}/>
                                 </div>
                                 <div>
                                     <Label htmlFor="recommendations">Recommandations (Optionnel)</Label>
-                                    <Textarea id="recommendations" name="recommendations" placeholder="Ex: Un plat frais, méditerranéen..." />
+                                    <Textarea id="recommendations" name="recommendations" placeholder="Ex: Un plat frais, méditerranéen..." disabled={isLoading}/>
                                 </div>
-                                <Button type="submit" className="w-full" disabled={isLoading}>
+                                <Button type="submit" className="w-full" disabled={isLoading || !!generatedConcept}>
                                     <Sparkles className="mr-2 h-4 w-4" />
-                                    {isLoading ? "Génération en cours..." : "Générer le concept"}
+                                    {isLoading && !generatedConcept ? "Génération..." : "Générer le concept"}
                                 </Button>
                             </form>
                         </CardContent>
                     </Card>
+
+                    {generatedConcept && (
+                         <Card>
+                            <CardHeader>
+                                <CardTitle>2. Affiner la proposition</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <form ref={refinementFormRef} onSubmit={(e) => handleSubmit(e, true)} className="space-y-4">
+                                    <div>
+                                        <Label htmlFor="refinementInstructions">Instructions d'affinage</Label>
+                                        <Textarea id="refinementInstructions" name="refinementInstructions" placeholder="Ex: Remplace le céleri par de la carotte. Fais une sauce moins riche." disabled={isLoading}/>
+                                    </div>
+                                    <Button type="submit" className="w-full" variant="outline" disabled={isLoading}>
+                                        <ChevronsRight className="mr-2 h-4 w-4" />
+                                        {isLoading ? "Affinage..." : "Affiner le concept"}
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    )}
+
                 </div>
                 <div className="lg:col-span-2">
                     <Card className="min-h-[500px]">
@@ -162,22 +194,17 @@ export default function WorkshopClient() {
                             )}
                         </CardHeader>
                         <CardContent>
-                            {isLoading ? (
+                            {isLoading && !generatedConcept ? (
                                 <div className="space-y-4 p-4">
                                     <Skeleton className="w-full h-64 rounded-lg" />
                                     <Skeleton className="h-6 w-3/4" />
-                                    <div className="flex gap-4">
-                                        <Skeleton className="h-5 w-20" />
-                                        <Skeleton className="h-5 w-20" />
-                                        <Skeleton className="h-5 w-20" />
-                                    </div>
-                                    <Skeleton className="h-4 w-full" />
-                                    <Skeleton className="h-4 w-full" />
-                                    <Skeleton className="h-4 w-1/2" />
+                                    <div className="flex gap-4"> <Skeleton className="h-5 w-20" /> <Skeleton className="h-5 w-20" /> <Skeleton className="h-5 w-20" /> </div>
+                                    <Skeleton className="h-4 w-full" /> <Skeleton className="h-4 w-full" /> <Skeleton className="h-4 w-1/2" />
                                 </div>
                             ) : generatedConcept ? (
                                 <div className="space-y-6">
                                      <div className="relative w-full h-80 rounded-lg overflow-hidden border">
+                                        {isLoading && <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10"><Sparkles className="h-8 w-8 animate-spin text-primary"/></div>}
                                         <Image src={generatedConcept.imageUrl} alt={generatedConcept.name} fill style={{ objectFit: 'cover' }} data-ai-hint="artistic food plating" />
                                     </div>
                                     <div>
@@ -185,18 +212,9 @@ export default function WorkshopClient() {
                                         <p className="text-muted-foreground mt-1">{generatedConcept.description}</p>
                                     </div>
                                     <div className="grid grid-cols-3 gap-4 text-center p-2 rounded-lg border bg-muted/50">
-                                        <div className="flex flex-col items-center gap-1">
-                                            <Clock className="h-5 w-5 text-muted-foreground"/>
-                                            <span className="text-sm font-semibold">{generatedConcept.duration} min</span>
-                                        </div>
-                                        <div className="flex flex-col items-center gap-1">
-                                            <Soup className="h-5 w-5 text-muted-foreground"/>
-                                            <span className="text-sm font-semibold">{generatedConcept.difficulty}</span>
-                                        </div>
-                                        <div className="flex flex-col items-center gap-1">
-                                            <Users className="h-5 w-5 text-muted-foreground"/>
-                                            <span className="text-sm font-semibold">{generatedConcept.portions} portion{generatedConcept.portions > 1 ? 's' : ''}</span>
-                                        </div>
+                                        <div className="flex flex-col items-center gap-1"><Clock className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.duration} min</span></div>
+                                        <div className="flex flex-col items-center gap-1"><Soup className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.difficulty}</span></div>
+                                        <div className="flex flex-col items-center gap-1"><Users className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.portions} portion{generatedConcept.portions > 1 ? 's' : ''}</span></div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
@@ -204,22 +222,14 @@ export default function WorkshopClient() {
                                             <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients suggérés</h4>
                                             {generatedConcept.ingredients && generatedConcept.ingredients.length > 0 ? (
                                                 <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
-                                                    {generatedConcept.ingredients.map((ing) => (
-                                                        <li key={ing.name}>
-                                                            <span className="font-medium text-foreground">{ing.quantity} {ing.unit}</span> - {ing.name}
-                                                        </li>
-                                                    ))}
+                                                    {generatedConcept.ingredients.map((ing) => (<li key={ing.name}><span className="font-medium text-foreground">{ing.quantity} {ing.unit}</span> - {ing.name}</li>))}
                                                 </ul>
-                                            ) : (
-                                                <p className="text-sm text-muted-foreground pl-5">Aucun ingrédient brut pour l'assemblage.</p>
-                                            )}
+                                            ) : ( <p className="text-sm text-muted-foreground pl-5">Aucun ingrédient brut pour l'assemblage.</p> )}
                                         </div>
                                          {generatedConcept.subRecipes && generatedConcept.subRecipes.length > 0 && (
                                             <div>
                                                 <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Sous-Recettes suggérées</h4>
-                                                <div className="flex flex-wrap gap-2">
-                                                    {generatedConcept.subRecipes.map((prep: string) => <Badge key={prep} variant="outline" className="text-sm">{prep}</Badge>)}
-                                                </div>
+                                                <div className="flex flex-wrap gap-2">{generatedConcept.subRecipes.map((prep: string) => <Badge key={prep} variant="outline" className="text-sm">{prep}</Badge>)}</div>
                                             </div>
                                          )}
                                     </div>
@@ -254,5 +264,3 @@ export default function WorkshopClient() {
         </div>
     );
 }
-
-    
