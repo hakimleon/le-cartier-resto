@@ -44,8 +44,11 @@ const sortCategories = (categories: string[]) => {
   ];
 
   return [...categories].sort((a, b) => {
-    const indexA = customOrder.indexOf(a);
-    const indexB = customOrder.indexOf(b);
+    const normalizedA = a.toLowerCase().trim();
+    const normalizedB = b.toLowerCase().trim();
+    
+    const indexA = customOrder.findIndex(item => item.toLowerCase().trim() === normalizedA);
+    const indexB = customOrder.findIndex(item => item.toLowerCase().trim() === normalizedB);
 
     if (indexA === -1 && indexB === -1) {
         return a.localeCompare(b);
@@ -88,7 +91,18 @@ export default function MenuClient() {
             
             setRecipes(recipesData);
 
-            const uniqueCategories = [...new Set(recipesData.map(recipe => recipe.category).filter(Boolean) as string[])];
+            // Normalize categories to prevent duplicates due to case or spacing differences
+            const categoryMap = new Map<string, string>();
+            recipesData.forEach(recipe => {
+                if (recipe.category) {
+                    const normalizedCategory = recipe.category.toLowerCase().trim();
+                    if (!categoryMap.has(normalizedCategory)) {
+                        categoryMap.set(normalizedCategory, recipe.category);
+                    }
+                }
+            });
+            
+            const uniqueCategories = Array.from(categoryMap.values());
             const sortedCategories = sortCategories(uniqueCategories);
 
             setCategories(["Tous", ...sortedCategories]);
@@ -151,12 +165,18 @@ export default function MenuClient() {
     
     // Then apply category filter
     if (selectedCategory !== 'Tous') {
-        recipesToFilter = recipesToFilter.filter(recipe => recipe.category === selectedCategory);
+        recipesToFilter = recipesToFilter.filter(recipe => recipe.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
     }
     
     return recipesToFilter;
   }, [recipes, searchTerm, selectedCategory]);
 
+  const recipesBySelectedCategory = useMemo(() => {
+      if (selectedCategory === "Tous") {
+          return filteredRecipes;
+      }
+      return filteredRecipes.filter(recipe => recipe.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
+  }, [filteredRecipes, selectedCategory]);
 
   const renderRecipeList = (recipeList: Recipe[]) => {
     if (isLoading) {
@@ -174,6 +194,9 @@ export default function MenuClient() {
         </div>
       );
     }
+    if (recipeList.length === 0 && selectedCategory !== "Tous") {
+        return <div className="text-center text-muted-foreground pt-12">Aucun plat dans la catégorie "{formatCategory(selectedCategory)}".</div>;
+    }
     if (recipeList.length === 0) {
       return <div className="text-center text-muted-foreground pt-12">Aucun plat ne correspond à votre recherche.</div>;
     }
@@ -183,6 +206,7 @@ export default function MenuClient() {
           <RecipeCard 
             key={recipe.id} 
             recipe={recipe} 
+            allCategories={categories.filter(c => c !== "Tous")}
             onDelete={() => handleDelete(recipe.id!, recipe.name)}
           />
         ))}
@@ -219,7 +243,7 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <DishModal dish={null} allCategories={categories.filter(c => c !== "Tous")} onSuccess={() => { /* onSnapshot handles updates */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat
@@ -248,7 +272,7 @@ export default function MenuClient() {
             ))}
           </TabsList>
           <TabsContent value={selectedCategory} className="pt-4">
-              {renderRecipeList(filteredRecipes)}
+              {renderRecipeList(recipesBySelectedCategory)}
           </TabsContent>
       </Tabs>
 
