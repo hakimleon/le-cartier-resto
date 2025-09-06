@@ -95,7 +95,7 @@ const recipeConceptPrompt = ai.definePrompt({
 
 
         Voici les instructions du chef de l'établissement :
-        {{#if dishName}}- Le nom du plat est imposé : {{{dishName}}}. Vous devez le conserver.{{else}}- Vous devez inventer un nom de plat. Pour une carte gastronomique, un intitulé clair, sobre et précis inspire plus confiance que des noms trop lyriques.{{/if}}
+        {{#if dishName}}- Le nom du plat est imposé : {{{dishName}}}. Vous devez le conserver.{{else}}- Vous devez inventer un nom de plat. Le nom du plat doit être élégant et descriptif. Il doit mettre en valeur le produit principal et suggérer la préparation, sans être trop long ou poétique. Par exemple : "Noix de Saint-Jacques justes snackées, mousseline de chou-fleur à la noisette" est un bon exemple. "Symphonie marine" est un mauvais exemple.{{/if}}
         {{#if mainIngredients}}- Ingrédients à utiliser : {{{mainIngredients}}}{{else}}- Ingrédients principaux: Vous avez carte blanche pour les choisir. Soyez créatif.{{/if}}
         {{#if excludedIngredients}}- Ingrédients à **ABSOLUMENT EXCLURE** : {{{excludedIngredients}}}{{/if}}
         {{#if recommendations}}- Recommandations et style : {{{recommendations}}}{{/if}}
@@ -117,7 +117,7 @@ const recipeConceptPrompt = ai.definePrompt({
 
 
         Votre tâche est de générer une fiche technique détaillée avec les éléments suivants :
-        1.  **name**: {{#if dishName}}Conservez impérativement le nom "{{{dishName}}}".{{else}}Inventez un nom de plat. Rappel : Pour une carte gastronomique, un intitulé clair, sobre et précis inspire plus confiance que des noms trop lyriques.{{/if}}
+        1.  **name**: {{#if dishName}}Conservez impérativement le nom "{{{dishName}}}".{{else}}Inventez un nom de plat. Rappel : Le nom doit être élégant et descriptif, mettre en valeur le produit principal et suggérer la préparation, sans être trop long ou poétique. Évitez les listes d'ingrédients simples comme nom.{{/if}}
         2.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
         3.  **ingredients**: Une liste de TOUS les ingrédients bruts nécessaires pour réaliser la recette complète. Règle impérative : **privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes, plutôt que "pièce" ou "unité".** Réservez "pièce" uniquement lorsque c'est indispensable (ex: 1 œuf). Si une préparation n'est PAS dans la liste des bases autorisées (ex: une garniture simple), ses ingrédients doivent être listés ici.
         4.  **subRecipes**: Listez ici UNIQUEMENT les noms des préparations de la recette qui correspondent EXACTEMENT à un nom dans la LISTE DES PRÉPARations DE BASE AUTORISÉES fournie au début. Si aucune base de la liste n'est utilisée, retournez un tableau vide. C'est un point crucial.
@@ -189,5 +189,3 @@ const generateDishConceptFlow = ai.defineFlow(
         };
     }
 );
-
-    
