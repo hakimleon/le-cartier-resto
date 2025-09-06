@@ -527,8 +527,14 @@ const fetchAllPreparations = useCallback(async () => {
 
   const formatProcedure = (text: string | undefined) => {
     if (!text) return '';
-    return text.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />');
+    return text
+      .replace(/###\s*(.*)/g, '<h3>$1</h3>') // Titles
+      .replace(/-\s*(.*)/g, '<li>$1</li>') // List items
+      .replace(/(\<li\>.*\<\/li\>)/g, '<ul>$1</ul>') // Wrap lists
+      .replace(/\<\/ul\>\n?\<ul\>/g, '') // Merge adjacent lists
+      .replace(/\n/g, '<br />'); // Newlines
   };
+  
 
   return (
     <div className="space-y-4">
