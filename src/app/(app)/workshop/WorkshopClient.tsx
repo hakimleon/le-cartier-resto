@@ -28,29 +28,37 @@ export default function WorkshopClient() {
 
     const initialFormRef = useRef<HTMLFormElement>(null);
     const refinementFormRef = useRef<HTMLFormElement>(null);
-    const [initialInstructions, setInitialInstructions] = useState<DishConceptInput | null>(null);
+    
+    // Store the full context for refinements
+    const [context, setContext] = useState<DishConceptInput>({});
+    const [refinementHistory, setRefinementHistory] = useState<string[]>([]);
+
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>, isRefinement = false) => {
         e.preventDefault();
         
         let instructions: DishConceptInput = {};
+        const formData = new FormData(e.currentTarget);
 
         if (isRefinement) {
-            if (!initialInstructions) return;
-            const formData = new FormData(e.currentTarget);
+            const currentRefinement = formData.get("currentRefinement") as string;
+            if (!currentRefinement) return; // Don't submit empty refinements
+
             instructions = {
-                ...initialInstructions,
-                refinementInstructions: formData.get("refinementInstructions") as string || '',
+                ...context, // Use the stored full context
+                refinementHistory: refinementHistory,
+                currentRefinement: currentRefinement,
             };
+            setRefinementHistory(prev => [...prev, currentRefinement]);
         } else {
-            const formData = new FormData(e.currentTarget);
             instructions = {
-                dishName: formData.get("dishName") as string || '',
-                mainIngredients: formData.get("mainIngredients") as string || '',
-                excludedIngredients: formData.get("excludedIngredients") as string || '',
-                recommendations: formData.get("recommendations") as string || '',
+                dishName: formData.get("dishName") as string || undefined,
+                mainIngredients: formData.get("mainIngredients") as string || undefined,
+                excludedIngredients: formData.get("excludedIngredients") as string || undefined,
+                recommendations: formData.get("recommendations") as string || undefined,
             };
-            setInitialInstructions(instructions);
+            setContext(instructions); // Save initial context
+            setRefinementHistory([]); // Reset history on new generation
         }
 
         setIsLoading(true);
@@ -100,7 +108,8 @@ export default function WorkshopClient() {
     
     const handleNewRecipe = () => {
         setGeneratedConcept(null);
-        setInitialInstructions(null);
+        setContext({});
+        setRefinementHistory([]);
         if (initialFormRef.current) initialFormRef.current.reset();
         if (refinementFormRef.current) refinementFormRef.current.reset();
     };
@@ -158,8 +167,8 @@ export default function WorkshopClient() {
                             <CardContent>
                                 <form ref={refinementFormRef} onSubmit={(e) => handleSubmit(e, true)} className="space-y-4">
                                     <div>
-                                        <Label htmlFor="refinementInstructions">Instructions d'affinage</Label>
-                                        <Textarea id="refinementInstructions" name="refinementInstructions" placeholder="Ex: Remplace le céleri par de la carotte. Fais une sauce moins riche." disabled={isLoading}/>
+                                        <Label htmlFor="currentRefinement">Instructions d'affinage</Label>
+                                        <Textarea id="currentRefinement" name="currentRefinement" placeholder="Ex: Remplace le céleri par de la carotte. Fais une sauce moins riche." disabled={isLoading}/>
                                     </div>
                                     <Button type="submit" className="w-full" variant="outline" disabled={isLoading}>
                                         <ChevronsRight className="mr-2 h-4 w-4" />
@@ -256,5 +265,3 @@ export default function WorkshopClient() {
         </div>
     );
 }
-
-    

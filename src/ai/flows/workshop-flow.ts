@@ -13,7 +13,8 @@ const DishConceptInputSchema = z.object({
     mainIngredients: z.string().optional().describe("Les ingrédients principaux à intégrer."),
     excludedIngredients: z.string().optional().describe("Les ingrédients à ne jamais utiliser."),
     recommendations: z.string().optional().describe("Directives sur le style, la saisonnalité, ou le type de cuisine souhaité."),
-    refinementInstructions: z.string().optional().describe("Instructions spécifiques pour affiner ou modifier une proposition précédente de l'IA (ex: 'Remplace le céleri par de la carotte')."),
+    refinementHistory: z.array(z.string()).optional().describe("L'historique des instructions d'affinage précédentes. L'IA doit respecter toutes ces contraintes passées."),
+    currentRefinement: z.string().optional().describe("La nouvelle instruction d'affinage à appliquer par-dessus l'historique."),
 });
 export type DishConceptInput = z.infer<typeof DishConceptInputSchema>;
 
@@ -87,9 +88,22 @@ const recipeConceptPrompt = ai.definePrompt({
         {{#if mainIngredients}}- Ingrédients à utiliser : {{{mainIngredients}}}{{else}}- Ingrédients principaux: Vous avez carte blanche pour les choisir. Soyez créatif.{{/if}}
         {{#if excludedIngredients}}- Ingrédients à **ABSOLUMENT EXCLURE** : {{{excludedIngredients}}}{{/if}}
         {{#if recommendations}}- Recommandations et style : {{{recommendations}}}{{/if}}
-        {{#if refinementInstructions}}
-        - **INSTRUCTIONS D'AFFINAGE IMPORTANTES :** L'utilisateur a déjà vu une proposition et demande les modifications suivantes. Vous devez impérativement adapter la recette en suivant ces directives : "{{{refinementInstructions}}}"
+        
+        {{#if refinementHistory}}
+        - **HISTORIQUE DES MODIFICATIONS PRÉCÉDENTES :** Vous devez impérativement continuer à respecter TOUTES les contraintes suivantes, qui ont été demandées lors des étapes précédentes.
+        {{#each refinementHistory}}
+            - "{{{this}}}"
+        {{/each}}
         {{/if}}
+
+        {{#if currentRefinement}}
+        - **NOUVELLE INSTRUCTION D'AFFINAGE :** Par-dessus tout ce qui a été dit, appliquez maintenant cette nouvelle modification : "{{{currentRefinement}}}"
+        {{else}}
+            {{#if refinementHistory}}
+            - Aucune nouvelle instruction pour cette étape. Vous devez simplement régénérer une proposition cohérente avec l'historique des demandes.
+            {{/if}}
+        {{/if}}
+
 
         Votre tâche est de générer une fiche technique détaillée avec les éléments suivants :
         1.  **name**: {{#if dishName}}Conservez impérativement le nom "{{{dishName}}}".{{else}}Inventez un nom marketing et séduisant pour le plat.{{/if}}
