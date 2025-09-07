@@ -231,16 +231,18 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                     control={form.control}
                     name="purchaseWeightGrams"
                     render={({ field }) => (
-                    <FormItem className={cn(!showPurchaseWeightField && "invisible")}>
-                        <FormLabel>Poids de la botte/pièce (g)</FormLabel>
-                        <FormControl>
-                        <Input type="number" step="1" placeholder="Ex: 250" {...field} />
-                        </FormControl>
-                         <FormDescription className="text-xs">
-                            Poids en grammes pour une seule botte/pièce.
-                        </FormDescription>
-                        <FormMessage />
-                    </FormItem>
+                     <div className={cn("space-y-2", !showPurchaseWeightField && "hidden")}>
+                        <FormItem>
+                          <FormLabel>Poids de la botte/pièce (g)</FormLabel>
+                          <FormControl>
+                          <Input type="number" step="1" placeholder="Ex: 250" {...field} />
+                          </FormControl>
+                          <FormDescription className="text-xs">
+                              Poids en grammes pour une seule botte/pièce.
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      </div>
                     )}
                 />
                  <FormField
