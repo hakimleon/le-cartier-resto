@@ -715,12 +715,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <div className="bg-primary/10 text-primary rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
                         {isPlat ? <ChefHat className="h-7 w-7" /> : <NotebookText className="h-7 w-7" />}
                     </div>
-                    <div>
+                    <div className="flex-grow">
                         {isEditing ? (
                             <Input
                                 value={editableRecipe?.name}
                                 onChange={(e) => handleRecipeDataChange('name', e.target.value)}
-                                className="text-2xl font-bold tracking-tight h-12"
+                                className="text-2xl font-bold tracking-tight h-12 w-full"
                             />
                         ) : (
                             <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
