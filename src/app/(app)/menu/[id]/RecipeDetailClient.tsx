@@ -207,7 +207,7 @@ const NewIngredientRow = ({
     const [openCombobox, setOpenCombobox] = useState(false);
 
     return (
-        <TableRow key={newIng.tempId}>
+        <TableRow>
             <TableCell>
                 <div className="flex items-center gap-2">
                     <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
@@ -286,7 +286,6 @@ const NewIngredientRow = ({
         </TableRow>
     );
 };
-
 
 export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
     const [recipe, setRecipe] = useState<Recipe | Preparation | null>(null);
@@ -676,9 +675,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }, [allIngredients]);
 
     const currentRecipeData = isEditing ? editableRecipe : recipe;
-    const currentIngredientsData = isEditing ? editableIngredients : ingredients;
-    const currentPreparationsData = isEditing ? editablePreparations : preparations;
-
+    
     const {
         totalRecipeCost,
         costPerPortion,
@@ -698,8 +695,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         const allCurrentIngredients = [...(isEditing ? editableIngredients : ingredients), ...(isEditing ? newIngredients : [])];
         
-        const ingredientsCost = allCurrentIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
-        
         allCurrentIngredients.forEach(item => {
             const category = item.category?.trim() || 'Non catégorisé';
             if (category) {
@@ -712,6 +707,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         const preparationsCost = (isEditing ? editablePreparations : preparations).reduce((acc, item) => acc + (item.totalCost || 0), 0);
         const newPreparationsCost = newPreparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+        const ingredientsCost = Object.values(result.costsByCategory).reduce((acc, cost) => acc + cost, 0);
         const totalCost = ingredientsCost + preparationsCost + newPreparationsCost;
 
         result.totalRecipeCost = totalCost;
@@ -739,7 +735,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
 
     const proteinCostBreakdown = useMemo(() => {
-        const portions = currentRecipeData?.type === 'Plat' ? currentRecipeData.portions || 1 : 1;
+        if (!currentRecipeData || !costsByCategory) return [];
+        const portions = currentRecipeData.type === 'Plat' ? currentRecipeData.portions || 1 : 1;
         const proteinCategories = {
             "Viandes & Gibiers": { icon: Beef, color: "bg-red-500", totalCost: costsByCategory["Viandes & Gibiers"] || 0 },
             "Volaille": { icon: Drumstick, color: "bg-amber-500", totalCost: costsByCategory["Volaille"] || 0 },
@@ -757,7 +754,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             .sort((a,b) => b.totalCost - a.totalCost);
 
     }, [costsByCategory, currentRecipeData]);
-
 
     if (isLoading) { return <RecipeDetailSkeleton />; }
     if (error) { return (<div className="container mx-auto py-10"><Alert variant="destructive" className="max-w-2xl mx-auto my-10"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erreur</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></div>); }
@@ -897,7 +893,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)} DZD</TableCell></TableRow>
                                     ))}
                                     {isEditing && newIngredients.map((newIng) => (
-                                         <NewIngredientRow 
+                                        <NewIngredientRow
                                             key={newIng.tempId}
                                             newIng={newIng}
                                             sortedIngredients={sortedIngredients}
@@ -906,69 +902,73 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             handleRemoveNewIngredient={handleRemoveNewIngredient}
                                         />
                                     ))}
-                                    {currentIngredientsData.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
+                                    {ingredients.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
                                 </TableBody>
                             </Table>
                         </CardContent>
                     </Card>
 
                     <Card>
-                        <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><BookCopy className="h-5 w-5" />Sous-Recettes</div>{isEditing && <Button variant="outline" size="sm" onClick={()={() => setNewPreparations([...newPreparations, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, _productionUnit: '' }])}><PlusCircle className="mr-2 h-4 w-4" />Ajouter Préparation</Button>}</CardTitle><CardDescription>Liste des préparations (fiches techniques internes) utilisées dans cette recette.</CardDescription></CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
-                                <TableBody>
-                                    {isEditing && editablePreparations.map(prep => (
-                                        <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell><Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)} DZD</TableCell><TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer la préparation ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{prep.name}" de cette recette ?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingPreparation(prep.id)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>
-                                    ))}
-                                    {!isEditing && preparations.map(prep => (
-                                        <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)} DZD</TableCell></TableRow>
-                                    ))}
-                                    {isEditing && newPreparations.map((prep) => {
-                                        const [openPrepCombobox, setOpenPrepCombobox] = useState(false);
-                                        return (
-                                            <TableRow key={prep.tempId}>
-                                                <TableCell>
-                                                    <div className="flex items-center gap-2">
-                                                        <Popover open={openPrepCombobox} onOpenChange={setOpenPrepCombobox}>
-                                                            <PopoverTrigger asChild>
-                                                                <Button variant="outline" role="combobox" aria-expanded={openPrepCombobox} className="w-full justify-between">
-                                                                    {prep.childPreparationId ? allPreparations.find(p => p.id === prep.childPreparationId)?.name : prep.name || "Choisir..."}
-                                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                                </Button>
-                                                            </PopoverTrigger>
-                                                            <PopoverContent className="w-[300px] p-0">
-                                                                <Command>
-                                                                    <CommandInput placeholder="Rechercher une préparation..." />
-                                                                    <CommandList>
-                                                                        <CommandEmpty>Aucune préparation trouvée.</CommandEmpty>
-                                                                        <CommandGroup>
-                                                                            {allPreparations.filter(p => p.id !== recipeId).map(p => (
-                                                                                p.id ? <CommandItem key={p.id} value={p.name} onSelect={() => { handleNewPreparationChange(prep.tempId, 'childPreparationId', p.id!); setOpenPrepCombobox(false); }}>
-                                                                                    <Check className={cn("mr-2 h-4 w-4", prep.childPreparationId === p.id ? "opacity-100" : "opacity-0")} />
-                                                                                    {p.name}
-                                                                                </CommandItem> : null
-                                                                            ))}
-                                                                        </CommandGroup>
-                                                                    </CommandList>
-                                                                </Command>
-                                                            </PopoverContent>
-                                                        </Popover>
-                                                        {!prep.childPreparationId && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewPreparationModal(prep.tempId)} title={`Créer la préparation "${prep.name}"`}><PlusCircle className="h-4 w-4 text-primary" /></Button>)}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell><Input type="number" placeholder="Qté" className="w-20" value={prep.quantity === 0 ? '' : prep.quantity} onChange={(e) => handleNewPreparationChange(prep.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell>
-                                                <TableCell>{prep.unit || "-"}</TableCell>
-                                                <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)} DZD</TableCell>
-                                                <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.tempId)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
-                                            </TableRow>
-                                        )
-                                    })}
-                                    {currentPreparationsData.length === 0 && newPreparations.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                      <BookCopy className="h-5 w-5" />Sous-Recettes
+                            </div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewPreparations([...newPreparations, {tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, _productionUnit: '' }])}><PlusCircle className="mr-2 h-4 w-4" />Ajouter Préparation</Button>}</CardTitle><CardDescription>Liste des préparations (fiches techniques internes) utilisées dans cette recette.</CardDescription></CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
+                            <TableBody>
+                                {isEditing && editablePreparations.map(prep => (
+                                    <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell><Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)} DZD</TableCell><TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer la préparation ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{prep.name}" de cette recette ?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingPreparation(prep.id)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>
+                                ))}
+                                {!isEditing && preparations.map(prep => (
+                                    <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)} DZD</TableCell></TableRow>
+                                ))}
+                                {isEditing && newPreparations.map((prep) => {
+                                    const [openPrepCombobox, setOpenPrepCombobox] = useState(false);
+                                    return (
+                                        <TableRow key={prep.tempId}>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Popover open={openPrepCombobox} onOpenChange={setOpenPrepCombobox}>
+                                                        <PopoverTrigger asChild>
+                                                            <Button variant="outline" role="combobox" aria-expanded={openPrepCombobox} className="w-full justify-between">
+                                                                {prep.childPreparationId ? allPreparations.find(p => p.id === prep.childPreparationId)?.name : prep.name || "Choisir..."}
+                                                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                            </Button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent className="w-[300px] p-0">
+                                                            <Command>
+                                                                <CommandInput placeholder="Rechercher une préparation..." />
+                                                                <CommandList>
+                                                                    <CommandEmpty>Aucune préparation trouvée.</CommandEmpty>
+                                                                    <CommandGroup>
+                                                                        {allPreparations.filter(p => p.id !== recipeId).map(p => (
+                                                                            p.id ? <CommandItem key={p.id} value={p.name} onSelect={() => { handleNewPreparationChange(prep.tempId, 'childPreparationId', p.id!); setOpenPrepCombobox(false); }}>
+                                                                                <Check className={cn("mr-2 h-4 w-4", prep.childPreparationId === p.id ? "opacity-100" : "opacity-0")} />
+                                                                                {p.name}
+                                                                            </CommandItem> : null
+                                                                        ))}
+                                                                    </CommandGroup>
+                                                                </CommandList>
+                                                            </Command>
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                    {!prep.childPreparationId && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewPreparationModal(prep.tempId)} title={`Créer la préparation "${prep.name}"`}><PlusCircle className="h-4 w-4 text-primary" /></Button>)}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell><Input type="number" placeholder="Qté" className="w-20" value={prep.quantity === 0 ? '' : prep.quantity} onChange={(e) => handleNewPreparationChange(prep.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell>
+                                            <TableCell>{prep.unit || "-"}</TableCell>
+                                            <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)} DZD</TableCell>
+                                            <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.tempId)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
+                                        </TableRow>
+                                    )
+                                })}
+                                {preparations.length === 0 && newPreparations.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
 
 
                     <Card>
@@ -1066,5 +1066,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
