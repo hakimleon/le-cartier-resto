@@ -88,7 +88,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   const categoryExamples = ingredientCategories.find(c => c.name === selectedCategory)?.examples;
   const purchaseUnit = form.watch("purchaseUnit");
 
-  // Show the purchase weight field only for non-standard units
   const showPurchaseWeightField = purchaseUnit && ["botte", "unites"].includes(purchaseUnit);
 
 
