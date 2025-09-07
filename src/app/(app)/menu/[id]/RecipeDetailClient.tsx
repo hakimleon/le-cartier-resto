@@ -99,18 +99,29 @@ type NewRecipePreparation = {
     _productionUnit: string;
 };
 
-// This function now calculates the cost per the specified unit.
-const getCostPerUnit = (ingredient: Ingredient) => {
-    // If a final conversion is defined (e.g., kg to ml of juice)
+const getCostPerBaseUnit = (ingredient: Ingredient) => {
+    const isVolumeUnit = ['litres', 'l', 'ml'].includes(ingredient.purchaseUnit.toLowerCase());
+
+    // Case 1: Final Use Unit is defined (e.g., 1kg lemons -> 400ml juice)
     if (ingredient.finalUseUnit && ingredient.convertedQuantity && ingredient.convertedQuantity > 0) {
-        return ingredient.purchasePrice / ingredient.convertedQuantity;
+        // Cost per final unit (e.g., cost per ml of juice)
+        return { cost: ingredient.purchasePrice / ingredient.convertedQuantity, baseUnit: ingredient.finalUseUnit };
     }
 
-    // Standard calculation based on weight and yield
-    const netWeightGrams = ingredient.purchaseWeightGrams * (ingredient.yieldPercentage / 100);
-    if (netWeightGrams === 0) return 0;
-    
-    return ingredient.purchasePrice / netWeightGrams; // This gives price per gram
+    // Case 2: Standard calculation based on purchase unit
+    if (isVolumeUnit) {
+        // For volume, the base unit is ml.
+        const purchaseVolumeMl = getConversionFactor(ingredient.purchaseUnit, 'ml') * ingredient.purchaseWeightGrams;
+        if (purchaseVolumeMl === 0) return { cost: 0, baseUnit: 'ml' };
+        // Cost per ml
+        return { cost: ingredient.purchasePrice / purchaseVolumeMl, baseUnit: 'ml' };
+    } else {
+        // For weight, the base unit is g.
+        const netWeightGrams = ingredient.purchaseWeightGrams * (ingredient.yieldPercentage / 100);
+        if (netWeightGrams === 0) return { cost: 0, baseUnit: 'g' };
+        // Cost per g
+        return { cost: ingredient.purchasePrice / netWeightGrams, baseUnit: 'g' };
+    }
 };
 
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
@@ -128,6 +139,19 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
     const toFactor = factors[u(toUnit)];
 
     if (fromFactor !== undefined && toFactor !== undefined) {
+        // If converting between weight and volume, assume 1g = 1ml (for water-like density)
+        const weightUnits = ['kg', 'g', 'mg'];
+        const volumeUnits = ['l', 'ml', 'litre', 'litres'];
+        const fromIsWeight = weightUnits.includes(u(fromUnit));
+        const toIsVolume = volumeUnits.includes(u(toUnit));
+        const fromIsVolume = volumeUnits.includes(u(fromUnit));
+        const toIsWeight = weightUnits.includes(u(toUnit));
+
+        if ((fromIsWeight && toIsVolume) || (fromIsVolume && toIsWeight)) {
+             // This is a simplification. For precise cooking, density should be considered.
+            return fromFactor / toFactor;
+        }
+
         return fromFactor / toFactor;
     }
     
@@ -361,8 +385,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 const ingLink = ingDoc.data() as RecipeIngredientLink;
                 const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
                  if (ingData) {
-                    const costPerBaseUnit = getCostPerUnit(ingData);
-                    const baseUnit = ingData.finalUseUnit || 'g'; // Use 'g' as the base for weight
+                    const { cost: costPerBaseUnit, baseUnit } = getCostPerBaseUnit(ingData);
                     const conversionFactor = getConversionFactor(baseUnit, ingLink.unitUse);
                     totalCost += (ingLink.quantity || 0) * costPerBaseUnit * conversionFactor;
                 }
@@ -430,8 +453,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
             const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
             if (ingredientData) {
-                const costPerBaseUnit = getCostPerUnit(ingredientData);
-                const baseUnit = ingredientData.finalUseUnit || 'g'; // Base unit is 'g' for weight or the final unit
+                const { cost: costPerBaseUnit, baseUnit } = getCostPerBaseUnit(ingredientData);
                 const conversionFactor = getConversionFactor(baseUnit, recipeIngredientData.unitUse);
                 const totalCost = (recipeIngredientData.quantity || 0) * costPerBaseUnit * conversionFactor;
 
@@ -566,8 +588,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     };
 
     const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient) => {
-        const costPerBaseUnit = getCostPerUnit(ingredientData);
-        const baseUnit = ingredientData.finalUseUnit || 'g'; // Base unit is g for weight
+        const { cost: costPerBaseUnit, baseUnit } = getCostPerBaseUnit(ingredientData);
         const conversionFactor = getConversionFactor(baseUnit, ingredientLink.unit);
         return (ingredientLink.quantity || 0) * costPerBaseUnit * conversionFactor;
     };
@@ -607,7 +628,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const handleRemoveNewIngredient = (tempId: string) => { setNewIngredients(current => current.filter(ing => ing.tempId !== tempId)); };
     const handleRemoveExistingIngredient = (recipeIngredientId: string) => { setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId)); };
-    const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => { fetchAllIngredients().then(updatedList => { const newlyAdded = updatedList.find(i => i.id === newIngredient.id); if (newlyAdded) { handleNewIngredientChange(tempId, 'ingredientId', newlyAdded.id!); } }); };
+    const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
+        fetchAllIngredients().then(updatedList => {
+            const newlyAdded = updatedList.find(i => i.id === newIngredient.id);
+            if (newlyAdded) {
+                handleNewIngredientChange(tempId, 'ingredientId', newlyAdded.id!);
+            }
+        });
+    };
     const openNewIngredientModal = (tempId: string) => { const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId); if (ingredientToCreate) { setCurrentTempId(tempId); setNewIngredientDefaults({ name: ingredientToCreate.name }); setIsNewIngredientModalOpen(true); } }
 
     // --- PREPARATION HANDLERS ---
