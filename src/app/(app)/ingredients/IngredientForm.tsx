@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Ingredient } from "@/lib/types";
@@ -23,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipProvider, TooltipContent } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
+import { cn } from "@/lib/utils";
 
 const ingredientCategories = [
     { name: "Viandes & Gibiers", examples: "Bœuf (entrecôte, steak haché, jarret…), Veau (escalope, osso buco…), Agneau (côtelette, gigot…), Porc (filet mignon, travers, échine…), Gibier (chevreuil, sanglier – si utilisé)" },
@@ -52,7 +53,6 @@ const formSchema = z.object({
   stockQuantity: z.coerce.number().min(0, "La quantité en stock ne peut pas être négative."),
   lowStockThreshold: z.coerce.number().min(0, "Le seuil de stock bas ne peut pas être négatif."),
   supplier: z.string().optional(),
-  // New fields for yield management
   purchasePrice: z.coerce.number().positive("Le prix d'achat doit être un nombre positif."),
   purchaseUnit: z.string().min(1, "L'unité d'achat est requise."),
   purchaseWeightGrams: z.coerce.number().positive("Le poids de l'unité d'achat doit être positif."),
@@ -79,20 +79,33 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       supplier: ingredient?.supplier || "",
       purchasePrice: ingredient?.purchasePrice || 0,
       purchaseUnit: ingredient?.purchaseUnit || "kg",
-      purchaseWeightGrams: ingredient?.purchaseWeightGrams || 0,
+      purchaseWeightGrams: ingredient?.purchaseWeightGrams || 1000,
       yieldPercentage: ingredient?.yieldPercentage || 100,
     },
   });
 
   const selectedCategory = form.watch("category");
   const categoryExamples = ingredientCategories.find(c => c.name === selectedCategory)?.examples;
+  const purchaseUnit = form.watch("purchaseUnit");
+
+  // Show the purchase weight field only for non-standard units
+  const showPurchaseWeightField = ["botte", "unites"].includes(purchaseUnit);
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
+      
+      let finalPurchaseWeightGrams = values.purchaseWeightGrams;
+      if (values.purchaseUnit === "kg") finalPurchaseWeightGrams = 1000;
+      if (values.purchaseUnit === "grammes") finalPurchaseWeightGrams = 1;
+      if (values.purchaseUnit === "litres") finalPurchaseWeightGrams = 1000; // Approximation 1L = 1kg
+      if (values.purchaseUnit === "ml") finalPurchaseWeightGrams = 1; // Approximation 1ml = 1g
+
+
       const ingredientToSave: Omit<Ingredient, 'id'> = {
         ...values,
+        purchaseWeightGrams: finalPurchaseWeightGrams,
         supplier: values.supplier || "", // Ensure supplier is always a string
       };
 
@@ -218,13 +231,13 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                     control={form.control}
                     name="purchaseWeightGrams"
                     render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Poids d'achat (g)</FormLabel>
+                    <FormItem className={cn(!showPurchaseWeightField && "invisible")}>
+                        <FormLabel>Poids de l'unité d'achat (g)</FormLabel>
                         <FormControl>
                         <Input type="number" step="1" placeholder="Ex: 250" {...field} />
                         </FormControl>
                          <FormDescription className="text-xs">
-                            Poids de votre unité d'achat.
+                            Poids de votre botte/unité.
                         </FormDescription>
                         <FormMessage />
                     </FormItem>
@@ -304,3 +317,5 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
+
+    
