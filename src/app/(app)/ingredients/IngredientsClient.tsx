@@ -8,7 +8,7 @@ import { Ingredient } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, PlusCircle, Search, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, PlusCircle, Search, Pencil, Trash2, Percent } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { deleteIngredient } from "./actions";
 import { cn } from "@/lib/utils";
@@ -174,8 +174,8 @@ export default function IngredientsClient() {
                     <TableHead>Ingrédient</TableHead>
                     <TableHead>Catégorie</TableHead>
                     <TableHead>Stock</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Prix Unitaire</TableHead>
+                    <TableHead>Rendement</TableHead>
+                    <TableHead className="text-right">Prix Net / kg</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -183,6 +183,13 @@ export default function IngredientsClient() {
                   {filteredIngredients.length > 0 ? (
                     filteredIngredients.map((ingredient) => {
                       const isLowStock = ingredient.stockQuantity <= ingredient.lowStockThreshold;
+                      const yieldPercentage = (ingredient.purchaseWeightGrams && ingredient.netWeightGrams) 
+                        ? (ingredient.netWeightGrams / ingredient.purchaseWeightGrams) * 100 
+                        : 0;
+                      const netPricePerKg = (ingredient.purchasePrice && ingredient.netWeightGrams)
+                        ? (ingredient.purchasePrice / ingredient.netWeightGrams) * 1000
+                        : 0;
+
                       return (
                       <TableRow key={ingredient.id}>
                         <TableCell className="font-medium">{ingredient.name}</TableCell>
@@ -190,14 +197,18 @@ export default function IngredientsClient() {
                           <Badge variant="outline">{ingredient.category}</Badge>
                         </TableCell>
                         <TableCell>
-                            {ingredient.stockQuantity} {ingredient.unitPurchase}
+                            <div className="flex flex-col">
+                                <span>{ingredient.stockQuantity} {ingredient.purchaseUnit}</span>
+                                {isLowStock && <Badge variant={'destructive'} className="mt-1 w-fit bg-orange-100 text-orange-800">Stock bas</Badge>}
+                            </div>
                         </TableCell>
                         <TableCell>
-                            <Badge variant={isLowStock ? 'destructive' : 'default'} className={cn(isLowStock ? 'bg-orange-100 text-orange-800' : 'bg-green-100 text-green-800')}>
-                                {isLowStock ? "Stock bas" : "En stock"}
-                            </Badge>
+                            <div className="flex items-center gap-1">
+                                <Percent className="h-3 w-3 text-muted-foreground"/>
+                                {yieldPercentage.toFixed(0)}%
+                            </div>
                         </TableCell>
-                        <TableCell className="text-right">{Math.round(ingredient.unitPrice)} DZD</TableCell>
+                        <TableCell className="text-right font-semibold">{netPricePerKg.toFixed(2)} DZD</TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-2">
                             <IngredientModal ingredient={ingredient} onSuccess={() => { /* onSnapshot handles updates */ }}>

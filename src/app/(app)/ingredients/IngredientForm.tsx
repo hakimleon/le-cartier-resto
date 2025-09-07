@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -49,11 +50,18 @@ const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
   category: z.string({ required_error: "Veuillez sélectionner une catégorie."}).min(1, "La catégorie est requise."),
   stockQuantity: z.coerce.number().min(0, "La quantité en stock ne peut pas être négative."),
-  unitPurchase: z.string().min(1, "L'unité d'achat est requise (ex: kg, litre, pièce)."),
   lowStockThreshold: z.coerce.number().min(0, "Le seuil de stock bas ne peut pas être négatif."),
-  unitPrice: z.coerce.number().positive("Le prix unitaire doit être un nombre positif."),
   supplier: z.string().optional(),
+  // New fields for yield management
+  purchasePrice: z.coerce.number().positive("Le prix d'achat doit être un nombre positif."),
+  purchaseUnit: z.string().min(1, "L'unité d'achat est requise (ex: botte, kg, pièce)."),
+  purchaseWeightGrams: z.coerce.number().positive("Le poids brut de l'unité d'achat doit être positif."),
+  netWeightGrams: z.coerce.number().positive("Le poids net après parage doit être positif."),
+}).refine(data => data.netWeightGrams <= data.purchaseWeightGrams, {
+    message: "Le poids net ne peut pas être supérieur au poids brut.",
+    path: ["netWeightGrams"],
 });
+
 
 type IngredientFormProps = {
   ingredient: Partial<Ingredient> | null;
@@ -70,10 +78,12 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       name: ingredient?.name || "",
       category: ingredient?.category || "",
       stockQuantity: ingredient?.stockQuantity || 0,
-      unitPurchase: ingredient?.unitPurchase || "",
       lowStockThreshold: ingredient?.lowStockThreshold || 0,
-      unitPrice: ingredient?.unitPrice || 0,
       supplier: ingredient?.supplier || "",
+      purchasePrice: ingredient?.purchasePrice || 0,
+      purchaseUnit: ingredient?.purchaseUnit || "",
+      purchaseWeightGrams: ingredient?.purchaseWeightGrams || 0,
+      netWeightGrams: ingredient?.netWeightGrams || 0,
     },
   });
 
@@ -110,7 +120,8 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        
         <FormField
           control={form.control}
           name="name"
@@ -118,7 +129,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
             <FormItem>
               <FormLabel>Nom de l'ingrédient</FormLabel>
               <FormControl>
-                <Input placeholder="Ex: Farine de blé T55" {...field} />
+                <Input placeholder="Ex: Persil plat" {...field} />
               </FormControl>
               <FormMessage />
             </FormItem>
@@ -162,62 +173,103 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
             </FormItem>
           )}
         />
-        
-        <div className="grid grid-cols-2 gap-4">
-            <FormField
-                control={form.control}
-                name="stockQuantity"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Quantité en stock</FormLabel>
-                    <FormControl>
-                    <Input type="number" step="0.01" placeholder="Ex: 25" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-            <FormField
-                control={form.control}
-                name="unitPurchase"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Unité</FormLabel>
-                    <FormControl>
-                    <Input placeholder="Ex: kg, l, pièce" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
+
+        <div className="space-y-2 p-4 border rounded-md">
+            <h4 className="font-medium text-sm">Prix & Rendement</h4>
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="purchasePrice"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Prix d'achat (DZD)</FormLabel>
+                        <FormControl>
+                        <Input type="number" step="0.01" placeholder="Ex: 150" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="purchaseUnit"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Unité d'achat</FormLabel>
+                        <FormControl>
+                        <Input placeholder="Ex: botte, kg, pièce" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </div>
+             <div className="grid grid-cols-2 gap-4 pt-2">
+                 <FormField
+                    control={form.control}
+                    name="purchaseWeightGrams"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Poids brut (g)</FormLabel>
+                        <FormControl>
+                        <Input type="number" step="1" placeholder="Ex: 250" {...field} />
+                        </FormControl>
+                         <FormDescription className="text-xs">
+                            Poids de votre unité d'achat.
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                 <FormField
+                    control={form.control}
+                    name="netWeightGrams"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Poids net (g)</FormLabel>
+                        <FormControl>
+                        <Input type="number" step="1" placeholder="Ex: 180" {...field} />
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                            Poids après parage/épluchage.
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </div>
         </div>
-        <div className="grid grid-cols-2 gap-4">
-            <FormField
-                control={form.control}
-                name="lowStockThreshold"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Seuil de stock bas</FormLabel>
-                    <FormControl>
-                    <Input type="number" step="1" placeholder="Ex: 5" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
-             <FormField
-                control={form.control}
-                name="unitPrice"
-                render={({ field }) => (
-                <FormItem>
-                    <FormLabel>Prix unitaire (DZD)</FormLabel>
-                    <FormControl>
-                    <Input type="number" step="1" placeholder="Ex: 150" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                </FormItem>
-                )}
-            />
+
+        <div className="space-y-2 p-4 border rounded-md">
+            <h4 className="font-medium text-sm">Gestion du Stock</h4>
+            <div className="grid grid-cols-2 gap-4">
+                <FormField
+                    control={form.control}
+                    name="stockQuantity"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Stock actuel (en unité d'achat)</FormLabel>
+                        <FormControl>
+                        <Input type="number" step="0.01" placeholder="Ex: 10" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={form.control}
+                    name="lowStockThreshold"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Seuil d'alerte stock bas</FormLabel>
+                        <FormControl>
+                        <Input type="number" step="1" placeholder="Ex: 2" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+            </div>
         </div>
         
         <FormField
@@ -243,5 +295,3 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
-
-    

@@ -62,8 +62,7 @@ type FullRecipeIngredient = {
     quantity: number;
     unit: string;
     category: string;
-    unitPrice: number;
-    unitPurchase: string;
+    netPricePerKg: number;
     totalCost: number;
 };
 
@@ -74,8 +73,7 @@ type NewRecipeIngredient = {
     quantity: number;
     unit: string;
     category: string;
-    unitPrice: number;
-    unitPurchase: string;
+    netPricePerKg: number;
     totalCost: number;
 };
 
@@ -101,35 +99,25 @@ type NewRecipePreparation = {
     _productionUnit: string;
 };
 
-const getConversionFactor = (purchaseUnit: string, usageUnit: string): number => {
-    if (!purchaseUnit || !usageUnit) return 1;
-
-    const pUnit = purchaseUnit.toLowerCase().trim();
+const getConversionFactor = (usageUnit: string): number => {
+    if (!usageUnit) return 1;
     const uUnit = usageUnit.toLowerCase().trim();
-
-    if (pUnit === uUnit) return 1;
-
-    const conversions: Record<string, Record<string, number>> = {
-        'kg': { 'g': 1000 },
-        'l': { 'ml': 1000 },
-        'litre': { 'ml': 1000 },
-        'piece': { 'pièce': 1 },
-        'pièce': { 'piece': 1 },
+  
+    const conversions: Record<string, number> = {
+      'g': 1000,
+      'kg': 1,
+      'ml': 1000,
+      'l': 1,
+      'litre': 1,
+      'piece': 1,
+      'pièce': 1,
     };
-
-    if (conversions[pUnit] && conversions[pUnit][uUnit]) {
-        return conversions[pUnit][uUnit];
+  
+    if (conversions[uUnit]) {
+      return conversions[uUnit];
     }
-
-    for (const baseUnit in conversions) {
-        for (const targetUnit in conversions[baseUnit]) {
-            if (baseUnit === uUnit && targetUnit === pUnit) {
-                return 1 / conversions[baseUnit][targetUnit];
-            }
-        }
-    }
-
-    console.warn(`No conversion factor found between '${purchaseUnit}' and '${usageUnit}'. Defaulting to 1.`);
+  
+    console.warn(`No conversion factor to kg/l found for '${usageUnit}'. Defaulting to 1.`);
     return 1;
 };
 
@@ -198,9 +186,9 @@ const NewIngredientRow = ({
     openNewIngredientModal,
     handleRemoveNewIngredient
 }: {
-    newIng: NewRecipeIngredient;
+    newIng: NewIngredient;
     sortedIngredients: Ingredient[];
-    handleNewIngredientChange: (tempId: string, field: keyof NewRecipeIngredient, value: any) => void;
+    handleNewIngredientChange: (tempId: string, field: keyof NewIngredient, value: any) => void;
     openNewIngredientModal: (tempId: string) => void;
     handleRemoveNewIngredient: (tempId: string) => void;
 }) => {
@@ -358,9 +346,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             for (const ingDoc of ingredientsSnap.docs) {
                 const ingLink = ingDoc.data() as RecipeIngredientLink;
                 const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
-                if (ingData?.unitPrice && ingData?.unitPurchase && ingLink.unitUse) {
-                    const factor = getConversionFactor(ingData.unitPurchase, ingLink.unitUse);
-                    const costPerUseUnit = (ingData.unitPrice || 0) / factor;
+                if (ingData) {
+                    const netPricePerKg = (ingData.purchasePrice / ingData.netWeightGrams) * 1000;
+                    const conversionFactor = getConversionFactor(ingLink.unitUse);
+                    const costPerUseUnit = netPricePerKg / conversionFactor;
                     totalCost += (ingLink.quantity || 0) * costPerUseUnit;
                 }
             }
@@ -373,7 +362,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     const childPrep = preparationsList.find(p => p.id === depId);
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
-                        const factor = getConversionFactor(childPrep.productionUnit, linkData.unitUse);
+                        const factor = getConversionFactor(childPrep.productionUnit);
                         const costPerUseUnit = childCostPerProductionUnit / factor;
                         totalCost += (linkData.quantity || 0) * costPerUseUnit;
                     }
@@ -426,10 +415,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const ingredientsData = recipeIngredientsSnap.docs.map(docSnap => {
             const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
             const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
-            if (ingredientData && ingredientData.unitPrice && ingredientData.unitPurchase && recipeIngredientData.unitUse) {
-                const factor = getConversionFactor(ingredientData.unitPurchase, recipeIngredientData.unitUse);
-                const costPerUseUnit = ingredientData.unitPrice / factor;
-                return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, category: ingredientData.category, unitPrice: ingredientData.unitPrice, unitPurchase: ingredientData.unitPurchase, totalCost: (recipeIngredientData.quantity || 0) * costPerUseUnit };
+            if (ingredientData) {
+                const netPricePerKg = (ingredientData.purchasePrice / ingredientData.netWeightGrams) * 1000;
+                const conversionFactor = getConversionFactor(recipeIngredientData.unitUse);
+                const costPerUseUnit = netPricePerKg / conversionFactor;
+
+                return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, category: ingredientData.category, netPricePerKg: netPricePerKg, totalCost: (recipeIngredientData.quantity || 0) * costPerUseUnit };
             }
             return null;
         }).filter(Boolean) as FullRecipeIngredient[];
@@ -443,7 +434,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
             if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                 const costPerProductionUnit = costs[linkData.childPreparationId];
-                const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse);
+                const conversionFactor = getConversionFactor(childRecipeData.productionUnit);
                 const costPerUseUnit = costPerProductionUnit / conversionFactor;
                 return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit };
             }
@@ -507,11 +498,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const existing = currentAllIngredients.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
             const tempId = `new-ws-${Date.now()}-${Math.random()}`;
             let totalCost = 0;
+            const netPricePerKg = existing ? (existing.purchasePrice / existing.netWeightGrams) * 1000 : 0;
+            
             if (existing) {
-                const tempNew: NewRecipeIngredient = { tempId, ingredientId: existing.id, name: existing.name, quantity: sugIng.quantity, unit: sugIng.unit, unitPrice: existing.unitPrice, unitPurchase: existing.unitPurchase, totalCost: 0, category: existing.category };
+                const tempNew: NewRecipeIngredient = { tempId, ingredientId: existing.id, name: existing.name, quantity: sugIng.quantity, unit: sugIng.unit, netPricePerKg: netPricePerKg, totalCost: 0, category: existing.category };
                 totalCost = recomputeIngredientCost(tempNew);
             }
-            return { tempId, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, unitPrice: existing?.unitPrice || 0, unitPurchase: existing?.unitPurchase || '', totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
+            return { tempId, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, netPricePerKg: netPricePerKg, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
         });
         setNewIngredients(newIngs);
     };
@@ -551,9 +544,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     };
 
     const recomputeIngredientCost = (ingredient: FullRecipeIngredient | NewRecipeIngredient) => {
-        if (!ingredient.unitPrice || !ingredient.unitPurchase || !ingredient.unit) return 0;
-        const conversionFactor = getConversionFactor(ingredient.unitPurchase, ingredient.unit);
-        const costPerUseUnit = ingredient.unitPrice / conversionFactor;
+        if (!ingredient.netPricePerKg || !ingredient.unit) return 0;
+        const conversionFactor = getConversionFactor(ingredient.unit);
+        const costPerUseUnit = ingredient.netPricePerKg / conversionFactor;
         return (ingredient.quantity || 0) * costPerUseUnit;
     };
 
@@ -567,7 +560,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 const updatedIng = { ...ing, [field]: value };
                 if (field === 'ingredientId') {
                     const selectedIngredient = allIngredients.find(i => i.id === value);
-                    if (selectedIngredient) { updatedIng.name = selectedIngredient.name; updatedIng.unitPrice = selectedIngredient.unitPrice; updatedIng.unitPurchase = selectedIngredient.unitPurchase; updatedIng.category = selectedIngredient.category; }
+                    if (selectedIngredient) { 
+                        updatedIng.name = selectedIngredient.name; 
+                        updatedIng.netPricePerKg = (selectedIngredient.purchasePrice / selectedIngredient.netWeightGrams) * 1000;
+                        updatedIng.category = selectedIngredient.category;
+                    }
                     else { updatedIng.ingredientId = undefined; }
                 }
                 updatedIng.totalCost = recomputeIngredientCost(updatedIng);
@@ -604,7 +601,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const handleRemoveNewPreparation = (tempId: string) => { setNewPreparations(current => current.filter(p => p.tempId !== tempId)); };
     const handleRemoveExistingPreparation = (preparationLinkId: string) => { setEditablePreparations(current => current.filter(p => p.id !== preparationLinkId)); };
-    const handlePreparationChange = (linkId: string, field: 'quantity', value: any) => { setEditablePreparations(current => current.map(prep => { if (prep.id === linkId) { const updatedPrep = { ...prep, [field]: value }; const costPerProductionUnit = prep._costPerUnit || 0; const conversionFactor = getConversionFactor(prep._productionUnit, updatedPrep.unit); const costPerUseUnit = costPerProductionUnit / conversionFactor; updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit; return updatedPrep; } return prep; })); };
+    const handlePreparationChange = (linkId: string, field: 'quantity', value: any) => { setEditablePreparations(current => current.map(prep => { if (prep.id === linkId) { const updatedPrep = { ...prep, [field]: value }; const costPerProductionUnit = prep._costPerUnit || 0; const conversionFactor = getConversionFactor(prep._productionUnit); const costPerUseUnit = costPerProductionUnit / conversionFactor; updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit; return updatedPrep; } return prep; })); };
     const handleNewPreparationChange = (tempId: string, field: keyof NewRecipePreparation, value: any) => {
         setNewPreparations(current => current.map(p => {
             if (p.tempId === tempId) {
@@ -622,7 +619,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 }
                 if (field === 'quantity' || field === 'childPreparationId') {
                     const costPerProductionUnit = updatedPrep._costPerUnit || 0;
-                    const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
+                    const conversionFactor = getConversionFactor(updatedPrep._productionUnit);
                     const costPerUseUnit = costPerProductionUnit / conversionFactor;
                     updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
                 }
@@ -881,7 +878,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
 
                     <Card>
-                        <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><Utensils className="h-5 w-5" />Ingrédients</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', unitPrice: 0, unitPurchase: '', totalCost: 0, category: '' }])}><PlusCircle className="mr-2 h-4 w-4" />Ajouter Ingrédient</Button>}</CardTitle><CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription></CardHeader>
+                        <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><Utensils className="h-5 w-5" />Ingrédients</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', netPricePerKg: 0, totalCost: 0, category: '' }])}><PlusCircle className="mr-2 h-4 w-4" />Ajouter Ingrédient</Button>}</CardTitle><CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription></CardHeader>
                         <CardContent>
                             <Table>
                                 <TableHeader><TableRow><TableHead className="w-[45%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
