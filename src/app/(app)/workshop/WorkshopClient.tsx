@@ -56,6 +56,7 @@ export default function WorkshopClient() {
                 mainIngredients: formData.get("mainIngredients") as string || undefined,
                 excludedIngredients: formData.get("excludedIngredients") as string || undefined,
                 recommendations: formData.get("recommendations") as string || undefined,
+                rawRecipe: formData.get("rawRecipe") as string || undefined,
             };
             setContext(instructions); // Save initial context
             setRefinementHistory([]); // Reset history on new generation
@@ -131,25 +132,39 @@ export default function WorkshopClient() {
                 <div className="lg:col-span-1 space-y-6">
                     <Card>
                         <CardHeader>
-                            <CardTitle>1. Vos Instructions Initiales</CardTitle>
+                            <CardTitle>1. Vos Instructions</CardTitle>
                         </CardHeader>
                         <CardContent>
                             <form ref={initialFormRef} onSubmit={(e) => handleSubmit(e, false)} className="space-y-4">
-                                <div>
-                                    <Label htmlFor="dishName">Nom du plat (Optionnel)</Label>
-                                    <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." disabled={isLoading || !!generatedConcept}/>
+                                <div className="space-y-2">
+                                    <h4 className="font-medium text-sm">Créer à partir d'instructions</h4>
+                                    <div>
+                                        <Label htmlFor="dishName">Nom du plat (Optionnel)</Label>
+                                        <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." disabled={isLoading || !!generatedConcept}/>
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="mainIngredients">Ingrédients principaux (Optionnel)</Label>
+                                        <Input id="mainIngredients" name="mainIngredients" placeholder="Ex: Bar, Orange, Fenouil" disabled={isLoading || !!generatedConcept}/>
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="excludedIngredients">Ingrédients à exclure (Optionnel)</Label>
+                                        <Input id="excludedIngredients" name="excludedIngredients" placeholder="Ex: Vin, crème, porc" disabled={isLoading || !!generatedConcept}/>
+                                    </div>
+                                    <div>
+                                        <Label htmlFor="recommendations">Recommandations (Optionnel)</Label>
+                                        <Textarea id="recommendations" name="recommendations" placeholder="Ex: Un plat frais, méditerranéen..." disabled={isLoading || !!generatedConcept}/>
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label htmlFor="mainIngredients">Ingrédients principaux (Optionnel)</Label>
-                                    <Input id="mainIngredients" name="mainIngredients" placeholder="Ex: Bar, Orange, Fenouil" disabled={isLoading || !!generatedConcept}/>
+                                <div className="relative">
+                                  <Separator />
+                                  <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 bg-card px-2 text-xs text-muted-foreground">OU</span>
                                 </div>
-                                <div>
-                                    <Label htmlFor="excludedIngredients">Ingrédients à exclure (Optionnel)</Label>
-                                    <Input id="excludedIngredients" name="excludedIngredients" placeholder="Ex: Vin, crème, porc" disabled={isLoading || !!generatedConcept}/>
-                                </div>
-                                <div>
-                                    <Label htmlFor="recommendations">Recommandations (Optionnel)</Label>
-                                    <Textarea id="recommendations" name="recommendations" placeholder="Ex: Un plat frais, méditerranéen..." disabled={isLoading || !!generatedConcept}/>
+                                <div className="space-y-2">
+                                     <h4 className="font-medium text-sm">Importer une recette existante</h4>
+                                     <div>
+                                        <Label htmlFor="rawRecipe">Recette existante à reformater (Optionnel)</Label>
+                                        <Textarea id="rawRecipe" name="rawRecipe" placeholder="Collez ici votre recette complète (ingrédients, étapes...)" rows={5} disabled={isLoading || !!generatedConcept}/>
+                                    </div>
                                 </div>
                                 <Button type="submit" className="w-full" disabled={isLoading || !!generatedConcept}>
                                     <Sparkles className="mr-2 h-4 w-4" />

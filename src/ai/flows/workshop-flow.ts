@@ -22,6 +22,7 @@ const DishConceptInputSchema = z.object({
     mainIngredients: z.string().optional().describe("Les ingrédients principaux à intégrer."),
     excludedIngredients: z.string().optional().describe("Les ingrédients à ne jamais utiliser."),
     recommendations: z.string().optional().describe("Directives sur le style, la saisonnalité, ou le type de cuisine souhaité."),
+    rawRecipe: z.string().optional().describe("Une recette complète en texte brut à reformater. Si ce champ est fourni, l'IA doit l'utiliser comme source principale et ignorer les autres champs d'instructions."),
     refinementHistory: z.array(z.string()).optional().describe("L'historique des instructions d'affinage précédentes. L'IA doit respecter toutes ces contraintes passées."),
     currentRefinement: z.string().optional().describe("La nouvelle instruction d'affinage à appliquer par-dessus l'historique."),
 });
@@ -61,7 +62,7 @@ const recipeConceptPrompt = ai.definePrompt({
     output: { schema: DishConceptOutputSchema.omit({ imageUrl: true }) },
     prompt: `
         Vous êtes un chef cuisinier créatif et un styliste culinaire de renommée mondiale, chargé de créer une fiche technique quasi-complète pour un nouveau plat.
-        Votre mission est de transformer une idée brute en un concept de plat professionnel, inspirant et structuré, adapté à un usage en restaurant.
+        Votre mission est de transformer une idée brute ou une recette existante en un concept de plat professionnel, inspirant et structuré, adapté à un usage en restaurant.
 
         Voici la liste exhaustive et FIGÉE des préparations de base qui peuvent être considérées comme des sous-recettes.
         Si une préparation n'est pas dans cette liste, ses ingrédients et étapes doivent être intégrés directement dans la recette principale.
@@ -93,12 +94,19 @@ const recipeConceptPrompt = ai.definePrompt({
         - Base de tajine
         - Base bolognaise
 
-
-        Voici les instructions du chef de l'établissement :
+        {{#if rawRecipe}}
+        PRIORITÉ ABSOLUE : Votre mission principale est de prendre la recette brute suivante, de l'analyser, et de la reformater pour remplir TOUS les champs de la fiche technique demandée. Ignorez les autres instructions de création.
+        RECETTE BRUTE À REFORMATER :
+        ---
+        {{{rawRecipe}}}
+        ---
+        {{else}}
+        Voici les instructions du chef de l'établissement pour une NOUVELLE création :
         {{#if dishName}}- Le nom du plat est imposé : {{{dishName}}}. Vous devez le conserver.{{else}}- Pour une carte gastronomique, un intitulé clair, sobre et précis inspire plus confiance que des noms trop lyriques. Le nom doit mettre en avant le produit principal et son accompagnement le plus significatif, pas une liste. Exemple : "Noix de Saint-Jacques justes snackées, mousseline de chou-fleur à la noisette". Mauvais exemple : "Symphonie marine et son trésor des champs".{{/if}}
         {{#if mainIngredients}}- Ingrédients à utiliser : {{{mainIngredients}}}{{else}}- Ingrédients principaux: Vous avez carte blanche pour les choisir. Soyez créatif.{{/if}}
         {{#if excludedIngredients}}- Ingrédients à **ABSOLUMENT EXCLURE** : {{{excludedIngredients}}}{{/if}}
         {{#if recommendations}}- Recommandations et style : {{{recommendations}}}{{/if}}
+        {{/if}}
         
         {{#if refinementHistory}}
         - **HISTORIQUE DES MODIFICATIONS PRÉCÉDENTES :** Vous devez impérativement continuer à respecter TOUTES les contraintes suivantes, qui ont été demandées lors des étapes précédentes.
