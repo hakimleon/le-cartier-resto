@@ -8,7 +8,7 @@ import { Ingredient } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, PlusCircle, Search, Pencil, Trash2, Percent } from "lucide-react";
+import { AlertTriangle, PlusCircle, Search, Pencil, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { deleteIngredient } from "./actions";
 import { cn } from "@/lib/utils";
@@ -197,10 +197,7 @@ export default function IngredientsClient() {
                             </div>
                         </TableCell>
                         <TableCell>
-                            <div className="flex items-center gap-1">
-                                <Percent className="h-3 w-3 text-muted-foreground"/>
-                                {ingredient.yieldPercentage?.toFixed(0) || 0}
-                            </div>
+                            {(ingredient.yieldPercentage || 0).toFixed(0)} %
                         </TableCell>
                         <TableCell className="text-right font-semibold">{(ingredient.purchasePrice || 0).toFixed(2)} DZD / {ingredient.purchaseUnit}</TableCell>
                         <TableCell>
