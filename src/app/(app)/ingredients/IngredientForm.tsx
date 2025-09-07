@@ -89,7 +89,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   const purchaseUnit = form.watch("purchaseUnit");
 
   // Show the purchase weight field only for non-standard units
-  const showPurchaseWeightField = ["botte", "unites"].includes(purchaseUnit);
+  const showPurchaseWeightField = !!purchaseUnit && ["botte", "unites"].includes(purchaseUnit);
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
