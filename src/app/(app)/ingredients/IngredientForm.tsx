@@ -54,7 +54,7 @@ const formSchema = z.object({
   supplier: z.string().optional(),
   // New fields for yield management
   purchasePrice: z.coerce.number().positive("Le prix d'achat doit être un nombre positif."),
-  purchaseUnit: z.string().min(1, "L'unité d'achat est requise (ex: botte, kg, pièce)."),
+  purchaseUnit: z.string().min(1, "L'unité d'achat est requise."),
   purchaseWeightGrams: z.coerce.number().positive("Le poids de l'unité d'achat doit être positif."),
   yieldPercentage: z.coerce.number().min(0, "Le rendement doit être entre 0 et 100.").max(100, "Le rendement doit être entre 0 et 100."),
 });
@@ -78,7 +78,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       lowStockThreshold: ingredient?.lowStockThreshold || 0,
       supplier: ingredient?.supplier || "",
       purchasePrice: ingredient?.purchasePrice || 0,
-      purchaseUnit: ingredient?.purchaseUnit || "",
+      purchaseUnit: ingredient?.purchaseUnit || "kg",
       purchaseWeightGrams: ingredient?.purchaseWeightGrams || 0,
       yieldPercentage: ingredient?.yieldPercentage || 100,
     },
@@ -193,9 +193,21 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                     render={({ field }) => (
                     <FormItem>
                         <FormLabel>Unité d'achat</FormLabel>
-                        <FormControl>
-                        <Input placeholder="Ex: botte, kg, pièce" {...field} />
-                        </FormControl>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Sélectionnez une unité..." />
+                                </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                <SelectItem value="kg">Kg</SelectItem>
+                                <SelectItem value="litres">Litres</SelectItem>
+                                <SelectItem value="botte">Botte</SelectItem>
+                                <SelectItem value="unites">Unités</SelectItem>
+                                <SelectItem value="grammes">Grammes</SelectItem>
+                                <SelectItem value="ml">ml</SelectItem>
+                            </SelectContent>
+                        </Select>
                         <FormMessage />
                     </FormItem>
                     )}
