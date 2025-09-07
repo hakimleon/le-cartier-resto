@@ -55,11 +55,8 @@ const formSchema = z.object({
   // New fields for yield management
   purchasePrice: z.coerce.number().positive("Le prix d'achat doit être un nombre positif."),
   purchaseUnit: z.string().min(1, "L'unité d'achat est requise (ex: botte, kg, pièce)."),
-  purchaseWeightGrams: z.coerce.number().positive("Le poids brut de l'unité d'achat doit être positif."),
-  netWeightGrams: z.coerce.number().positive("Le poids net après parage doit être positif."),
-}).refine(data => data.netWeightGrams <= data.purchaseWeightGrams, {
-    message: "Le poids net ne peut pas être supérieur au poids brut.",
-    path: ["netWeightGrams"],
+  purchaseWeightGrams: z.coerce.number().positive("Le poids de l'unité d'achat doit être positif."),
+  yieldPercentage: z.coerce.number().min(0, "Le rendement doit être entre 0 et 100.").max(100, "Le rendement doit être entre 0 et 100."),
 });
 
 
@@ -83,7 +80,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       purchasePrice: ingredient?.purchasePrice || 0,
       purchaseUnit: ingredient?.purchaseUnit || "",
       purchaseWeightGrams: ingredient?.purchaseWeightGrams || 0,
-      netWeightGrams: ingredient?.netWeightGrams || 0,
+      yieldPercentage: ingredient?.yieldPercentage || 100,
     },
   });
 
@@ -210,7 +207,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                     name="purchaseWeightGrams"
                     render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Poids brut (g)</FormLabel>
+                        <FormLabel>Poids d'achat (g)</FormLabel>
                         <FormControl>
                         <Input type="number" step="1" placeholder="Ex: 250" {...field} />
                         </FormControl>
@@ -223,15 +220,15 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                 />
                  <FormField
                     control={form.control}
-                    name="netWeightGrams"
+                    name="yieldPercentage"
                     render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Poids net (g)</FormLabel>
+                        <FormLabel>Rendement (%)</FormLabel>
                         <FormControl>
-                        <Input type="number" step="1" placeholder="Ex: 180" {...field} />
+                        <Input type="number" step="1" placeholder="Ex: 80" {...field} />
                         </FormControl>
                         <FormDescription className="text-xs">
-                            Poids après parage/épluchage.
+                            Pourcentage utilisable après parage.
                         </FormDescription>
                         <FormMessage />
                     </FormItem>

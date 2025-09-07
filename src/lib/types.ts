@@ -10,10 +10,10 @@ export type Ingredient = {
     supplier: string;
 
     // Nouvelle structure pour le prix et le rendement
-    purchasePrice: number;    // Prix d'achat (ex: 150 pour une botte)
-    purchaseUnit: string;     // Unité d'achat (ex: "botte", "kg", "pièce")
-    purchaseWeightGrams: number; // Poids en grammes de l'unité d'achat (ex: 200 pour une botte de 200g)
-    netWeightGrams: number;      // Poids net en grammes après parage (ex: 120 pour 120g net)
+    purchasePrice: number;        // Prix d'achat (ex: 150 pour une botte)
+    purchaseUnit: string;         // Unité d'achat (ex: "botte", "kg", "pièce")
+    purchaseWeightGrams: number;  // Poids en grammes de l'unité d'achat (ex: 200 pour une botte de 200g)
+    yieldPercentage: number;      // Rendement en pourcentage (ex: 60 pour 60%)
 };
 
 // Types pour la génération de recette par l'IA

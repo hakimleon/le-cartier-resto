@@ -183,11 +183,9 @@ export default function IngredientsClient() {
                   {filteredIngredients.length > 0 ? (
                     filteredIngredients.map((ingredient) => {
                       const isLowStock = ingredient.stockQuantity <= ingredient.lowStockThreshold;
-                      const yieldPercentage = (ingredient.purchaseWeightGrams && ingredient.netWeightGrams) 
-                        ? (ingredient.netWeightGrams / ingredient.purchaseWeightGrams) * 100 
-                        : 0;
-                      const netPricePerKg = (ingredient.purchasePrice && ingredient.netWeightGrams)
-                        ? (ingredient.purchasePrice / ingredient.netWeightGrams) * 1000
+                      const netWeightGrams = (ingredient.purchaseWeightGrams || 0) * ((ingredient.yieldPercentage || 0) / 100);
+                      const netPricePerKg = (ingredient.purchasePrice && netWeightGrams)
+                        ? (ingredient.purchasePrice / netWeightGrams) * 1000
                         : 0;
 
                       return (
@@ -205,10 +203,10 @@ export default function IngredientsClient() {
                         <TableCell>
                             <div className="flex items-center gap-1">
                                 <Percent className="h-3 w-3 text-muted-foreground"/>
-                                {yieldPercentage.toFixed(0)}%
+                                {ingredient.yieldPercentage?.toFixed(0) || 0}%
                             </div>
                         </TableCell>
-                        <TableCell className="text-right font-semibold">{netPricePerKg.toFixed(2)} DZD</TableCell>
+                        <TableCell className="text-right font-semibold">{!isNaN(netPricePerKg) && isFinite(netPricePerKg) ? netPricePerKg.toFixed(2) : '0.00'} DZD</TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-2">
                             <IngredientModal ingredient={ingredient} onSuccess={() => { /* onSnapshot handles updates */ }}>

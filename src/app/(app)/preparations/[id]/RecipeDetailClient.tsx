@@ -322,7 +322,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const ingLink = ingDoc.data() as RecipeIngredientLink;
             const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
             if (ingData) {
-                const netPricePerKg = (ingData.purchasePrice / ingData.netWeightGrams) * 1000;
+                const netWeightGrams = ingData.purchaseWeightGrams * (ingData.yieldPercentage / 100);
+                const netPricePerKg = netWeightGrams > 0 ? (ingData.purchasePrice / netWeightGrams) * 1000 : 0;
                 const conversionFactor = getConversionFactor(ingLink.unitUse);
                 const costPerUseUnit = netPricePerKg / conversionFactor;
                 totalCost += (ingLink.quantity || 0) * costPerUseUnit;
@@ -385,7 +386,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
         const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
         if (ingredientData) {
-            const netPricePerKg = (ingredientData.purchasePrice / ingredientData.netWeightGrams) * 1000;
+            const netWeightGrams = ingredientData.purchaseWeightGrams * (ingredientData.yieldPercentage / 100);
+            const netPricePerKg = netWeightGrams > 0 ? (ingredientData.purchasePrice / netWeightGrams) * 1000 : 0;
             const conversionFactor = getConversionFactor(recipeIngredientData.unitUse);
             const costPerUseUnit = netPricePerKg / conversionFactor;
 
@@ -470,8 +472,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
           if (field === 'ingredientId') {
             const selectedIngredient = allIngredients.find(i => i.id === value);
             if (selectedIngredient) { 
+                const netWeightGrams = selectedIngredient.purchaseWeightGrams * (selectedIngredient.yieldPercentage / 100);
                 updatedIng.name = selectedIngredient.name; 
-                updatedIng.netPricePerKg = (selectedIngredient.purchasePrice / selectedIngredient.netWeightGrams) * 1000;
+                updatedIng.netPricePerKg = netWeightGrams > 0 ? (selectedIngredient.purchasePrice / netWeightGrams) * 1000 : 0;
             }
             else { updatedIng.ingredientId = undefined; }
           }
@@ -565,7 +568,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
           const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
           const tempId = `new-gen-${Date.now()}-${Math.random()}`;
           let totalCost = 0;
-          const netPricePerKg = existingIngredient ? (existingIngredient.purchasePrice / existingIngredient.netWeightGrams) * 1000 : 0;
+          const netWeightGrams = existingIngredient ? existingIngredient.purchaseWeightGrams * (existingIngredient.yieldPercentage / 100) : 0;
+          const netPricePerKg = existingIngredient && netWeightGrams > 0 ? (existingIngredient.purchasePrice / netWeightGrams) * 1000 : 0;
           if(existingIngredient) { const tempNewIng: NewRecipeIngredient = { tempId, ingredientId: existingIngredient.id, name: ing.name, quantity: ing.quantity, unit: ing.unit, netPricePerKg: netPricePerKg, totalCost: 0, }; totalCost = recomputeIngredientCost(tempNewIng) }
           return { tempId, ingredientId: existingIngredient?.id, name: ing.name, quantity: ing.quantity, unit: ing.unit, netPricePerKg: netPricePerKg, totalCost: isNaN(totalCost) ? 0 : totalCost, };
         });
