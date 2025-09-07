@@ -368,10 +368,22 @@ const fetchAllPreparations = useCallback(async () => {
             if(conceptJSON && isMounted){
                 setIsEditing(true);
                 const concept: DishConceptOutput = JSON.parse(conceptJSON);
+                
+                setEditableRecipe(current => {
+                    if (!current) return null;
+                    return {
+                        ...current,
+                        ...concept
+                    };
+                });
+
                 const ingredientsList = await fetchAllIngredients();
                 processSuggestedIngredients(concept.ingredients, ingredientsList);
+
                 const allPrepsData = await fetchAllPreparations();
                 processSuggestedPreparations(concept.subRecipes, allPrepsData);
+                
+                toast({ title: "Fiche technique importée !", description: "Vérifiez les informations et les liaisons suggérées." });
                 sessionStorage.removeItem(WORKSHOP_CONCEPT_KEY);
             }
         } catch(e: any) {
@@ -416,7 +428,6 @@ const fetchAllPreparations = useCallback(async () => {
         };
     });
     setNewPreparations(newPreps);
-    toast({ title: "Fiche technique importée !", description: "Vérifiez les ingrédients et les sous-recettes suggérés." })
   }
 
   const handleToggleEditMode = () => {
@@ -757,4 +768,3 @@ function RecipeDetailSkeleton() {
     </div>
   );
 }
-
