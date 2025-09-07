@@ -216,7 +216,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                                 <SelectItem value="kg">Kg</SelectItem>
                                 <SelectItem value="litres">Litres</SelectItem>
                                 <SelectItem value="botte">Botte</SelectItem>
-                                <SelectItem value="unites">Unités</SelectItem>
+                                <SelectItem value="unites">Pièce</SelectItem>
                                 <SelectItem value="grammes">Grammes</SelectItem>
                                 <SelectItem value="ml">ml</SelectItem>
                             </SelectContent>
@@ -232,12 +232,12 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                     name="purchaseWeightGrams"
                     render={({ field }) => (
                     <FormItem className={cn(!showPurchaseWeightField && "invisible")}>
-                        <FormLabel>Poids de l'unité d'achat (g)</FormLabel>
+                        <FormLabel>Poids de la botte/pièce (g)</FormLabel>
                         <FormControl>
                         <Input type="number" step="1" placeholder="Ex: 250" {...field} />
                         </FormControl>
                          <FormDescription className="text-xs">
-                            Poids de votre botte/unité.
+                            Poids en grammes pour une seule botte/pièce.
                         </FormDescription>
                         <FormMessage />
                     </FormItem>
