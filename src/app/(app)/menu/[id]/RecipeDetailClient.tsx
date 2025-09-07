@@ -679,15 +679,15 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const currentIngredientsData = isEditing ? editableIngredients : ingredients;
     const currentPreparationsData = isEditing ? editablePreparations : preparations;
 
-    const { 
-        totalRecipeCost, 
-        costPerPortion, 
-        priceHT, 
-        grossMargin, 
-        grossMarginPercentage, 
-        foodCostPercentage, 
-        multiplierCoefficient, 
-        costsByCategory 
+    const {
+        totalRecipeCost,
+        costPerPortion,
+        priceHT,
+        grossMargin,
+        grossMarginPercentage,
+        foodCostPercentage,
+        multiplierCoefficient,
+        costsByCategory
     } = useMemo(() => {
         const result = {
             totalRecipeCost: 0, costPerPortion: 0, priceHT: 0, grossMargin: 0, grossMarginPercentage: 0, foodCostPercentage: 0, multiplierCoefficient: 0,
@@ -1066,7 +1066,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-
 
     
