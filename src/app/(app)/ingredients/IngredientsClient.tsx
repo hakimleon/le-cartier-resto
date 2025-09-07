@@ -175,7 +175,7 @@ export default function IngredientsClient() {
                     <TableHead>Catégorie</TableHead>
                     <TableHead>Stock</TableHead>
                     <TableHead>Rendement</TableHead>
-                    <TableHead className="text-right">Prix Net / kg</TableHead>
+                    <TableHead className="text-right">Prix d'Achat</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -183,11 +183,7 @@ export default function IngredientsClient() {
                   {filteredIngredients.length > 0 ? (
                     filteredIngredients.map((ingredient) => {
                       const isLowStock = ingredient.stockQuantity <= ingredient.lowStockThreshold;
-                      const netWeightGrams = (ingredient.purchaseWeightGrams || 0) * ((ingredient.yieldPercentage || 0) / 100);
-                      const netPricePerKg = (ingredient.purchasePrice && netWeightGrams)
-                        ? (ingredient.purchasePrice / netWeightGrams) * 1000
-                        : 0;
-
+                      
                       return (
                       <TableRow key={ingredient.id}>
                         <TableCell className="font-medium">{ingredient.name}</TableCell>
@@ -206,7 +202,7 @@ export default function IngredientsClient() {
                                 {ingredient.yieldPercentage?.toFixed(0) || 0}%
                             </div>
                         </TableCell>
-                        <TableCell className="text-right font-semibold">{!isNaN(netPricePerKg) && isFinite(netPricePerKg) ? netPricePerKg.toFixed(2) : '0.00'} DZD</TableCell>
+                        <TableCell className="text-right font-semibold">{ingredient.purchasePrice.toFixed(2)} DZD / {ingredient.purchaseUnit}</TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-2">
                             <IngredientModal ingredient={ingredient} onSuccess={() => { /* onSnapshot handles updates */ }}>
