@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
+import { AlertCircle, Info } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 
@@ -57,6 +57,16 @@ const formSchema = z.object({
   purchaseUnit: z.string().min(1, "L'unité d'achat est requise."),
   purchaseWeightGrams: z.coerce.number().positive("Le poids de l'unité d'achat doit être positif."),
   yieldPercentage: z.coerce.number().min(0, "Le rendement doit être entre 0 et 100.").max(100, "Le rendement doit être entre 0 et 100."),
+  finalUseUnit: z.string().optional(),
+  convertedQuantity: z.coerce.number().optional(),
+}).refine(data => {
+    if (data.finalUseUnit && !data.convertedQuantity) {
+        return false;
+    }
+    return true;
+}, {
+    message: "La quantité convertie est requise si une unité finale est spécifiée.",
+    path: ["convertedQuantity"],
 });
 
 
@@ -81,13 +91,15 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       purchaseUnit: ingredient?.purchaseUnit || "kg",
       purchaseWeightGrams: ingredient?.purchaseWeightGrams || 1000,
       yieldPercentage: ingredient?.yieldPercentage || 100,
+      finalUseUnit: ingredient?.finalUseUnit || "",
+      convertedQuantity: ingredient?.convertedQuantity || undefined,
     },
   });
 
   const selectedCategory = form.watch("category");
   const categoryExamples = ingredientCategories.find(c => c.name === selectedCategory)?.examples;
   const purchaseUnit = form.watch("purchaseUnit");
-  const isWeightEditable = purchaseUnit === "botte" || purchaseUnit === "piece";
+  const isWeightEditable = purchaseUnit === "botte" || purchaseUnit === "pièce";
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -96,14 +108,16 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       let finalPurchaseWeightGrams = values.purchaseWeightGrams;
       if (values.purchaseUnit === "kg") finalPurchaseWeightGrams = 1000;
       if (values.purchaseUnit === "grammes") finalPurchaseWeightGrams = 1;
-      if (values.purchaseUnit === "litres") finalPurchaseWeightGrams = 1000; // Approximation 1L = 1kg
-      if (values.purchaseUnit === "ml") finalPurchaseWeightGrams = 1; // Approximation 1ml = 1g
+      if (values.purchaseUnit === "litres") finalPurchaseWeightGrams = 1000;
+      if (values.purchaseUnit === "ml") finalPurchaseWeightGrams = 1;
 
 
       const ingredientToSave: Omit<Ingredient, 'id'> = {
         ...values,
         purchaseWeightGrams: finalPurchaseWeightGrams,
-        supplier: values.supplier || "", // Ensure supplier is always a string
+        supplier: values.supplier || "",
+        finalUseUnit: values.finalUseUnit || "",
+        convertedQuantity: values.finalUseUnit ? values.convertedQuantity : undefined,
       };
 
       const savedIngredient = await saveIngredient(ingredientToSave, ingredient?.id || null);
@@ -129,7 +143,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
         
-        {/* Left Column */}
         <div className="space-y-6 md:col-span-1">
             <FormField
               control={form.control}
@@ -197,7 +210,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
             />
         </div>
         
-        {/* Right Column */}
         <div className="space-y-6 md:col-span-1">
              <div>
                 <h4 className="font-medium text-sm text-muted-foreground mb-2">Prix & Unité d'Achat</h4>
@@ -231,7 +243,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                                     <SelectItem value="kg">Kg</SelectItem>
                                     <SelectItem value="litres">Litres</SelectItem>
                                     <SelectItem value="botte">Botte</SelectItem>
-                                    <SelectItem value="piece">Pièce</SelectItem>
+                                    <SelectItem value="pièce">Pièce</SelectItem>
                                     <SelectItem value="grammes">Grammes</SelectItem>
                                     <SelectItem value="ml">ml</SelectItem>
                                 </SelectContent>
@@ -283,6 +295,46 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                     />
                 </div>
             </div>
+            
+            <Separator />
+            
+            <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-2">Conversion d'Unité (Optionnel)</h4>
+                <div className="p-3 border rounded-md bg-muted/50 space-y-2">
+                    <p className="text-xs text-muted-foreground flex gap-2 items-center"><AlertCircle className="h-4 w-4 shrink-0" />Remplissez si l'ingrédient est transformé (ex: citron en jus).</p>
+                    <div className="grid grid-cols-2 gap-4">
+                         <FormField
+                            control={form.control}
+                            name="finalUseUnit"
+                            render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Unité d'Utilisation</FormLabel>
+                                <FormControl>
+                                <Input placeholder="Ex: ml, g de purée" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                         <FormField
+                            control={form.control}
+                            name="convertedQuantity"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Quantité Obtenue</FormLabel>
+                                <FormControl>
+                                <Input type="number" step="any" placeholder="Ex: 400" {...field} value={field.value ?? ''} />
+                                </FormControl>
+                                <FormDescription className="text-xs">
+                                    Qté obtenue pour 1 {purchaseUnit} acheté.
+                                </FormDescription>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                    </div>
+                </div>
+            </div>
 
             <Separator />
 
@@ -325,7 +377,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
             </div>
         </div>
 
-        {/* Footer */}
         <div className="md:col-span-2 flex justify-end pt-4">
             <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Sauvegarde..." : "Sauvegarder l'ingrédient"}

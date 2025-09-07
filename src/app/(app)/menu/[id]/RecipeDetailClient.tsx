@@ -62,7 +62,7 @@ type FullRecipeIngredient = {
     quantity: number;
     unit: string;
     category: string;
-    netPricePerKg: number;
+    netPricePerKg: number; // This will now represent the cost of the usable unit (kg, L, etc.)
     totalCost: number;
 };
 
@@ -99,25 +99,39 @@ type NewRecipePreparation = {
     _productionUnit: string;
 };
 
-const getConversionFactor = (usageUnit: string): number => {
-    if (!usageUnit) return 1;
-    const uUnit = usageUnit.toLowerCase().trim();
-  
-    const conversions: Record<string, number> = {
-      'g': 1000,
-      'kg': 1,
-      'ml': 1000,
-      'l': 1,
-      'litre': 1,
-      'piece': 1,
-      'pièce': 1,
-    };
-  
-    if (conversions[uUnit]) {
-      return conversions[uUnit];
+// This function now calculates the cost per the specified unit.
+const getCostPerUnit = (ingredient: Ingredient) => {
+    // If a final conversion is defined (e.g., kg to ml of juice)
+    if (ingredient.finalUseUnit && ingredient.convertedQuantity && ingredient.convertedQuantity > 0) {
+        return ingredient.purchasePrice / ingredient.convertedQuantity;
     }
-  
-    console.warn(`No conversion factor to kg/l found for '${usageUnit}'. Defaulting to 1.`);
+
+    // Standard calculation based on weight and yield
+    const netWeightGrams = ingredient.purchaseWeightGrams * (ingredient.yieldPercentage / 100);
+    if (netWeightGrams === 0) return 0;
+    
+    return ingredient.purchasePrice / netWeightGrams; // This gives price per gram
+};
+
+const getConversionFactor = (fromUnit: string, toUnit: string): number => {
+    if (fromUnit.toLowerCase() === toUnit.toLowerCase()) return 1;
+
+    const u = (unit: string) => unit.toLowerCase().trim();
+    const factors: Record<string, number> = {
+        'kg': 1000, 'g': 1, 'mg': 0.001,
+        'l': 1000, 'ml': 1,
+        'litre': 1000, 'litres': 1000,
+        'pièce': 1, 'piece': 1,
+    };
+    
+    const fromFactor = factors[u(fromUnit)];
+    const toFactor = factors[u(toUnit)];
+
+    if (fromFactor !== undefined && toFactor !== undefined) {
+        return fromFactor / toFactor;
+    }
+    
+    console.warn(`No conversion factor found between '${fromUnit}' and '${toUnit}'. Defaulting to 1.`);
     return 1;
 };
 
@@ -346,12 +360,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             for (const ingDoc of ingredientsSnap.docs) {
                 const ingLink = ingDoc.data() as RecipeIngredientLink;
                 const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
-                if (ingData) {
-                    const netWeightGrams = ingData.purchaseWeightGrams * (ingData.yieldPercentage / 100);
-                    const netPricePerKg = netWeightGrams > 0 ? (ingData.purchasePrice / netWeightGrams) * 1000 : 0;
-                    const conversionFactor = getConversionFactor(ingLink.unitUse);
-                    const costPerUseUnit = netPricePerKg / conversionFactor;
-                    totalCost += (ingLink.quantity || 0) * costPerUseUnit;
+                 if (ingData) {
+                    const costPerBaseUnit = getCostPerUnit(ingData);
+                    const baseUnit = ingData.finalUseUnit || 'g'; // Use 'g' as the base for weight
+                    const conversionFactor = getConversionFactor(baseUnit, ingLink.unitUse);
+                    totalCost += (ingLink.quantity || 0) * costPerBaseUnit * conversionFactor;
                 }
             }
 
@@ -363,8 +376,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     const childPrep = preparationsList.find(p => p.id === depId);
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
-                        const factor = getConversionFactor(childPrep.productionUnit);
-                        const costPerUseUnit = childCostPerProductionUnit / factor;
+                        const conversionFactor = getConversionFactor(childPrep.productionUnit, linkData.unitUse);
+                        const costPerUseUnit = childCostPerProductionUnit * conversionFactor;
                         totalCost += (linkData.quantity || 0) * costPerUseUnit;
                     }
                 }
@@ -417,12 +430,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
             const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
             if (ingredientData) {
-                const netWeightGrams = ingredientData.purchaseWeightGrams * (ingredientData.yieldPercentage / 100);
-                const netPricePerKg = netWeightGrams > 0 ? (ingredientData.purchasePrice / netWeightGrams) * 1000 : 0;
-                const conversionFactor = getConversionFactor(recipeIngredientData.unitUse);
-                const costPerUseUnit = netPricePerKg / conversionFactor;
+                const costPerBaseUnit = getCostPerUnit(ingredientData);
+                const baseUnit = ingredientData.finalUseUnit || 'g'; // Base unit is 'g' for weight or the final unit
+                const conversionFactor = getConversionFactor(baseUnit, recipeIngredientData.unitUse);
+                const totalCost = (recipeIngredientData.quantity || 0) * costPerBaseUnit * conversionFactor;
 
-                return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, category: ingredientData.category, netPricePerKg: netPricePerKg, totalCost: (recipeIngredientData.quantity || 0) * costPerUseUnit };
+                return {
+                    id: ingredientData.id!,
+                    recipeIngredientId: docSnap.id,
+                    name: ingredientData.name,
+                    quantity: recipeIngredientData.quantity,
+                    unit: recipeIngredientData.unitUse,
+                    category: ingredientData.category,
+                    netPricePerKg: 0, // This field is deprecated in this view
+                    totalCost: totalCost
+                };
             }
             return null;
         }).filter(Boolean) as FullRecipeIngredient[];
@@ -436,8 +458,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
             if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                 const costPerProductionUnit = costs[linkData.childPreparationId];
-                const conversionFactor = getConversionFactor(childRecipeData.productionUnit);
-                const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse);
+                const costPerUseUnit = costPerProductionUnit * conversionFactor;
                 return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit };
             }
             return null;
@@ -500,14 +522,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const existing = currentAllIngredients.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
             const tempId = `new-ws-${Date.now()}-${Math.random()}`;
             let totalCost = 0;
-            const netWeightGrams = existing ? existing.purchaseWeightGrams * (existing.yieldPercentage / 100) : 0;
-            const netPricePerKg = existing && netWeightGrams > 0 ? (existing.purchasePrice / netWeightGrams) * 1000 : 0;
-            
             if (existing) {
-                const tempNew: NewRecipeIngredient = { tempId, ingredientId: existing.id, name: existing.name, quantity: sugIng.quantity, unit: sugIng.unit, netPricePerKg: netPricePerKg, totalCost: 0, category: existing.category };
-                totalCost = recomputeIngredientCost(tempNew);
+                 const tempNew: NewRecipeIngredient = { tempId, ingredientId: existing.id, name: existing.name, quantity: sugIng.quantity, unit: sugIng.unit, netPricePerKg: 0, totalCost: 0, category: existing.category };
+                totalCost = recomputeIngredientCost(tempNew, existing);
             }
-            return { tempId, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, netPricePerKg: netPricePerKg, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
+            return { tempId, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, netPricePerKg: 0, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
         });
         setNewIngredients(newIngs);
     };
@@ -546,32 +565,39 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         if (editableRecipe) { setEditableRecipe({ ...editableRecipe, [field]: value }); }
     };
 
-    const recomputeIngredientCost = (ingredient: FullRecipeIngredient | NewRecipeIngredient) => {
-        if (!ingredient.netPricePerKg || !ingredient.unit) return 0;
-        const conversionFactor = getConversionFactor(ingredient.unit);
-        const costPerUseUnit = ingredient.netPricePerKg / conversionFactor;
-        return (ingredient.quantity || 0) * costPerUseUnit;
+    const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient) => {
+        const costPerBaseUnit = getCostPerUnit(ingredientData);
+        const baseUnit = ingredientData.finalUseUnit || 'g'; // Base unit is g for weight
+        const conversionFactor = getConversionFactor(baseUnit, ingredientLink.unit);
+        return (ingredientLink.quantity || 0) * costPerBaseUnit * conversionFactor;
     };
 
     const handleIngredientChange = (recipeIngredientId: string, field: 'quantity' | 'unit', value: any) => {
-        setEditableIngredients(current => current.map(ing => { if (ing.recipeIngredientId === recipeIngredientId) { const updatedIng = { ...ing, [field]: value }; updatedIng.totalCost = recomputeIngredientCost(updatedIng); return updatedIng; } return ing; }));
+        setEditableIngredients(current => current.map(ing => {
+            if (ing.recipeIngredientId === recipeIngredientId) {
+                const updatedIng = { ...ing, [field]: value };
+                const ingData = allIngredients.find(i => i.id === ing.id);
+                if (ingData) {
+                    updatedIng.totalCost = recomputeIngredientCost(updatedIng, ingData);
+                }
+                return updatedIng;
+            }
+            return ing;
+        }));
     };
 
     const handleNewIngredientChange = (tempId: string, field: keyof NewRecipeIngredient, value: any) => {
         setNewIngredients(current => current.map(ing => {
             if (ing.tempId === tempId) {
                 const updatedIng = { ...ing, [field]: value };
-                if (field === 'ingredientId') {
-                    const selectedIngredient = allIngredients.find(i => i.id === value);
-                    if (selectedIngredient) { 
-                        const netWeightGrams = selectedIngredient.purchaseWeightGrams * (selectedIngredient.yieldPercentage / 100);
-                        updatedIng.name = selectedIngredient.name; 
-                        updatedIng.netPricePerKg = netWeightGrams > 0 ? (selectedIngredient.purchasePrice / netWeightGrams) * 1000 : 0;
+                const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
+                if (selectedIngredient) {
+                    if (field === 'ingredientId') {
+                        updatedIng.name = selectedIngredient.name;
                         updatedIng.category = selectedIngredient.category;
                     }
-                    else { updatedIng.ingredientId = undefined; }
+                    updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
                 }
-                updatedIng.totalCost = recomputeIngredientCost(updatedIng);
                 return updatedIng;
             }
             return ing;
@@ -605,7 +631,19 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const handleRemoveNewPreparation = (tempId: string) => { setNewPreparations(current => current.filter(p => p.tempId !== tempId)); };
     const handleRemoveExistingPreparation = (preparationLinkId: string) => { setEditablePreparations(current => current.filter(p => p.id !== preparationLinkId)); };
-    const handlePreparationChange = (linkId: string, field: 'quantity', value: any) => { setEditablePreparations(current => current.map(prep => { if (prep.id === linkId) { const updatedPrep = { ...prep, [field]: value }; const costPerProductionUnit = prep._costPerUnit || 0; const conversionFactor = getConversionFactor(prep._productionUnit); const costPerUseUnit = costPerProductionUnit / conversionFactor; updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit; return updatedPrep; } return prep; })); };
+    const handlePreparationChange = (linkId: string, field: 'quantity', value: any) => {
+        setEditablePreparations(current => current.map(prep => {
+            if (prep.id === linkId) {
+                const updatedPrep = { ...prep, [field]: value };
+                const costPerProductionUnit = prep._costPerUnit || 0;
+                const conversionFactor = getConversionFactor(prep._productionUnit, updatedPrep.unit);
+                const costPerUseUnit = costPerProductionUnit * conversionFactor;
+                updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
+                return updatedPrep;
+            }
+            return prep;
+        }));
+    };
     const handleNewPreparationChange = (tempId: string, field: keyof NewRecipePreparation, value: any) => {
         setNewPreparations(current => current.map(p => {
             if (p.tempId === tempId) {
@@ -623,8 +661,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 }
                 if (field === 'quantity' || field === 'childPreparationId') {
                     const costPerProductionUnit = updatedPrep._costPerUnit || 0;
-                    const conversionFactor = getConversionFactor(updatedPrep._productionUnit);
-                    const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                    const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
+                    const costPerUseUnit = costPerProductionUnit * conversionFactor;
                     updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
                 }
                 return updatedPrep;

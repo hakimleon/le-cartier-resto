@@ -14,6 +14,10 @@ export type Ingredient = {
     purchaseUnit: string;         // Unité d'achat (ex: "botte", "kg", "pièce")
     purchaseWeightGrams: number;  // Poids en grammes de l'unité d'achat (ex: 200 pour une botte de 200g)
     yieldPercentage: number;      // Rendement en pourcentage (ex: 60 pour 60%)
+
+    // Champs optionnels pour la conversion d'unité
+    finalUseUnit?: string;         // Unité finale après transformation (ex: "ml", "g de purée")
+    convertedQuantity?: number;    // Quantité obtenue dans l'unité finale pour 1 unité d'achat (ex: 400 pour 400ml de jus pour 1kg de citrons)
 };
 
 // Types pour la génération de recette par l'IA
