@@ -116,18 +116,6 @@ export default function AppLayout({
                 <SidebarMenuItem>
                     <SidebarMenuButton
                     asChild
-                    isActive={pathname.startsWith('/draft')}
-                    tooltip="Brouillon"
-                    >
-                    <Link href="/draft">
-                        <Beaker />
-                        <span>Brouillon</span>
-                    </Link>
-                    </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                    <SidebarMenuButton
-                    asChild
                     isActive={pathname.startsWith('/settings')}
                     tooltip="Paramètres"
                     >
