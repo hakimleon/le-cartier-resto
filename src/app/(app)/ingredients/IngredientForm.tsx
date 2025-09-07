@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipProvider, TooltipContent } from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
+import { Info, Percent } from "lucide-react";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { cn } from "@/lib/utils";
 
@@ -88,7 +88,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   const categoryExamples = ingredientCategories.find(c => c.name === selectedCategory)?.examples;
   const purchaseUnit = form.watch("purchaseUnit");
 
-  const showPurchaseWeightField = purchaseUnit && ["botte", "unites"].includes(purchaseUnit);
+  const showPurchaseWeightField = purchaseUnit && ["botte", "piece"].includes(purchaseUnit);
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -215,7 +215,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                                 <SelectItem value="kg">Kg</SelectItem>
                                 <SelectItem value="litres">Litres</SelectItem>
                                 <SelectItem value="botte">Botte</SelectItem>
-                                <SelectItem value="unites">Pièce</SelectItem>
+                                <SelectItem value="piece">Pièce</SelectItem>
                                 <SelectItem value="grammes">Grammes</SelectItem>
                                 <SelectItem value="ml">ml</SelectItem>
                             </SelectContent>
@@ -249,10 +249,13 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                     name="yieldPercentage"
                     render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Rendement (%)</FormLabel>
-                        <FormControl>
-                        <Input type="number" step="1" placeholder="Ex: 80" {...field} />
-                        </FormControl>
+                        <FormLabel>Rendement</FormLabel>
+                        <div className="relative">
+                            <Input type="number" step="1" placeholder="Ex: 80" {...field} className="pr-8" />
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">
+                               %
+                            </div>
+                        </div>
                         <FormDescription className="text-xs">
                             Pourcentage utilisable après parage.
                         </FormDescription>
@@ -318,3 +321,5 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
+
+    
