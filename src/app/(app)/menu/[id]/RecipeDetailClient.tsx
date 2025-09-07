@@ -428,6 +428,8 @@ const fetchAllPreparations = useCallback(async () => {
             quantity: 1, // Default quantity, user must adjust
             unit: existing?.usageUnit || existing?.productionUnit || 'g',
             totalCost: 0, // Will be calculated when linked
+            _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0,
+            _productionUnit: existing?.productionUnit || ''
         };
     });
     setNewPreparations(newPreps);
@@ -510,10 +512,21 @@ const fetchAllPreparations = useCallback(async () => {
                   const updatedPrep = { ...p, [field]: value };
                   if (field === 'childPreparationId') {
                       const selectedPrep = allPreparations.find(prep => prep.id === value);
-                      if (selectedPrep) { updatedPrep.name = selectedPrep.name; updatedPrep.unit = selectedPrep.usageUnit || selectedPrep.productionUnit || 'g'; updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0; updatedPrep._productionUnit = selectedPrep.productionUnit || ''; }
-                      else { updatedPrep.childPreparationId = undefined; }
+                      if (selectedPrep) { 
+                          updatedPrep.name = selectedPrep.name; 
+                          updatedPrep.unit = selectedPrep.usageUnit || selectedPrep.productionUnit || 'g'; 
+                          updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0; 
+                          updatedPrep._productionUnit = selectedPrep.productionUnit || '';
+                      } else { 
+                          updatedPrep.childPreparationId = undefined; 
+                      }
                   }
-                  if (field === 'quantity' || field === 'childPreparationId') { const costPerProductionUnit = updatedPrep._costPerUnit || 0; const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit); const costPerUseUnit = costPerProductionUnit / conversionFactor; updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit; }
+                  if (field === 'quantity' || field === 'childPreparationId') { 
+                      const costPerProductionUnit = updatedPrep._costPerUnit || 0; 
+                      const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit); 
+                      const costPerUseUnit = costPerProductionUnit / conversionFactor; 
+                      updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit; 
+                  }
                   return updatedPrep;
               }
               return p;
@@ -677,9 +690,84 @@ const fetchAllPreparations = useCallback(async () => {
                             {!isEditing && ingredients.map(ing => (
                                 <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)} DZD</TableCell></TableRow>
                             ))}
-                             {isEditing && newIngredients.map((newIng) => (
-                                <TableRow key={newIng.tempId}><TableCell><div className="flex items-center gap-2"><Select value={newIng.ingredientId || ''} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'ingredientId', value)} ><SelectTrigger className={cn(!newIng.ingredientId && "text-muted-foreground")}><SelectValue placeholder={newIng.name || "Choisir..."} /></SelectTrigger><SelectContent>{sortedIngredients.map(ing => ( ing.id ? <SelectItem key={ing.id} value={ing.id}>{ing.name}</SelectItem> : null ))}</SelectContent></Select>{!newIng.ingredientId && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={`Créer l'ingrédient "${newIng.name}"`}><PlusCircle className="h-4 w-4 text-primary" /></Button>)}</div></TableCell><TableCell><Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell><TableCell><Select value={newIng.unit} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell><TableCell className="text-right font-semibold">{newIng.totalCost.toFixed(2)} DZD</TableCell><TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell></TableRow>
-                             ))}
+                             {isEditing && newIngredients.map((newIng) => {
+                                const [openCombobox, setOpenCombobox] = useState(false);
+                                return (
+                                <TableRow key={newIng.tempId}>
+                                    <TableCell>
+                                    <div className="flex items-center gap-2">
+                                         <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                                            <PopoverTrigger asChild>
+                                                <Button
+                                                    variant="outline"
+                                                    role="combobox"
+                                                    aria-expanded={openCombobox}
+                                                    className="w-full justify-between"
+                                                >
+                                                    {newIng.ingredientId
+                                                        ? sortedIngredients.find((ing) => ing.id === newIng.ingredientId)?.name
+                                                        : newIng.name || "Choisir..."}
+                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                </Button>
+                                            </PopoverTrigger>
+                                            <PopoverContent className="w-[300px] p-0">
+                                                <Command>
+                                                    <CommandInput placeholder="Rechercher un ingrédient..." />
+                                                    <CommandList>
+                                                        <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                                        <CommandGroup>
+                                                        {sortedIngredients.map((ing) => (
+                                                            ing.id ?
+                                                            <CommandItem
+                                                                key={ing.id}
+                                                                value={ing.name}
+                                                                onSelect={() => {
+                                                                    handleNewIngredientChange(newIng.tempId, 'ingredientId', ing.id!);
+                                                                    setOpenCombobox(false);
+                                                                }}
+                                                            >
+                                                                <Check
+                                                                    className={cn(
+                                                                        "mr-2 h-4 w-4",
+                                                                        newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0"
+                                                                    )}
+                                                                />
+                                                                {ing.name}
+                                                            </CommandItem>
+                                                            : null
+                                                        ))}
+                                                        </CommandGroup>
+                                                    </CommandList>
+                                                </Command>
+                                            </PopoverContent>
+                                        </Popover>
+
+                                        {!newIng.ingredientId && (
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={`Créer l'ingrédient "${newIng.name}"`}>
+                                                <PlusCircle className="h-4 w-4 text-primary" />
+                                            </Button>
+                                        )}
+                                    </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        <Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} />
+                                    </TableCell>
+                                    <TableCell>
+                                        <Select value={newIng.unit} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'unit', value)} >
+                                            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="g">g</SelectItem>
+                                                <SelectItem value="kg">kg</SelectItem>
+                                                <SelectItem value="ml">ml</SelectItem>
+                                                <SelectItem value="l">l</SelectItem>
+                                                <SelectItem value="pièce">pièce</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </TableCell>
+                                    <TableCell className="text-right font-semibold">{newIng.totalCost.toFixed(2)} DZD</TableCell>
+                                    <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
+                                </TableRow>
+                             )})}
                              {currentIngredientsData.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
                         </TableBody>
                     </Table>
@@ -698,9 +786,45 @@ const fetchAllPreparations = useCallback(async () => {
                              {!isEditing && preparations.map(prep => (
                                 <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)} DZD</TableCell></TableRow>
                             ))}
-                            {isEditing && newPreparations.map((prep) => (
-                                <TableRow key={prep.tempId}><TableCell><div className="flex items-center gap-2"><Select value={prep.childPreparationId || ''} onValueChange={(value) => handleNewPreparationChange(prep.tempId, 'childPreparationId', value)}><SelectTrigger className={cn(!prep.childPreparationId && "text-muted-foreground")}><SelectValue placeholder={prep.name || "Choisir..."} /></SelectTrigger><SelectContent>{allPreparations.map(p => (p.id && p.id !== recipeId ? <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem> : null))}</SelectContent></Select>{!prep.childPreparationId && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewPreparationModal(prep.tempId)} title={`Créer la préparation "${prep.name}"`}><PlusCircle className="h-4 w-4 text-primary" /></Button>)}</div></TableCell><TableCell><Input type="number" placeholder="Qté" className="w-20" value={prep.quantity === 0 ? '' : prep.quantity} onChange={(e) => handleNewPreparationChange(prep.tempId, 'quantity', parseFloat(e.target.value) || 0)}/></TableCell><TableCell>{prep.unit || "-"}</TableCell><TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)} DZD</TableCell><TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell></TableRow>
-                            ))}
+                            {isEditing && newPreparations.map((prep) => {
+                                const [openPrepCombobox, setOpenPrepCombobox] = useState(false);
+                                return (
+                                <TableRow key={prep.tempId}>
+                                    <TableCell>
+                                        <div className="flex items-center gap-2">
+                                            <Popover open={openPrepCombobox} onOpenChange={setOpenPrepCombobox}>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant="outline" role="combobox" aria-expanded={openPrepCombobox} className="w-full justify-between">
+                                                        {prep.childPreparationId ? allPreparations.find(p => p.id === prep.childPreparationId)?.name : prep.name || "Choisir..."}
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[300px] p-0">
+                                                    <Command>
+                                                        <CommandInput placeholder="Rechercher une préparation..." />
+                                                        <CommandList>
+                                                            <CommandEmpty>Aucune préparation trouvée.</CommandEmpty>
+                                                            <CommandGroup>
+                                                                {allPreparations.filter(p => p.id !== recipeId).map(p => (
+                                                                    p.id ? <CommandItem key={p.id} value={p.name} onSelect={() => { handleNewPreparationChange(prep.tempId, 'childPreparationId', p.id!); setOpenPrepCombobox(false); }}>
+                                                                        <Check className={cn("mr-2 h-4 w-4", prep.childPreparationId === p.id ? "opacity-100" : "opacity-0")} />
+                                                                        {p.name}
+                                                                    </CommandItem> : null
+                                                                ))}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                            {!prep.childPreparationId && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewPreparationModal(prep.tempId)} title={`Créer la préparation "${prep.name}"`}><PlusCircle className="h-4 w-4 text-primary" /></Button>)}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell><Input type="number" placeholder="Qté" className="w-20" value={prep.quantity === 0 ? '' : prep.quantity} onChange={(e) => handleNewPreparationChange(prep.tempId, 'quantity', parseFloat(e.target.value) || 0)}/></TableCell>
+                                    <TableCell>{prep.unit || "-"}</TableCell>
+                                    <TableCell className="text-right font-semibold">{prep.totalCost.toFixed(2)} DZD</TableCell>
+                                    <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
+                                </TableRow>
+                            )})}
                             {currentPreparationsData.length === 0 && newPreparations.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
                         </TableBody>
                     </Table>
@@ -803,3 +927,5 @@ function RecipeDetailSkeleton() {
     </div>
   );
 }
+
+    
