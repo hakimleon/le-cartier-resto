@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Beef, ChefHat, Chicken, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle } from "lucide-react";
+import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -693,7 +693,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const ingredientsCost = allCurrentIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
         
         allCurrentIngredients.forEach(item => {
-            const category = item.category.trim();
+            const category = item.category?.trim() || 'Non catégorisé';
             if (category) {
                 if (!result.costsByCategory[category]) {
                     result.costsByCategory[category] = 0;
@@ -733,7 +733,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const proteinCostBreakdown = useMemo(() => {
         const proteinCategories = {
             "Viande": { icon: Beef, color: "bg-red-500", ...costsByCategory["Viande"] && {cost: costsByCategory["Viande"]}},
-            "Volaille": { icon: Chicken, color: "bg-amber-500", ...costsByCategory["Volaille"] && {cost: costsByCategory["Volaille"]}},
+            "Volaille": { icon: Drumstick, color: "bg-amber-500", ...costsByCategory["Volaille"] && {cost: costsByCategory["Volaille"]}},
             "Poisson": { icon: Fish, color: "bg-sky-500", ...costsByCategory["Poisson"] && {cost: costsByCategory["Poisson"]}}
         };
         
@@ -1053,3 +1053,4 @@ function RecipeDetailSkeleton() {
     );
 }
 
+    
