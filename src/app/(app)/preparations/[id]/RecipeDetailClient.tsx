@@ -132,7 +132,6 @@ const foodCostIndicators = [
   { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500" },
 ];
 
-
 const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
     if (!text) return null;
 
@@ -174,7 +173,6 @@ const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
     return <div className="prose prose-sm max-w-none">{elements}</div>;
 };
 
-
 const NewIngredientRow = ({
     newIng,
     sortedIngredients,
@@ -214,29 +212,29 @@ const NewIngredientRow = ({
                                 <CommandList>
                                     <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
                                     <CommandGroup>
-                                    {sortedIngredients.map((ing) => (
-                                        ing.id ?
-                                        <CommandItem
-                                            key={ing.id}
-                                            value={ing.name}
-                                            onSelect={(currentValue) => {
-                                                const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
-                                                if (selected) {
-                                                    handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!);
-                                                }
-                                                setOpenCombobox(false);
-                                            }}
-                                        >
-                                            <Check
-                                                className={cn(
-                                                    "mr-2 h-4 w-4",
-                                                    newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0"
-                                                )}
-                                            />
-                                            {ing.name}
-                                        </CommandItem>
-                                        : null
-                                    ))}
+                                        {sortedIngredients.map((ing) => (
+                                            ing.id ?
+                                                <CommandItem
+                                                    key={ing.id}
+                                                    value={ing.name}
+                                                    onSelect={(currentValue) => {
+                                                        const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
+                                                        if (selected) {
+                                                            handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!);
+                                                        }
+                                                        setOpenCombobox(false);
+                                                    }}
+                                                >
+                                                    <Check
+                                                        className={cn(
+                                                            "mr-2 h-4 w-4",
+                                                            newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0"
+                                                        )}
+                                                    />
+                                                    {ing.name}
+                                                </CommandItem>
+                                                : null
+                                        ))}
                                     </CommandGroup>
                                 </CommandList>
                             </Command>
@@ -266,7 +264,7 @@ const NewIngredientRow = ({
                 </Select>
             </TableCell>
             <TableCell className="text-right font-semibold">{newIng.totalCost.toFixed(2)} DZD</TableCell>
-            <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell>
+            <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
         </TableRow>
     );
 };
@@ -621,7 +619,15 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <NotebookText className="h-7 w-7" />
             </div>
             <div>
-                <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
+                 {isEditing ? (
+                    <Input
+                        value={editableRecipe?.name}
+                        onChange={(e) => handleRecipeDataChange('name', e.target.value)}
+                        className="text-2xl font-bold tracking-tight h-auto p-0 border-0 shadow-none focus-visible:ring-0"
+                    />
+                ) : (
+                    <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
+                )}
                 <p className="text-muted-foreground">Préparation</p>
                  <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {recipe.duration} min</div>
@@ -648,7 +654,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             ))}
                             {!isEditing && ingredients.map(ing => ( <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{ing.totalCost.toFixed(2)} DZD</TableCell></TableRow>))}
                             {isEditing && newIngredients.map((newIng) => (
-                                <NewIngredientRow 
+                                <NewIngredientRow
                                     key={newIng.tempId}
                                     newIng={newIng}
                                     sortedIngredients={sortedIngredients}
@@ -698,7 +704,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
                                 <TabsTrigger value="service">Service</TabsTrigger>
                             </TabsList>
-                            <TabsContent value="preparation" className="pt-4">
+                             <TabsContent value="preparation" className="pt-4">
                                 <MarkdownRenderer text={recipe.procedure_preparation} />
                             </TabsContent>
                             <TabsContent value="cuisson" className="pt-4">

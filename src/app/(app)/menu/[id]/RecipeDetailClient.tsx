@@ -716,7 +716,15 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         {isPlat ? <ChefHat className="h-7 w-7" /> : <NotebookText className="h-7 w-7" />}
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
+                        {isEditing ? (
+                            <Input
+                                value={editableRecipe?.name}
+                                onChange={(e) => handleRecipeDataChange('name', e.target.value)}
+                                className="text-2xl font-bold tracking-tight h-auto p-0 border-0 shadow-none focus-visible:ring-0"
+                            />
+                        ) : (
+                            <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
+                        )}
                         <p className="text-muted-foreground">{isPlat ? (recipe as Recipe).category : 'Préparation'}</p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                             {isPlat && <Badge variant={(recipe as Recipe).status === 'Actif' ? 'default' : 'secondary'} className={cn((recipe as Recipe).status === 'Actif' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>{(recipe as Recipe).status}</Badge>}
@@ -751,11 +759,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <p className="text-white bg-black/50 px-4 py-2 rounded-md">Agrandir</p>
                                     </div>
-                                    {isEditing &&
+                                    {isEditing && (
                                         <div className="absolute bottom-4 right-4 z-10">
                                             <Button variant="secondary" onClick={(e) => { e.stopPropagation(); setIsImageUploadOpen(true); }}><ImageIcon className="mr-2 h-4 w-4" />Changer la photo</Button>
                                         </div>
-                                    }
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>
