@@ -199,7 +199,7 @@ export default function IngredientsClient() {
                         <TableCell>
                             <div className="flex items-center gap-1">
                                 <Percent className="h-3 w-3 text-muted-foreground"/>
-                                {ingredient.yieldPercentage?.toFixed(0) || 0}%
+                                {ingredient.yieldPercentage?.toFixed(0) || 0}
                             </div>
                         </TableCell>
                         <TableCell className="text-right font-semibold">{(ingredient.purchasePrice || 0).toFixed(2)} DZD / {ingredient.purchaseUnit}</TableCell>
