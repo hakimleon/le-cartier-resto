@@ -20,10 +20,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipProvider, TooltipContent } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
-import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { cn } from "@/lib/utils";
+import { Separator } from "@/components/ui/separator";
 
 const ingredientCategories = [
     { name: "Viandes & Gibiers", examples: "Bœuf (entrecôte, steak haché, jarret…), Veau (escalope, osso buco…), Agneau (côtelette, gigot…), Porc (filet mignon, travers, échine…), Gibier (chevreuil, sanglier – si utilisé)" },
@@ -127,188 +127,206 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
         
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Nom de l'ingrédient</FormLabel>
-              <FormControl>
-                <Input placeholder="Ex: Persil plat" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-        <FormField
-          control={form.control}
-          name="category"
-          render={({ field }) => (
-            <FormItem>
-                <div className="flex items-center gap-2">
-                    <FormLabel>Catégorie</FormLabel>
-                    {categoryExamples && (
-                         <TooltipProvider>
-                            <Tooltip>
-                                <TooltipTrigger asChild>
-                                    <Info className="h-4 w-4 text-muted-foreground cursor-help" />
-                                </TooltipTrigger>
-                                <TooltipContent>
-                                    <p className="max-w-xs">{categoryExamples}</p>
-                                </TooltipContent>
-                            </Tooltip>
-                        </TooltipProvider>
-                    )}
-                </div>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+        {/* Left Column */}
+        <div className="space-y-6 md:col-span-1">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Nom de l'ingrédient</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Ex: Persil plat" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="category"
+              render={({ field }) => (
+                <FormItem>
+                    <div className="flex items-center gap-2">
+                        <FormLabel>Catégorie</FormLabel>
+                        {categoryExamples && (
+                             <TooltipProvider>
+                                <Tooltip>
+                                    <TooltipTrigger asChild>
+                                        <Info className="h-4 w-4 text-muted-foreground cursor-help" />
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                        <p className="max-w-xs">{categoryExamples}</p>
+                                    </TooltipContent>
+                                </Tooltip>
+                            </TooltipProvider>
+                        )}
+                    </div>
+                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sélectionnez une catégorie..." />
+                            </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                            {ingredientCategories.map(cat => (
+                                <SelectItem key={cat.name} value={cat.name}>
+                                    {cat.name}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+             <FormField
+                control={form.control}
+                name="supplier"
+                render={({ field }) => (
+                <FormItem>
+                    <FormLabel>Fournisseur (Optionnel)</FormLabel>
                     <FormControl>
-                        <SelectTrigger>
-                            <SelectValue placeholder="Sélectionnez une catégorie..." />
-                        </SelectTrigger>
+                    <Input placeholder="Ex: Fournisseur ABC" {...field} />
                     </FormControl>
-                    <SelectContent>
-                        {ingredientCategories.map(cat => (
-                            <SelectItem key={cat.name} value={cat.name}>
-                                {cat.name}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="space-y-2 p-4 border rounded-md">
-            <h4 className="font-medium text-sm">Prix & Rendement</h4>
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name="purchasePrice"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Prix d'achat (DZD)</FormLabel>
-                        <FormControl>
-                        <Input type="number" step="0.01" placeholder="Ex: 150" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="purchaseUnit"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Unité d'achat</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                                <SelectTrigger>
-                                    <SelectValue placeholder="Sélectionnez une unité..." />
-                                </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="kg">Kg</SelectItem>
-                                <SelectItem value="litres">Litres</SelectItem>
-                                <SelectItem value="botte">Botte</SelectItem>
-                                <SelectItem value="piece">Pièce</SelectItem>
-                                <SelectItem value="grammes">Grammes</SelectItem>
-                                <SelectItem value="ml">ml</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-            </div>
-             <div className="grid grid-cols-2 gap-4 pt-2">
-                 <FormField
-                    control={form.control}
-                    name="purchaseWeightGrams"
-                    render={({ field }) => (
+                    <FormMessage />
+                </FormItem>
+                )}
+            />
+        </div>
+        
+        {/* Right Column */}
+        <div className="space-y-6 md:col-span-1">
+             <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-2">Prix & Unité d'Achat</h4>
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="purchasePrice"
+                        render={({ field }) => (
                         <FormItem>
-                        <FormLabel>Poids botte/pièce (g)</FormLabel>
-                        <FormControl>
-                        <Input type="number" step="1" placeholder="Ex: 250" {...field} disabled={!isWeightEditable}/>
-                        </FormControl>
-                        <FormDescription className="text-xs">
-                            Poids si unité est botte/pièce.
-                        </FormDescription>
-                        <FormMessage />
+                            <FormLabel>Prix d'achat (DZD)</FormLabel>
+                            <FormControl>
+                            <Input type="number" step="0.01" placeholder="Ex: 150" {...field} />
+                            </FormControl>
+                            <FormMessage />
                         </FormItem>
-                    )}
-                />
-                 <FormField
-                    control={form.control}
-                    name="yieldPercentage"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Rendement</FormLabel>
-                        <div className="relative">
-                            <Input type="number" step="1" placeholder="Ex: 80" {...field} className="pr-8" />
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">
-                               %
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="purchaseUnit"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Unité d'achat</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Sélectionnez..." />
+                                    </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                    <SelectItem value="kg">Kg</SelectItem>
+                                    <SelectItem value="litres">Litres</SelectItem>
+                                    <SelectItem value="botte">Botte</SelectItem>
+                                    <SelectItem value="piece">Pièce</SelectItem>
+                                    <SelectItem value="grammes">Grammes</SelectItem>
+                                    <SelectItem value="ml">ml</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+            </div>
+
+            <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-2">Poids & Rendement</h4>
+                <div className="grid grid-cols-2 gap-4">
+                     <FormField
+                        control={form.control}
+                        name="purchaseWeightGrams"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Poids Unitaire (g)</FormLabel>
+                            <FormControl>
+                            <Input type="number" step="1" placeholder="Ex: 250" {...field} disabled={!isWeightEditable}/>
+                            </FormControl>
+                            <FormDescription className="text-xs">
+                                Si unité = botte/pièce.
+                            </FormDescription>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                     <FormField
+                        control={form.control}
+                        name="yieldPercentage"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Rendement (%)</FormLabel>
+                            <div className="relative">
+                                <Input type="number" step="1" placeholder="Ex: 80" {...field} className="pr-8" />
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">
+                                   %
+                                </div>
                             </div>
-                        </div>
-                        <FormDescription className="text-xs">
-                            Pourcentage utilisable après parage.
-                        </FormDescription>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
+                            <FormDescription className="text-xs">
+                                % utilisable après parage.
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
+            </div>
+
+            <Separator />
+
+            <div>
+                <h4 className="font-medium text-sm text-muted-foreground mb-2">Gestion du Stock</h4>
+                <div className="grid grid-cols-2 gap-4">
+                    <FormField
+                        control={form.control}
+                        name="stockQuantity"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Stock actuel</FormLabel>
+                            <FormControl>
+                            <Input type="number" step="0.01" placeholder="Ex: 10" {...field} />
+                            </FormControl>
+                             <FormDescription className="text-xs">
+                                En unité d'achat.
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="lowStockThreshold"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormLabel>Seuil d'alerte</FormLabel>
+                            <FormControl>
+                            <Input type="number" step="1" placeholder="Ex: 2" {...field} />
+                            </FormControl>
+                            <FormDescription className="text-xs">
+                                En unité d'achat.
+                            </FormDescription>
+                            <FormMessage />
+                        </FormItem>
+                        )}
+                    />
+                </div>
             </div>
         </div>
 
-        <div className="space-y-2 p-4 border rounded-md">
-            <h4 className="font-medium text-sm">Gestion du Stock</h4>
-            <div className="grid grid-cols-2 gap-4">
-                <FormField
-                    control={form.control}
-                    name="stockQuantity"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Stock actuel (en unité d'achat)</FormLabel>
-                        <FormControl>
-                        <Input type="number" step="0.01" placeholder="Ex: 10" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-                <FormField
-                    control={form.control}
-                    name="lowStockThreshold"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Seuil d'alerte stock bas</FormLabel>
-                        <FormControl>
-                        <Input type="number" step="1" placeholder="Ex: 2" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                    </FormItem>
-                    )}
-                />
-            </div>
-        </div>
-        
-        <FormField
-            control={form.control}
-            name="supplier"
-            render={({ field }) => (
-            <FormItem>
-                <FormLabel>Fournisseur (Optionnel)</FormLabel>
-                <FormControl>
-                <Input placeholder="Ex: Fournisseur ABC" {...field} />
-                </FormControl>
-                <FormMessage />
-            </FormItem>
-            )}
-        />
-        
-        <div className="flex justify-end pt-4">
+        {/* Footer */}
+        <div className="md:col-span-2 flex justify-end pt-4">
             <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Sauvegarde..." : "Sauvegarder l'ingrédient"}
             </Button>
@@ -317,5 +335,3 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
-
-    
