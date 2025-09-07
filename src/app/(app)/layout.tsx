@@ -17,7 +17,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical } from 'lucide-react';
+import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical, Beaker } from 'lucide-react';
 
 const Logo = () => (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary">
@@ -116,6 +116,18 @@ export default function AppLayout({
                 <SidebarMenuItem>
                     <SidebarMenuButton
                     asChild
+                    isActive={pathname.startsWith('/draft')}
+                    tooltip="Brouillon"
+                    >
+                    <Link href="/draft">
+                        <Beaker />
+                        <span>Brouillon</span>
+                    </Link>
+                    </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <SidebarMenuButton
+                    asChild
                     isActive={pathname.startsWith('/settings')}
                     tooltip="Paramètres"
                     >
@@ -129,7 +141,7 @@ export default function AppLayout({
           </SidebarFooter>
         </Sidebar>
         <SidebarInset>
-          <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-card/80 px-4 backdrop-blur-sm sm:px-6 md:justify-end">
+          <header className="sticky top-0 z-10 flex h-16 items-center justify-between gap-4 border-b bg-card/80 px-4 backdrop-blur-sm sm:justify-end">
              <SidebarTrigger className="md:hidden"/>
              {/* Future Header Content */}
           </header>

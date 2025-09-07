@@ -18,6 +18,10 @@ export type Ingredient = {
     // Champs optionnels pour la conversion d'unité
     finalUseUnit?: string;         // Unité finale après transformation (ex: "ml", "g de purée")
     convertedQuantity?: number;    // Quantité obtenue dans l'unité finale pour 1 unité d'achat (ex: 400 pour 400ml de jus pour 1kg de citrons)
+
+    // Anciens champs (pour migration)
+    unitPrice?: number;
+    unitPurchase?: string;
 };
 
 // Types pour la génération de recette par l'IA
