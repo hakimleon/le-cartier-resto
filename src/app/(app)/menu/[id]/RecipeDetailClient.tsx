@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle } from "lucide-react";
+import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle, FishSymbol } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -680,7 +680,16 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const currentIngredientsData = isEditing ? editableIngredients : ingredients;
     const currentPreparationsData = isEditing ? editablePreparations : preparations;
 
-    const { totalRecipeCost, costPerPortion, priceHT, grossMargin, grossMarginPercentage, foodCostPercentage, multiplierCoefficient, costsByCategory } = useMemo(() => {
+    const { 
+        totalRecipeCost, 
+        costPerPortion, 
+        priceHT, 
+        grossMargin, 
+        grossMarginPercentage, 
+        foodCostPercentage, 
+        multiplierCoefficient, 
+        costsByCategory 
+    } = useMemo(() => {
         const result = {
             totalRecipeCost: 0, costPerPortion: 0, priceHT: 0, grossMargin: 0, grossMarginPercentage: 0, foodCostPercentage: 0, multiplierCoefficient: 0,
             costsByCategory: {} as Record<string, number>
@@ -732,14 +741,15 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const proteinCostBreakdown = useMemo(() => {
         const proteinCategories = {
-            "Viande": { icon: Beef, color: "bg-red-500", ...costsByCategory["Viande"] && {cost: costsByCategory["Viande"]}},
-            "Volaille": { icon: Drumstick, color: "bg-amber-500", ...costsByCategory["Volaille"] && {cost: costsByCategory["Volaille"]}},
-            "Poisson": { icon: Fish, color: "bg-sky-500", ...costsByCategory["Poisson"] && {cost: costsByCategory["Poisson"]}}
+            "Viandes & Gibiers": { icon: Beef, color: "bg-red-500", cost: costsByCategory["Viandes & Gibiers"] || 0 },
+            "Volaille": { icon: Drumstick, color: "bg-amber-500", cost: costsByCategory["Volaille"] || 0 },
+            "Poisson": { icon: Fish, color: "bg-sky-500", cost: costsByCategory["Poissons"] || 0 },
+            "Fruits de mer & Crustacés": { icon: FishSymbol, color: "bg-cyan-500", cost: costsByCategory["Fruits de mer & Crustacés"] || 0 },
         };
         
         return Object.entries(proteinCategories)
             .map(([name, data]) => ({ name, ...data }))
-            .filter(item => item.cost !== undefined && item.cost > 0)
+            .filter(item => item.cost > 0)
             .sort((a,b) => b.cost - a.cost);
 
     }, [costsByCategory]);
@@ -1052,3 +1062,4 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
