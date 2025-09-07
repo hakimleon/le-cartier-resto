@@ -62,7 +62,7 @@ type FullRecipeIngredient = {
     name: string;
     quantity: number;
     unit: string;
-    category: string; // <-- Ajout de la catégorie
+    category: string;
     unitPrice: number;
     unitPurchase: string;
     totalCost: number;
@@ -1052,5 +1052,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
