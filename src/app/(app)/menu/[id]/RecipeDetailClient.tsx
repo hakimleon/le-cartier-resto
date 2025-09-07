@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -12,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check } from "lucide-react";
+import { AlertTriangle, Beef, ChefHat, Chicken, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -46,6 +47,7 @@ import { PreparationModal } from "../../preparations/PreparationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ImagePreviewModal } from "./ImagePreviewModal";
+import { Progress } from "@/components/ui/progress";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
@@ -60,6 +62,7 @@ type FullRecipeIngredient = {
     name: string;
     quantity: number;
     unit: string;
+    category: string; // <-- Ajout de la catégorie
     unitPrice: number;
     unitPurchase: string;
     totalCost: number;
@@ -71,6 +74,7 @@ type NewRecipeIngredient = {
     name: string; // Name suggested by AI or entered by user
     quantity: number;
     unit: string;
+    category: string;
     unitPrice: number;
     unitPurchase: string;
     totalCost: number;
@@ -427,7 +431,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             if (ingredientData && ingredientData.unitPrice && ingredientData.unitPurchase && recipeIngredientData.unitUse) {
                 const factor = getConversionFactor(ingredientData.unitPurchase, recipeIngredientData.unitUse);
                 const costPerUseUnit = ingredientData.unitPrice / factor;
-                return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, unitPrice: ingredientData.unitPrice, unitPurchase: ingredientData.unitPurchase, totalCost: (recipeIngredientData.quantity || 0) * costPerUseUnit };
+                return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, category: ingredientData.category, unitPrice: ingredientData.unitPrice, unitPurchase: ingredientData.unitPurchase, totalCost: (recipeIngredientData.quantity || 0) * costPerUseUnit };
             }
             return null;
         }).filter(Boolean) as FullRecipeIngredient[];
@@ -506,10 +510,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const tempId = `new-ws-${Date.now()}-${Math.random()}`;
             let totalCost = 0;
             if (existing) {
-                const tempNew: NewRecipeIngredient = { tempId, ingredientId: existing.id, name: existing.name, quantity: sugIng.quantity, unit: sugIng.unit, unitPrice: existing.unitPrice, unitPurchase: existing.unitPurchase, totalCost: 0 };
+                const tempNew: NewRecipeIngredient = { tempId, ingredientId: existing.id, name: existing.name, quantity: sugIng.quantity, unit: sugIng.unit, unitPrice: existing.unitPrice, unitPurchase: existing.unitPurchase, totalCost: 0, category: existing.category };
                 totalCost = recomputeIngredientCost(tempNew);
             }
-            return { tempId, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, unitPrice: existing?.unitPrice || 0, unitPurchase: existing?.unitPurchase || '', totalCost: isNaN(totalCost) ? 0 : totalCost };
+            return { tempId, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, unitPrice: existing?.unitPrice || 0, unitPurchase: existing?.unitPurchase || '', totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
         });
         setNewIngredients(newIngs);
     };
@@ -565,7 +569,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 const updatedIng = { ...ing, [field]: value };
                 if (field === 'ingredientId') {
                     const selectedIngredient = allIngredients.find(i => i.id === value);
-                    if (selectedIngredient) { updatedIng.name = selectedIngredient.name; updatedIng.unitPrice = selectedIngredient.unitPrice; updatedIng.unitPurchase = selectedIngredient.unitPurchase; }
+                    if (selectedIngredient) { updatedIng.name = selectedIngredient.name; updatedIng.unitPrice = selectedIngredient.unitPrice; updatedIng.unitPurchase = selectedIngredient.unitPurchase; updatedIng.category = selectedIngredient.category; }
                     else { updatedIng.ingredientId = undefined; }
                 }
                 updatedIng.totalCost = recomputeIngredientCost(updatedIng);
@@ -676,17 +680,69 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const currentIngredientsData = isEditing ? editableIngredients : ingredients;
     const currentPreparationsData = isEditing ? editablePreparations : preparations;
 
-    const { totalRecipeCost, costPerPortion, priceHT, grossMargin, grossMarginPercentage, foodCostPercentage, multiplierCoefficient } = useMemo(() => {
-        if (!currentRecipeData) { return { totalRecipeCost: 0, costPerPortion: 0, priceHT: 0, grossMargin: 0, grossMarginPercentage: 0, foodCostPercentage: 0, multiplierCoefficient: 0 }; }
-        const ingredientsCost = (isEditing ? editableIngredients : ingredients).reduce((acc, item) => acc + (item.totalCost || 0), 0);
-        const newIngredientsCost = newIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+    const { totalRecipeCost, costPerPortion, priceHT, grossMargin, grossMarginPercentage, foodCostPercentage, multiplierCoefficient, costsByCategory } = useMemo(() => {
+        const result = {
+            totalRecipeCost: 0, costPerPortion: 0, priceHT: 0, grossMargin: 0, grossMarginPercentage: 0, foodCostPercentage: 0, multiplierCoefficient: 0,
+            costsByCategory: {} as Record<string, number>
+        };
+
+        if (!currentRecipeData) return result;
+
+        const allCurrentIngredients = [...(isEditing ? editableIngredients : ingredients), ...(isEditing ? newIngredients : [])];
+        
+        const ingredientsCost = allCurrentIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+        
+        allCurrentIngredients.forEach(item => {
+            const category = item.category.trim();
+            if (category) {
+                if (!result.costsByCategory[category]) {
+                    result.costsByCategory[category] = 0;
+                }
+                result.costsByCategory[category] += item.totalCost || 0;
+            }
+        });
+
         const preparationsCost = (isEditing ? editablePreparations : preparations).reduce((acc, item) => acc + (item.totalCost || 0), 0);
         const newPreparationsCost = newPreparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
-        const totalCost = ingredientsCost + newIngredientsCost + preparationsCost + newPreparationsCost;
-        if (currentRecipeData.type === 'Préparation') { return { totalRecipeCost: totalCost, costPerPortion: (totalCost / (currentRecipeData.productionQuantity || 1)), priceHT: 0, grossMargin: 0, grossMarginPercentage: 0, foodCostPercentage: 0, multiplierCoefficient: 0 }; }
-        const portions = currentRecipeData.portions || 1; const costPerPortionValue = portions > 0 ? totalCost / portions : 0; const tvaRate = currentRecipeData.tvaRate || 10; const price = currentRecipeData.price || 0; const priceHTValue = price / (1 + tvaRate / 100); const grossMarginValue = priceHTValue > 0 ? priceHTValue - costPerPortionValue : 0; const grossMarginPercentageValue = priceHTValue > 0 ? (grossMarginValue / priceHTValue) * 100 : 0; const foodCostPercentageValue = priceHTValue > 0 ? (costPerPortionValue / priceHTValue) * 100 : 0; const multiplierCoefficientValue = costPerPortionValue > 0 ? priceHTValue / costPerPortionValue : 0;
-        return { totalRecipeCost: totalCost, costPerPortion: costPerPortionValue, priceHT: priceHTValue, grossMargin: grossMarginValue, grossMarginPercentage: grossMarginPercentageValue, foodCostPercentage: foodCostPercentageValue, multiplierCoefficient: multiplierCoefficientValue };
+        const totalCost = ingredientsCost + preparationsCost + newPreparationsCost;
+
+        result.totalRecipeCost = totalCost;
+
+        if (currentRecipeData.type === 'Préparation') {
+            result.costPerPortion = totalCost / (currentRecipeData.productionQuantity || 1);
+            return result;
+        }
+
+        const portions = currentRecipeData.portions || 1;
+        const costPerPortionValue = portions > 0 ? totalCost / portions : 0;
+        const tvaRate = currentRecipeData.tvaRate || 10;
+        const price = currentRecipeData.price || 0;
+        const priceHTValue = price / (1 + tvaRate / 100);
+
+        result.costPerPortion = costPerPortionValue;
+        result.priceHT = priceHTValue;
+        result.grossMargin = priceHTValue > 0 ? priceHTValue - costPerPortionValue : 0;
+        result.grossMarginPercentage = priceHTValue > 0 ? (result.grossMargin / priceHTValue) * 100 : 0;
+        result.foodCostPercentage = priceHTValue > 0 ? (costPerPortionValue / priceHTValue) * 100 : 0;
+        result.multiplierCoefficient = costPerPortionValue > 0 ? priceHTValue / costPerPortionValue : 0;
+
+        return result;
     }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations, isEditing]);
+
+
+    const proteinCostBreakdown = useMemo(() => {
+        const proteinCategories = {
+            "Viande": { icon: Beef, color: "bg-red-500", ...costsByCategory["Viande"] && {cost: costsByCategory["Viande"]}},
+            "Volaille": { icon: Chicken, color: "bg-amber-500", ...costsByCategory["Volaille"] && {cost: costsByCategory["Volaille"]}},
+            "Poisson": { icon: Fish, color: "bg-sky-500", ...costsByCategory["Poisson"] && {cost: costsByCategory["Poisson"]}}
+        };
+        
+        return Object.entries(proteinCategories)
+            .map(([name, data]) => ({ name, ...data }))
+            .filter(item => item.cost !== undefined && item.cost > 0)
+            .sort((a,b) => b.cost - a.cost);
+
+    }, [costsByCategory]);
 
 
     if (isLoading) { return <RecipeDetailSkeleton />; }
@@ -786,9 +842,36 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </CardContent>
                         </Card>
                     )}
+                    
+                     {isPlat && proteinCostBreakdown.length > 0 && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><PercentCircle className="h-5 w-5" />Répartition des Coûts Protéines</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {proteinCostBreakdown.map(item => {
+                                    const percentage = totalRecipeCost > 0 ? (item.cost / totalRecipeCost) * 100 : 0;
+                                    const Icon = item.icon;
+                                    return (
+                                        <div key={item.name} className="space-y-1">
+                                            <div className="flex justify-between items-center text-sm">
+                                                <div className="flex items-center gap-2 font-medium">
+                                                    <Icon className="h-4 w-4 text-muted-foreground"/>
+                                                    <span>{item.name}</span>
+                                                </div>
+                                                <span className="font-semibold">{item.cost.toFixed(2)} DZD ({percentage.toFixed(0)}%)</span>
+                                            </div>
+                                            <Progress value={percentage} indicatorClassName={item.color} />
+                                        </div>
+                                    )
+                                })}
+                            </CardContent>
+                        </Card>
+                    )}
+
 
                     <Card>
-                        <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><Utensils className="h-5 w-5" />Ingrédients</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', unitPrice: 0, unitPurchase: '', totalCost: 0 }])}><PlusCircle className="mr-2 h-4 w-4" />Ajouter Ingrédient</Button>}</CardTitle><CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription></CardHeader>
+                        <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><Utensils className="h-5 w-5" />Ingrédients</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', unitPrice: 0, unitPurchase: '', totalCost: 0, category: '' }])}><PlusCircle className="mr-2 h-4 w-4" />Ajouter Ingrédient</Button>}</CardTitle><CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription></CardHeader>
                         <CardContent>
                             <Table>
                                 <TableHeader><TableRow><TableHead className="w-[45%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
@@ -961,7 +1044,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 function RecipeDetailSkeleton() {
     return (
         <div className="space-y-8">
-            <header className="flex items-center justify-between"><div className="flex items-center gap-4"><Skeleton className="h-14 w-14 rounded-lg" /><div className="space-y-2"><Skeleton className="h-8 w-64" /><Skeleton className="h-4 w-32" /></div></div><Skeleton className="h-10 w-24" /></header>
+            <header className="flex items-center justify-between"><div className="flex items-start gap-4 flex-grow"><Skeleton className="h-14 w-14 rounded-lg" /><div className="space-y-2 w-full"><Skeleton className="h-8 w-3/4" /><Skeleton className="h-4 w-1/2" /></div></div><Skeleton className="h-10 w-24" /></header>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 <div className="lg:col-span-2 space-y-8"><Card><CardContent className="p-0"><Skeleton className="w-full h-96" /></CardContent></Card><Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card><Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent><Skeleton className="h-40 w-full" /></CardContent></Card></div>
                 <div className="space-y-8"><Card><CardHeader><Skeleton className="h-6 w-24" /></CardHeader><CardContent><Skeleton className="h-24 w-full" /></CardContent></Card><Card><CardHeader><Skeleton className="h-6 w-32" /></CardHeader><CardContent className="space-y-2"><Skeleton className="h-5 w-full" /><Skeleton className="h-5 w-3/4" /></CardContent></Card><Card><CardHeader><Skeleton className="h-6 w-40" /></CardHeader><CardContent><Skeleton className="h-10 w-full" /></CardContent></Card></div>
@@ -969,3 +1052,4 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
