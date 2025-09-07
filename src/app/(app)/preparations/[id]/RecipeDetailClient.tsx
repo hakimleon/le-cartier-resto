@@ -623,7 +623,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <Input
                         value={editableRecipe?.name}
                         onChange={(e) => handleRecipeDataChange('name', e.target.value)}
-                        className="text-2xl font-bold tracking-tight h-auto p-0 border-0 shadow-none focus-visible:ring-0"
+                        className="text-2xl font-bold tracking-tight h-12"
                     />
                 ) : (
                     <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
