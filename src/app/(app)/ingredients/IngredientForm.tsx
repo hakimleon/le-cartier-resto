@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipProvider, TooltipContent } from "@/components/ui/tooltip";
-import { Info, Percent } from "lucide-react";
+import { Info } from "lucide-react";
 import { TooltipTrigger } from "@radix-ui/react-tooltip";
 import { cn } from "@/lib/utils";
 
@@ -87,9 +87,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   const selectedCategory = form.watch("category");
   const categoryExamples = ingredientCategories.find(c => c.name === selectedCategory)?.examples;
   const purchaseUnit = form.watch("purchaseUnit");
-
-  const showPurchaseWeightField = purchaseUnit && ["botte", "piece"].includes(purchaseUnit);
-
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -226,24 +223,24 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                 />
             </div>
              <div className="grid grid-cols-2 gap-4 pt-2">
-                 <FormField
-                    control={form.control}
-                    name="purchaseWeightGrams"
-                    render={({ field }) => (
-                     <div className={cn("space-y-2", !showPurchaseWeightField && "hidden")}>
-                        <FormItem>
-                          <FormLabel>Poids de la botte/pièce (g)</FormLabel>
-                          <FormControl>
-                          <Input type="number" step="1" placeholder="Ex: 250" {...field} />
-                          </FormControl>
-                          <FormDescription className="text-xs">
-                              Poids en grammes pour une seule botte/pièce.
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      </div>
-                    )}
-                />
+                 <div className={cn("space-y-2", !["botte", "piece"].includes(purchaseUnit) && "hidden")}>
+                    <FormField
+                        control={form.control}
+                        name="purchaseWeightGrams"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Poids de la botte/pièce (g)</FormLabel>
+                            <FormControl>
+                            <Input type="number" step="1" placeholder="Ex: 250" {...field} />
+                            </FormControl>
+                            <FormDescription className="text-xs">
+                                Poids en grammes pour une seule botte/pièce.
+                            </FormDescription>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                  </div>
                  <FormField
                     control={form.control}
                     name="yieldPercentage"
