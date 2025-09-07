@@ -87,6 +87,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   const selectedCategory = form.watch("category");
   const categoryExamples = ingredientCategories.find(c => c.name === selectedCategory)?.examples;
   const purchaseUnit = form.watch("purchaseUnit");
+  const showWeightField = purchaseUnit === "botte" || purchaseUnit === "piece";
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -223,7 +224,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                 />
             </div>
              <div className="grid grid-cols-2 gap-4 pt-2">
-                 <div className={cn("space-y-2", !["botte", "piece"].includes(purchaseUnit) && "hidden")}>
+                 <div className={cn("space-y-2", !showWeightField && "invisible")}>
                     <FormField
                         control={form.control}
                         name="purchaseWeightGrams"
@@ -231,7 +232,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                             <FormItem>
                             <FormLabel>Poids de la botte/pièce (g)</FormLabel>
                             <FormControl>
-                            <Input type="number" step="1" placeholder="Ex: 250" {...field} />
+                            <Input type="number" step="1" placeholder="Ex: 250" {...field} disabled={!showWeightField}/>
                             </FormControl>
                             <FormDescription className="text-xs">
                                 Poids en grammes pour une seule botte/pièce.
