@@ -202,7 +202,7 @@ export default function IngredientsClient() {
                                 {ingredient.yieldPercentage?.toFixed(0) || 0}%
                             </div>
                         </TableCell>
-                        <TableCell className="text-right font-semibold">{ingredient.purchasePrice.toFixed(2)} DZD / {ingredient.purchaseUnit}</TableCell>
+                        <TableCell className="text-right font-semibold">{(ingredient.purchasePrice || 0).toFixed(2)} DZD / {ingredient.purchaseUnit}</TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-2">
                             <IngredientModal ingredient={ingredient} onSuccess={() => { /* onSnapshot handles updates */ }}>
