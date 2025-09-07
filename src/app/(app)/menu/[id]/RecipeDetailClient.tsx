@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -222,6 +222,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [isNewIngredientModalOpen, setIsNewIngredientModalOpen] = useState(false);
   const [newIngredientDefaults, setNewIngredientDefaults] = useState<Partial<Ingredient> | null>(null);
   const [currentTempId, setCurrentTempId] = useState<string | null>(null);
+  const [workshopConcept, setWorkshopConcept] = useState<DishConceptOutput | null>(null);
+
 
   const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
     const costs: Record<string, number> = {};
@@ -368,6 +370,7 @@ const fetchAllPreparations = useCallback(async () => {
             if(conceptJSON && isMounted){
                 setIsEditing(true);
                 const concept: DishConceptOutput = JSON.parse(conceptJSON);
+                setWorkshopConcept(concept); // <-- Store the raw concept
                 
                 setEditableRecipe(current => {
                     if (!current) return null;
@@ -437,6 +440,7 @@ const fetchAllPreparations = useCallback(async () => {
         if(preparations) setEditablePreparations(JSON.parse(JSON.stringify(preparations)));
         setNewIngredients([]);
         setNewPreparations([]);
+        setWorkshopConcept(null); // Clear the workshop concept when cancelling
     }
     setIsEditing(!isEditing);
   };
@@ -538,7 +542,7 @@ const fetchAllPreparations = useCallback(async () => {
         await fullDataRefresh();
 
         toast({ title: "Succès", description: "Les modifications ont été sauvegardées." });
-        setIsEditing(false); setNewIngredients([]); setNewPreparations([]);
+        setIsEditing(false); setNewIngredients([]); setNewPreparations([]); setWorkshopConcept(null);
     } catch (error) { console.error("Error saving changes:", error); toast({ title: "Erreur", description: "La sauvegarde des modifications a échoué.", variant: "destructive", }); } finally { setIsSaving(false); }
   };
 
@@ -737,6 +741,37 @@ const fetchAllPreparations = useCallback(async () => {
         </div>
 
         <div className="space-y-8">
+            {workshopConcept && (
+                <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-between text-lg text-primary">
+                            <div className="flex items-center gap-2"><Lightbulb className="h-5 w-5" />Suggestion de l'Atelier</div>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-primary/70 hover:text-primary" onClick={() => setWorkshopConcept(null)}><X className="h-4 w-4"/></Button>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 text-sm">
+                        <div>
+                            <h4 className="font-semibold mb-1">Ingrédients bruts suggérés</h4>
+                            <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
+                                {workshopConcept.ingredients.map(ing => <li key={ing.name}>{ing.quantity} {ing.unit} {ing.name}</li>)}
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-1">Sous-recettes suggérées</h4>
+                             <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
+                                {workshopConcept.subRecipes.map(prep => <li key={prep}>{prep}</li>)}
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-1">Procédure brute</h4>
+                            <div className="text-xs text-muted-foreground p-2 border rounded-md max-h-48 overflow-y-auto">
+                                <MarkdownRenderer text={`${workshopConcept.procedure_preparation}\n${workshopConcept.procedure_cuisson}\n${workshopConcept.procedure_service}`} />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             <Card><CardHeader><CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle></CardHeader><CardContent><div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)} DZD</div><p className="text-xs text-muted-foreground text-right mt-1">{isPlat ? "Coût par portion : " + costPerPortion.toFixed(2) + " DZD" : "Coût par " + ((recipe as Preparation).productionUnit || 'unité') + " : " + costPerPortion.toFixed(2) + " DZD"}</p></CardContent></Card>
             {isPlat && (
                 <>
