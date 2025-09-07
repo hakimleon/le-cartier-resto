@@ -19,29 +19,31 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipProvider, TooltipContent } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
+import { TooltipTrigger } from "@radix-ui/react-tooltip";
 
 const ingredientCategories = [
-    { name: "Viandes & Gibiers", examples: "Bœuf, Veau, Agneau, Porc, Gibier..." },
-    { name: "Volaille", examples: "Poulet entier, Cuisses, Filets, Ailes, Foies..." },
-    { name: "Charcuterie & Produits carnés transformés", examples: "Bacon, Chorizo, Jambon, Saucisses, Lardons..." },
-    { name: "Poissons", examples: "Saumon, Cabillaud, Thon, Sardines..." },
-    { name: "Fruits de mer & Crustacés", examples: "Crevettes, Moules, Huîtres, Calamars..." },
-    { name: "Légumes & Champignons", examples: "Carottes, Pommes de terre, Salades, Champignons..." },
-    { name: "Fruits frais", examples: "Citrons, Pommes, Bananes, Fraises..." },
-    { name: "Produits laitiers & Œufs", examples: "Lait, Crème, Beurre, Yaourts, Œufs..." },
-    { name: "Fromages", examples: "Mozzarella, Comté, Roquefort, Ricotta..." },
-    { name: "Épicerie sèche & Céréales", examples: "Pâtes, Riz, Farine, Sucre, Lentilles..." },
-    { name: "Épices, Herbes & Aromates", examples: "Sel, Poivre, Curry, Basilic, Thym..." },
-    { name: "Huiles, Vinaigres & Condiments", examples: "Huile d'olive, Vinaigre, Moutarde, Olives..." },
-    { name: "Produits de boulangerie", examples: "Pain, Baguette, Burger buns, Viennoiseries..." },
-    { name: "Produits de pâtisserie & Fruits secs", examples: "Chocolat, Amandes, Noisettes, Cacao..." },
-    { name: "Boissons non alcoolisées", examples: "Eau, Jus de fruits, Sodas..." },
-    { name: "Produits surgelés", examples: "Légumes surgelés, Frites, Poissons surgelés..." },
-    { name: "Produits transformés", examples: "Fonds de sauce, Bouillons cubes, Sauces prêtes..." },
-    { name: "Autre", examples: "Tout ingrédient qui n'entre pas dans les autres catégories." },
+    { name: "Viandes & Gibiers", examples: "Bœuf (entrecôte, steak haché, jarret…), Veau (escalope, osso buco…), Agneau (côtelette, gigot…), Porc (filet mignon, travers, échine…), Gibier (chevreuil, sanglier – si utilisé)" },
+    { name: "Volaille", examples: "Poulet entier, Cuisses, filets, ailes, pilons, Foies, abats" },
+    { name: "Charcuterie & Produits carnés transformés", examples: "Bacon, Chorizo, Jambon cuit ou cru, Saucisses, lardons" },
+    { name: "Poissons", examples: "Saumon (frais, fumé), Cabillaud, colin, Thon, Sardines" },
+    { name: "Fruits de mer & Crustacés", examples: "Crevettes, Moules, Huîtres, Calamars, poulpe, Homard, langoustines" },
+    { name: "Légumes & Champignons", examples: "Carottes, pommes de terre, oignons, Courgettes, aubergines, poivrons, Salades, tomates, Champignons de Paris, pleurotes" },
+    { name: "Fruits frais", examples: "Citrons, oranges, Pommes, poires, Bananes, Fraises, framboises" },
+    { name: "Produits laitiers & Œufs", examples: "Lait, crème, beurre, Yaourts, Œufs entiers, jaunes, blancs" },
+    { name: "Fromages", examples: "Mozzarella, Comté, gruyère, emmental, Bleu, roquefort, Fromage frais (ricotta, mascarpone)" },
+    { name: "Épicerie sèche & Céréales", examples: "Pâtes, riz, semoule, quinoa, Farine, sucre, levure boulangère, Lentilles, pois chiches, haricots secs" },
+    { name: "Épices, Herbes & Aromates", examples: "Sel, poivre, Curry, paprika, cumin, Basilic, persil, coriandre, thym" },
+    { name: "Huiles, Vinaigres & Condiments", examples: "Huile d’olive, huile de tournesol, Vinaigre balsamique, vinaigre de cidre, Moutarde, mayonnaise, ketchup, Olives, cornichons, câpres" },
+    { name: "Produits de boulangerie", examples: "Pain (baguette, pain de mie, burger buns), Viennoiseries (croissant, brioche)" },
+    { name: "Produits de pâtisserie & Fruits secs", examples: "Chocolat, Amandes, noisettes, pistaches, noix, Sucre glace, cacao en poudre, Levure chimique, gélatine" },
+    { name: "Boissons non alcoolisées", examples: "Eau plate, eau gazeuse, Jus de fruits, Sodas" },
+    { name: "Produits surgelés", examples: "Légumes surgelés, Frites, Poissons ou viandes surgelées" },
+    { name: "Produits transformés", examples: "Fonds de sauce en poudre ou en brique, Bouillons cubes, Sauces toutes prêtes (barbecue, curry…)" },
+    { name: "Divers / Autres", examples: "Tout ingrédient exceptionnel qui n’entre pas ailleurs (à limiter au maximum)" },
 ];
+
 
 const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),

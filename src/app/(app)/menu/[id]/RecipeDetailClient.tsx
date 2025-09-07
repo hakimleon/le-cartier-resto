@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -740,19 +739,24 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
 
     const proteinCostBreakdown = useMemo(() => {
+        const portions = currentRecipeData?.type === 'Plat' ? currentRecipeData.portions || 1 : 1;
         const proteinCategories = {
-            "Viandes & Gibiers": { icon: Beef, color: "bg-red-500", cost: costsByCategory["Viandes & Gibiers"] || 0 },
-            "Volaille": { icon: Drumstick, color: "bg-amber-500", cost: costsByCategory["Volaille"] || 0 },
-            "Poisson": { icon: Fish, color: "bg-sky-500", cost: costsByCategory["Poissons"] || 0 },
-            "Fruits de mer & Crustacés": { icon: FishSymbol, color: "bg-cyan-500", cost: costsByCategory["Fruits de mer & Crustacés"] || 0 },
+            "Viandes & Gibiers": { icon: Beef, color: "bg-red-500", totalCost: costsByCategory["Viandes & Gibiers"] || 0 },
+            "Volaille": { icon: Drumstick, color: "bg-amber-500", totalCost: costsByCategory["Volaille"] || 0 },
+            "Poissons": { icon: Fish, color: "bg-sky-500", totalCost: costsByCategory["Poissons"] || 0 },
+            "Fruits de mer & Crustacés": { icon: FishSymbol, color: "bg-cyan-500", totalCost: costsByCategory["Fruits de mer & Crustacés"] || 0 },
         };
         
         return Object.entries(proteinCategories)
-            .map(([name, data]) => ({ name, ...data }))
-            .filter(item => item.cost > 0)
-            .sort((a,b) => b.cost - a.cost);
+            .map(([name, data]) => ({ 
+                name, 
+                ...data,
+                costPerPortion: data.totalCost / portions
+            }))
+            .filter(item => item.totalCost > 0)
+            .sort((a,b) => b.totalCost - a.totalCost);
 
-    }, [costsByCategory]);
+    }, [costsByCategory, currentRecipeData]);
 
 
     if (isLoading) { return <RecipeDetailSkeleton />; }
@@ -853,14 +857,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         </Card>
                     )}
                     
-                     {isPlat && proteinCostBreakdown.length > 0 && (
+                    {isPlat && proteinCostBreakdown.length > 0 && (
                         <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><PercentCircle className="h-5 w-5" />Répartition des Coûts Protéines</CardTitle>
                             </CardHeader>
                             <CardContent className="space-y-4">
                                 {proteinCostBreakdown.map(item => {
-                                    const percentage = totalRecipeCost > 0 ? (item.cost / totalRecipeCost) * 100 : 0;
+                                    const percentage = totalRecipeCost > 0 ? (item.totalCost / totalRecipeCost) * 100 : 0;
                                     const Icon = item.icon;
                                     return (
                                         <div key={item.name} className="space-y-1">
@@ -869,7 +873,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                                     <Icon className="h-4 w-4 text-muted-foreground"/>
                                                     <span>{item.name}</span>
                                                 </div>
-                                                <span className="font-semibold">{item.cost.toFixed(2)} DZD ({percentage.toFixed(0)}%)</span>
+                                                <span className="font-semibold">{item.costPerPortion.toFixed(2)} DZD / portion ({percentage.toFixed(0)}%)</span>
                                             </div>
                                             <Progress value={percentage} indicatorClassName={item.color} />
                                         </div>
@@ -909,7 +913,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     </Card>
 
                     <Card>
-                        <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><BookCopy className="h-5 w-5" />Sous-Recettes</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewPreparations([...newPreparations, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, _productionUnit: '' }])}><PlusCircle className="mr-2 h-4 w-4" />Ajouter Préparation</Button>}</CardTitle><CardDescription>Liste des préparations (fiches techniques internes) utilisées dans cette recette.</CardDescription></CardHeader>
+                        <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><BookCopy className="h-5 w-5" />Sous-Recettes</div>{isEditing && <Button variant="outline" size="sm" onClick={()={() => setNewPreparations([...newPreparations, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, _productionUnit: '' }])}><PlusCircle className="mr-2 h-4 w-4" />Ajouter Préparation</Button>}</CardTitle><CardDescription>Liste des préparations (fiches techniques internes) utilisées dans cette recette.</CardDescription></CardHeader>
                         <CardContent>
                             <Table>
                                 <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
@@ -1063,3 +1067,6 @@ function RecipeDetailSkeleton() {
     );
 }
 
+
+
+    
