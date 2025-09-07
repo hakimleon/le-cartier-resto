@@ -87,7 +87,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   const selectedCategory = form.watch("category");
   const categoryExamples = ingredientCategories.find(c => c.name === selectedCategory)?.examples;
   const purchaseUnit = form.watch("purchaseUnit");
-  const showWeightField = purchaseUnit === "botte" || purchaseUnit === "piece";
+  const isWeightEditable = purchaseUnit === "botte" || purchaseUnit === "piece";
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -224,24 +224,22 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                 />
             </div>
              <div className="grid grid-cols-2 gap-4 pt-2">
-                 <div className={cn("space-y-2", !showWeightField && "invisible")}>
-                    <FormField
-                        control={form.control}
-                        name="purchaseWeightGrams"
-                        render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Poids de la botte/pièce (g)</FormLabel>
-                            <FormControl>
-                            <Input type="number" step="1" placeholder="Ex: 250" {...field} disabled={!showWeightField}/>
-                            </FormControl>
-                            <FormDescription className="text-xs">
-                                Poids en grammes pour une seule botte/pièce.
-                            </FormDescription>
-                            <FormMessage />
-                            </FormItem>
-                        )}
-                    />
-                  </div>
+                 <FormField
+                    control={form.control}
+                    name="purchaseWeightGrams"
+                    render={({ field }) => (
+                        <FormItem>
+                        <FormLabel>Poids botte/pièce (g)</FormLabel>
+                        <FormControl>
+                        <Input type="number" step="1" placeholder="Ex: 250" {...field} disabled={!isWeightEditable}/>
+                        </FormControl>
+                        <FormDescription className="text-xs">
+                            Poids si unité est botte/pièce.
+                        </FormDescription>
+                        <FormMessage />
+                        </FormItem>
+                    )}
+                />
                  <FormField
                     control={form.control}
                     name="yieldPercentage"
