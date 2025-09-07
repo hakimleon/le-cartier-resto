@@ -45,6 +45,7 @@ import { DishConceptOutput } from "@/ai/flows/workshop-flow";
 import { PreparationModal } from "../../preparations/PreparationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { ImagePreviewModal } from "./ImagePreviewModal";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
@@ -211,6 +212,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   const [isEditing, setIsEditing] = useState(false);
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
+  const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
   
   const [newIngredients, setNewIngredients] = useState<NewRecipeIngredient[]>([]);
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
@@ -573,6 +575,14 @@ const fetchAllPreparations = useCallback(async () => {
        <IngredientModal open={isNewIngredientModalOpen} onOpenChange={setIsNewIngredientModalOpen} ingredient={newIngredientDefaults} onSuccess={(newDbIngredient) => { if (newDbIngredient && currentTempId) { handleCreateAndLinkIngredient(currentTempId, newDbIngredient); } }} ><div/></IngredientModal>
        <PreparationModal open={isNewPreparationModalOpen} onOpenChange={setIsNewPreparationModalOpen} preparation={newPreparationDefaults} onSuccess={(newDbPrep) => { if (newDbPrep && currentPrepTempId) { handleCreateAndLinkPreparation(currentPrepTempId, newDbPrep); } }}><div/></PreparationModal>
        <ImageUploadDialog isOpen={isImageUploadOpen} onClose={() => setIsImageUploadOpen(false)} onUploadComplete={(url) => { handleRecipeDataChange('imageUrl', url); }} />
+       {currentRecipeData.imageUrl && (
+         <ImagePreviewModal
+            isOpen={isImagePreviewOpen}
+            onClose={() => setIsImagePreviewOpen(false)}
+            imageUrl={currentRecipeData.imageUrl}
+            imageAlt={currentRecipeData.name}
+         />
+       )}
        
        <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-4">
@@ -603,10 +613,21 @@ const fetchAllPreparations = useCallback(async () => {
             {isPlat && (
                 <Card className="overflow-hidden">
                     <CardContent className="p-0">
-                        <div className="relative w-full h-96">
-                             <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "contain"}} data-ai-hint="food image" />
-                             {isEditing && <div className="absolute inset-0 bg-black/40 flex items-center justify-center"><Button variant="secondary" onClick={() => setIsImageUploadOpen(true)}><ImageIcon className="mr-2 h-4 w-4" />Changer la photo</Button></div>}
-                        </div>
+                        <button 
+                            className="relative w-full h-96 block group"
+                            onClick={() => setIsImagePreviewOpen(true)}
+                            aria-label="Agrandir l'image du plat"
+                        >
+                             <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{objectFit: "contain"}} data-ai-hint="food image" className="transition-transform duration-300 group-hover:scale-105" />
+                             <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <p className="text-white bg-black/50 px-4 py-2 rounded-md">Agrandir</p>
+                             </div>
+                             {isEditing && 
+                                <div className="absolute bottom-4 right-4 z-10">
+                                    <Button variant="secondary" onClick={(e) => { e.stopPropagation(); setIsImageUploadOpen(true); }}><ImageIcon className="mr-2 h-4 w-4" />Changer la photo</Button>
+                                </div>
+                             }
+                        </button>
                     </CardContent>
                 </Card>
             )}
@@ -736,3 +757,4 @@ function RecipeDetailSkeleton() {
     </div>
   );
 }
+
