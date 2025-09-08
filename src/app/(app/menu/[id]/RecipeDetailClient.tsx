@@ -126,11 +126,15 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
         return 0;
     }
 
-    const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
-    const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, "g");
+    const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+    const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
+
+    const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
+    const targetUnit = isLiquid ? 'ml' : 'g';
     
-    return quantityInGrams * netCostPerGram;
+    const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
+    
+    return quantityInBaseUnit * netCostPerGramOrMl;
 };
 
 
@@ -182,7 +186,7 @@ const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
             elements.push(<br key={`br-${index}`} />);
         } else {
             flushList();
-            elements.push(<p key={index}>{trimmedLine}</p>);
+            elements.push(<p key={index} className="mb-2 last:mb-0">{trimmedLine}</p>);
         }
     });
 
@@ -1094,21 +1098,25 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         </div>
                                     </>
                                 ) : (
-                                    <div className="space-y-3 text-sm">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-muted-foreground">Production totale</span>
-                                            <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+                                    <>
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center text-sm">
+                                                <span className="text-muted-foreground">Production totale</span>
+                                                <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+                                            </div>
+                                             <div className="flex justify-between items-center text-sm">
+                                                <span className="text-muted-foreground">Unité d'utilisation</span>
+                                                <span className="font-semibold">{(currentRecipeData as Preparation).usageUnit || "-"}</span>
+                                            </div>
                                         </div>
-                                         <div className="flex justify-between items-center">
-                                            <span className="text-muted-foreground">Unité d'utilisation</span>
-                                            <span className="font-semibold">{(currentRecipeData as Preparation).usageUnit || "-"}</span>
+                                        <Separator className="my-4"/>
+                                         <div className="space-y-2">
+                                             <div className="flex justify-between items-center">
+                                                <span className="text-muted-foreground">Coût de revient / {currentRecipeData.productionUnit || 'unité'}</span>
+                                                <span className="font-bold text-primary text-base">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)} DZD</span>
+                                            </div>
                                         </div>
-                                        <Separator />
-                                         <div className="flex justify-between items-center">
-                                            <span className="text-muted-foreground">Coût de revient / {currentRecipeData.productionUnit || 'unité'}</span>
-                                            <span className="font-bold text-primary text-base">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)} DZD</span>
-                                        </div>
-                                    </div>
+                                    </>
                                 )}
                             </CardContent>
                         </Card>
@@ -1132,3 +1140,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
