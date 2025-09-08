@@ -47,6 +47,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ImagePreviewModal } from "./ImagePreviewModal";
 import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
@@ -62,7 +64,6 @@ type FullRecipeIngredient = {
     quantity: number;
     unit: string;
     category: string;
-    netPricePerKg: number; // This will now represent the cost of the usable unit (kg, L, etc.)
     totalCost: number;
 };
 
@@ -73,7 +74,6 @@ type NewRecipeIngredient = {
     quantity: number;
     unit: string;
     category: string;
-    netPricePerKg: number;
     totalCost: number;
 };
 
@@ -121,30 +121,17 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
     return 1;
 };
 
-
-const getCostPerBaseUnit = (ingredient: Ingredient) => {
-    const isVolumeUnit = ['litres', 'l', 'ml'].includes(ingredient.purchaseUnit.toLowerCase());
-    const baseUnit = isVolumeUnit ? 'ml' : 'g';
-
-    // Case 1: Final Use Unit is defined (e.g., 1kg lemons -> 400ml juice)
-    if (ingredient.finalUseUnit && ingredient.convertedQuantity && ingredient.convertedQuantity > 0) {
-        // Cost per final unit (e.g., cost per ml of juice)
-        return { cost: ingredient.purchasePrice / ingredient.convertedQuantity, baseUnit: ingredient.finalUseUnit };
+const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
+    if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams) {
+        return 0;
     }
 
-    // Case 2: Standard calculation based on purchase unit
-    const purchaseAmountInBaseUnit = getConversionFactor(ingredient.purchaseUnit, baseUnit) * ingredient.purchaseWeightGrams;
-
-    if (purchaseAmountInBaseUnit === 0) return { cost: 0, baseUnit };
+    const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+    const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
+    const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, "g");
     
-    // For weight-based ingredients, apply yield. For volume, assume 100% yield unless specified otherwise.
-    const netAmountInBaseUnit = isVolumeUnit ? purchaseAmountInBaseUnit : purchaseAmountInBaseUnit * (ingredient.yieldPercentage / 100);
-    
-    if (netAmountInBaseUnit === 0) return { cost: 0, baseUnit };
-
-    return { cost: ingredient.purchasePrice / netAmountInBaseUnit, baseUnit: baseUnit };
+    return quantityInGrams * netCostPerGram;
 };
-
 
 
 const GAUGE_LEVELS = {
@@ -372,9 +359,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 const ingLink = ingDoc.data() as RecipeIngredientLink;
                 const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
                  if (ingData) {
-                    const { cost: costPerBaseUnit, baseUnit } = getCostPerBaseUnit(ingData);
-                    const conversionFactor = getConversionFactor(ingLink.unitUse, baseUnit);
-                    totalCost += (ingLink.quantity || 0) * costPerBaseUnit / conversionFactor;
+                    totalCost += recomputeIngredientCost(ingLink, ingData);
                 }
             }
 
@@ -386,7 +371,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     const childPrep = preparationsList.find(p => p.id === depId);
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
-                        const conversionFactor = getConversionFactor(linkData.unitUse, childPrep.productionUnit);
+                        const conversionFactor = getConversionFactor(childPrep.productionUnit, linkData.unitUse);
                         const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
                         totalCost += (linkData.quantity || 0) * costPerUseUnit;
                     }
@@ -440,9 +425,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
             const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
             if (ingredientData) {
-                const { cost: costPerBaseUnit, baseUnit } = getCostPerBaseUnit(ingredientData);
-                const conversionFactor = getConversionFactor(recipeIngredientData.unitUse, baseUnit);
-                const totalCost = (recipeIngredientData.quantity || 0) * costPerBaseUnit / conversionFactor;
+                const totalCost = recomputeIngredientCost(recipeIngredientData, ingredientData);
 
                 return {
                     id: ingredientData.id!,
@@ -451,7 +434,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     quantity: recipeIngredientData.quantity,
                     unit: recipeIngredientData.unitUse,
                     category: ingredientData.category,
-                    netPricePerKg: 0, // This field is deprecated in this view
                     totalCost: totalCost
                 };
             }
@@ -467,7 +449,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
             if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                 const costPerProductionUnit = costs[linkData.childPreparationId];
-                const conversionFactor = getConversionFactor(linkData.unitUse, childRecipeData.productionUnit);
+                const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse);
                 const costPerUseUnit = costPerProductionUnit / conversionFactor;
                 return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit };
             }
@@ -532,10 +514,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const tempId = `new-ws-${Date.now()}-${Math.random()}`;
             let totalCost = 0;
             if (existing) {
-                 const tempNew: NewRecipeIngredient = { tempId, ingredientId: existing.id, name: existing.name, quantity: sugIng.quantity, unit: sugIng.unit, netPricePerKg: 0, totalCost: 0, category: existing.category };
-                totalCost = recomputeIngredientCost(tempNew, existing);
+                totalCost = recomputeIngredientCost({quantity: sugIng.quantity, unit: sugIng.unit}, existing);
             }
-            return { tempId, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, netPricePerKg: 0, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
+            return { tempId, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
         });
         setNewIngredients(newIngs);
     };
@@ -572,12 +553,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const handleRecipeDataChange = (field: keyof Recipe | keyof Preparation, value: any) => {
         if (editableRecipe) { setEditableRecipe({ ...editableRecipe, [field]: value }); }
-    };
-
-    const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient) => {
-        const { cost: costPerBaseUnit, baseUnit } = getCostPerBaseUnit(ingredientData);
-        const conversionFactor = getConversionFactor(ingredientLink.unit, baseUnit);
-        return (ingredientLink.quantity || 0) * costPerBaseUnit / conversionFactor;
     };
 
     const handleIngredientChange = (recipeIngredientId: string, field: 'quantity' | 'unit', value: any) => {
@@ -651,7 +626,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             if (prep.id === linkId) {
                 const updatedPrep = { ...prep, [field]: value };
                 const costPerProductionUnit = prep._costPerUnit || 0;
-                const conversionFactor = getConversionFactor(updatedPrep.unit, prep._productionUnit);
+                const conversionFactor = getConversionFactor(prep._productionUnit, updatedPrep.unit);
                 const costPerUseUnit = costPerProductionUnit / conversionFactor;
                 updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
                 return updatedPrep;
@@ -935,7 +910,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
 
                     <Card>
-                        <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><Utensils className="h-5 w-5" />Ingrédients</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', netPricePerKg: 0, totalCost: 0, category: '' }])}><PlusCircle className="mr-2 h-4 w-4" />Ajouter Ingrédient</Button>}</CardTitle><CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription></CardHeader>
+                        <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><Utensils className="h-5 w-5" />Ingrédients</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, category: '' }])}><PlusCircle className="mr-2 h-4 w-4" />Ajouter Ingrédient</Button>}</CardTitle><CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription></CardHeader>
                         <CardContent>
                             <Table>
                                 <TableHeader><TableRow><TableHead className="w-[45%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
@@ -1099,7 +1074,44 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         </>
                     )}
                     {!isPlat && (
-                        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Info className="h-5 w-5" />Informations de Production</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid grid-cols-2 gap-y-2"><span className="text-muted-foreground">Qté Produite</span><span className="font-semibold text-right">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span><span className="text-muted-foreground">Unité d'Utilisation</span><span className="font-semibold text-right">{(currentRecipeData as Preparation).usageUnit || "-"}</span><span className="text-muted-foreground pt-2 border-t col-span-2">Coût Total Matières</span><span className="font-semibold pt-2 border-t text-right col-span-2">{totalRecipeCost.toFixed(2)} DZD</span><span className="font-bold text-primary pt-2 border-t">Coût / {currentRecipeData.productionUnit}</span><span className="font-bold text-primary pt-2 border-t text-right">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)} DZD</span></div>{isEditing && (<div className="space-y-4 pt-4 border-t"><div className="grid grid-cols-2 gap-2"><Input type="number" value={(editableRecipe as Preparation)?.productionQuantity} onChange={(e) => handleRecipeDataChange('productionQuantity', parseInt(e.target.value) || 1)} /><Input type="text" value={(editableRecipe as Preparation)?.productionUnit} onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)} placeholder="Unité Prod." /></div><Input type="text" value={(editableRecipe as Preparation)?.usageUnit || ''} onChange={(e) => handleRecipeDataChange('usageUnit', e.target.value)} placeholder="Unité d'utilisation suggérée (ex: g, ml)" /></div>)}</CardContent></Card>
+                       <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Production & Coût</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {isEditing ? (
+                                    <>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="productionQuantity">Cette recette produit</Label>
+                                            <div className="flex items-center gap-2">
+                                                <Input id="productionQuantity" type="number" value={(editableRecipe as Preparation)?.productionQuantity || 1} onChange={(e) => handleRecipeDataChange('productionQuantity', parseFloat(e.target.value) || 1)} className="w-1/2" />
+                                                <Input id="productionUnit" type="text" value={(editableRecipe as Preparation)?.productionUnit || ''} onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)} placeholder="Unité (ex: kg, L)" className="w-1/2"/>
+                                            </div>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label htmlFor="usageUnit">Unité d'utilisation suggérée</Label>
+                                            <Input id="usageUnit" type="text" value={(editableRecipe as Preparation)?.usageUnit || ''} onChange={(e) => handleRecipeDataChange('usageUnit', e.target.value)} placeholder="Unité pour les recettes (ex: g, ml)" />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="space-y-3 text-sm">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground">Production totale</span>
+                                            <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+                                        </div>
+                                         <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground">Unité d'utilisation</span>
+                                            <span className="font-semibold">{(currentRecipeData as Preparation).usageUnit || "-"}</span>
+                                        </div>
+                                        <Separator />
+                                         <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground">Coût de revient / {currentRecipeData.productionUnit || 'unité'}</span>
+                                            <span className="font-bold text-primary text-base">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)} DZD</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
                     )}
                 </div>
             </div>
