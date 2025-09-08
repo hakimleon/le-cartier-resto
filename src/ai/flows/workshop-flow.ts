@@ -64,7 +64,8 @@ export async function generateDishConcept(input: DishConceptInput): Promise<Dish
 const recipeConceptPrompt = ai.definePrompt({
     name: 'recipeConceptPrompt',
     input: { schema: DishConceptInputSchema },
-    output: { schema: DishConceptOutputSchema.omit({ imageUrl: true }) },
+    // On enlève imageUrl car ce prompt ne génère que le texte
+    output: { schema: DishConceptOutputSchema.omit({ imageUrl: true }) }, 
     tools: [getAvailablePreparationsTool],
     prompt: `
         Vous êtes un chef cuisinier créatif et un styliste culinaire de renommée mondiale, chargé de créer une fiche technique quasi-complète pour un nouveau plat.

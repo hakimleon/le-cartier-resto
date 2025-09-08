@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useMemo } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -284,9 +284,13 @@ export default function WorkshopClient() {
                                         </div>
                                     </div>
                                     
-                                    <div>
+                                     <div>
                                         <h4 className="font-semibold mb-2 flex items-center gap-2"><FileText className="h-4 w-4"/>Procédure Technique</h4>
-                                         <div className="prose prose-sm max-w-none text-muted-foreground whitespace-pre-wrap p-4 border rounded-md mt-2" dangerouslySetInnerHTML={{ __html: `${generatedConcept.procedure_preparation}<br/><br/>${generatedConcept.procedure_cuisson}<br/><br/>${generatedConcept.procedure_service}`.replace(/### (.*)/g, '<h3>$1</h3>').replace(/\n/g, '<br />') }} />
+                                        <div className="prose prose-sm max-w-none text-muted-foreground p-4 border rounded-md mt-2">
+                                            <div dangerouslySetInnerHTML={{ __html: (generatedConcept.procedure_preparation || '').replace(/### (.*)/g, '<h3>$1</h3>').replace(/(\r\n|\n|\r)/gm, "<br>") }}></div>
+                                            <div dangerouslySetInnerHTML={{ __html: (generatedConcept.procedure_cuisson || '').replace(/### (.*)/g, '<h3>$1</h3>').replace(/(\r\n|\n|\r)/gm, "<br>") }}></div>
+                                            <div dangerouslySetInnerHTML={{ __html: (generatedConcept.procedure_service || '').replace(/### (.*)/g, '<h3>$1</h3>').replace(/(\r\n|\n|\r)/gm, "<br>") }}></div>
+                                        </div>
                                     </div>
                                     
                                     <Separator />

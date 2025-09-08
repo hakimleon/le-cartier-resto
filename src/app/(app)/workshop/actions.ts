@@ -31,6 +31,7 @@ export async function createDishFromWorkshop(concept: DishConceptOutput): Promis
             status: 'Inactif',
             category: 'Plats et Grillades', // Default category, user can change later
             tvaRate: 10, // Default TVA rate
+            // Les allergènes et les tags peuvent être ajoutés plus tard
         };
 
         const recipesCol = collection(db, 'recipes');
@@ -48,24 +49,25 @@ export async function createDishFromWorkshop(concept: DishConceptOutput): Promis
 }
 
 /**
- * Creates a new preparation (recipe of type 'Préparation')
- * @param prepData - The preparation data.
+ * Creates a new preparation (recipe of type 'Préparation') from the workshop.
+ * @param prepData - The preparation data (name, description).
  * @returns The ID of the newly created preparation.
  */
 export async function createPreparation(prepData: Partial<Omit<Preparation, 'id'>>): Promise<string> {
      try {
+        // We set default values for fields not provided by the initial creation step.
         const dataToSave: Omit<Preparation, 'id'> = {
             type: 'Préparation',
             name: prepData.name || 'Nouvelle Préparation',
             description: prepData.description || '',
-            difficulty: prepData.difficulty || 'Moyen',
-            duration: prepData.duration || 10,
-            productionQuantity: prepData.productionQuantity || 1,
-            productionUnit: prepData.productionUnit || 'kg',
-            usageUnit: prepData.usageUnit || 'g',
-            procedure_preparation: prepData.procedure_preparation || '',
-            procedure_cuisson: prepData.procedure_cuisson || '',
-            procedure_service: prepData.procedure_service || '',
+            difficulty: 'Moyen',
+            duration: 10,
+            productionQuantity: 1,
+            productionUnit: 'kg',
+            usageUnit: 'g',
+            procedure_preparation: '',
+            procedure_cuisson: '',
+            procedure_service: '',
         };
         
         const prepsCol = collection(db, 'preparations');
