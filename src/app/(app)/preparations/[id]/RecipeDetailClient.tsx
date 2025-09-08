@@ -91,33 +91,8 @@ type NewRecipePreparation = {
 };
 
 
-const getCostPerBaseUnit = (ingredient: Ingredient) => {
-    const isVolumeUnit = ['litres', 'l', 'ml'].includes(ingredient.purchaseUnit.toLowerCase());
-
-    // Case 1: Final Use Unit is defined (e.g., 1kg lemons -> 400ml juice)
-    if (ingredient.finalUseUnit && ingredient.convertedQuantity && ingredient.convertedQuantity > 0) {
-        // Cost per final unit (e.g., cost per ml of juice)
-        return { cost: ingredient.purchasePrice / ingredient.convertedQuantity, baseUnit: ingredient.finalUseUnit };
-    }
-
-    // Case 2: Standard calculation based on purchase unit
-    if (isVolumeUnit) {
-        // For volume, the base unit is ml.
-        const purchaseVolumeMl = getConversionFactor(ingredient.purchaseUnit, 'ml') * ingredient.purchaseWeightGrams;
-        if (purchaseVolumeMl === 0) return { cost: 0, baseUnit: 'ml' };
-        // Cost per ml
-        return { cost: ingredient.purchasePrice / purchaseVolumeMl, baseUnit: 'ml' };
-    } else {
-        // For weight, the base unit is g.
-        const netWeightGrams = ingredient.purchaseWeightGrams * (ingredient.yieldPercentage / 100);
-        if (netWeightGrams === 0) return { cost: 0, baseUnit: 'g' };
-        // Cost per g
-        return { cost: ingredient.purchasePrice / netWeightGrams, baseUnit: 'g' };
-    }
-};
-
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (fromUnit.toLowerCase() === toUnit.toLowerCase()) return 1;
+    if (!fromUnit || !toUnit || fromUnit.toLowerCase() === toUnit.toLowerCase()) return 1;
 
     const u = (unit: string) => unit.toLowerCase().trim();
     const factors: Record<string, number> = {
@@ -131,25 +106,37 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
     const toFactor = factors[u(toUnit)];
 
     if (fromFactor !== undefined && toFactor !== undefined) {
-        // If converting between weight and volume, assume 1g = 1ml (for water-like density)
-        const weightUnits = ['kg', 'g', 'mg'];
-        const volumeUnits = ['l', 'ml', 'litre', 'litres'];
-        const fromIsWeight = weightUnits.includes(u(fromUnit));
-        const toIsVolume = volumeUnits.includes(u(toUnit));
-        const fromIsVolume = volumeUnits.includes(u(fromUnit));
-        const toIsWeight = weightUnits.includes(u(toUnit));
-
-        if ((fromIsWeight && toIsVolume) || (fromIsVolume && toIsWeight)) {
-             // This is a simplification. For precise cooking, density should be considered.
-            return fromFactor / toFactor;
-        }
-
         return fromFactor / toFactor;
     }
     
     console.warn(`No conversion factor found between '${fromUnit}' and '${toUnit}'. Defaulting to 1.`);
     return 1;
 };
+
+
+const getCostPerBaseUnit = (ingredient: Ingredient) => {
+    const isVolumeUnit = ['litres', 'l', 'ml'].includes(ingredient.purchaseUnit.toLowerCase());
+    const baseUnit = isVolumeUnit ? 'ml' : 'g';
+
+    // Case 1: Final Use Unit is defined (e.g., 1kg lemons -> 400ml juice)
+    if (ingredient.finalUseUnit && ingredient.convertedQuantity && ingredient.convertedQuantity > 0) {
+        return { cost: ingredient.purchasePrice / ingredient.convertedQuantity, baseUnit: ingredient.finalUseUnit };
+    }
+
+    // Case 2: Standard calculation based on purchase unit
+    // We assume 1g = 1ml for purchaseWeightGrams on volume units
+    const purchaseAmountInBaseUnit = getConversionFactor(ingredient.purchaseUnit, baseUnit) * ingredient.purchaseWeightGrams;
+
+    if (purchaseAmountInBaseUnit === 0) return { cost: 0, baseUnit };
+    
+    // For weight-based ingredients, apply yield. For volume, assume 100% yield unless specified otherwise.
+    const netAmountInBaseUnit = isVolumeUnit ? purchaseAmountInBaseUnit : purchaseAmountInBaseUnit * (ingredient.yieldPercentage / 100);
+    
+    if (netAmountInBaseUnit === 0) return { cost: 0, baseUnit };
+
+    return { cost: ingredient.purchasePrice / netAmountInBaseUnit, baseUnit: baseUnit };
+};
+
 
 const foodCostIndicators = [
   { range: "< 25%", level: "Exceptionnel", description: "Performance rare. Maîtrise parfaite ou prix très élevés.", color: "text-green-500" },
@@ -362,8 +349,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
             if (ingData) {
                 const { cost: costPerBaseUnit, baseUnit } = getCostPerBaseUnit(ingData);
-                const conversionFactor = getConversionFactor(baseUnit, ingLink.unitUse);
-                totalCost += (ingLink.quantity || 0) * costPerBaseUnit * conversionFactor;
+                const conversionFactor = getConversionFactor(ingLink.unitUse, baseUnit);
+                totalCost += (ingLink.quantity || 0) * costPerBaseUnit / conversionFactor;
             }
         }
 
@@ -375,8 +362,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 const childPrep = preparationsList.find(p => p.id === depId);
                 const childCostPerProductionUnit = costs[depId];
                 if (childPrep && childCostPerProductionUnit !== undefined) {
-                     const conversionFactor = getConversionFactor(childPrep.productionUnit, linkData.unitUse);
-                     const costPerUseUnit = childCostPerProductionUnit * conversionFactor;
+                     const conversionFactor = getConversionFactor(linkData.unitUse, childPrep.productionUnit);
+                     const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
                      totalCost += (linkData.quantity || 0) * costPerUseUnit;
                 }
             }
@@ -425,8 +412,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
         if (ingredientData) {
             const { cost: costPerBaseUnit, baseUnit } = getCostPerBaseUnit(ingredientData);
-            const conversionFactor = getConversionFactor(baseUnit, recipeIngredientData.unitUse);
-            const totalCost = (recipeIngredientData.quantity || 0) * costPerBaseUnit * conversionFactor;
+            const conversionFactor = getConversionFactor(recipeIngredientData.unitUse, baseUnit);
+            const totalCost = (recipeIngredientData.quantity || 0) * costPerBaseUnit / conversionFactor;
 
             return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, netPricePerKg: 0, totalCost };
         }
@@ -442,8 +429,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
         if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
              const costPerProductionUnit = costs[linkData.childPreparationId];
-             const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse);
-             const costPerUseUnit = costPerProductionUnit * conversionFactor;
+             const conversionFactor = getConversionFactor(linkData.unitUse, childRecipeData.productionUnit);
+             const costPerUseUnit = costPerProductionUnit / conversionFactor;
             return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit };
         }
         return null;
@@ -493,8 +480,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   
   const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient) => {
       const { cost: costPerBaseUnit, baseUnit } = getCostPerBaseUnit(ingredientData);
-      const conversionFactor = getConversionFactor(baseUnit, ingredientLink.unit);
-      return (ingredientLink.quantity || 0) * costPerBaseUnit * conversionFactor;
+      const conversionFactor = getConversionFactor(ingredientLink.unit, baseUnit);
+      return (ingredientLink.quantity || 0) * costPerBaseUnit / conversionFactor;
   };
 
   const handleIngredientChange = (recipeIngredientId: string, field: 'quantity' | 'unit', value: any) => {
@@ -550,8 +537,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
           if (prep.id === linkId) {
               const updatedPrep = { ...prep, [field]: value };
               const costPerProductionUnit = prep._costPerUnit || 0;
-              const conversionFactor = getConversionFactor(prep._productionUnit, updatedPrep.unit);
-              const costPerUseUnit = costPerProductionUnit * conversionFactor;
+              const conversionFactor = getConversionFactor(updatedPrep.unit, prep._productionUnit);
+              const costPerUseUnit = costPerProductionUnit / conversionFactor;
               updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
               return updatedPrep;
           }
@@ -568,8 +555,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                   }
                   if (field === 'quantity' || field === 'childPreparationId') {
                       const costPerProductionUnit = updatedPrep._costPerUnit || 0;
-                      const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
-                      const costPerUseUnit = costPerProductionUnit * conversionFactor;
+                      const conversionFactor = getConversionFactor(updatedPrep.unit, updatedPrep._productionUnit);
+                      const costPerUseUnit = costPerProductionUnit / conversionFactor;
                       updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
                   }
                   return updatedPrep;
@@ -810,5 +797,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
