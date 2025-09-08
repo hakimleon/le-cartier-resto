@@ -8,7 +8,7 @@ import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Prepar
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components_ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -117,24 +117,13 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
         return 0;
     }
 
-    const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
-
-    const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
-    const targetUnit = isLiquid ? 'ml' : 'g';
+    const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+    const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
+    const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, "g");
     
-    const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
-    
-    return quantityInBaseUnit * netCostPerGramOrMl;
+    return quantityInGrams * netCostPerGram;
 };
 
-const foodCostIndicators = [
-  { range: "< 25%", level: "Exceptionnel", description: "Performance rare. Maîtrise parfaite ou prix très élevés.", color: "text-green-500" },
-  { range: "25-30%", level: "Excellent", description: "Performance optimale. Très bonne maîtrise des coûts.", color: "text-emerald-500" },
-  { range: "30-35%", level: "Bon", description: "Standard du secteur.", color: "text-yellow-500" },
-  { range: "35-40%", level: "Moyen", description: "Acceptable mais perfectible. Surveillance requise.", color: "text-orange-500" },
-  { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500" },
-];
 
 const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
     if (!text) return null;
@@ -176,6 +165,7 @@ const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
 
     return <div className="prose prose-sm max-w-none">{elements}</div>;
 };
+
 
 const NewIngredientRow = ({
     newIng,
@@ -764,7 +754,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </CardContent>
             </Card>
 
-             <Card>
+            <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Production & Coût</CardTitle>
                 </CardHeader>
@@ -784,25 +774,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </div>
                         </>
                     ) : (
-                        <>
-                            <div className="space-y-2">
-                                <div className="flex justify-between items-center text-sm">
-                                    <span className="text-muted-foreground">Production totale</span>
-                                    <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
-                                </div>
-                                    <div className="flex justify-between items-center text-sm">
-                                    <span className="text-muted-foreground">Unité d'utilisation</span>
-                                    <span className="font-semibold">{(currentRecipeData as Preparation).usageUnit || "-"}</span>
-                                </div>
+                        <div className="space-y-3 text-sm">
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Production totale</span>
+                                <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
                             </div>
-                            <Separator className="my-4"/>
-                            <div className="space-y-2">
-                                    <div className="flex justify-between items-center">
-                                    <span className="text-muted-foreground">Coût de revient / {currentRecipeData.productionUnit || 'unité'}</span>
-                                    <span className="font-bold text-primary text-base">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)} DZD</span>
-                                </div>
+                                <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Unité d'utilisation</span>
+                                <span className="font-semibold">{(currentRecipeData as Preparation).usageUnit || "-"}</span>
                             </div>
-                        </>
+                            <Separator />
+                                <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Coût de revient / {currentRecipeData.productionUnit || 'unité'}</span>
+                                <span className="font-bold text-primary text-base">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)} DZD</span>
+                            </div>
+                        </div>
                     )}
                 </CardContent>
             </Card>
