@@ -47,6 +47,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ImagePreviewModal } from "./ImagePreviewModal";
 import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
@@ -124,13 +125,8 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
         return 0;
     }
 
-    // Cost per gram or per ml (assuming 1g = 1ml for simplicity, which is standard for most cooking liquids)
     const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    
-    // Net cost after yield
-    const netCostPerGram = costPerGram / (ingredientData.yieldPercentage / 100);
-
-    // Get the quantity of the ingredient in grams
+    const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
     const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, "g");
     
     return quantityInGrams * netCostPerGram;
@@ -1077,7 +1073,44 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         </>
                     )}
                     {!isPlat && (
-                        <Card><CardHeader><CardTitle className="flex items-center gap-2"><Info className="h-5 w-5" />Informations de Production</CardTitle></CardHeader><CardContent className="space-y-4"><div className="grid grid-cols-2 gap-y-2"><span className="text-muted-foreground">Qté Produite</span><span className="font-semibold text-right">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span><span className="text-muted-foreground">Unité d'Utilisation</span><span className="font-semibold text-right">{(currentRecipeData as Preparation).usageUnit || "-"}</span><span className="text-muted-foreground pt-2 border-t col-span-2">Coût Total Matières</span><span className="font-semibold pt-2 border-t text-right col-span-2">{totalRecipeCost.toFixed(2)} DZD</span><span className="font-bold text-primary pt-2 border-t">Coût / {currentRecipeData.productionUnit}</span><span className="font-bold text-primary pt-2 border-t text-right">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)} DZD</span></div>{isEditing && (<div className="space-y-4 pt-4 border-t"><div className="grid grid-cols-2 gap-2"><Input type="number" value={(editableRecipe as Preparation)?.productionQuantity} onChange={(e) => handleRecipeDataChange('productionQuantity', parseInt(e.target.value) || 1)} /><Input type="text" value={(editableRecipe as Preparation)?.productionUnit} onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)} placeholder="Unité Prod." /></div><Input type="text" value={(editableRecipe as Preparation)?.usageUnit || ''} onChange={(e) => handleRecipeDataChange('usageUnit', e.target.value)} placeholder="Unité d'utilisation suggérée (ex: g, ml)" /></div>)}</CardContent></Card>
+                       <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Production & Coût</CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {isEditing ? (
+                                    <>
+                                        <div className="space-y-2">
+                                            <Label htmlFor="productionQuantity">Cette recette produit</Label>
+                                            <div className="flex items-center gap-2">
+                                                <Input id="productionQuantity" type="number" value={(editableRecipe as Preparation)?.productionQuantity || 1} onChange={(e) => handleRecipeDataChange('productionQuantity', parseFloat(e.target.value) || 1)} className="w-1/2" />
+                                                <Input id="productionUnit" type="text" value={(editableRecipe as Preparation)?.productionUnit || ''} onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)} placeholder="Unité (ex: kg, L)" className="w-1/2"/>
+                                            </div>
+                                        </div>
+                                         <div className="space-y-2">
+                                            <Label htmlFor="usageUnit">Unité d'utilisation suggérée</Label>
+                                            <Input id="usageUnit" type="text" value={(editableRecipe as Preparation)?.usageUnit || ''} onChange={(e) => handleRecipeDataChange('usageUnit', e.target.value)} placeholder="Unité pour les recettes (ex: g, ml)" />
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="space-y-3 text-sm">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground">Production totale</span>
+                                            <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+                                        </div>
+                                         <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground">Unité d'utilisation</span>
+                                            <span className="font-semibold">{(currentRecipeData as Preparation).usageUnit || "-"}</span>
+                                        </div>
+                                        <Separator />
+                                         <div className="flex justify-between items-center">
+                                            <span className="text-muted-foreground">Coût de revient / {currentRecipeData.productionUnit || 'unité'}</span>
+                                            <span className="font-bold text-primary text-base">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)} DZD</span>
+                                        </div>
+                                    </div>
+                                )}
+                            </CardContent>
+                        </Card>
                     )}
                 </div>
             </div>
