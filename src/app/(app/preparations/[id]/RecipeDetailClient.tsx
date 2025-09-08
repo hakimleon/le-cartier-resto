@@ -117,11 +117,15 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
         return 0;
     }
 
-    const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
-    const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, "g");
+    const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+    const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
+
+    const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
+    const targetUnit = isLiquid ? 'ml' : 'g';
     
-    return quantityInGrams * netCostPerGram;
+    const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
+    
+    return quantityInBaseUnit * netCostPerGramOrMl;
 };
 
 const foodCostIndicators = [
@@ -164,7 +168,7 @@ const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
             elements.push(<br key={`br-${index}`} />);
         } else {
             flushList();
-            elements.push(<p key={index}>{trimmedLine}</p>);
+            elements.push(<p key={index} className="mb-2 last:mb-0">{trimmedLine}</p>);
         }
     });
 
@@ -172,6 +176,7 @@ const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
 
     return <div className="prose prose-sm max-w-none">{elements}</div>;
 };
+
 
 const NewIngredientRow = ({
     newIng,
@@ -757,7 +762,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </CardHeader>
                 <CardContent>
                     <div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)} DZD</div>
-                    <p className="text-xs text-muted-foreground text-right mt-1">Coût par {((recipe as Preparation).productionUnit || 'unité')} : {costPerPortion.toFixed(2)} DZD</p>
                 </CardContent>
             </Card>
 
@@ -818,5 +822,6 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
 
     

@@ -8,7 +8,7 @@ import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Prepar
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components_ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -123,7 +123,6 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
     
     return quantityInGrams * netCostPerGram;
 };
-
 
 const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
     if (!text) return null;
@@ -811,5 +810,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
