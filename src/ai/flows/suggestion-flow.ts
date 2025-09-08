@@ -85,8 +85,8 @@ const RecipeOutputSchema = z.object({
     procedure_service: z.string().describe("Les étapes détaillées pour le service ou le dressage. Doit être formaté en Markdown."),
     duration: z.number().int().describe("La durée totale de préparation en minutes."),
     difficulty: z.enum(['Facile', 'Moyen', 'Difficile']).describe("Le niveau de difficulté de la recette."),
-    productionQuantity: z.number().describe("La quantité totale que la recette produit."),
-    productionUnit: z.string().describe("L'unité de la quantité produite (ex: kg, l, pièces)."),
+    productionQuantity: z.number().describe("La quantité totale que la recette produit. DOIT être calculé en se basant sur la somme des poids/volumes des ingrédients, en tenant compte d'une éventuelle réduction à la cuisson."),
+    productionUnit: z.string().describe("L'unité de la quantité produite (ex: kg, l, pièces). DOIT être cohérente avec le calcul de productionQuantity."),
     usageUnit: z.string().describe("L'unité suggérée pour l'utilisation de cette préparation dans d'autres recettes (ex: g, ml, pièce)."),
 });
 export type RecipeOutput = z.infer<typeof RecipeOutputSchema>;
@@ -118,7 +118,7 @@ const recipeGenerationPrompt = ai.definePrompt({
         2.  Rédigez une procédure technique et détaillée en trois phases : "Préparation" (mise en place, techniques), "Cuisson" (températures, temps), et "Service" (dressage). Si une étape n'est pas applicable (ex: pas de cuisson), retournez une chaîne de caractères vide pour ce champ spécifique. **Utilisez le format Markdown (titres avec '###', listes à puces avec '-') pour la procédure.**
         3.  Estimez la durée totale de la recette en minutes.
         4.  Évaluez la difficulté (Facile, Moyen, Difficile).
-        5.  Déduisez et fournissez la quantité totale que la recette produit (productionQuantity), son unité (productionUnit), et l'unité d'utilisation suggérée (usageUnit). Par exemple, une sauce peut produire 1 litre (production) et être utilisée en grammes (usage).
+        5.  **IMPÉRATIF : Calculez la production totale.** Vous devez **obligatoirement** estimer la quantité totale que la recette produit (productionQuantity) et son unité (productionUnit). Pour cela, basez-vous sur la somme des poids et/ou volumes des ingrédients listés, en appliquant une légère réduction logique si une cuisson intervient (évaporation). Par exemple, 1L de lait + 100g de farine + 100g de beurre produiront environ 1.15kg de sauce béchamel. C'est un calcul crucial. Définissez aussi l'unité d'utilisation suggérée (usageUnit), par exemple 'g' ou 'ml'.
         6.  Assurez-vous que la recette soit réalisable, gustativement équilibrée et respecte les standards de la cuisine demandée.
         7.  Fournissez la sortie au format JSON structuré attendu.
     `,
@@ -133,3 +133,5 @@ const generateRecipeFlow = ai.defineFlow({
     const { output } = await recipeGenerationPrompt(input);
     return output!;
 });
+
+    
