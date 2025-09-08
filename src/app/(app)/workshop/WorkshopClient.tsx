@@ -17,6 +17,7 @@ import { createDishFromWorkshop, createPreparation } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
@@ -30,19 +31,19 @@ export default function WorkshopClient() {
     const initialFormRef = useRef<HTMLFormElement>(null);
     const refinementFormRef = useRef<HTMLFormElement>(null);
     
-    // Store the full context for refinements
     const [context, setContext] = useState<DishConceptInput>({});
     const [refinementHistory, setRefinementHistory] = useState<string[]>([]);
+    const [prepsToIntegrate, setPrepsToIntegrate] = useState<string[]>([]);
 
 
     const handleSubmit = async (instructions: DishConceptInput) => {
         setIsLoading(true);
+        setPrepsToIntegrate([]); // Reset selection on new generation/refinement
         
-        // If this is a new generation (not a refinement), clear the previous concept.
         if (!instructions.refinementHistory || instructions.refinementHistory.length === 0) {
             setGeneratedConcept(null);
-            setContext(instructions); // Save initial context for future refinements
-            setRefinementHistory([]); // Reset history on new generation
+            setContext(instructions);
+            setRefinementHistory([]);
         }
 
         try {
@@ -83,25 +84,19 @@ export default function WorkshopClient() {
         if (!currentRefinement) return;
         
         const newHistory = [...refinementHistory, currentRefinement];
-        const instructions = {
-            ...context,
-            refinementHistory: newHistory,
-            currentRefinement: currentRefinement,
-        };
+        const instructions = { ...context, refinementHistory: newHistory, currentRefinement: currentRefinement };
         
         setRefinementHistory(newHistory);
         handleSubmit(instructions);
     }
     
-    const handleIntegratePreparation = (prepName: string) => {
-        const instruction = `Intègre la préparation '${prepName}' directement dans la recette principale au lieu de la traiter comme une sous-recette. Ajoute ses ingrédients à la liste principale et ses étapes à la procédure.`;
+    const handleIntegration = (prepNames: string[]) => {
+        if (prepNames.length === 0) return;
+        const namesString = prepNames.map(name => `'${name}'`).join(' et ');
+        const instruction = `Intègre la ou les préparations ${namesString} directement dans la recette principale au lieu de la traiter comme une ou des sous-recettes. Ajoute leurs ingrédients à la liste principale et leurs étapes à la procédure.`;
         const newHistory = [...refinementHistory, instruction];
 
-        const instructions = {
-            ...context,
-            refinementHistory: newHistory,
-            currentRefinement: instruction,
-        };
+        const instructions = { ...context, refinementHistory: newHistory, currentRefinement: instruction };
         
         setRefinementHistory(newHistory);
         handleSubmit(instructions);
@@ -136,6 +131,7 @@ export default function WorkshopClient() {
         setGeneratedConcept(null);
         setContext({});
         setRefinementHistory([]);
+        setPrepsToIntegrate([]);
         if (initialFormRef.current) initialFormRef.current.reset();
         if (refinementFormRef.current) refinementFormRef.current.reset();
     };
@@ -145,15 +141,9 @@ export default function WorkshopClient() {
             const newPrepId = await createPreparation({ name: prepName, description: prepDescription });
             toast({ title: "Préparation créée", description: `La fiche pour "${prepName}" est prête à être complétée.` });
             
-            // This refinement instruction tells the AI that the prep is now "available"
             const instruction = `La préparation '${prepName}' a été créée et est maintenant disponible. Elle doit désormais apparaître dans la liste 'subRecipes'.`;
             const newHistory = [...refinementHistory, instruction];
-            
-            const instructions = {
-                ...context,
-                refinementHistory: newHistory,
-                currentRefinement: instruction,
-            };
+            const instructions = { ...context, refinementHistory: newHistory, currentRefinement: instruction };
 
             setRefinementHistory(newHistory);
             handleSubmit(instructions);
@@ -299,17 +289,25 @@ export default function WorkshopClient() {
                                                 
                                                 {generatedConcept.newSubRecipes.map((prep) => (
                                                     <div key={prep.name} className="flex items-center gap-2">
-                                                        <Badge variant="outline" className="text-sm border-dashed">{prep.name}</Badge>
-                                                        <div className="flex items-center">
-                                                            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleCreatePreparation(prep.name, prep.description)} title={`Créer la fiche pour "${prep.name}"`}>
+                                                        <Checkbox id={`integrate-${prep.name}`} onCheckedChange={(checked) => {
+                                                            setPrepsToIntegrate(current => checked ? [...current, prep.name] : current.filter(p => p !== prep.name));
+                                                        }}/>
+                                                        <label htmlFor={`integrate-${prep.name}`} className="flex items-center gap-2 cursor-pointer">
+                                                            <Badge variant="outline" className="text-sm border-dashed">{prep.name}</Badge>
+                                                        </label>
+                                                         <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleCreatePreparation(prep.name, prep.description)} title={`Créer la fiche pour "${prep.name}"`}>
                                                                 <PlusCircle className="h-4 w-4 text-primary" />
                                                             </Button>
-                                                             <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleIntegratePreparation(prep.name)} title={`Intégrer "${prep.name}" dans la recette`}>
-                                                                <Merge className="h-4 w-4 text-muted-foreground" />
-                                                            </Button>
-                                                        </div>
                                                     </div>
                                                 ))}
+
+                                                {prepsToIntegrate.length > 0 && (
+                                                    <Button variant="secondary" size="sm" className="mt-2" onClick={() => handleIntegration(prepsToIntegrate)} disabled={isLoading}>
+                                                        <Merge className="mr-2 h-4 w-4"/>
+                                                        Intégrer la sélection ({prepsToIntegrate.length})
+                                                    </Button>
+                                                )}
+
                                                 {generatedConcept.subRecipes.length === 0 && generatedConcept.newSubRecipes.length === 0 && (
                                                     <p className="text-sm text-muted-foreground">Aucune sous-recette utilisée.</p>
                                                 )}
