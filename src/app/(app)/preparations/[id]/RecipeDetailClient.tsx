@@ -752,7 +752,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)} DZD</div>
                 </CardContent>
             </Card>
-
+            
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Production & Coût</CardTitle>
@@ -810,3 +810,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
