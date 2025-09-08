@@ -75,8 +75,9 @@ const recipeConceptPrompt = ai.definePrompt({
 
         **Règles de gestion des sous-recettes (préparations) :**
         1.  Si une préparation nécessaire pour la recette existe dans la liste fournie par l'outil, vous devez l'ajouter au tableau \`subRecipes\`.
-        2.  Si une préparation nécessaire pour la recette (comme une sauce, une garniture complexe, etc.) N'EXISTE PAS dans la liste de l'outil, vous devez l'inventer et l'ajouter au tableau \`newSubRecipes\` avec son nom et une brève description.
-        3.  Les ingrédients et étapes de ces NOUVELLES préparations ne doivent PAS être détaillés dans la procédure du plat principal. La procédure du plat principal doit simplement mentionner "utiliser la Sauce X" ou "préparer la garniture Y".
+        2.  **Règle de discernement cruciale :** Ne listez une préparation dans \`newSubRecipes\` que si elle représente une véritable "préparation de base" qui a un intérêt à être stockée et réutilisée dans d'autres plats (ex: un fond de veau, une sauce mère complexe, une pâte à tarte, une garniture élaborée).
+        3.  Si une sauce, une garniture ou un jus est simple et fait "à la minute" dans le cadre de la recette du plat, ses ingrédients doivent être listés dans le tableau \`ingredients\` principal et ses étapes intégrées directement dans la \`procedure\`. Ne la déclarez PAS comme une nouvelle sous-recette.
+        4.  Les ingrédients et étapes des NOUVELLES préparations (celles listées dans \`newSubRecipes\`) ne doivent PAS être détaillés dans la procédure du plat principal. La procédure doit simplement mentionner "utiliser la Sauce X".
 
         {{#if rawRecipe}}
         PRIORITÉ ABSOLUE : Votre mission principale est de prendre la recette brute suivante, de l'analyser, et de la reformater pour remplir TOUS les champs de la fiche technique demandée. Ignorez les autres instructions de création.
@@ -113,7 +114,7 @@ const recipeConceptPrompt = ai.definePrompt({
         2.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
         3.  **ingredients**: Une liste de TOUS les ingrédients bruts nécessaires pour réaliser l'assemblage final du plat. Règle impérative : **privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes, plutôt que "pièce" ou "unité".** Réservez "pièce" uniquement lorsque c'est indispensable (ex: 1 œuf). N'incluez PAS ici les ingrédients des sous-recettes (existantes ou nouvelles).
         4.  **subRecipes**: Listez ici UNIQUEMENT les noms des préparations de la recette qui correspondent EXACTEMENT à un nom dans la liste des préparations disponibles que vous avez récupérées via l'outil.
-        5.  **newSubRecipes**: Listez ici les NOUVELLES préparations que vous avez inventées car elles n'étaient pas dans la liste de l'outil. Chaque élément doit avoir un nom et une description.
+        5.  **newSubRecipes**: Listez ici les NOUVELLES préparations que vous avez inventées (selon la règle de discernement) car elles n'étaient pas dans la liste de l'outil. Chaque élément doit avoir un nom et une description.
         6.  **procedure_preparation**: Les étapes claires pour la mise en place et l'assemblage. Mentionnez l'utilisation des sous-recettes (ex: "Préparer la sauce bolognaise comme indiqué sur sa fiche."). Utilisez le format Markdown (titres avec '###', listes avec '-', sous-listes).
         7.  **procedure_cuisson**: Les étapes techniques pour la cuisson de l'assemblage. Utilisez le format Markdown. Si le plat est cru, indiquez "Aucune cuisson nécessaire.".
         8.  **procedure_service**: Les instructions de dressage précises pour une assiette spectaculaire. Utilisez le format Markdown. Par exemple: "### Dressage\\n1. Déposer la purée...\\n2. Placer le poisson..."
