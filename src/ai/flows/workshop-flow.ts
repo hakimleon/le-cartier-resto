@@ -37,7 +37,11 @@ const DishConceptOutputSchema = z.object({
         quantity: z.number().describe("La quantité nécessaire."),
         unit: z.string().describe("L'unité de mesure (ex: g, kg, ml, l, pièce).")
     })).describe("La liste des ingrédients pour la recette, avec quantités."),
-    subRecipes: z.array(z.string()).describe("La liste des sous-recettes ou préparations nécessaires (ex: 'Sauce Vierge', 'Fond de veau')."),
+    subRecipes: z.array(z.string()).describe("La liste des noms des sous-recettes EXISTANTES (qui étaient dans la liste fournie par l'outil) utilisées dans ce plat."),
+    newSubRecipes: z.array(z.object({
+        name: z.string().describe("Le nom de la NOUVELLE préparation que l'IA a dû créer car elle n'était pas dans la liste des préparations existantes."),
+        description: z.string().describe("Une courte description de ce qu'est cette nouvelle préparation."),
+    })).describe("La liste des NOUVELLES préparations que l'IA a dû inventer pour cette recette."),
     procedure_preparation: z.string().describe("Les étapes détaillées de la phase de préparation (mise en place). Doit être formaté en Markdown."),
     procedure_cuisson: z.string().describe("Les étapes détaillées de la phase de cuisson. Doit être formaté en Markdown."),
     procedure_service: z.string().describe("Les étapes détaillées pour le service et le dressage artistique. Doit être formaté en Markdown."),
@@ -66,9 +70,12 @@ const recipeConceptPrompt = ai.definePrompt({
         Vous êtes un chef cuisinier créatif et un styliste culinaire de renommée mondiale, chargé de créer une fiche technique quasi-complète pour un nouveau plat.
         Votre mission est de transformer une idée brute ou une recette existante en un concept de plat professionnel, inspirant et structuré, adapté à un usage en restaurant.
 
-        Pour déterminer quelles préparations de base peuvent être utilisées comme sous-recettes, vous devez OBLIGATOIREMENT utiliser l'outil \`getAvailablePreparations\`. La liste retournée par cet outil est la SEULE source de vérité.
-        Si une préparation n'est pas dans la liste fournie par l'outil, ses ingrédients et étapes doivent être intégrés directement dans la procédure de la recette principale. NE PAS inclure de préparations qui ne sont pas dans la liste de l'outil.
+        Pour déterminer quelles préparations de base peuvent être utilisées, vous devez OBLIGATOIREMENT utiliser l'outil \`getAvailablePreparations\`. La liste retournée par cet outil est la SEULE source de vérité des préparations existantes.
 
+        **Règles de gestion des sous-recettes (préparations) :**
+        1.  Si une préparation nécessaire pour la recette existe dans la liste fournie par l'outil, vous devez l'ajouter au tableau \`subRecipes\`.
+        2.  Si une préparation nécessaire pour la recette (comme une sauce, une garniture complexe, etc.) N'EXISTE PAS dans la liste de l'outil, vous devez l'inventer et l'ajouter au tableau \`newSubRecipes\` avec son nom et une brève description.
+        3.  Les ingrédients et étapes de ces NOUVELLES préparations ne doivent PAS être détaillés dans la procédure du plat principal. La procédure du plat principal doit simplement mentionner "utiliser la Sauce X" ou "préparer la garniture Y".
 
         {{#if rawRecipe}}
         PRIORITÉ ABSOLUE : Votre mission principale est de prendre la recette brute suivante, de l'analyser, et de la reformater pour remplir TOUS les champs de la fiche technique demandée. Ignorez les autres instructions de création.
@@ -103,15 +110,16 @@ const recipeConceptPrompt = ai.definePrompt({
         Votre tâche est de générer une fiche technique détaillée avec les éléments suivants :
         1.  **name**: {{#if dishName}}Conservez impérativement le nom "{{{dishName}}}".{{else}}Inventez un nom de plat. Pour une carte gastronomique, un intitulé clair, sobre et précis inspire plus confiance que des noms trop lyriques. Le nom doit mettre en avant le produit principal et son accompagnement le plus significatif, pas une liste. Exemple : "Noix de Saint-Jacques justes snackées, mousseline de chou-fleur à la noisette". Mauvais exemple : "Symphonie marine et son trésor des champs".{{/if}}
         2.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
-        3.  **ingredients**: Une liste de TOUS les ingrédients bruts nécessaires pour réaliser la recette complète. Règle impérative : **privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes, plutôt que "pièce" ou "unité".** Réservez "pièce" uniquement lorsque c'est indispensable (ex: 1 œuf). Si une préparation n'est PAS dans la liste des bases autorisées (ex: une garniture simple), ses ingrédients doivent être listés ici.
-        4.  **subRecipes**: Listez ici UNIQUEMENT les noms des préparations de la recette qui correspondent EXACTEMENT à un nom dans la liste des préparations disponibles que vous avez récupérée via l'outil. Si aucune préparation de la liste n'est utilisée, retournez un tableau vide. C'est un point crucial.
-        5.  **procedure_preparation**: Les étapes claires pour la mise en place. Intégrez ici les étapes des préparations qui ne sont PAS dans la liste des bases (ex: vinaigrette minute, purée spécifique, etc.). Utilisez le format Markdown (titres avec '###', listes avec '-', sous-listes).
-        6.  **procedure_cuisson**: Les étapes techniques pour la cuisson. Utilisez le format Markdown. Si le plat est cru, indiquez "Aucune cuisson nécessaire.".
-        7.  **procedure_service**: Les instructions de dressage précises pour une assiette spectaculaire. Utilisez le format Markdown. Par exemple: "### Dressage\\n1. Déposer la purée...\\n2. Placer le poisson..."
-        8.  **duration**: Estimez la durée totale de préparation en minutes (nombre entier).
-        9.  **difficulty**: Évaluez la difficulté de la recette ('Facile', 'Moyen', 'Difficile').
-        10. **portions**: Estimez le nombre de portions que cette recette produit (ex: 1, 2, 4...).
-        11. **commercialArgument**: Rédigez un argumentaire de vente court, percutant et savoureux pour convaincre un client de choisir ce plat.
+        3.  **ingredients**: Une liste de TOUS les ingrédients bruts nécessaires pour réaliser l'assemblage final du plat. Règle impérative : **privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes, plutôt que "pièce" ou "unité".** Réservez "pièce" uniquement lorsque c'est indispensable (ex: 1 œuf). N'incluez PAS ici les ingrédients des sous-recettes (existantes ou nouvelles).
+        4.  **subRecipes**: Listez ici UNIQUEMENT les noms des préparations de la recette qui correspondent EXACTEMENT à un nom dans la liste des préparations disponibles que vous avez récupérée via l'outil.
+        5.  **newSubRecipes**: Listez ici les NOUVELLES préparations que vous avez inventées car elles n'étaient pas dans la liste de l'outil. Chaque élément doit avoir un nom et une description.
+        6.  **procedure_preparation**: Les étapes claires pour la mise en place et l'assemblage. Mentionnez l'utilisation des sous-recettes (ex: "Préparer la sauce bolognaise comme indiqué sur sa fiche."). Utilisez le format Markdown (titres avec '###', listes avec '-', sous-listes).
+        7.  **procedure_cuisson**: Les étapes techniques pour la cuisson de l'assemblage. Utilisez le format Markdown. Si le plat est cru, indiquez "Aucune cuisson nécessaire.".
+        8.  **procedure_service**: Les instructions de dressage précises pour une assiette spectaculaire. Utilisez le format Markdown. Par exemple: "### Dressage\\n1. Déposer la purée...\\n2. Placer le poisson..."
+        9.  **duration**: Estimez la durée totale de préparation en minutes (nombre entier).
+        10. **difficulty**: Évaluez la difficulté de la recette ('Facile', 'Moyen', 'Difficile').
+        11. **portions**: Estimez le nombre de portions que cette recette produit (ex: 1, 2, 4...).
+        12. **commercialArgument**: Rédigez un argumentaire de vente court, percutant et savoureux pour convaincre un client de choisir ce plat.
 
         Soyez créatif, audacieux et respectez les contraintes à la lettre. Fournissez une réponse structurée au format JSON.
     `,
