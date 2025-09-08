@@ -8,6 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { v2 as cloudinary } from 'cloudinary';
+import { getAvailablePreparationsTool } from '../tools/recipe-tools';
 
 // La configuration est déjà présente, assurons-nous que les variables d'env sont chargées
 cloudinary.config({
@@ -60,39 +61,14 @@ const recipeConceptPrompt = ai.definePrompt({
     name: 'recipeConceptPrompt',
     input: { schema: DishConceptInputSchema },
     output: { schema: DishConceptOutputSchema.omit({ imageUrl: true }) },
+    tools: [getAvailablePreparationsTool],
     prompt: `
         Vous êtes un chef cuisinier créatif et un styliste culinaire de renommée mondiale, chargé de créer une fiche technique quasi-complète pour un nouveau plat.
         Votre mission est de transformer une idée brute ou une recette existante en un concept de plat professionnel, inspirant et structuré, adapté à un usage en restaurant.
 
-        Voici la liste exhaustive et FIGÉE des préparations de base qui peuvent être considérées comme des sous-recettes.
-        Si une préparation n'est pas dans cette liste, ses ingrédients et étapes doivent être intégrés directement dans la recette principale.
-        LISTE DES PRÉPARATIONS DE BASE AUTORISÉES :
-        - Fond de poulet maison
-        - Fond de bœuf
-        - Fond d’agneau
-        - Court-bouillon / fumet de poisson
-        - Sauce tomate maison
-        - Béchamel
-        - Sauce au curry doux
-        - Sauce fromagère
-        - Sauce champignon / forestière
-        - Sauce citronnée légère
-        - Mayonnaise maison
-        - Vinaigrette maison
-        - Pesto basilic
-        - Sauce César
-        - Sauce au yaourt citronnée / herbes fraîches
-        - Purée de pommes de terre maison
-        - Purée de céleri au beurre noisette
-        - Carottes glacées
-        - Légumes grillés / rôtis
-        - Riz pilaf / riz safrané
-        - Pâtes fraîches
-        - Pates a ravioli
-        - Farce ricotta / herbes
-        - Crème de pistache
-        - Base de tajine
-        - Base bolognaise
+        Pour déterminer quelles préparations de base peuvent être utilisées comme sous-recettes, vous devez OBLIGATOIREMENT utiliser l'outil \`getAvailablePreparations\`. La liste retournée par cet outil est la SEULE source de vérité.
+        Si une préparation n'est pas dans la liste fournie par l'outil, ses ingrédients et étapes doivent être intégrés directement dans la procédure de la recette principale. NE PAS inclure de préparations qui ne sont pas dans la liste de l'outil.
+
 
         {{#if rawRecipe}}
         PRIORITÉ ABSOLUE : Votre mission principale est de prendre la recette brute suivante, de l'analyser, et de la reformater pour remplir TOUS les champs de la fiche technique demandée. Ignorez les autres instructions de création.
@@ -128,7 +104,7 @@ const recipeConceptPrompt = ai.definePrompt({
         1.  **name**: {{#if dishName}}Conservez impérativement le nom "{{{dishName}}}".{{else}}Inventez un nom de plat. Pour une carte gastronomique, un intitulé clair, sobre et précis inspire plus confiance que des noms trop lyriques. Le nom doit mettre en avant le produit principal et son accompagnement le plus significatif, pas une liste. Exemple : "Noix de Saint-Jacques justes snackées, mousseline de chou-fleur à la noisette". Mauvais exemple : "Symphonie marine et son trésor des champs".{{/if}}
         2.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
         3.  **ingredients**: Une liste de TOUS les ingrédients bruts nécessaires pour réaliser la recette complète. Règle impérative : **privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes, plutôt que "pièce" ou "unité".** Réservez "pièce" uniquement lorsque c'est indispensable (ex: 1 œuf). Si une préparation n'est PAS dans la liste des bases autorisées (ex: une garniture simple), ses ingrédients doivent être listés ici.
-        4.  **subRecipes**: Listez ici UNIQUEMENT les noms des préparations de la recette qui correspondent EXACTEMENT à un nom dans la LISTE DES PRÉPARATIONS DE BASE AUTORISÉES fournie au début. Si aucune base de la liste n'est utilisée, retournez un tableau vide. C'est un point crucial.
+        4.  **subRecipes**: Listez ici UNIQUEMENT les noms des préparations de la recette qui correspondent EXACTEMENT à un nom dans la liste des préparations disponibles que vous avez récupérée via l'outil. Si aucune préparation de la liste n'est utilisée, retournez un tableau vide. C'est un point crucial.
         5.  **procedure_preparation**: Les étapes claires pour la mise en place. Intégrez ici les étapes des préparations qui ne sont PAS dans la liste des bases (ex: vinaigrette minute, purée spécifique, etc.). Utilisez le format Markdown (titres avec '###', listes avec '-', sous-listes).
         6.  **procedure_cuisson**: Les étapes techniques pour la cuisson. Utilisez le format Markdown. Si le plat est cru, indiquez "Aucune cuisson nécessaire.".
         7.  **procedure_service**: Les instructions de dressage précises pour une assiette spectaculaire. Utilisez le format Markdown. Par exemple: "### Dressage\\n1. Déposer la purée...\\n2. Placer le poisson..."
