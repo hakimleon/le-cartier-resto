@@ -47,6 +47,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ImagePreviewModal } from "./ImagePreviewModal";
 import { Progress } from "@/components/ui/progress";
+import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
@@ -1131,3 +1132,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
