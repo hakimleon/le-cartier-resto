@@ -16,6 +16,7 @@ import { useRouter } from "next/navigation";
 import { createDishFromWorkshop, createPreparation } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
@@ -319,9 +320,9 @@ export default function WorkshopClient() {
                                      <div>
                                         <h4 className="font-semibold mb-2 flex items-center gap-2"><FileText className="h-4 w-4"/>Procédure Technique</h4>
                                         <div className="prose prose-sm max-w-none text-muted-foreground p-4 border rounded-md mt-2">
-                                            <div dangerouslySetInnerHTML={{ __html: (generatedConcept.procedure_preparation || '').replace(/### (.*)/g, '<h3>$1</h3>').replace(/(\r\n|\n|\r)/gm, "<br>") }}></div>
-                                            <div dangerouslySetInnerHTML={{ __html: (generatedConcept.procedure_cuisson || '').replace(/### (.*)/g, '<h3>$1</h3>').replace(/(\r\n|\n|\r)/gm, "<br>") }}></div>
-                                            <div dangerouslySetInnerHTML={{ __html: (generatedConcept.procedure_service || '').replace(/### (.*)/g, '<h3>$1</h3>').replace(/(\r\n|\n|\r)/gm, "<br>") }}></div>
+                                            <MarkdownRenderer text={generatedConcept.procedure_preparation} />
+                                            <MarkdownRenderer text={generatedConcept.procedure_cuisson} />
+                                            <MarkdownRenderer text={generatedConcept.procedure_service} />
                                         </div>
                                     </div>
                                     
@@ -350,5 +351,3 @@ export default function WorkshopClient() {
         </div>
     );
 }
-
-    

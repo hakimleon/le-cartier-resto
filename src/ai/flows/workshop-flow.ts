@@ -144,7 +144,7 @@ const generateDishConceptFlow = ai.defineFlow(
             throw new Error("La génération du concept de la recette a échoué.");
         }
 
-        let imageUrl = "https://placehold.co/1024x768.png"; // Image de substitution par défaut
+        let imageUrl = `https://placehold.co/1024x768/fafafa/7d7d7d.png?text=${encodeURIComponent(recipeConcept.name)}`; // Image de substitution par défaut
 
         try {
             // 2. Créer un prompt pour l'image basé sur la recette générée
