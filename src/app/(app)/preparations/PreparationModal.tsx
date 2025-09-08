@@ -11,6 +11,7 @@ import {
 import { PreparationForm } from "./PreparationForm";
 import { Preparation } from "@/lib/types";
 import { ReactNode, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type PreparationModalProps = {
   children: ReactNode;
@@ -22,6 +23,7 @@ type PreparationModalProps = {
 
 export function PreparationModal({ children, preparation, onSuccess, open, onOpenChange }: PreparationModalProps) {
     const [internalOpen, setInternalOpen] = useState(false);
+    const router = useRouter();
 
     const isOpen = open !== undefined ? open : internalOpen;
     const setIsOpen = onOpenChange !== undefined ? onOpenChange : setInternalOpen;
@@ -29,6 +31,11 @@ export function PreparationModal({ children, preparation, onSuccess, open, onOpe
     const handleSuccess = (newPreparation?: Preparation) => {
         setIsOpen(false);
         onSuccess(newPreparation);
+
+        // Si c'est une nouvelle préparation, rediriger vers sa page de détail.
+        if (newPreparation && !preparation?.id) {
+            router.push(`/preparations/${newPreparation.id}`);
+        }
     }
     
     const title = preparation?.id ? `Modifier la préparation` : `Nouvelle préparation`;
@@ -51,5 +58,3 @@ export function PreparationModal({ children, preparation, onSuccess, open, onOpe
     </Dialog>
   );
 }
-
-    
