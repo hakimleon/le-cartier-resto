@@ -13,7 +13,7 @@ import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { generateDishConcept, DishConceptOutput, DishConceptInput } from "@/ai/flows/workshop-flow";
 import { useRouter } from "next/navigation";
-import { createDishFromWorkshop } from "./actions";
+import { createDishFromWorkshop, createPreparation } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
@@ -114,6 +114,27 @@ export default function WorkshopClient() {
         if (initialFormRef.current) initialFormRef.current.reset();
         if (refinementFormRef.current) refinementFormRef.current.reset();
     };
+
+    const handleCreatePreparation = async (prepName: string, prepDescription: string) => {
+        try {
+            const newPrepId = await createPreparation({ name: prepName, description: prepDescription });
+            toast({ title: "Préparation créée", description: `La fiche pour "${prepName}" est prête à être complétée.` });
+            // Remove the created prep from the "newSubRecipes" list
+            setGeneratedConcept(prev => {
+                if (!prev) return null;
+                return {
+                    ...prev,
+                    newSubRecipes: prev.newSubRecipes.filter(p => p.name !== prepName),
+                    subRecipes: [...(prev.subRecipes || []), prepName],
+                };
+            });
+            // Optional: redirect to the new preparation page
+            // router.push(`/preparations/${newPrepId}`);
+        } catch (error) {
+            console.error("Error creating preparation:", error);
+            toast({ title: "Erreur", description: "Impossible de créer la fiche de préparation.", variant: "destructive" });
+        }
+    }
 
 
     return (
@@ -233,7 +254,7 @@ export default function WorkshopClient() {
                                         <div className="flex flex-col items-center gap-1"><Users className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.portions} portion{generatedConcept.portions > 1 ? 's' : ''}</span></div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                                         <div>
                                             <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients suggérés</h4>
                                             {generatedConcept.ingredients && generatedConcept.ingredients.length > 0 ? (
@@ -242,12 +263,25 @@ export default function WorkshopClient() {
                                                 </ul>
                                             ) : ( <p className="text-sm text-muted-foreground pl-5">Aucun ingrédient brut pour l'assemblage.</p> )}
                                         </div>
-                                         {generatedConcept.subRecipes && generatedConcept.subRecipes.length > 0 && (
-                                            <div>
-                                                <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Sous-Recettes suggérées</h4>
-                                                <div className="flex flex-wrap gap-2">{generatedConcept.subRecipes.map((prep: string) => <Badge key={prep} variant="outline" className="text-sm">{prep}</Badge>)}</div>
+                                         
+                                        <div>
+                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Sous-Recettes</h4>
+                                            <div className="flex flex-wrap gap-2 items-start">
+                                                {generatedConcept.subRecipes.map((prep: string) => <Badge key={prep} variant="secondary" className="text-sm">{prep}</Badge>)}
+                                                
+                                                {generatedConcept.newSubRecipes.map((prep) => (
+                                                    <div key={prep.name} className="flex items-center gap-1">
+                                                        <Badge variant="outline" className="text-sm border-dashed">{prep.name}</Badge>
+                                                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleCreatePreparation(prep.name, prep.description)} title={`Créer la fiche pour "${prep.name}"`}>
+                                                            <PlusCircle className="h-4 w-4 text-primary" />
+                                                        </Button>
+                                                    </div>
+                                                ))}
+                                                {generatedConcept.subRecipes.length === 0 && generatedConcept.newSubRecipes.length === 0 && (
+                                                    <p className="text-sm text-muted-foreground">Aucune sous-recette utilisée.</p>
+                                                )}
                                             </div>
-                                         )}
+                                        </div>
                                     </div>
                                     
                                     <div>

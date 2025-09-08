@@ -3,7 +3,7 @@
 
 import { collection, addDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Recipe } from '@/lib/types';
+import type { Recipe, Preparation } from '@/lib/types';
 import type { DishConceptOutput } from '@/ai/flows/workshop-flow';
 
 /**
@@ -29,8 +29,8 @@ export async function createDishFromWorkshop(concept: DishConceptOutput): Promis
             commercialArgument: concept.commercialArgument,
             price: 0, 
             status: 'Inactif',
-            category: 'Plats et Grillades',
-            tvaRate: 10,
+            category: 'Plats et Grillades', // Default category, user can change later
+            tvaRate: 10, // Default TVA rate
         };
 
         const recipesCol = collection(db, 'recipes');
@@ -62,7 +62,10 @@ export async function createPreparation(prepData: Partial<Omit<Preparation, 'id'
             duration: prepData.duration || 10,
             productionQuantity: prepData.productionQuantity || 1,
             productionUnit: prepData.productionUnit || 'kg',
-            ...prepData,
+            usageUnit: prepData.usageUnit || 'g',
+            procedure_preparation: prepData.procedure_preparation || '',
+            procedure_cuisson: prepData.procedure_cuisson || '',
+            procedure_service: prepData.procedure_service || '',
         };
         
         const prepsCol = collection(db, 'preparations');
@@ -78,5 +81,3 @@ export async function createPreparation(prepData: Partial<Omit<Preparation, 'id'
         throw new Error("An unknown error occurred while creating the preparation.");
     }
 }
-
-    
