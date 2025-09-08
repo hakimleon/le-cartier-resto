@@ -128,6 +128,7 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
     return quantityInBaseUnit * netCostPerGramOrMl;
 };
 
+
 const foodCostIndicators = [
   { range: "< 25%", level: "Exceptionnel", description: "Performance rare. Maîtrise parfaite ou prix très élevés.", color: "text-green-500" },
   { range: "25-30%", level: "Excellent", description: "Performance optimale. Très bonne maîtrise des coûts.", color: "text-emerald-500" },
@@ -545,7 +546,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
           })
       );
   };
-  const handleRemoveExistingPreparation = async (preparationLinkId: string, preparationName: string) => { try { await deleteRecipePreparationLink(preparationLinkId); toast({ title: "Succès", description: `La sous-recette "${preparationName}" a été retirée.`, }); } catch (error) { console.error("Error deleting recipe preparation:", error); toast({ title: "Erreur", description: "La suppression de la sous-recette a échoué.", variant: "destructive", }); } };
+  const handleRemoveExistingPreparation = (preparationLinkId: string) => { 
+    setEditablePreparations(current => current.filter(p => p.id !== preparationLinkId));
+    toast({ title: "Sous-recette retirée", description: "La modification sera appliquée à la sauvegarde.", }); 
+  };
 
   const handleSave = async () => {
     if (!editableRecipe) return;
@@ -711,8 +715,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <Table>
                         <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
                         <TableBody>
-                            {currentPreparationsData.map(prep => (
-                                <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{isEditing ? ( <Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /> ) : prep.quantity }</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell>{isEditing && ( <TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer la préparation ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{prep.name}" de cette recette ?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingPreparation(prep.id, prep.name)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell> )}</TableRow>
+                            {isEditing && editablePreparations.map(prep => (
+                                <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{isEditing ? ( <Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /> ) : prep.quantity }</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell>{isEditing && ( <TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer la préparation ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{prep.name}" de cette recette ?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingPreparation(prep.id)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell> )}</TableRow>
+                            ))}
+                            {!isEditing && preparations.map(prep => (
+                                <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
                             ))}
                             {isEditing && newPreparations.map((prep) => (
                                 <TableRow key={prep.id}><TableCell><Select value={prep.childPreparationId} onValueChange={(value) => handleNewPreparationChange(prep.id, 'childPreparationId', value)} ><SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger><SelectContent>{allPreparations.map(p => ( p.id && p.id !== recipeId ? <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem> : null ))}</SelectContent></Select></TableCell><TableCell><Input type="number" placeholder="Qté" className="w-20" value={prep.quantity === 0 ? '' : prep.quantity} onChange={(e) => handleNewPreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell><TableCell>{prep.unit || "-"}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell><TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell></TableRow>
@@ -823,5 +830,3 @@ function RecipeDetailSkeleton() {
     );
 }
 
-
-    
