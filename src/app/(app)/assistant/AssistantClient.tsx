@@ -93,7 +93,7 @@ export default function AssistantClient() {
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-4rem)] bg-muted/40">
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef as any}>
-             <div className="max-w-4xl mx-auto space-y-6">
+             <div className="space-y-6">
                 {messages.length === 0 && !isLoading && (
                     <div className="text-center pt-16">
                         <div className="inline-block p-4 bg-primary/10 rounded-full">
@@ -144,7 +144,7 @@ export default function AssistantClient() {
             </div>
         </ScrollArea>
       <div className="border-t bg-card">
-        <div className="relative max-w-4xl mx-auto p-4">
+        <div className="relative p-4">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
