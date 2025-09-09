@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -254,7 +253,7 @@ export default function MenuClient() {
                  <TabsList className="bg-background border p-1 rounded-lg">
                     <TabsTrigger 
                         value="Actif" 
-                        className={cn("data-[state=active]:text-green-800")}
+                        isActive={selectedStatus === 'Actif'}
                     >
                         Plats Actifs
                     </TabsTrigger>
