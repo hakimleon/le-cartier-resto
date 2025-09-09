@@ -118,7 +118,7 @@ export default function AssistantWidget() {
   return (
     <div className="fixed bottom-6 right-6 z-50">
         {isOpen && (
-             <Card className="flex flex-col h-[700px] w-[440px] shadow-2xl">
+             <Card className="flex flex-col h-[720px] w-[520px] shadow-2xl">
                 <CardHeader className="flex flex-row items-center justify-between border-b">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-primary/10 rounded-full">
