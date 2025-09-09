@@ -14,7 +14,6 @@ import { DishModal } from "./DishModal";
 import { useToast } from "@/hooks/use-toast";
 import { deleteDish } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -68,8 +67,10 @@ export default function MenuClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [categories, setCategories] = useState<string[]>([]);
+  const [activeCategories, setActiveCategories] = useState<string[]>([]);
+  const [inactiveCategories, setInactiveCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("Tous");
+  const [selectedStatus, setSelectedStatus] = useState<'Actif' | 'Inactif'>('Actif');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -90,22 +91,30 @@ export default function MenuClient() {
             );
             
             setRecipes(recipesData);
+            
+            const activeCategoryMap = new Map<string, string>();
+            const inactiveCategoryMap = new Map<string, string>();
 
-            // Normalize categories to prevent duplicates due to case or spacing differences
-            const categoryMap = new Map<string, string>();
             recipesData.forEach(recipe => {
                 if (recipe.category) {
                     const normalizedCategory = recipe.category.toLowerCase().trim();
-                    if (!categoryMap.has(normalizedCategory)) {
-                        categoryMap.set(normalizedCategory, recipe.category);
+                    if(recipe.status === 'Actif') {
+                        if (!activeCategoryMap.has(normalizedCategory)) {
+                            activeCategoryMap.set(normalizedCategory, recipe.category);
+                        }
+                    } else {
+                         if (!inactiveCategoryMap.has(normalizedCategory)) {
+                            inactiveCategoryMap.set(normalizedCategory, recipe.category);
+                        }
                     }
                 }
             });
             
-            const uniqueCategories = Array.from(categoryMap.values());
-            const sortedCategories = sortCategories(uniqueCategories);
-
-            setCategories(["Tous", ...sortedCategories]);
+            const uniqueActiveCategories = Array.from(activeCategoryMap.values());
+            const uniqueInactiveCategories = Array.from(inactiveCategoryMap.values());
+            
+            setActiveCategories(["Tous", ...sortCategories(uniqueActiveCategories)]);
+            setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
             setError(null);
         } catch(e: any) {
             console.error("Error processing recipes snapshot: ", e);
@@ -125,6 +134,10 @@ export default function MenuClient() {
         }
     };
   }, []);
+  
+   useEffect(() => {
+    setSelectedCategory("Tous");
+  }, [selectedStatus]);
 
   const handleDelete = async (id: string, name: string) => {
       try {
@@ -133,7 +146,6 @@ export default function MenuClient() {
           title: "Succès",
           description: `Le plat "${name}" a été supprimé.`,
         });
-        // onSnapshot will handle the UI update automatically
       } catch (error) {
         console.error("Error deleting dish:", error);
         toast({
@@ -146,36 +158,20 @@ export default function MenuClient() {
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    // When a search is initiated, reset the category to "Tous" to search across all categories
     if (e.target.value) {
       setSelectedCategory("Tous");
     }
   };
 
-
   const filteredRecipes = useMemo(() => {
-    let recipesToFilter = recipes;
+    return recipes.filter(recipe => {
+        const statusMatch = recipe.status === selectedStatus;
+        const searchTermMatch = searchTerm === '' || recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const categoryMatch = selectedCategory === 'Tous' || recipe.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim();
+        return statusMatch && searchTermMatch && categoryMatch;
+    });
+  }, [recipes, searchTerm, selectedCategory, selectedStatus]);
 
-    // Apply search term filter first
-    if (searchTerm) {
-        recipesToFilter = recipesToFilter.filter(recipe =>
-        recipe.name.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
-    
-    // Then apply category filter to the whole group for display under tabs
-    let recipesByCategory: { [key: string]: Recipe[] } = {};
-
-    categories.slice(1).forEach(category => {
-        recipesByCategory[category] = recipesToFilter.filter(recipe => recipe.category?.toLowerCase().trim() === category.toLowerCase().trim());
-    })
-    
-    if (selectedCategory !== 'Tous') {
-        recipesToFilter = recipesToFilter.filter(recipe => recipe.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim());
-    }
-    
-    return recipesToFilter;
-  }, [recipes, searchTerm, selectedCategory, categories]);
 
   const renderRecipeList = (recipeList: Recipe[]) => {
     if (isLoading) {
@@ -194,7 +190,7 @@ export default function MenuClient() {
       );
     }
     if (recipeList.length === 0) {
-      return <div className="text-center text-muted-foreground pt-12">Aucun plat ne correspond à votre recherche ou dans cette catégorie.</div>;
+      return <div className="text-center text-muted-foreground pt-12">Aucun plat ne correspond à vos critères.</div>;
     }
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -202,7 +198,7 @@ export default function MenuClient() {
           <RecipeCard 
             key={recipe.id} 
             recipe={recipe} 
-            allCategories={categories.filter(c => c !== "Tous")}
+            allCategories={selectedStatus === 'Actif' ? activeCategories.filter(c => c !== "Tous") : inactiveCategories.filter(c => c !== "Tous")}
             onDelete={() => handleDelete(recipe.id!, recipe.name)}
           />
         ))}
@@ -222,6 +218,8 @@ export default function MenuClient() {
       );
   }
 
+  const currentCategories = selectedStatus === 'Actif' ? activeCategories : inactiveCategories;
+
   return (
     <div className="space-y-6">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -239,7 +237,7 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} allCategories={categories.filter(c => c !== "Tous")} onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <DishModal dish={null} allCategories={activeCategories.filter(c => c !== "Tous")} onSuccess={() => { /* onSnapshot handles updates */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat
@@ -256,28 +254,38 @@ export default function MenuClient() {
         </Alert>
       )}
 
-      <Tabs value={selectedCategory} onValueChange={setSelectedCategory}>
-          <TabsList>
-            {categories.map((category) => (
-              <TabsTrigger 
-                key={category} 
-                value={category}
-              >
-                {formatCategory(category)}
-              </TabsTrigger>
-            ))}
-          </TabsList>
-            {categories.map((category) => (
-                <TabsContent key={category} value={category} className="pt-4">
-                    {renderRecipeList(
-                        category === 'Tous'
-                        ? filteredRecipes
-                        : filteredRecipes.filter(r => r.category?.toLowerCase().trim() === category.toLowerCase().trim())
-                    )}
-                </TabsContent>
-            ))}
-      </Tabs>
-
+        <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')}>
+            <TabsList className="grid w-full grid-cols-2 max-w-sm">
+                <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
+                <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
+            </TabsList>
+            <TabsContent value="Actif">
+                 <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
+                    <TabsList>
+                        {activeCategories.map((category) => (
+                        <TabsTrigger key={category} value={category}>{formatCategory(category)}</TabsTrigger>
+                        ))}
+                    </TabsList>
+                    <TabsContent value={selectedCategory} className="pt-4">
+                        {renderRecipeList(filteredRecipes)}
+                    </TabsContent>
+                </Tabs>
+            </TabsContent>
+            <TabsContent value="Inactif">
+                 <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
+                    <TabsList>
+                        {inactiveCategories.map((category) => (
+                        <TabsTrigger key={category} value={category}>{formatCategory(category)}</TabsTrigger>
+                        ))}
+                    </TabsList>
+                    <TabsContent value={selectedCategory} className="pt-4">
+                        {renderRecipeList(filteredRecipes)}
+                    </TabsContent>
+                </Tabs>
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }
+
+    
