@@ -20,12 +20,29 @@ interface Message {
   content: string;
 }
 
-const examplePrompts = [
+const allExamplePrompts = [
     "Quel est le plat le plus rentable de ma carte ?",
     "Suggère-moi un plat végétarien pour l'automne.",
     "Liste-moi tous les ingrédients en stock critique.",
-    "Donne-moi une idée de plat à base de saumon et d'avocat."
-]
+    "Donne-moi une idée de plat à base de saumon et d'avocat.",
+    "Quel est le plat le moins cher à produire ?",
+    "Quels sont les allergènes présents dans le Tiramisu ?",
+    "Propose une entrée de saison avec des champignons.",
+    "Combien de préparations utilisent de la crème ?"
+];
+
+// Fonction pour mélanger un tableau (algorithme de Fisher-Yates)
+const shuffleArray = (array: string[]) => {
+  let currentIndex = array.length,  randomIndex;
+  while (currentIndex > 0) {
+    randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+  return array;
+}
+
 
 export default function AssistantClient() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -33,6 +50,13 @@ export default function AssistantClient() {
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
+  const [displayedPrompts, setDisplayedPrompts] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Ce code ne s'exécutera que côté client, après le montage du composant
+    setDisplayedPrompts(shuffleArray([...allExamplePrompts]).slice(0, 4));
+  }, []);
+
 
   const handleSendMessage = async (prompt?: string) => {
     const messageContent = prompt || input;
@@ -91,18 +115,18 @@ export default function AssistantClient() {
   }, [messages]);
 
   return (
-    <div className="flex flex-col h-full max-h-[calc(100vh-4rem)] bg-muted/40">
+    <div className="flex flex-col h-full max-h-[calc(100vh-4rem)] bg-muted/40 w-full">
         <ScrollArea className="flex-1" ref={scrollAreaRef as any}>
              <div className="space-y-6 p-4 md:p-6">
                 {messages.length === 0 && !isLoading && (
-                    <div className="text-center pt-16 mx-auto max-w-2xl">
+                    <div className="text-center pt-16 mx-auto max-w-4xl">
                         <div className="inline-block p-4 bg-primary/10 rounded-full">
                            <Bot className="w-10 h-10 text-primary" />
                         </div>
                         <h2 className="mt-4 text-2xl font-bold text-foreground">Assistant Le Singulier</h2>
                         <p className="mt-2 text-muted-foreground">Comment puis-je vous aider aujourd'hui ?</p>
                         <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3">
-                            {examplePrompts.map(prompt => (
+                            {displayedPrompts.map(prompt => (
                                 <Card key={prompt} className="p-4 text-left hover:bg-card transition-colors cursor-pointer" onClick={() => handleSendMessage(prompt)}>
                                     <p className="text-sm font-medium">{prompt}</p>
                                 </Card>
@@ -111,7 +135,7 @@ export default function AssistantClient() {
                     </div>
                 )}
                  {messages.map((m) => (
-                    <div key={m.id} className={cn("flex items-start gap-4 max-w-4xl mx-auto", m.role === 'user' ? 'justify-end' : '')}>
+                    <div key={m.id} className={cn("flex items-start gap-4 max-w-6xl mx-auto", m.role === 'user' ? 'justify-end' : '')}>
                         {m.role === 'assistant' && (
                             <Avatar className="w-8 h-8 border">
                                 <AvatarFallback><Bot className="w-5 h-5"/></AvatarFallback>
