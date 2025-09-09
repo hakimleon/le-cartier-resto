@@ -93,15 +93,15 @@ export default function AssistantClient() {
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-4rem)] bg-muted/40">
         <ScrollArea className="flex-1" ref={scrollAreaRef as any}>
-             <div className="space-y-6 p-4 md:p-6 max-w-4xl mx-auto">
+             <div className="space-y-6 p-4 md:p-6">
                 {messages.length === 0 && !isLoading && (
-                    <div className="text-center pt-16 mx-auto">
+                    <div className="text-center pt-16 mx-auto max-w-2xl">
                         <div className="inline-block p-4 bg-primary/10 rounded-full">
                            <Bot className="w-10 h-10 text-primary" />
                         </div>
                         <h2 className="mt-4 text-2xl font-bold text-foreground">Assistant Le Singulier</h2>
                         <p className="mt-2 text-muted-foreground">Comment puis-je vous aider aujourd'hui ?</p>
-                        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3 max-w-2xl mx-auto">
+                        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-3">
                             {examplePrompts.map(prompt => (
                                 <Card key={prompt} className="p-4 text-left hover:bg-card transition-colors cursor-pointer" onClick={() => handleSendMessage(prompt)}>
                                     <p className="text-sm font-medium">{prompt}</p>
@@ -111,7 +111,7 @@ export default function AssistantClient() {
                     </div>
                 )}
                  {messages.map((m) => (
-                    <div key={m.id} className={cn("flex items-start gap-4", m.role === 'user' ? 'justify-end' : '')}>
+                    <div key={m.id} className={cn("flex items-start gap-4 max-w-4xl mx-auto", m.role === 'user' ? 'justify-end' : '')}>
                         {m.role === 'assistant' && (
                             <Avatar className="w-8 h-8 border">
                                 <AvatarFallback><Bot className="w-5 h-5"/></AvatarFallback>
@@ -128,7 +128,7 @@ export default function AssistantClient() {
                     </div>
                 ))}
                  {isLoading && (
-                    <div className="flex items-start gap-4">
+                    <div className="flex items-start gap-4 max-w-4xl mx-auto">
                         <Avatar className="w-8 h-8 border">
                             <AvatarFallback><Bot className="w-5 h-5"/></AvatarFallback>
                         </Avatar>
