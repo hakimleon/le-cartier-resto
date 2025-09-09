@@ -259,7 +259,7 @@ const NewPreparationRow = ({
   handleNewPreparationChange,
   handleRemoveNewPreparation,
 }: {
-  prep: NewPreparation;
+  prep: NewRecipePreparation;
   allPreparations: Preparation[];
   recipeId: string;
   handleNewPreparationChange: (tempId: string, field: keyof NewRecipePreparation, value: any) => void;
@@ -429,10 +429,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Preparation;
     setRecipe(fetchedRecipe);
     setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
-
-    console.log('PROCEDURE_PREPARATION:', fetchedRecipe.procedure_preparation);
-    console.log('PROCEDURE_CUISSON:', fetchedRecipe.procedure_cuisson);
-    console.log('PROCEDURE_SERVICE:', fetchedRecipe.procedure_service);
 
     const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
     const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);

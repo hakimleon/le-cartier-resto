@@ -115,7 +115,7 @@ const recipeGenerationPrompt = ai.definePrompt({
         1.  **Listez les ingrédients nécessaires.**
             -   **Règle impérative sur les noms :** Utilisez des noms d'ingrédients génériques et standards (ex: "Tomate", "Oignon", "Poulet"). Évitez les termes trop spécifiques ou poétiques (ex: "Tomate Cœur de Bœuf juteuse", "Cuisse de poulet fermier"). L'utilisateur liera cet ingrédient à son produit spécifique plus tard.
             -   **Règle impérative sur les unités :** Privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes. Utilisez les litres/ml pour les liquides et "pièce" uniquement quand c'est indispensable (ex: 1 oeuf).
-        2.  Rédigez une procédure technique et détaillée en trois phases : "Préparation" (mise en place, techniques), "Cuisson" (températures, temps), et "Service" (dressage). Si une étape n'est pas applicable (ex: pas de cuisson), retournez une chaîne de caractères vide pour ce champ spécifique. **Utilisez le format Markdown (titres avec '###', listes à puces avec '-') pour la procédure.**
+        2.  **IMPÉRATIF :** Rédigez une procédure technique et détaillée en trois phases : "Préparation" (mise en place, techniques), "Cuisson" (températures, temps), et "Service" (dressage). Vous devez **OBLIGATOIREMENT** utiliser le format Markdown pour la procédure (titres avec '###', listes à puces avec '-'). Si une étape n'est pas applicable (ex: pas de cuisson), retournez une chaîne de caractères vide pour ce champ spécifique.
         3.  Estimez la durée totale de la recette en minutes.
         4.  Évaluez la difficulté (Facile, Moyen, Difficile).
         5.  **IMPÉRATIF : Calculez la production totale.** Vous devez **obligatoirement** estimer la quantité totale que la recette produit (productionQuantity) et son unité (productionUnit). Pour cela, basez-vous sur la somme des poids et/ou volumes des ingrédients listés, en appliquant une légère réduction logique si une cuisson intervient (évaporation). Par exemple, 1L de lait + 100g de farine + 100g de beurre produiront environ 1.15kg de sauce béchamel. C'est un calcul crucial. Définissez aussi l'unité d'utilisation suggérée (usageUnit), par exemple 'g' ou 'ml'.
@@ -133,5 +133,3 @@ const generateRecipeFlow = ai.defineFlow({
     const { output } = await recipeGenerationPrompt(input);
     return output!;
 });
-
-    
