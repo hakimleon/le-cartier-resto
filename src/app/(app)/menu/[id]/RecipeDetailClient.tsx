@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -1083,7 +1084,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         return (
                                             <TableRow key={ing.recipeIngredientId}>
                                                 <TableCell className="font-medium flex items-center gap-1">
-                                                    {substitutionTarget ? (
+                                                     {substitutionTarget ? (
                                                         <TooltipProvider>
                                                             <Tooltip>
                                                                 <TooltipTrigger asChild>
@@ -1292,4 +1293,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
