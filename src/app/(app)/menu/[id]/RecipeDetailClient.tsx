@@ -100,32 +100,54 @@ type NewRecipePreparation = {
 };
 
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (!fromUnit || !toUnit || fromUnit.toLowerCase() === toUnit.toLowerCase()) return 1;
+    if (!fromUnit || !toUnit || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
 
     const u = (unit: string) => unit.toLowerCase().trim();
     const factors: Record<string, number> = {
         'kg': 1000, 'g': 1, 'mg': 0.001,
         'l': 1000, 'ml': 1,
         'litre': 1000, 'litres': 1000,
-        'pièce': 1, 'piece': 1,
+        // For unit-based items, conversion factor is 1 if units match
+        'pièce': 1, 'piece': 1, 'botte': 1,
     };
     
     const fromFactor = factors[u(fromUnit)];
     const toFactor = factors[u(toUnit)];
 
+    // Handle weight-to-volume and vice-versa as a simple 1-to-1 conversion if units are not compatible
     if (fromFactor !== undefined && toFactor !== undefined) {
-        return fromFactor / toFactor;
+        // If one is weight and other is volume, and not a direct g/ml conversion
+        const weightUnits = ['kg', 'g', 'mg'];
+        const volumeUnits = ['l', 'ml', 'litre', 'litres'];
+        const unitUnits = ['pièce', 'piece', 'botte'];
+
+        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
+        const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
+
+        if (fromType === toType) {
+            return fromFactor / toFactor;
+        }
     }
     
-    console.warn(`No conversion factor found between '${fromUnit}' and '${toUnit}'. Defaulting to 1.`);
+    // If units are incompatible (e.g. 'kg' to 'pièce'), return 1 and log a warning.
+    console.warn(`Incompatible unit conversion from '${fromUnit}' to '${toUnit}'. Defaulting to 1.`);
     return 1;
 };
 
 const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams) {
-        return 0;
+    if (!ingredientData?.purchasePrice) return 0;
+    
+    const isUnitBased = ['pièce', 'piece', 'botte'].includes(ingredientData.purchaseUnit.toLowerCase());
+
+    if (isUnitBased) {
+        const costPerPiece = ingredientData.purchasePrice; // Assuming purchasePrice is per piece/botte
+        const conversionFactor = getConversionFactor(ingredientLink.unit, ingredientData.purchaseUnit);
+        return ingredientLink.quantity * costPerPiece * conversionFactor;
     }
 
+    // --- Weight/Volume based calculation ---
+    if (!ingredientData.purchaseWeightGrams) return 0;
+    
     const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
     const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
 
@@ -1143,4 +1165,3 @@ function RecipeDetailSkeleton() {
     );
 }
 
-    

@@ -107,9 +107,9 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       
       let finalPurchaseWeightGrams = values.purchaseWeightGrams;
       if (values.purchaseUnit === "kg") finalPurchaseWeightGrams = 1000;
-      if (values.purchaseUnit === "grammes") finalPurchaseWeightGrams = 1;
-      if (values.purchaseUnit === "litres") finalPurchaseWeightGrams = 1000;
-      if (values.purchaseUnit === "ml") finalPurchaseWeightGrams = 1;
+      else if (values.purchaseUnit === "g") finalPurchaseWeightGrams = 1;
+      else if (values.purchaseUnit === "l") finalPurchaseWeightGrams = 1000;
+      else if (values.purchaseUnit === "ml") finalPurchaseWeightGrams = 1;
 
 
       const ingredientToSave: Omit<Ingredient, 'id'> = {
@@ -241,10 +241,10 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                                 </FormControl>
                                 <SelectContent>
                                     <SelectItem value="kg">Kg</SelectItem>
-                                    <SelectItem value="litres">Litres</SelectItem>
-                                    <SelectItem value="botte">Botte</SelectItem>
+                                    <SelectItem value="l">Litres</SelectItem>
                                     <SelectItem value="pièce">Pièce</SelectItem>
-                                    <SelectItem value="grammes">Grammes</SelectItem>
+                                    <SelectItem value="botte">Botte</SelectItem>
+                                    <SelectItem value="g">Grammes</SelectItem>
                                     <SelectItem value="ml">ml</SelectItem>
                                 </SelectContent>
                             </Select>
