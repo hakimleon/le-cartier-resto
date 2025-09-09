@@ -14,17 +14,8 @@ import { DishModal } from "./DishModal";
 import { useToast } from "@/hooks/use-toast";
 import { deleteDish } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
 
 const formatCategory = (category?: string) => {
     if (!category) return "";
@@ -205,6 +196,9 @@ export default function MenuClient() {
       </div>
     );
   };
+  
+  const currentCategories = selectedStatus === 'Actif' ? activeCategories : inactiveCategories;
+
 
   if (error && !isFirebaseConfigured) {
     return (
@@ -252,36 +246,43 @@ export default function MenuClient() {
         </Alert>
       )}
 
-        <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')}>
-            <TabsList className="grid w-full grid-cols-2 max-w-sm">
-                <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
-                <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
-            </TabsList>
-            <TabsContent value="Actif">
-                 <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
-                    <TabsList>
-                        {activeCategories.map((category) => (
-                        <TabsTrigger key={category} value={category}>{formatCategory(category)}</TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <TabsContent value={selectedCategory} className="pt-4">
-                        {renderRecipeList(filteredRecipes)}
-                    </TabsContent>
-                </Tabs>
+      <div className="space-y-4 rounded-lg border p-4">
+        <div className="flex items-baseline gap-4">
+            <Label className="text-sm font-semibold">Statut :</Label>
+            <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')} className="w-full">
+                <TabsList>
+                    <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
+                    <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
+                </TabsList>
+            </Tabs>
+        </div>
+        
+        <Separator />
+
+        <div className="flex items-baseline gap-4">
+            <Label className="text-sm font-semibold">Catégorie :</Label>
+            <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
+                <TabsList className="h-auto flex-wrap">
+                    {currentCategories.map((category) => (
+                    <TabsTrigger key={category} value={category}>{formatCategory(category)}</TabsTrigger>
+                    ))}
+                </TabsList>
+            </Tabs>
+        </div>
+      </div>
+
+
+      <div className="pt-4">
+        <Tabs value={selectedStatus}>
+            <TabsContent value="Actif" forceMount>
+                {selectedStatus === 'Actif' && renderRecipeList(filteredRecipes)}
             </TabsContent>
-            <TabsContent value="Inactif">
-                 <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
-                    <TabsList>
-                        {inactiveCategories.map((category) => (
-                        <TabsTrigger key={category} value={category}>{formatCategory(category)}</TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <TabsContent value={selectedCategory} className="pt-4">
-                        {renderRecipeList(filteredRecipes)}
-                    </TabsContent>
-                </Tabs>
+            <TabsContent value="Inactif" forceMount>
+                {selectedStatus === 'Inactif' && renderRecipeList(filteredRecipes)}
             </TabsContent>
         </Tabs>
+      </div>
+
     </div>
   );
 }
