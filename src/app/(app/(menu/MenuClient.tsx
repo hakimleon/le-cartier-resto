@@ -250,7 +250,7 @@ export default function MenuClient() {
         <div className="flex items-baseline gap-4">
             <Label className="text-sm font-semibold">Statut :</Label>
             <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')} className="w-full">
-                <TabsList>
+                 <TabsList className="bg-background border p-1 rounded-lg">
                     <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
                     <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
                 </TabsList>
@@ -286,3 +286,5 @@ export default function MenuClient() {
     </div>
   );
 }
+
+    
