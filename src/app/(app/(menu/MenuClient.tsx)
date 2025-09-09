@@ -14,23 +14,13 @@ import { DishModal } from "./DishModal";
 import { useToast } from "@/hooks/use-toast";
 import { deleteDish } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
-    AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
 
-// This function is no longer needed as categories are not displayed as tabs
-// const formatCategory = (category?: string) => {
-//     if (!category) return "";
-//     return category.split(/[-–]/)[0].trim();
-// };
+const formatCategory = (category?: string) => {
+    if (!category) return "";
+    return category.split(/[-–]/)[0].trim();
+};
 
 const sortCategories = (categories: string[]) => {
   const customOrder = [
@@ -68,7 +58,9 @@ export default function MenuClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [allCategories, setAllCategories] = useState<string[]>([]);
+  const [activeCategories, setActiveCategories] = useState<string[]>([]);
+  const [inactiveCategories, setInactiveCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [selectedStatus, setSelectedStatus] = useState<'Actif' | 'Inactif'>('Actif');
   const { toast } = useToast();
 
@@ -91,20 +83,29 @@ export default function MenuClient() {
             
             setRecipes(recipesData);
             
-            // Extract all unique categories for the "New Dish" modal dropdown
-            const categoryMap = new Map<string, string>();
+            const activeCategoryMap = new Map<string, string>();
+            const inactiveCategoryMap = new Map<string, string>();
+
             recipesData.forEach(recipe => {
                 if (recipe.category) {
                     const normalizedCategory = recipe.category.toLowerCase().trim();
-                    if (!categoryMap.has(normalizedCategory)) {
-                        categoryMap.set(normalizedCategory, recipe.category);
+                    if(recipe.status === 'Actif') {
+                        if (!activeCategoryMap.has(normalizedCategory)) {
+                            activeCategoryMap.set(normalizedCategory, recipe.category);
+                        }
+                    } else {
+                         if (!inactiveCategoryMap.has(normalizedCategory)) {
+                            inactiveCategoryMap.set(normalizedCategory, recipe.category);
+                        }
                     }
                 }
             });
             
-            const uniqueCategories = Array.from(categoryMap.values());
-            setAllCategories(sortCategories(uniqueCategories));
-
+            const uniqueActiveCategories = Array.from(activeCategoryMap.values());
+            const uniqueInactiveCategories = Array.from(inactiveCategoryMap.values());
+            
+            setActiveCategories(["Tous", ...sortCategories(uniqueActiveCategories)]);
+            setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
             setError(null);
         } catch(e: any) {
             console.error("Error processing recipes snapshot: ", e);
@@ -124,6 +125,10 @@ export default function MenuClient() {
         }
     };
   }, []);
+  
+   useEffect(() => {
+    setSelectedCategory("Tous");
+  }, [selectedStatus]);
 
   const handleDelete = async (id: string, name: string) => {
       try {
@@ -144,23 +149,26 @@ export default function MenuClient() {
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    if (e.target.value) {
+      setSelectedCategory("Tous");
+    }
   };
 
   const filteredRecipes = useMemo(() => {
     return recipes.filter(recipe => {
         const statusMatch = recipe.status === selectedStatus;
         const searchTermMatch = searchTerm === '' || recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
-        // Category filter is removed from the main view
-        return statusMatch && searchTermMatch;
+        const categoryMatch = selectedCategory === 'Tous' || recipe.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim();
+        return statusMatch && searchTermMatch && categoryMatch;
     });
-  }, [recipes, searchTerm, selectedStatus]);
+  }, [recipes, searchTerm, selectedCategory, selectedStatus]);
 
 
   const renderRecipeList = (recipeList: Recipe[]) => {
     if (isLoading) {
        return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-            {Array.from({ length: 8 }).map((_, i) => (
+            {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex flex-col space-y-3">
                     <div className="h-48 rounded-md bg-muted animate-pulse" />
                     <div className="space-y-2">
@@ -181,13 +189,16 @@ export default function MenuClient() {
           <RecipeCard 
             key={recipe.id} 
             recipe={recipe} 
-            allCategories={allCategories}
+            allCategories={selectedStatus === 'Actif' ? activeCategories.filter(c => c !== "Tous") : inactiveCategories.filter(c => c !== "Tous")}
             onDelete={() => handleDelete(recipe.id!, recipe.name)}
           />
         ))}
       </div>
     );
   };
+  
+  const currentCategories = selectedStatus === 'Actif' ? activeCategories : inactiveCategories;
+
 
   if (error && !isFirebaseConfigured) {
     return (
@@ -218,7 +229,7 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} allCategories={allCategories} onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <DishModal dish={null} allCategories={activeCategories.filter(c => c !== "Tous")} onSuccess={() => { /* onSnapshot handles updates */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat
@@ -235,18 +246,45 @@ export default function MenuClient() {
         </Alert>
       )}
 
-        <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 max-w-sm">
-                <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
-                <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
-            </TabsList>
-            <TabsContent value="Actif" className="pt-4">
-                 {renderRecipeList(filteredRecipes)}
+      <div className="space-y-4 rounded-lg border p-4">
+        <div className="flex items-baseline gap-4">
+            <Label className="text-sm font-semibold">Statut :</Label>
+            <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')} className="w-full">
+                 <TabsList className="bg-muted border border-border p-1 rounded-md">
+                    <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
+                    <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
+                </TabsList>
+            </Tabs>
+        </div>
+        
+        <Separator />
+
+        <div className="flex items-baseline gap-4">
+            <Label className="text-sm font-semibold">Catégorie :</Label>
+            <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
+                <TabsList className="h-auto flex-wrap">
+                    {currentCategories.map((category) => (
+                    <TabsTrigger key={category} value={category}>{formatCategory(category)}</TabsTrigger>
+                    ))}
+                </TabsList>
+            </Tabs>
+        </div>
+      </div>
+
+
+      <div className="pt-4">
+        <Tabs value={selectedStatus}>
+            <TabsContent value="Actif" forceMount>
+                {selectedStatus === 'Actif' && renderRecipeList(filteredRecipes)}
             </TabsContent>
-            <TabsContent value="Inactif" className="pt-4">
-                 {renderRecipeList(filteredRecipes)}
+            <TabsContent value="Inactif" forceMount>
+                {selectedStatus === 'Inactif' && renderRecipeList(filteredRecipes)}
             </TabsContent>
         </Tabs>
+      </div>
+
     </div>
   );
 }
+
+    
