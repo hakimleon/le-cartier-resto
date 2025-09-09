@@ -256,19 +256,6 @@ export default function MenuClient() {
                 </TabsList>
             </Tabs>
         </div>
-        
-        <Separator />
-
-        <div className="flex items-baseline gap-4">
-            <Label className="text-sm font-semibold">Catégorie :</Label>
-            <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
-                <TabsList className="h-auto flex-wrap">
-                    {currentCategories.map((category) => (
-                    <TabsTrigger key={category} value={category}>{formatCategory(category)}</TabsTrigger>
-                    ))}
-                </TabsList>
-            </Tabs>
-        </div>
       </div>
 
 

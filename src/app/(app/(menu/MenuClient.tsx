@@ -250,27 +250,9 @@ export default function MenuClient() {
         <div className="flex items-baseline gap-4">
             <Label className="text-sm font-semibold">Statut :</Label>
             <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')} className="w-full">
-                 <TabsList className="bg-background border p-1 rounded-lg">
-                    <TabsTrigger 
-                        value="Actif" 
-                        isActive={selectedStatus === 'Actif'}
-                    >
-                        Plats Actifs
-                    </TabsTrigger>
+                 <TabsList>
+                    <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
                     <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
-                </TabsList>
-            </Tabs>
-        </div>
-        
-        <Separator />
-
-        <div className="flex items-baseline gap-4">
-            <Label className="text-sm font-semibold">Catégorie :</Label>
-            <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
-                <TabsList className="h-auto flex-wrap">
-                    {currentCategories.map((category) => (
-                    <TabsTrigger key={category} value={category}>{formatCategory(category)}</TabsTrigger>
-                    ))}
                 </TabsList>
             </Tabs>
         </div>
