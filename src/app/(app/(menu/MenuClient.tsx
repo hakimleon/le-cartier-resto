@@ -218,8 +218,6 @@ export default function MenuClient() {
       );
   }
 
-  const currentCategories = selectedStatus === 'Actif' ? activeCategories : inactiveCategories;
-
   return (
     <div className="space-y-6">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -287,6 +285,3 @@ export default function MenuClient() {
     </div>
   );
 }
-
-    
-    
