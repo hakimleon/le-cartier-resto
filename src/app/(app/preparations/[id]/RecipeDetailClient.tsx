@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -10,23 +9,14 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check } from "lucide-react";
-import Image from "next/image";
-import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { updateRecipeDetails, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, replaceRecipeIngredients, replaceRecipePreparations } from "@/app/(app)/menu/actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -38,13 +28,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { ImageUploadDialog } from "@/app/(app)/menu/[id]/ImageUploadDialog";
 import { generateRecipe } from "@/ai/flows/suggestion-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -91,32 +81,60 @@ type NewRecipePreparation = {
 };
 
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (!fromUnit || !toUnit || fromUnit.toLowerCase() === toUnit.toLowerCase()) return 1;
+    if (!fromUnit || !toUnit || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
 
     const u = (unit: string) => unit.toLowerCase().trim();
     const factors: Record<string, number> = {
         'kg': 1000, 'g': 1, 'mg': 0.001,
         'l': 1000, 'ml': 1,
         'litre': 1000, 'litres': 1000,
-        'pièce': 1, 'piece': 1,
+        // For unit-based items, conversion factor is 1 if units match
+        'pièce': 1, 'piece': 1, 'botte': 1,
     };
     
     const fromFactor = factors[u(fromUnit)];
     const toFactor = factors[u(toUnit)];
 
+    // Handle weight-to-volume and vice-versa as a simple 1-to-1 conversion if units are not compatible
     if (fromFactor !== undefined && toFactor !== undefined) {
-        return fromFactor / toFactor;
+        // If one is weight and other is volume, and not a direct g/ml conversion
+        const weightUnits = ['kg', 'g', 'mg'];
+        const volumeUnits = ['l', 'ml', 'litre', 'litres'];
+        const unitUnits = ['pièce', 'piece', 'botte'];
+
+        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
+        const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
+
+        if (fromType === toType) {
+            return fromFactor / toFactor;
+        }
     }
     
-    console.warn(`No conversion factor found between '${fromUnit}' and '${toUnit}'. Defaulting to 1.`);
+    // If units are incompatible (e.g. 'kg' to 'pièce'), return 1 and log a warning.
+    console.warn(`Incompatible unit conversion from '${fromUnit}' to '${toUnit}'. Defaulting to 1.`);
     return 1;
 };
 
 const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams) {
-        return 0;
+    if (!ingredientData?.purchasePrice) return 0;
+    
+    const isUnitBased = ['pièce', 'piece'].includes(ingredientData.purchaseUnit.toLowerCase());
+
+    if (isUnitBased) {
+        // Cost is per piece.
+        // We assume the purchase price is the price for ONE piece.
+        const costPerPiece = ingredientData.purchasePrice; 
+        
+        // This handles cases where the recipe might ask for "0.5 piece", etc.
+        const conversionFactor = getConversionFactor(ingredientLink.unit, ingredientData.purchaseUnit);
+        
+        // No yield applied to unit-based items for simplicity, unless specifically requested.
+        return ingredientLink.quantity * costPerPiece * conversionFactor;
     }
 
+    // --- Weight/Volume based calculation (for kg, g, l, ml, botte, etc.) ---
+    if (!ingredientData.purchaseWeightGrams) return 0;
+    
     const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
     const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
 
@@ -136,48 +154,6 @@ const foodCostIndicators = [
   { range: "35-40%", level: "Moyen", description: "Acceptable mais perfectible. Surveillance requise.", color: "text-orange-500" },
   { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500" },
 ];
-
-const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
-    if (!text) return null;
-
-    const lines = text.split('\n');
-    const elements: React.ReactNode[] = [];
-    let listItems: string[] = [];
-
-    const flushList = () => {
-        if (listItems.length > 0) {
-            elements.push(
-                <ul key={`ul-${elements.length}`} className="list-disc pl-5 space-y-1">
-                    {listItems.map((item, index) => (
-                        <li key={index}>{item}</li>
-                    ))}
-                </ul>
-            );
-            listItems = [];
-        }
-    };
-
-    lines.forEach((line, index) => {
-        const trimmedLine = line.trim();
-        if (trimmedLine.startsWith('### ')) {
-            flushList();
-            elements.push(<h3 key={index} className="font-semibold mt-4 mb-2 text-lg">{trimmedLine.substring(4)}</h3>);
-        } else if (trimmedLine.startsWith('- ')) {
-            listItems.push(trimmedLine.substring(2));
-        } else if (trimmedLine === '') {
-            flushList();
-            elements.push(<br key={`br-${index}`} />);
-        } else {
-            flushList();
-            elements.push(<p key={index} className="mb-2 last:mb-0">{trimmedLine}</p>);
-        }
-    });
-
-    flushList(); // Flush any remaining list items
-
-    return <div className="prose prose-sm max-w-none">{elements}</div>;
-};
-
 
 const NewIngredientRow = ({
     newIng,
@@ -273,6 +249,64 @@ const NewIngredientRow = ({
             <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
         </TableRow>
     );
+};
+
+const NewPreparationRow = ({
+  prep,
+  allPreparations,
+  recipeId,
+  handleNewPreparationChange,
+  handleRemoveNewPreparation,
+}: {
+  prep: NewRecipePreparation;
+  allPreparations: Preparation[];
+  recipeId: string;
+  handleNewPreparationChange: (tempId: string, field: keyof NewRecipePreparation, value: any) => void;
+  handleRemoveNewPreparation: (tempId: string) => void;
+}) => {
+  const [openPrepCombobox, setOpenPrepCombobox] = useState(false);
+
+  return (
+    <TableRow key={prep.id}>
+      <TableCell>
+        <Select
+          value={prep.childPreparationId}
+          onValueChange={(value) => handleNewPreparationChange(prep.id, 'childPreparationId', value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Choisir..." />
+          </SelectTrigger>
+          <SelectContent>
+            {allPreparations.map((p) =>
+              p.id && p.id !== recipeId ? (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ) : null
+            )}
+          </SelectContent>
+        </Select>
+      </TableCell>
+      <TableCell>
+        <Input
+          type="number"
+          placeholder="Qté"
+          className="w-20"
+          value={prep.quantity === 0 ? '' : prep.quantity}
+          onChange={(e) =>
+            handleNewPreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)
+          }
+        />
+      </TableCell>
+      <TableCell>{prep.unit || '-'}</TableCell>
+      <TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell>
+      <TableCell>
+        <Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}>
+          <Trash2 className="h-4 w-4 text-red-500" />
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
 };
 
 
@@ -722,7 +756,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
                             ))}
                             {isEditing && newPreparations.map((prep) => (
-                                <TableRow key={prep.id}><TableCell><Select value={prep.childPreparationId} onValueChange={(value) => handleNewPreparationChange(prep.id, 'childPreparationId', value)} ><SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger><SelectContent>{allPreparations.map(p => ( p.id && p.id !== recipeId ? <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem> : null ))}</SelectContent></Select></TableCell><TableCell><Input type="number" placeholder="Qté" className="w-20" value={prep.quantity === 0 ? '' : prep.quantity} onChange={(e) => handleNewPreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell><TableCell>{prep.unit || "-"}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell><TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell></TableRow>
+                                <NewPreparationRow
+                                    key={prep.id}
+                                    prep={prep}
+                                    allPreparations={allPreparations}
+                                    recipeId={recipeId}
+                                    handleNewPreparationChange={handleNewPreparationChange}
+                                    handleRemoveNewPreparation={handleRemoveNewPreparation}
+                                />
                             ))}
                             {currentPreparationsData.length === 0 && newPreparations.length === 0 && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
                         </TableBody>
@@ -829,4 +870,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-

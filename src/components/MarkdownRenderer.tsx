@@ -19,8 +19,8 @@ type MarkdownNode = {
 
 function parseMarkdown(md: string): MarkdownNode[] {
     if (!md) return [];
-    md = md.replace(/\r\n/g, "\n");
-    const lines = md.split("\n");
+    const sanitizedMd = md.replace(/\r\n/g, "\n");
+    const lines = sanitizedMd.split("\n");
     const nodes: MarkdownNode[] = [];
     let i = 0;
 
@@ -44,18 +44,18 @@ function parseMarkdown(md: string): MarkdownNode[] {
             nodes.push({ type: "ul", items });
             continue;
         }
-
-        if (line.trim() !== "") {
-            const paraLines: string[] = [];
-            while (i < lines.length && lines[i].trim() !== "" && !lines[i].trim().match(/^(#{1,6})\s/) && !lines[i].trim().startsWith("- ")) {
-                paraLines.push(lines[i].trim());
+        
+        const paraLines: string[] = [];
+        if(line.trim() !== '') {
+             while (i < lines.length && lines[i].trim() !== "" && !lines[i].trim().match(/^(#{1,6})\s/) && !lines[i].trim().startsWith("- ")) {
+                paraLines.push(lines[i]);
                 i++;
             }
-            nodes.push({ type: "p", content: paraLines.join("\n") }); // Join with newline to preserve breaks within paragraphs
+            nodes.push({ type: "p", content: paraLines.join("\n") }); 
             continue;
         }
 
-        i++; // Move to next line if current line is empty
+        i++; 
     }
     return nodes;
 }
@@ -85,7 +85,6 @@ export default function MarkdownRenderer({ text }: { text: string | undefined })
           );
         }
         if (n.type === "p") {
-          // Replace \n with <br /> for manual line breaks
           const contentWithBreaks = inlineFormat(n.content).replace(/\n/g, '<br />');
           return <p key={idx} className="mb-4" dangerouslySetInnerHTML={{ __html: contentWithBreaks }} />;
         }
