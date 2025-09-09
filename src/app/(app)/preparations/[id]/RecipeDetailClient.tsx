@@ -45,6 +45,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import MarkdownRenderer from "@/components/MarkdownRenderer";
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -164,48 +165,6 @@ const foodCostIndicators = [
   { range: "35-40%", level: "Moyen", description: "Acceptable mais perfectible. Surveillance requise.", color: "text-orange-500" },
   { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500" },
 ];
-
-const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
-    if (!text) return null;
-
-    const lines = text.split('\n');
-    const elements: React.ReactNode[] = [];
-    let listItems: string[] = [];
-
-    const flushList = () => {
-        if (listItems.length > 0) {
-            elements.push(
-                <ul key={`ul-${elements.length}`} className="list-disc pl-5 space-y-1">
-                    {listItems.map((item, index) => (
-                        <li key={index}>{item}</li>
-                    ))}
-                </ul>
-            );
-            listItems = [];
-        }
-    };
-
-    lines.forEach((line, index) => {
-        const trimmedLine = line.trim();
-        if (trimmedLine.startsWith('### ')) {
-            flushList();
-            elements.push(<h3 key={index} className="font-semibold mt-4 mb-2 text-lg">{trimmedLine.substring(4)}</h3>);
-        } else if (trimmedLine.startsWith('- ')) {
-            listItems.push(trimmedLine.substring(2));
-        } else if (trimmedLine === '') {
-            flushList();
-            elements.push(<br key={`br-${index}`} />);
-        } else {
-            flushList();
-            elements.push(<p key={index} className="mb-2 last:mb-0">{trimmedLine}</p>);
-        }
-    });
-
-    flushList(); // Flush any remaining list items
-
-    return <div className="prose prose-sm max-w-none">{elements}</div>;
-};
-
 
 const NewIngredientRow = ({
     newIng,
@@ -857,5 +816,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    

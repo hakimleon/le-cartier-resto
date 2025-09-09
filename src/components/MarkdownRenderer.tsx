@@ -32,8 +32,8 @@ const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
             listItems.push(trimmedLine.substring(2));
         } else if (trimmedLine === '') {
             flushList();
-            elements.push(<br key={`br-${index}`} />);
-        } else if (trimmedLine) { // Handle regular paragraphs
+            // We don't necessarily need an explicit <br>, CSS margins handle spacing.
+        } else {
             flushList();
             elements.push(<p key={index} className="mb-2 last:mb-0">{trimmedLine}</p>);
         }
