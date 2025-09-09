@@ -16,6 +16,7 @@ import { deleteDish } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { cn } from "@/lib/utils";
 
 const formatCategory = (category?: string) => {
     if (!category) return "";
@@ -251,7 +252,12 @@ export default function MenuClient() {
             <Label className="text-sm font-semibold">Statut :</Label>
             <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')} className="w-full">
                  <TabsList className="bg-background border p-1 rounded-lg">
-                    <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
+                    <TabsTrigger 
+                        value="Actif" 
+                        className={cn(selectedStatus === 'Actif' && 'bg-green-100 text-green-800 shadow-inner')}
+                    >
+                        Plats Actifs
+                    </TabsTrigger>
                     <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
                 </TabsList>
             </Tabs>
@@ -287,4 +293,5 @@ export default function MenuClient() {
   );
 }
 
+    
     
