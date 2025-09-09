@@ -4,6 +4,7 @@
 import React from "react";
 
 const inlineFormat = (text: string) => {
+  if (!text) return "";
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   let t = esc(text);
   t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
@@ -21,20 +22,26 @@ type MarkdownNode = {
 function parseMarkdown(md: string): MarkdownNode[] {
     if (!md) return [];
     
-    // Remplacement des sauts de ligne Windows et ajout d'un saut de ligne avant les titres ### s'il n'y en a pas
-    let sanitizedMd = md.replace(/\r\n/g, "\n");
-    // **Correction clé :** Ajoute un saut de ligne entre un titre et une liste qui le suit immédiatement.
-    // Exemple: "### Titre- Liste" devient "### Titre\n- Liste"
-    sanitizedMd = sanitizedMd.replace(/(#{1,6}\s*.*?)(\s*-\s+)/g, '$1\n$2');
+    // Nettoyage et formatage robustes du markdown brut
+    let sanitizedMd = md
+      .replace(/\r\n/g, "\n") // Normaliser les sauts de ligne
+      .replace(/###/g, "\n###") // Assurer un saut de ligne AVANT chaque titre
+      .replace(/-\s/g, "\n- ") // Assurer un saut de ligne AVANT chaque item de liste
+      .replace(/\n\n/g, "\n"); // Supprimer les doubles sauts de ligne accidentels
+
 
     const lines = sanitizedMd.split("\n");
     const nodes: MarkdownNode[] = [];
     let i = 0;
 
     while (i < lines.length) {
-        const line = lines[i];
+        const line = lines[i].trim();
+        if(!line) {
+            i++;
+            continue;
+        }
         
-        const hMatch = line.trim().match(/^(#{1,6})\s*(.*)$/);
+        const hMatch = line.match(/^(#{1,6})\s*(.*)$/);
         if (hMatch) {
             const level = hMatch[1].length;
             nodes.push({ type: `h${level}`, content: hMatch[2].trim() });
@@ -42,9 +49,9 @@ function parseMarkdown(md: string): MarkdownNode[] {
             continue;
         }
 
-        if (line.trim().startsWith("- ")) {
+        if (line.startsWith("- ")) {
             const items: string[] = [];
-            while (i < lines.length && lines[i].trim().startsWith("- ")) {
+            while (i < lines.length && lines[i]?.trim().startsWith("- ")) {
                 items.push(lines[i].trim().substring(2));
                 i++;
             }
@@ -53,8 +60,8 @@ function parseMarkdown(md: string): MarkdownNode[] {
         }
         
         const paraLines: string[] = [];
-        if(line.trim() !== '') {
-             while (i < lines.length && lines[i].trim() !== "" && !lines[i].trim().match(/^(#{1,6})\s/) && !lines[i].trim().startsWith("- ")) {
+        if(line) {
+             while (i < lines.length && lines[i]?.trim() && !lines[i].trim().match(/^(#{1,6})\s/) && !lines[i].trim().startsWith("- ")) {
                 paraLines.push(lines[i]);
                 i++;
             }
