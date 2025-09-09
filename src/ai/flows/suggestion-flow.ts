@@ -121,7 +121,7 @@ const recipeGenerationPrompt = ai.definePrompt({
             -   Si la recette que vous créez nécessite une préparation de base (ex: "sauce tomate", "fond de veau", "mayonnaise maison") qui est présente dans la liste que l'outil vous a fournie, vous devez **IMPÉRATIVEMENT** et **SYSTÉMATIQUEMENT** faire deux choses :
                 1. **Lister son nom dans le champ \`subRecipes\`**. C'est une obligation absolue. Ne l'omettez jamais.
                 2. **NE PAS lister les ingrédients de cette préparation** (ex: ne listez pas "huile, oeuf, moutarde" si vous utilisez la sous-recette "Mayonnaise maison").
-            -   La procédure doit simplement indiquer d'utiliser la préparation existante.
+            -   La procédure doit simplement indiquer d'utiliser la préparation existante (ex: "Incorporer 50g de Mayonnaise maison."). Vous ne devez pas détailler les étapes de la sous-recette.
         3.  **Listez les ingrédients nécessaires.**
             -   Ne listez ici que les ingrédients BRUTS nécessaires pour la recette, qui ne sont PAS déjà inclus dans les sous-recettes que vous utilisez.
             -   **Règle sur les noms :** Utilisez des noms d'ingrédients génériques et standards (ex: "Tomate", "Oignon", "Poulet"). 
@@ -173,4 +173,3 @@ const generateRecipeFlow = ai.defineFlow({
 
     return output;
 });
-
