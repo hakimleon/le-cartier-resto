@@ -80,8 +80,7 @@ const RecipeOutputSchema = z.object({
         name: z.string().describe("Le nom de l'ingrédient."),
         quantity: z.number().describe("La quantité nécessaire."),
         unit: z.string().describe("L'unité de mesure (ex: g, kg, ml, l, pièce).")
-    })).describe("La liste des ingrédients pour la recette, y compris les composants qui pourraient exister en tant que sous-recettes (ex: lister 'Mayonnaise' comme un seul ingrédient)."),
-    subRecipes: z.array(z.string()).describe("La liste des noms des sous-recettes EXISTANTES (fournies par l'outil) utilisées. L'IA ne doit l'utiliser que si elle est certaine que la préparation est dans la liste. Sinon, elle doit être laissée vide."),
+    })).describe("La liste des ingrédients SIMPLES pour la recette. NE PAS inclure de sous-recettes ici."),
     procedure_preparation: z.string().describe("Les étapes détaillées de la phase de préparation. DOIT être formaté en Markdown."),
     procedure_cuisson: z.string().describe("Les étapes détaillées de la phase de cuisson. DOIT être formaté en Markdown."),
     procedure_service: z.string().describe("Les étapes détaillées pour le service ou le dressage. DOIT être formaté en Markdown."),
@@ -104,8 +103,7 @@ export async function generateRecipe(input: RecipeInput): Promise<RecipeOutput> 
 const recipeGenerationPrompt = ai.definePrompt({
     name: 'recipeGenerationPrompt',
     input: { schema: RecipeInputSchema },
-    output: { schema: RecipeOutputSchema },
-    tools: [getAvailablePreparationsTool],
+    output: { schema: RecipeOutputSchema.omit({ subRecipes: true, newSubRecipes: true } as any) }, // Simplify output
     prompt: `
         Vous êtes un chef de cuisine expert. Votre mission est de créer une fiche technique détaillée pour des restaurants.
         
@@ -114,14 +112,12 @@ const recipeGenerationPrompt = ai.definePrompt({
         Type de Fiche: {{{type}}}
 
         **Instructions FONDAMENTALES :**
-        1.  **Règle d'or sur les Préparations :** Vous devez OBLIGATOIREMENT utiliser l'outil \`getAvailablePreparationsTool\` pour connaître les préparations existantes.
-            -   **SI** un composant de la recette correspond à une préparation existante (ex: la recette contient de la mayonnaise et "Mayonnaise maison" est dans la liste), vous devez **IMPÉRATIVEMENT** l'ajouter au champ \`subRecipes\` et ne PAS lister ses ingrédients bruts. La procédure doit simplement mentionner "utiliser la préparation X".
-            -   **SINON** (si la préparation n'existe pas dans la liste), vous devez lister ses composants comme des ingrédients normaux dans le champ \`ingredients\`. Par exemple, si la recette demande une mayonnaise mais qu'aucune préparation de mayonnaise n'est disponible, vous listez "Mayonnaise" comme un seul ingrédient, vous ne le décomposez PAS en huile, oeuf, etc.
+        1.  **Règle sur les Ingrédients :** Listez UNIQUEMENT les ingrédients BRUTS et SIMPLES. Si la recette nécessite un composant complexe comme une "Mayonnaise" ou une "Sauce Tomate", listez simplement cet ingrédient par son nom (ex: "Mayonnaise", "Sauce Tomate"). Ne décomposez JAMAIS ces composants en leurs propres ingrédients (ne listez pas huile, oeuf, etc. pour une mayonnaise).
         2.  **Règle sur les noms :** Utilisez des noms d'ingrédients génériques (ex: "Tomate", "Oignon", "Poulet", "Mayonnaise").
         3.  **Règle sur les unités :** Privilégiez systématiquement les unités de poids (g, kg) et de volume (l, ml). Utilisez "pièce" uniquement quand c'est indispensable.
-        4.  **Procédure :** Rédigez une procédure technique détaillée en trois phases : "Préparation", "Cuisson", et "Service", en format Markdown. Si une phase n'est pas applicable, retournez une chaîne vide. Si une sous-recette est utilisée, ne détaillez que son assemblage dans le plat, pas sa fabrication.
+        4.  **Procédure :** Rédigez une procédure technique détaillée en trois phases : "Préparation", "Cuisson", et "Service", en format Markdown. Si une phase n'est pas applicable, retournez une chaîne vide. La procédure doit mentionner l'utilisation des composants complexes (ex: "Ajouter 100g de Mayonnaise").
         5.  **Estimations :** Estimez la durée, la difficulté, la quantité produite (et son unité), et l'unité d'utilisation.
-        6.  **Sortie :** Fournissez la sortie au format JSON structuré attendu.
+        6.  **Sortie :** Fournissez la sortie au format JSON structuré attendu. Ne générez pas de champs 'subRecipes' ou 'newSubRecipes'.
     `,
 });
 
@@ -132,8 +128,7 @@ const generateRecipeFlow = ai.defineFlow({
     outputSchema: RecipeOutputSchema,
 }, async (input) => {
     
-    const llmResponse = await recipeGenerationPrompt(input);
-    const output = llmResponse.output;
+    const { output } = await recipeGenerationPrompt(input);
 
     if (!output) {
         throw new Error("La génération de la recette a échoué car la sortie de l'IA est vide.");
@@ -141,4 +136,3 @@ const generateRecipeFlow = ai.defineFlow({
     
     return output;
 });
-
