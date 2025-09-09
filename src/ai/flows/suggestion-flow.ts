@@ -114,8 +114,8 @@ const recipeGenerationPrompt = ai.definePrompt({
         Type de Fiche: {{{type}}}
 
         **Instructions FONDAMENTALES :**
-        1.  **Règle d'or sur les Préparations :** Vous devez OBLIGATOIREMENT utiliser l'outil \`getAvailablePreparations\` pour connaître les préparations existantes.
-            -   **SI** un composant de la recette correspond à une préparation existante (ex: la recette contient de la mayonnaise et "Mayonnaise maison" est dans la liste), vous devez **IMPÉRATIVEMENT** utiliser cette préparation dans le champ \`subRecipes\` et ne PAS lister ses ingrédients bruts. La procédure doit simplement mentionner "utiliser la préparation X".
+        1.  **Règle d'or sur les Préparations :** Vous devez OBLIGATOIREMENT utiliser l'outil \`getAvailablePreparationsTool\` pour connaître les préparations existantes.
+            -   **SI** un composant de la recette correspond à une préparation existante (ex: la recette contient de la mayonnaise et "Mayonnaise maison" est dans la liste), vous devez **IMPÉRATIVEMENT** l'ajouter au champ \`subRecipes\` et ne PAS lister ses ingrédients bruts. La procédure doit simplement mentionner "utiliser la préparation X".
             -   **SINON** (si la préparation n'existe pas dans la liste), vous devez lister ses composants comme des ingrédients normaux dans le champ \`ingredients\`. Par exemple, si la recette demande une mayonnaise mais qu'aucune préparation de mayonnaise n'est disponible, vous listez "Mayonnaise" comme un seul ingrédient, vous ne le décomposez PAS en huile, oeuf, etc.
         2.  **Règle sur les noms :** Utilisez des noms d'ingrédients génériques (ex: "Tomate", "Oignon", "Poulet", "Mayonnaise").
         3.  **Règle sur les unités :** Privilégiez systématiquement les unités de poids (g, kg) et de volume (l, ml). Utilisez "pièce" uniquement quand c'est indispensable.
@@ -141,3 +141,4 @@ const generateRecipeFlow = ai.defineFlow({
     
     return output;
 });
+
