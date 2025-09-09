@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -161,21 +160,22 @@ const foodCostIndicators = [
 const NewIngredientRow = ({
     newIng,
     sortedIngredients,
+    allPreparations,
     handleNewIngredientChange,
     openNewIngredientModal,
     handleRemoveNewIngredient,
     handleSubstituteIngredient,
-    substitutionTarget,
 }: {
     newIng: NewRecipeIngredient;
     sortedIngredients: Ingredient[];
+    allPreparations: Preparation[];
     handleNewIngredientChange: (tempId: string, field: keyof NewRecipeIngredient, value: any) => void;
     openNewIngredientModal: (tempId: string) => void;
     handleRemoveNewIngredient: (tempId: string) => void;
-    handleSubstituteIngredient: (tempId: string) => void;
-    substitutionTarget: Preparation | undefined;
+    handleSubstituteIngredient: (tempId: string, isNew: boolean) => void;
 }) => {
     const [openCombobox, setOpenCombobox] = useState(false);
+    const substitutionTarget = allPreparations.find(p => p.name.toLowerCase() === newIng.name.toLowerCase());
 
     return (
         <TableRow key={newIng.tempId}>
@@ -185,7 +185,7 @@ const NewIngredientRow = ({
                        <TooltipProvider>
                             <Tooltip>
                                 <TooltipTrigger asChild>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleSubstituteIngredient(newIng.tempId)}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleSubstituteIngredient(newIng.tempId, true)}>
                                         <Merge className="h-4 w-4 text-primary" />
                                     </Button>
                                 </TooltipTrigger>
@@ -195,7 +195,7 @@ const NewIngredientRow = ({
                             </Tooltip>
                         </TooltipProvider>
                     ) : (
-                        <div className="w-8"/> // Placeholder for alignment
+                        <div className="w-9 h-9"/> // Placeholder for alignment
                     )}
                     <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
                         <PopoverTrigger asChild>
@@ -608,47 +608,45 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     toast({ title: "Sous-recette retirée", description: "La modification sera appliquée à la sauvegarde.", }); 
   };
   
-    const handleSubstituteIngredient = (ingredientId: string, isNew: boolean) => {
-        let ingredientToSubstitute: FullRecipeIngredient | NewRecipeIngredient | undefined;
+  const handleSubstituteIngredient = (ingredientId: string, isNew: boolean) => {
+    let ingredientToSubstitute: FullRecipeIngredient | NewRecipeIngredient | undefined;
 
-        if (isNew) {
-            ingredientToSubstitute = newIngredients.find(ing => ing.tempId === ingredientId);
-        } else {
-            ingredientToSubstitute = editableIngredients.find(ing => ing.recipeIngredientId === ingredientId);
+    if (isNew) {
+        ingredientToSubstitute = newIngredients.find(ing => ing.tempId === ingredientId);
+    } else {
+        ingredientToSubstitute = editableIngredients.find(ing => ing.recipeIngredientId === ingredientId);
+    }
+
+    if (!ingredientToSubstitute) return;
+
+    const targetPreparation = allPreparations.find(p => p.name.toLowerCase() === ingredientToSubstitute!.name.toLowerCase());
+    if (!targetPreparation) {
+        toast({ title: "Aucune préparation correspondante", description: `Aucune préparation nommée "${ingredientToSubstitute.name}" n'a été trouvée.`, variant: 'destructive' });
+        return;
+    }
+
+    if (isNew) {
+        setNewIngredients(current => current.filter(ing => ing.tempId !== ingredientId));
+    } else {
+        setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== ingredientId));
+    }
+
+    setNewPreparations(current => [
+        ...current,
+        {
+            id: `new-prep-subst-${Date.now()}`,
+            childPreparationId: targetPreparation.id!,
+            name: targetPreparation.name,
+            quantity: 1, // Default quantity, user must adjust
+            unit: targetPreparation.usageUnit || targetPreparation.productionUnit || 'g',
+            totalCost: 0,
+            _costPerUnit: preparationsCosts[targetPreparation.id!] || 0,
+            _productionUnit: targetPreparation.productionUnit || '',
         }
+    ]);
 
-        if (!ingredientToSubstitute) return;
-
-        const targetPreparation = allPreparations.find(p => p.name.toLowerCase() === ingredientToSubstitute!.name.toLowerCase());
-        if (!targetPreparation) {
-            toast({ title: "Aucune préparation correspondante", description: `Aucune préparation nommée "${ingredientToSubstitute.name}" n'a été trouvée.`, variant: 'destructive' });
-            return;
-        }
-
-        // Remove from ingredients list
-        if (isNew) {
-            setNewIngredients(current => current.filter(ing => ing.tempId !== ingredientId));
-        } else {
-            setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== ingredientId));
-        }
-
-        // Add to new preparations list
-        setNewPreparations(current => [
-            ...current,
-            {
-                id: `new-prep-${Date.now()}`,
-                childPreparationId: targetPreparation.id!,
-                name: targetPreparation.name,
-                quantity: 1, // Default quantity, user must adjust
-                unit: targetPreparation.usageUnit || targetPreparation.productionUnit || 'g',
-                totalCost: 0, // Will be calculated when quantity is entered
-                _costPerUnit: preparationsCosts[targetPreparation.id!] || 0,
-                _productionUnit: targetPreparation.productionUnit || '',
-            }
-        ]);
-
-        toast({ title: "Substitution réussie", description: `"${ingredientToSubstitute.name}" a été remplacé par la préparation correspondante.` });
-    };
+    toast({ title: "Substitution réussie", description: `"${ingredientToSubstitute.name}" a été remplacé par la préparation correspondante.` });
+};
 
   const handleSave = async () => {
     if (!editableRecipe) return;
@@ -807,7 +805,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                                 </Tooltip>
                                             </TooltipProvider>
                                         ) : (
-                                            <div className="w-8"/> // Placeholder
+                                            <div className="w-9 h-9"/> // Placeholder
                                         )}
                                         {ing.name}
                                     </TableCell>
@@ -818,20 +816,18 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 </TableRow>
                             )})}
                             {!isEditing && ingredients.map(ing => ( <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>))}
-                            {isEditing && newIngredients.map((newIng) => {
-                                const substitutionTarget = allPreparations.find(p => p.name.toLowerCase() === newIng.name.toLowerCase());
-                                return (
+                            {isEditing && newIngredients.map((newIng) => (
                                 <NewIngredientRow
                                     key={newIng.tempId}
                                     newIng={newIng}
                                     sortedIngredients={sortedIngredients}
+                                    allPreparations={allPreparations}
                                     handleNewIngredientChange={handleNewIngredientChange}
                                     openNewIngredientModal={openNewIngredientModal}
                                     handleRemoveNewIngredient={handleRemoveNewIngredient}
-                                    handleSubstituteIngredient={() => handleSubstituteIngredient(newIng.tempId, true)}
-                                    substitutionTarget={substitutionTarget}
+                                    handleSubstituteIngredient={handleSubstituteIngredient}
                                 />
-                            )})}
+                            ))}
                             {currentIngredientsData.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
                         </TableBody>
                     </Table>

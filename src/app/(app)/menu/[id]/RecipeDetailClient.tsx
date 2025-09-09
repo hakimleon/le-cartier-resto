@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -12,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle, FishSymbol } from "lucide-react";
+import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle, FishSymbol, Merge } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -50,6 +49,8 @@ import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
@@ -186,22 +187,43 @@ const foodCostIndicators = [
 const NewIngredientRow = ({
     newIng,
     sortedIngredients,
+    allPreparations,
     handleNewIngredientChange,
     openNewIngredientModal,
-    handleRemoveNewIngredient
+    handleRemoveNewIngredient,
+    handleSubstituteIngredient
 }: {
     newIng: NewRecipeIngredient;
     sortedIngredients: Ingredient[];
+    allPreparations: Preparation[];
     handleNewIngredientChange: (tempId: string, field: keyof NewRecipeIngredient, value: any) => void;
     openNewIngredientModal: (tempId: string) => void;
     handleRemoveNewIngredient: (tempId: string) => void;
+    handleSubstituteIngredient: (tempId: string, isNew: boolean) => void;
 }) => {
     const [openCombobox, setOpenCombobox] = useState(false);
+    const substitutionTarget = allPreparations.find(p => p.name.toLowerCase() === newIng.name.toLowerCase());
 
     return (
         <TableRow>
             <TableCell>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1">
+                    {substitutionTarget ? (
+                       <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleSubstituteIngredient(newIng.tempId, true)}>
+                                        <Merge className="h-4 w-4 text-primary" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Substituer par la préparation "{substitutionTarget.name}"</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ) : (
+                        <div className="w-8" />
+                    )}
                     <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
                         <PopoverTrigger asChild>
                             <Button
@@ -695,6 +717,46 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     };
     const openNewIngredientModal = (tempId: string) => { const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId); if (ingredientToCreate) { setCurrentTempId(tempId); setNewIngredientDefaults({ name: ingredientToCreate.name }); setIsNewIngredientModalOpen(true); } }
 
+    const handleSubstituteIngredient = (ingredientId: string, isNew: boolean) => {
+        let ingredientToSubstitute: FullRecipeIngredient | NewRecipeIngredient | undefined;
+
+        if (isNew) {
+            ingredientToSubstitute = newIngredients.find(ing => ing.tempId === ingredientId);
+        } else {
+            ingredientToSubstitute = editableIngredients.find(ing => ing.recipeIngredientId === ingredientId);
+        }
+
+        if (!ingredientToSubstitute) return;
+
+        const targetPreparation = allPreparations.find(p => p.name.toLowerCase() === ingredientToSubstitute!.name.toLowerCase());
+        if (!targetPreparation) {
+            toast({ title: "Aucune préparation correspondante", description: `Aucune préparation nommée "${ingredientToSubstitute.name}" n'a été trouvée.`, variant: 'destructive' });
+            return;
+        }
+
+        if (isNew) {
+            setNewIngredients(current => current.filter(ing => ing.tempId !== ingredientId));
+        } else {
+            setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== ingredientId));
+        }
+
+        setNewPreparations(current => [
+            ...current,
+            {
+                tempId: `new-prep-sub-${Date.now()}`,
+                childPreparationId: targetPreparation.id!,
+                name: targetPreparation.name,
+                quantity: ingredientToSubstitute!.quantity || 1, // Use quantity from substituted ingredient
+                unit: targetPreparation.usageUnit || targetPreparation.productionUnit || ingredientToSubstitute!.unit || 'g',
+                totalCost: 0,
+                _costPerUnit: preparationsCosts[targetPreparation.id!] || 0,
+                _productionUnit: targetPreparation.productionUnit || '',
+            }
+        ]);
+
+        toast({ title: "Substitution réussie", description: `"${ingredientToSubstitute.name}" a été remplacé par la préparation correspondante.` });
+    };
+
     // --- PREPARATION HANDLERS ---
     const openNewPreparationModal = (tempId: string) => {
         const prepToCreate = newPreparations.find(p => p.tempId === tempId);
@@ -1016,9 +1078,32 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             <Table>
                                 <TableHeader><TableRow><TableHead className="w-[45%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
                                 <TableBody>
-                                    {isEditing && editableIngredients.map(ing => (
-                                        <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell><TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell><TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>
-                                    ))}
+                                    {isEditing && editableIngredients.map(ing => {
+                                        const substitutionTarget = allPreparations.find(p => p.name.toLowerCase() === ing.name.toLowerCase());
+                                        return (
+                                            <TableRow key={ing.recipeIngredientId}>
+                                                <TableCell className="font-medium flex items-center gap-1">
+                                                    {substitutionTarget ? (
+                                                        <TooltipProvider>
+                                                            <Tooltip>
+                                                                <TooltipTrigger asChild>
+                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleSubstituteIngredient(ing.recipeIngredientId, false)}>
+                                                                        <Merge className="h-4 w-4 text-primary" />
+                                                                    </Button>
+                                                                </TooltipTrigger>
+                                                                <TooltipContent>
+                                                                    <p>Substituer par la préparation "{substitutionTarget.name}"</p>
+                                                                </TooltipContent>
+                                                            </Tooltip>
+                                                        </TooltipProvider>
+                                                    ) : ( <div className="w-8" /> )}
+                                                    {ing.name}
+                                                </TableCell>
+                                                <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
+                                                <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
+                                                <TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell>
+                                            </TableRow>
+                                    )})}
                                     {!isEditing && ingredients.map(ing => (
                                         <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
                                     ))}
@@ -1027,9 +1112,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             key={newIng.tempId}
                                             newIng={newIng}
                                             sortedIngredients={sortedIngredients}
+                                            allPreparations={allPreparations}
                                             handleNewIngredientChange={handleNewIngredientChange}
                                             openNewIngredientModal={openNewIngredientModal}
                                             handleRemoveNewIngredient={handleRemoveNewIngredient}
+                                            handleSubstituteIngredient={handleSubstituteIngredient}
                                         />
                                     ))}
                                     {ingredients.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
