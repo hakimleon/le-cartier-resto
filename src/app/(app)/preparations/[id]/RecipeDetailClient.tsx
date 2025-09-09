@@ -638,7 +638,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             id: `new-prep-subst-${Date.now()}`,
             childPreparationId: targetPreparation.id!,
             name: targetPreparation.name,
-            quantity: 1, // Default quantity, user must adjust
+            quantity: 1,
             unit: targetPreparation.usageUnit || targetPreparation.productionUnit || 'g',
             totalCost: 0,
             _costPerUnit: preparationsCosts[targetPreparation.id!] || 0,
@@ -730,9 +730,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const { totalRecipeCost, costPerPortion, } = useMemo(() => {
     if (!currentRecipeData) { return { totalRecipeCost: 0, costPerPortion: 0 }; }
     const ingredientsCost = (isEditing ? editableIngredients : ingredients).reduce((acc, item) => acc + (item.totalCost || 0), 0);
-    const newIngredientsCost = newIngredients.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+    const newIngredientsCost = (isEditing ? newIngredients : []).reduce((acc, item) => acc + (item.totalCost || 0), 0);
     const preparationsCost = (isEditing ? editablePreparations : preparations).reduce((acc, item) => acc + (item.totalCost || 0), 0);
-    const newPreparationsCost = newPreparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+    const newPreparationsCost = (isEditing ? newPreparations : []).reduce((acc, item) => acc + (item.totalCost || 0), 0);
     const totalCost = ingredientsCost + newIngredientsCost + preparationsCost + newPreparationsCost;
     let costPerPortionValue = 0;
     if (currentRecipeData.type === 'Préparation') { const productionQuantity = (currentRecipeData as Preparation).productionQuantity || 1; costPerPortionValue = totalCost / productionQuantity;
@@ -806,7 +806,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                                 </Tooltip>
                                             </TooltipProvider>
                                         ) : (
-                                            <div className="w-9 h-9"/> // Placeholder
+                                            <div className="w-9 h-9"/>
                                         )}
                                         {ing.name}
                                     </TableCell>

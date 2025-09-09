@@ -223,7 +223,7 @@ const NewIngredientRow = ({
                             </Tooltip>
                         </TooltipProvider>
                     ) : (
-                        <div className="w-8" />
+                        <div className="w-9 h-9"/> // Placeholder for alignment
                     )}
                     <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
                         <PopoverTrigger asChild>
@@ -747,7 +747,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 tempId: `new-prep-sub-${Date.now()}`,
                 childPreparationId: targetPreparation.id!,
                 name: targetPreparation.name,
-                quantity: ingredientToSubstitute!.quantity || 1, // Use quantity from substituted ingredient
+                quantity: ingredientToSubstitute!.quantity || 1,
                 unit: targetPreparation.usageUnit || targetPreparation.productionUnit || ingredientToSubstitute!.unit || 'g',
                 totalCost: 0,
                 _costPerUnit: preparationsCosts[targetPreparation.id!] || 0,
@@ -899,7 +899,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         });
 
         const preparationsCost = (isEditing ? editablePreparations : preparations).reduce((acc, item) => acc + (item.totalCost || 0), 0);
-        const newPreparationsCost = newPreparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+        const newPreparationsCost = (isEditing ? newPreparations : []).reduce((acc, item) => acc + (item.totalCost || 0), 0);
         const ingredientsCost = Object.values(result.costsByCategory).reduce((acc, cost) => acc + cost, 0);
         const totalCost = ingredientsCost + preparationsCost + newPreparationsCost;
 
@@ -1097,7 +1097,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                                                 </TooltipContent>
                                                             </Tooltip>
                                                         </TooltipProvider>
-                                                    ) : ( <div className="w-8" /> )}
+                                                    ) : ( <div className="w-9 h-9"/> )}
                                                     {ing.name}
                                                 </TableCell>
                                                 <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
