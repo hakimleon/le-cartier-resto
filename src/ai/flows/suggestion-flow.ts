@@ -118,8 +118,8 @@ const recipeGenerationPrompt = ai.definePrompt({
         **Instructions FONDAMENTALES :**
         1.  **Consulter les préparations existantes :** Avant toute chose, utilisez l'outil \`getAvailablePreparations\` pour obtenir la liste EXACTE des préparations (sous-recettes) qui existent déjà dans la base de données du restaurant.
         2.  **Règle d'or : PRIORISER LES PRÉPARATIONS EXISTANTES.**
-            -   Si la recette que vous créez nécessite une préparation de base (ex: "sauce tomate", "fond de veau", "mayonnaise maison") qui est présente dans la liste que l'outil vous a fournie, vous devez **IMPÉRATIVEMENT** faire deux choses :
-                1. **Lister son nom dans le champ \`subRecipes\`**. C'est obligatoire.
+            -   Si la recette que vous créez nécessite une préparation de base (ex: "sauce tomate", "fond de veau", "mayonnaise maison") qui est présente dans la liste que l'outil vous a fournie, vous devez **IMPÉRATIVEMENT** et **SYSTÉMATIQUEMENT** faire deux choses :
+                1. **Lister son nom dans le champ \`subRecipes\`**. C'est une obligation absolue. Ne l'omettez jamais.
                 2. **NE PAS lister les ingrédients de cette préparation** (ex: ne listez pas "huile, oeuf, moutarde" si vous utilisez la sous-recette "Mayonnaise maison").
             -   La procédure doit simplement indiquer d'utiliser la préparation existante.
         3.  **Listez les ingrédients nécessaires.**
@@ -141,6 +141,36 @@ const generateRecipeFlow = ai.defineFlow({
     inputSchema: RecipeInputSchema,
     outputSchema: RecipeOutputSchema,
 }, async (input) => {
-    const { output } = await recipeGenerationPrompt(input);
-    return output!;
+    // Étape 1 : Obtenir la liste des préparations disponibles en amont.
+    const availablePreparations = await getAvailablePreparationsTool();
+
+    // Étape 2 : Appeler le prompt de l'IA avec le contexte nécessaire.
+    const llmResponse = await recipeGenerationPrompt(input);
+    const output = llmResponse.output;
+
+    if (!output) {
+        throw new Error("La génération de la recette a échoué car la sortie de l'IA est vide.");
+    }
+    
+    // Étape 3 : GARDE-FOU. Vérifier et corriger la sortie de l'IA.
+    // On combine tout le texte généré pour la procédure.
+    const fullProcedureText = [
+        output.procedure_preparation,
+        output.procedure_cuisson,
+        output.procedure_service
+    ].join(' ').toLowerCase();
+
+    // Pour chaque préparation disponible...
+    for (const prepName of availablePreparations) {
+        // Si le nom de la préparation (ex: "mayonnaise maison") est mentionné dans la procédure...
+        // et si l'IA a "oublié" de l'ajouter dans la liste des sous-recettes...
+        if (fullProcedureText.includes(prepName.toLowerCase()) && !output.subRecipes.includes(prepName)) {
+            // ... alors on force son ajout !
+            console.log(`Garde-fou activé: Ajout de la sous-recette manquante "${prepName}"`);
+            output.subRecipes.push(prepName);
+        }
+    }
+
+    return output;
 });
+
