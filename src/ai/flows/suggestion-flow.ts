@@ -91,7 +91,8 @@ const RecipeOutputSchema = z.object({
     productionUnit: z.string().describe("L'unité de la quantité produite (ex: kg, l, pièces). DOIT être cohérente avec le calcul de productionQuantity."),
     usageUnit: z.string().describe("L'unité suggérée pour l'utilisation de cette préparation dans d'autres recettes (ex: g, ml, pièce)."),
 });
-export type RecipeOutput = z.infer<typeof RecipeOutputSchema>;
+export type RecipeOutput = z
+.infer<typeof RecipeOutputSchema>;
 
 
 // Fonction exportée pour générer une recette
@@ -117,8 +118,10 @@ const recipeGenerationPrompt = ai.definePrompt({
         **Instructions FONDAMENTALES :**
         1.  **Consulter les préparations existantes :** Avant toute chose, utilisez l'outil \`getAvailablePreparations\` pour obtenir la liste EXACTE des préparations (sous-recettes) qui existent déjà dans la base de données du restaurant.
         2.  **Règle d'or : PRIORISER LES PRÉPARATIONS EXISTANTES.**
-            -   Si la recette que vous créez nécessite une préparation de base (ex: "sauce tomate", "fond de veau", "mayonnaise maison") qui est présente dans la liste que l'outil vous a fournie, vous devez **IMPÉRATIVEMENT** l'inclure dans le champ \`subRecipes\`.
-            -   **Ne listez PAS les ingrédients de cette préparation existante** (ex: ne listez pas "huile, oeuf, moutarde" si vous utilisez la sous-recette "Mayonnaise maison"). La procédure doit simplement indiquer d'utiliser la préparation existante.
+            -   Si la recette que vous créez nécessite une préparation de base (ex: "sauce tomate", "fond de veau", "mayonnaise maison") qui est présente dans la liste que l'outil vous a fournie, vous devez **IMPÉRATIVEMENT** faire deux choses :
+                1. **Lister son nom dans le champ \`subRecipes\`**. C'est obligatoire.
+                2. **NE PAS lister les ingrédients de cette préparation** (ex: ne listez pas "huile, oeuf, moutarde" si vous utilisez la sous-recette "Mayonnaise maison").
+            -   La procédure doit simplement indiquer d'utiliser la préparation existante.
         3.  **Listez les ingrédients nécessaires.**
             -   Ne listez ici que les ingrédients BRUTS nécessaires pour la recette, qui ne sont PAS déjà inclus dans les sous-recettes que vous utilisez.
             -   **Règle sur les noms :** Utilisez des noms d'ingrédients génériques et standards (ex: "Tomate", "Oignon", "Poulet"). 
