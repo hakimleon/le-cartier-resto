@@ -80,8 +80,8 @@ const RecipeOutputSchema = z.object({
         name: z.string().describe("Le nom de l'ingrédient."),
         quantity: z.number().describe("La quantité nécessaire."),
         unit: z.string().describe("L'unité de mesure (ex: g, kg, ml, l, pièce).")
-    })).describe("La liste des ingrédients bruts pour la recette, n'incluant pas les composants des sous-recettes."),
-    subRecipes: z.array(z.string()).describe("La liste des noms des sous-recettes EXISTANTES (celles retournées par l'outil) utilisées dans cette recette."),
+    })).describe("La liste de TOUS les ingrédients bruts pour la recette, y compris les composants qui pourraient exister en tant que sous-recettes (ex: lister huile, oeuf, moutarde pour une mayonnaise)."),
+    subRecipes: z.array(z.string()).describe("Ce champ doit TOUJOURS être un tableau vide. Ne pas le remplir."),
     procedure_preparation: z.string().describe("Les étapes détaillées de la phase de préparation. DOIT être formaté en Markdown avec des titres (###) et des listes à puces (-)."),
     procedure_cuisson: z.string().describe("Les étapes détaillées de la phase de cuisson. DOIT être formaté en Markdown avec des titres (###) et des listes à puces (-)."),
     procedure_service: z.string().describe("Les étapes détaillées pour le service ou le dressage. DOIT être formaté en Markdown avec des titres (###) et des listes à puces (-)."),
@@ -106,7 +106,6 @@ const recipeGenerationPrompt = ai.definePrompt({
     name: 'recipeGenerationPrompt',
     input: { schema: RecipeInputSchema },
     output: { schema: RecipeOutputSchema },
-    tools: [getAvailablePreparationsTool],
     prompt: `
         Vous êtes un chef de cuisine expert spécialisé dans les cuisines gastronomiques française, algérienne, italienne et méditerranéenne. 
         Votre mission est de créer une fiche technique détaillée et professionnelle pour des restaurants, en vous basant sur la recette classique et fondamentale universellement reconnue pour le nom fourni.
@@ -116,22 +115,17 @@ const recipeGenerationPrompt = ai.definePrompt({
         Type de Fiche: {{{type}}}
 
         **Instructions FONDAMENTALES :**
-        1.  **CONSULTER LES PRÉPARATIONS EXISTANTES :** Avant toute chose, vous devez **OBLIGATOIREMENT** et **SYSTÉMATIQUEMENT** utiliser l'outil \`getAvailablePreparations\` pour obtenir la liste EXACTE des préparations (sous-recettes) qui existent déjà dans la base de données du restaurant. C'est votre seule source de vérité.
-        2.  **Règle d'or : PRIORISER LES PRÉPARATIONS EXISTANTES.**
-            -   Si la recette que vous créez nécessite une préparation de base (ex: "sauce tomate", "fond de veau", "mayonnaise maison") qui est présente dans la liste fournie par l'outil, vous devez **IMPÉRATIVEMENT** faire deux choses :
-                1. **Lister son nom dans le champ \`subRecipes\`**. C'est une obligation absolue. Ne l'omettez jamais.
-                2. **NE PAS lister les ingrédients de cette préparation** (ex: ne listez pas "huile, oeuf, moutarde" si vous utilisez la sous-recette "Mayonnaise maison").
-            -   La procédure doit simplement indiquer d'utiliser la préparation existante (ex: "Incorporer 50g de Mayonnaise maison."). Vous ne devez pas détailler les étapes de la sous-recette.
-        3.  **Listez les ingrédients nécessaires.**
-            -   Ne listez ici que les ingrédients BRUTS nécessaires pour la recette, qui ne sont PAS déjà inclus dans les sous-recettes que vous utilisez.
+        1.  **Listez TOUS les ingrédients nécessaires.**
+            -   Vous devez lister tous les composants de base. Si la recette demande une mayonnaise, vous devez lister 'huile', 'oeuf', 'moutarde', etc. Ne supposez pas qu'une sous-recette existe.
             -   **Règle sur les noms :** Utilisez des noms d'ingrédients génériques et standards (ex: "Tomate", "Oignon", "Poulet"). 
             -   **Règle sur les unités :** Privilégiez systématiquement les unités de poids (grammes, kg). Utilisez les litres/ml pour les liquides et "pièce" uniquement quand c'est indispensable (ex: 1 oeuf).
-        4.  **IMPÉRATIF ABSOLU :** Rédigez une procédure technique et détaillée en trois phases distinctes : "Préparation", "Cuisson", et "Service". Vous devez **OBLIGATOIREMENT** et **SYSTÉMATIQUEMENT** utiliser le format Markdown (titres de section avec '###', et listes à puces avec '-'). Chaque étape doit être un item de liste. Assurez-vous qu'il y a un saut de ligne entre les titres et les listes. Si une phase n'est pas applicable, retournez une chaîne vide.
-        5.  Estimez la durée totale de la recette en minutes.
-        6.  Évaluez la difficulté (Facile, Moyen, Difficile).
-        7.  **IMPÉRATIF : Calculez la production totale.** Estimez la quantité totale (productionQuantity) et son unité (productionUnit). Basez-vous sur la somme des poids/volumes des ingrédients bruts ET des quantités de sous-recettes utilisées, en appliquant une légère réduction logique si une cuisson intervient (évaporation). Définissez aussi l'unité d'utilisation suggérée (usageUnit).
-        8.  Assurez-vous que la recette soit réalisable, gustativement équilibrée et respecte les standards de la cuisine demandée.
-        9.  Fournissez la sortie au format JSON structuré attendu.
+        2.  Le champ \`subRecipes\` doit **TOUJOURS** être un tableau vide. Ne mettez rien dedans.
+        3.  **IMPÉRATIF ABSOLU :** Rédigez une procédure technique et détaillée en trois phases distinctes : "Préparation", "Cuisson", et "Service". Vous devez **OBLIGATOIREMENT** et **SYSTÉMATIQUEMENT** utiliser le format Markdown (titres de section avec '###', et listes à puces avec '-'). Chaque étape doit être un item de liste. Assurez-vous qu'il y a un saut de ligne entre les titres et les listes. Si une phase n'est pas applicable, retournez une chaîne vide.
+        4.  Estimez la durée totale de la recette en minutes.
+        5.  Évaluez la difficulté (Facile, Moyen, Difficile).
+        6.  **IMPÉRATIF : Calculez la production totale.** Estimez la quantité totale (productionQuantity) et son unité (productionUnit). Basez-vous sur la somme des poids/volumes des ingrédients bruts, en appliquant une légère réduction logique si une cuisson intervient (évaporation). Définissez aussi l'unité d'utilisation suggérée (usageUnit).
+        7.  Assurez-vous que la recette soit réalisable, gustativement équilibrée et respecte les standards de la cuisine demandée.
+        8.  Fournissez la sortie au format JSON structuré attendu.
     `,
 });
 
@@ -141,14 +135,15 @@ const generateRecipeFlow = ai.defineFlow({
     inputSchema: RecipeInputSchema,
     outputSchema: RecipeOutputSchema,
 }, async (input) => {
-    // Appeler le prompt de l'IA. L'IA est maintenant responsable d'appeler l'outil.
     const llmResponse = await recipeGenerationPrompt(input);
-    
     const output = llmResponse.output;
 
     if (!output) {
         throw new Error("La génération de la recette a échoué car la sortie de l'IA est vide.");
     }
+    
+    // Assurer que subRecipes est bien un tableau vide, comme demandé au prompt.
+    output.subRecipes = [];
 
     return output;
 });
