@@ -8,22 +8,21 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getIngredientsTool, getPreparationsTool, getRecipesTool } from '../tools/assistant-tools';
-import { Message } from '@/app/(app)/assistant/AssistantClient';
 
 
-export const ChatInputSchema = z.object({
+const ChatInputSchema = z.object({
     history: z.array(z.object({
         role: z.enum(['user', 'assistant']),
         content: z.string(),
     })),
 });
-export type ChatInput = z.infer<typeof ChatInputSchema>;
+type ChatInput = z.infer<typeof ChatInputSchema>;
 
 
 const ChatOutputSchema = z.object({
     content: z.string(),
 });
-export type ChatOutput = z.infer<typeof ChatOutputSchema>;
+type ChatOutput = z.infer<typeof ChatOutputSchema>;
 
 
 const assistantPrompt = `

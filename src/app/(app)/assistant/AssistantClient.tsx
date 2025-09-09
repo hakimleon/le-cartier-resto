@@ -44,6 +44,7 @@ export default function AssistantClient() {
       content: messageContent,
     };
     
+    // Create a new array with the user's message.
     const newMessages: Message[] = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
