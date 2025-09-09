@@ -148,9 +148,9 @@ export default function AppLayout({
              <SidebarTrigger className="md:hidden"/>
              {/* Future Header Content */}
           </header>
-          <div className={cn("flex-1 overflow-y-auto", !isAssistantPage && "p-4 md:p-8 pt-6")}>
+          <main className={cn("flex-1 overflow-y-auto", !isAssistantPage && "p-4 md:p-8 pt-6")}>
              {children}
-          </div>
+          </main>
         </SidebarInset>
       </div>
     </SidebarProvider>
