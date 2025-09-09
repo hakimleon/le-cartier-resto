@@ -137,15 +137,21 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
     if (!ingredientData?.purchasePrice) return 0;
     
-    const isUnitBased = ['pièce', 'piece', 'botte'].includes(ingredientData.purchaseUnit.toLowerCase());
+    const isUnitBased = ['pièce', 'piece'].includes(ingredientData.purchaseUnit.toLowerCase());
 
     if (isUnitBased) {
-        const costPerPiece = ingredientData.purchasePrice; // Assuming purchasePrice is per piece/botte
+        // Cost is per piece.
+        // We assume the purchase price is the price for ONE piece.
+        const costPerPiece = ingredientData.purchasePrice; 
+        
+        // This handles cases where the recipe might ask for "0.5 piece", etc.
         const conversionFactor = getConversionFactor(ingredientLink.unit, ingredientData.purchaseUnit);
+        
+        // No yield applied to unit-based items for simplicity, unless specifically requested.
         return ingredientLink.quantity * costPerPiece * conversionFactor;
     }
 
-    // --- Weight/Volume based calculation ---
+    // --- Weight/Volume based calculation (for kg, g, l, ml, botte, etc.) ---
     if (!ingredientData.purchaseWeightGrams) return 0;
     
     const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
