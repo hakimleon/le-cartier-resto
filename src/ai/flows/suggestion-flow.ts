@@ -10,6 +10,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { GeneratedIngredient } from '@/lib/types';
+import { getAvailablePreparationsTool } from '../tools/recipe-tools';
 
 // Schéma d'entrée pour la génération de l'argumentaire
 const CommercialArgumentInputSchema = z.object({
@@ -79,7 +80,8 @@ const RecipeOutputSchema = z.object({
         name: z.string().describe("Le nom de l'ingrédient."),
         quantity: z.number().describe("La quantité nécessaire."),
         unit: z.string().describe("L'unité de mesure (ex: g, kg, ml, l, pièce).")
-    })).describe("La liste des ingrédients pour la recette."),
+    })).describe("La liste des ingrédients bruts pour la recette, n'incluant pas les composants des sous-recettes."),
+    subRecipes: z.array(z.string()).describe("La liste des noms des sous-recettes EXISTANTES (qui étaient dans la liste fournie par l'outil) utilisées dans cette recette."),
     procedure_preparation: z.string().describe("Les étapes détaillées de la phase de préparation. DOIT être formaté en Markdown avec des titres (###) et des listes à puces (-)."),
     procedure_cuisson: z.string().describe("Les étapes détaillées de la phase de cuisson. DOIT être formaté en Markdown avec des titres (###) et des listes à puces (-)."),
     procedure_service: z.string().describe("Les étapes détaillées pour le service ou le dressage. DOIT être formaté en Markdown avec des titres (###) et des listes à puces (-)."),
@@ -103,24 +105,30 @@ const recipeGenerationPrompt = ai.definePrompt({
     name: 'recipeGenerationPrompt',
     input: { schema: RecipeInputSchema },
     output: { schema: RecipeOutputSchema },
+    tools: [getAvailablePreparationsTool],
     prompt: `
         Vous êtes un chef de cuisine expert spécialisé dans les cuisines gastronomiques française, algérienne, italienne et méditerranéenne. 
-        Votre mission est de créer une fiche technique détaillée et professionnelle pour des restaurants, en vous basant sur la recette classique et fondamentale universellement reconnue pour le nom fourni. N'inventez pas de variations non pertinentes.
+        Votre mission est de créer une fiche technique détaillée et professionnelle pour des restaurants, en vous basant sur la recette classique et fondamentale universellement reconnue pour le nom fourni.
 
         Nom: {{{name}}}
         Description: {{{description}}}
         Type de Fiche: {{{type}}}
 
-        Instructions:
-        1.  **Listez les ingrédients nécessaires.**
-            -   **Règle impérative sur les noms :** Utilisez des noms d'ingrédients génériques et standards (ex: "Tomate", "Oignon", "Poulet"). Évitez les termes trop spécifiques ou poétiques (ex: "Tomate Cœur de Bœuf juteuse", "Cuisse de poulet fermier"). L'utilisateur liera cet ingrédient à son produit spécifique plus tard.
-            -   **Règle impérative sur les unités :** Privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes. Utilisez les litres/ml pour les liquides et "pièce" uniquement quand c'est indispensable (ex: 1 oeuf).
-        2.  **IMPÉRATIF ABSOLU :** Rédigez une procédure technique et détaillée en trois phases distinctes : "Préparation", "Cuisson", et "Service". Vous devez **OBLIGATOIREMENT** et **SYSTÉMATIQUEMENT** utiliser le format Markdown pour la procédure (titres de section avec '###', et listes à puces avec '-'). Chaque étape doit être un item de liste. Si une phase n'est pas applicable (ex: pas de cuisson pour un tartare), vous devez retourner une chaîne de caractères vide pour ce champ spécifique, mais les autres champs doivent rester en Markdown.
-        3.  Estimez la durée totale de la recette en minutes.
-        4.  Évaluez la difficulté (Facile, Moyen, Difficile).
-        5.  **IMPÉRATIF : Calculez la production totale.** Vous devez **obligatoirement** estimer la quantité totale que la recette produit (productionQuantity) et son unité (productionUnit). Pour cela, basez-vous sur la somme des poids et/ou volumes des ingrédients listés, en appliquant une légère réduction logique si une cuisson intervient (évaporation). Par exemple, 1L de lait + 100g de farine + 100g de beurre produiront environ 1.15kg de sauce béchamel. C'est un calcul crucial. Définissez aussi l'unité d'utilisation suggérée (usageUnit), par exemple 'g' ou 'ml'.
-        6.  Assurez-vous que la recette soit réalisable, gustativement équilibrée et respecte les standards de la cuisine demandée.
-        7.  Fournissez la sortie au format JSON structuré attendu.
+        **Instructions FONDAMENTALES :**
+        1.  **Consulter les préparations existantes :** Avant toute chose, utilisez l'outil \`getAvailablePreparations\` pour obtenir la liste EXACTE des préparations (sous-recettes) qui existent déjà dans la base de données du restaurant.
+        2.  **Règle d'or : PRIORISER LES PRÉPARATIONS EXISTANTES.**
+            -   Si la recette que vous créez nécessite une préparation de base (ex: "sauce tomate", "fond de veau", "mayonnaise maison") qui est présente dans la liste que l'outil vous a fournie, vous devez **IMPÉRATIVEMENT** l'inclure dans le champ \`subRecipes\`.
+            -   **Ne listez PAS les ingrédients de cette préparation existante** (ex: ne listez pas "huile, oeuf, moutarde" si vous utilisez la sous-recette "Mayonnaise maison"). La procédure doit simplement indiquer d'utiliser la préparation existante.
+        3.  **Listez les ingrédients nécessaires.**
+            -   Ne listez ici que les ingrédients BRUTS nécessaires pour la recette, qui ne sont PAS déjà inclus dans les sous-recettes que vous utilisez.
+            -   **Règle sur les noms :** Utilisez des noms d'ingrédients génériques et standards (ex: "Tomate", "Oignon", "Poulet"). 
+            -   **Règle sur les unités :** Privilégiez systématiquement les unités de poids (grammes, kg). Utilisez les litres/ml pour les liquides et "pièce" uniquement quand c'est indispensable (ex: 1 oeuf).
+        4.  **IMPÉRATIF ABSOLU :** Rédigez une procédure technique et détaillée en trois phases distinctes : "Préparation", "Cuisson", et "Service". Vous devez **OBLIGATOIREMENT** et **SYSTÉMATIQUEMENT** utiliser le format Markdown (titres de section avec '###', et listes à puces avec '-'). Chaque étape doit être un item de liste. Assurez-vous qu'il y a un saut de ligne entre les titres et les listes. Si une phase n'est pas applicable, retournez une chaîne vide.
+        5.  Estimez la durée totale de la recette en minutes.
+        6.  Évaluez la difficulté (Facile, Moyen, Difficile).
+        7.  **IMPÉRATIF : Calculez la production totale.** Estimez la quantité totale (productionQuantity) et son unité (productionUnit). Basez-vous sur la somme des poids/volumes des ingrédients bruts ET des quantités de sous-recettes utilisées, en appliquant une légère réduction logique si une cuisson intervient (évaporation). Définissez aussi l'unité d'utilisation suggérée (usageUnit).
+        8.  Assurez-vous que la recette soit réalisable, gustativement équilibrée et respecte les standards de la cuisine demandée.
+        9.  Fournissez la sortie au format JSON structuré attendu.
     `,
 });
 
@@ -133,5 +141,3 @@ const generateRecipeFlow = ai.defineFlow({
     const { output } = await recipeGenerationPrompt(input);
     return output!;
 });
-
-    
