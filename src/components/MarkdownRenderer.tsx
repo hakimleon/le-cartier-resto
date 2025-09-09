@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from "react";
@@ -19,7 +20,13 @@ type MarkdownNode = {
 
 function parseMarkdown(md: string): MarkdownNode[] {
     if (!md) return [];
-    const sanitizedMd = md.replace(/\r\n/g, "\n");
+    
+    // Remplacement des sauts de ligne Windows et ajout d'un saut de ligne avant les titres ### s'il n'y en a pas
+    let sanitizedMd = md.replace(/\r\n/g, "\n");
+    // **Correction clé :** Ajoute un saut de ligne entre un titre et une liste qui le suit immédiatement.
+    // Exemple: "### Titre- Liste" devient "### Titre\n- Liste"
+    sanitizedMd = sanitizedMd.replace(/(#{1,6}\s*.*?)(\s*-\s+)/g, '$1\n$2');
+
     const lines = sanitizedMd.split("\n");
     const nodes: MarkdownNode[] = [];
     let i = 0;
