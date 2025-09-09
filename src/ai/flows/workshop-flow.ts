@@ -82,8 +82,11 @@ const recipeConceptPrompt = ai.definePrompt({
 
         Pour déterminer quelles préparations de base peuvent être utilisées, vous devez OBLIGATOIREMENT utiliser l'outil \`getAvailablePreparations\`. La liste retournée par cet outil est la SEULE source de vérité des préparations existantes.
 
+        **Règle d'or : PRIVILÉGIER LES PRÉPARATIONS EXISTANTES**
+        Avant de lister les ingrédients, analysez la demande. Si un ingrédient demandé (ex: "mayonnaise", "sauce tomate", "fond de veau") correspond à une préparation existante dans la liste fournie par l'outil, vous devez **IMPÉRATIVEMENT** utiliser cette préparation dans le champ \`subRecipes\` au lieu de lister ses composants comme des ingrédients bruts. N'ajoutez PAS les ingrédients de la préparation existante (ex: huile, oeuf pour la mayonnaise) dans le champ \`ingredients\` du plat.
+
         **Règles de gestion des sous-recettes (préparations) - TRÈS IMPORTANT :**
-        1.  Si une préparation nécessaire pour la recette existe dans la liste fournie par l'outil, vous devez l'ajouter au tableau \`subRecipes\`.
+        1.  Si une préparation nécessaire pour la recette existe dans la liste fournie par l'outil (cf. Règle d'or), vous devez l'ajouter au tableau \`subRecipes\`.
         2.  **Règle de discernement CRUCIALE et IMPÉRATIVE :** Une préparation ne doit être listée dans \`newSubRecipes\` que si elle représente une VRAIE préparation de base, complexe, qui a un intérêt à être stockée et réutilisée dans d'autres plats.
             -   **EXEMPLES DE BONNES NOUVELLES PRÉPARATIONS :** "Fond de veau", "Sauce hollandaise", "Pâte brisée", "Confit d'oignons", "Garniture duxelles". Ce sont des bases réutilisables.
             -   **EXEMPLES DE MAUVAISES NOUVELLES PRÉPARATIONS (À NE PAS FAIRE) :** "Sauce à la crème pour poulet", "Sauce minute au poivre", "Garniture de légumes rôtis". Ce sont des assemblages simples faits pour le plat.
@@ -195,5 +198,3 @@ const generateDishConceptFlow = ai.defineFlow(
         };
     }
 );
-
-    
