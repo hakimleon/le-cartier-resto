@@ -7,6 +7,77 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-// TODO: Importer les outils depuis assistant-tools.ts
+import { getIngredientsTool, getPreparationsTool, getRecipesTool } from '../tools/assistant-tools';
+import { Message } from '@/app/(app)/assistant/AssistantClient';
 
-// TODO: Définir les schémas d'entrée/sortie et le flow de chat.
+
+export const ChatInputSchema = z.object({
+    history: z.array(z.object({
+        role: z.enum(['user', 'assistant']),
+        content: z.string(),
+    })),
+});
+export type ChatInput = z.infer<typeof ChatInputSchema>;
+
+
+const ChatOutputSchema = z.object({
+    content: z.string(),
+});
+export type ChatOutput = z.infer<typeof ChatOutputSchema>;
+
+
+const assistantPrompt = `
+Tu es "Le Singulier AI", un assistant expert en gestion de restaurant et en analyse culinaire, créé pour aider le gérant du restaurant "Le Singulier".
+Ton ton est professionnel, collaboratif et légèrement formel.
+Ta mission est de répondre aux questions de l'utilisateur en te basant EXCLUSIVEMENT sur les données fournies par les outils à ta disposition.
+Ne suppose JAMAIS d'informations. Si les données ne sont pas disponibles, indique-le poliment.
+
+Voici les étapes à suivre pour chaque question :
+1.  Analyse la question de l'utilisateur.
+2.  Utilise les outils (getRecipesTool, getIngredientsTool, getPreparationsTool) pour récupérer les informations nécessaires de la base de données du restaurant.
+3.  Synthétise les informations obtenues pour construire une réponse précise, claire et utile.
+4.  Si la question est une demande de conseil ou de suggestion (ex: "quel plat me conseilles-tu ?"), base ta recommandation sur des critères logiques déduits des données (rentabilité, popularité, saisonnalité si applicable, etc.) et explique ton raisonnement.
+5.  Formate tes réponses en Markdown pour une meilleure lisibilité (titres, listes à puces, gras).
+`;
+
+const chatFlow = ai.defineFlow(
+  {
+    name: 'assistantChatFlow',
+    inputSchema: ChatInputSchema,
+    outputSchema: ChatOutputSchema,
+  },
+  async (input) => {
+    
+    // Transform the input history to match the expected format for `generate`
+    const history = input.history.map(msg => ({
+      role: msg.role === 'assistant' ? 'model' as const : 'user' as const,
+      content: [{ text: msg.content }],
+    }));
+    
+    // The last message from the user is the current prompt
+    const lastUserMessage = history.pop();
+    if (!lastUserMessage || lastUserMessage.role !== 'user') {
+      // Should not happen with a well-formed input
+      return { content: "Désolé, je n'ai pas reçu de question valide." };
+    }
+
+
+    const { output } = await ai.generate({
+      model: 'googleai/gemini-2.5-flash',
+      prompt: lastUserMessage.content[0].text,
+      system: assistantPrompt,
+      tools: [getRecipesTool, getPreparationsTool, getIngredientsTool],
+      history: history,
+      output: {
+          schema: z.object({ content: z.string() })
+      }
+    });
+
+    return output ?? { content: "Je n'ai pas pu générer de réponse." };
+  }
+);
+
+
+export async function chat(input: ChatInput): Promise<ChatOutput> {
+    return chatFlow(input);
+}

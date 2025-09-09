@@ -11,8 +11,10 @@ import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
+import { chat } from '@/ai/flows/assistant-flow';
+import { useToast } from '@/hooks/use-toast';
 
-interface Message {
+export interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
@@ -30,6 +32,7 @@ export default function AssistantClient() {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const { toast } = useToast();
 
   const handleSendMessage = async (prompt?: string) => {
     const messageContent = prompt || input;
@@ -40,22 +43,34 @@ export default function AssistantClient() {
       role: 'user',
       content: messageContent,
     };
-    setMessages(prev => [...prev, userMessage]);
+    
+    const newMessages: Message[] = [...messages, userMessage];
+    setMessages(newMessages);
     setInput('');
     setIsLoading(true);
 
-    // TODO: Connect to Genkit Flow
-    // Simulating AI response for now
-    setTimeout(() => {
+    try {
+        const chatHistory = newMessages.map(({id, ...rest}) => rest);
+        const response = await chat({ history: chatHistory });
+
         const aiMessage: Message = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
-            content: `Ceci est une réponse simulée à votre question : "${messageContent}". La logique de l'IA sera bientôt connectée.`
+            content: response.content
         };
         setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+        console.error("Error calling chat flow:", error);
+        toast({
+            title: "Erreur de l'assistant",
+            description: "Je n'ai pas pu traiter votre demande. Veuillez réessayer.",
+            variant: "destructive"
+        });
+        // Remove the user message if the call failed
+        setMessages(prev => prev.slice(0, -1));
+    } finally {
         setIsLoading(false);
-    }, 1500);
-
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
