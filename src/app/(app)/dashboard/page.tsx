@@ -94,8 +94,6 @@ export default async function DashboardPage() {
         },
     ]
   return (
-    <div className="container mx-auto py-10">
-        <DashboardClient stats={stats} categoryDistribution={categoryDistribution} error={error} />
-    </div>
+    <DashboardClient stats={stats} categoryDistribution={categoryDistribution} error={error} />
   );
 }
