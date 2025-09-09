@@ -5,6 +5,10 @@ import RecipeDetailClient from './RecipeDetailClient';
 export default async function RecipeDetailPage({ params }: { params: { id: string } }) {
   
   return (
-      <RecipeDetailClient recipeId={params.id} />
+    <div className="flex-1 overflow-y-auto">
+      <div className="container mx-auto py-10">
+        <RecipeDetailClient recipeId={params.id} />
+      </div>
+    </div>
   );
 }
