@@ -254,7 +254,7 @@ export default function MenuClient() {
                  <TabsList className="bg-background border p-1 rounded-lg">
                     <TabsTrigger 
                         value="Actif" 
-                        className={cn(selectedStatus === 'Actif' && 'bg-green-100 text-green-800 shadow-inner')}
+                        className={cn("data-[state=active]:text-green-800")}
                     >
                         Plats Actifs
                     </TabsTrigger>
@@ -292,6 +292,3 @@ export default function MenuClient() {
     </div>
   );
 }
-
-    
-    
