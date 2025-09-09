@@ -77,7 +77,11 @@ const chatFlow = ai.defineFlow(
       }
     });
 
-    return output ?? { content: "Je n'ai pas pu générer de réponse." };
+    if (!output) {
+      return { content: "Je suis désolé, je n'ai pas pu générer de réponse pour le moment. Veuillez réessayer." };
+    }
+
+    return output;
   }
 );
 
