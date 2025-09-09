@@ -51,6 +51,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import IngredientRow from "./IngredientRow";
 
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
@@ -60,7 +61,7 @@ type RecipeDetailClientProps = {
 };
 
 // Extends RecipeIngredient to include purchase unit details for conversion
-type FullRecipeIngredient = {
+export type FullRecipeIngredient = {
     id: string; // Ingredient ID
     recipeIngredientId: string; // The ID of the document in recipeIngredients collection
     name: string;
@@ -1079,32 +1080,16 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             <Table>
                                 <TableHeader><TableRow><TableHead className="w-[45%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
                                 <TableBody>
-                                    {isEditing && editableIngredients.map(ing => {
-                                        const substitutionTarget = allPreparations.find(p => p.name.toLowerCase() === ing.name.toLowerCase());
-                                        return (
-                                            <TableRow key={ing.recipeIngredientId}>
-                                                <TableCell className="font-medium flex items-center gap-1">
-                                                     {substitutionTarget ? (
-                                                        <TooltipProvider>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleSubstituteIngredient(ing.recipeIngredientId, false)}>
-                                                                        <Merge className="h-4 w-4 text-primary" />
-                                                                    </Button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>
-                                                                    <p>Substituer par la préparation "{substitutionTarget.name}"</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                    ) : ( <div className="w-9 h-9"/> )}
-                                                    {ing.name}
-                                                </TableCell>
-                                                <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
-                                                <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
-                                                <TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell>
-                                            </TableRow>
-                                    )})}
+                                    {isEditing && editableIngredients.map(ing => (
+                                        <IngredientRow 
+                                            key={ing.recipeIngredientId}
+                                            ing={ing}
+                                            allPreparations={allPreparations}
+                                            handleIngredientChange={handleIngredientChange}
+                                            handleSubstituteIngredient={handleSubstituteIngredient}
+                                            handleRemoveExistingIngredient={handleRemoveExistingIngredient}
+                                        />
+                                    ))}
                                     {!isEditing && ingredients.map(ing => (
                                         <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
                                     ))}
