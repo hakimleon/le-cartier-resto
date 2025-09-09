@@ -485,6 +485,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return () => { isMounted = false; };
   }, [recipeId, fullDataRefresh]);
 
+  useEffect(() => {
+    if (recipe) {
+      console.log('PROCEDURE_PREPARATION:', recipe.procedure_preparation);
+      console.log('PROCEDURE_CUISSON:', recipe.procedure_cuisson);
+      console.log('PROCEDURE_SERVICE:', recipe.procedure_service);
+    }
+  }, [recipe]);
+
   const handleToggleEditMode = () => {
     if (isEditing) {
         if(recipe) setEditableRecipe(JSON.parse(JSON.stringify(recipe)));
@@ -619,6 +627,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     setIsGenerating(true);
     try {
       const result = await generateRecipe({ name: recipe.name, description: recipe.description, type: recipe.type, });
+      
+      console.log("AI GENERATION RESULT:", result); // Log the result for debugging
+
       if (result) {
         if (!isEditing) { setIsEditing(true); }
         setEditableIngredients([]); setNewIngredients([]);
@@ -871,3 +882,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
