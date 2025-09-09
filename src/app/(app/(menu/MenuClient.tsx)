@@ -251,7 +251,7 @@ export default function MenuClient() {
         <div className="flex items-baseline gap-4">
             <Label className="text-sm font-semibold">Statut :</Label>
             <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')} className="w-full">
-                 <TabsList className="bg-background border p-1 rounded-lg">
+                 <TabsList>
                     <TabsTrigger 
                         value="Actif" 
                         className={cn(selectedStatus === 'Actif' && 'text-green-800')}
