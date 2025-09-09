@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -789,12 +790,15 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TabsTrigger value="service">Service</TabsTrigger>
                             </TabsList>
                              <TabsContent value="preparation" className="pt-4">
+                                {() => { console.log('PROCEDURE_PREPARATION:', recipe.procedure_preparation); return null; }()}
                                 <MarkdownRenderer text={recipe.procedure_preparation} />
                             </TabsContent>
                             <TabsContent value="cuisson" className="pt-4">
+                                {() => { console.log('PROCEDURE_CUISSON:', recipe.procedure_cuisson); return null; }()}
                                 <MarkdownRenderer text={recipe.procedure_cuisson} />
                             </TabsContent>
                             <TabsContent value="service" className="pt-4">
+                                {() => { console.log('PROCEDURE_SERVICE:', recipe.procedure_service); return null; }()}
                                 <MarkdownRenderer text={recipe.procedure_service} />
                             </TabsContent>
                         </Tabs>
