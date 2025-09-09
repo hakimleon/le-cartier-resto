@@ -148,6 +148,14 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
 };
 
 
+const foodCostIndicators = [
+  { range: "< 25%", level: "Exceptionnel", description: "Performance rare. Maîtrise parfaite ou prix très élevés.", color: "text-green-500" },
+  { range: "25-30%", level: "Excellent", description: "Performance optimale. Très bonne maîtrise des coûts.", color: "text-emerald-500" },
+  { range: "30-35%", level: "Bon", description: "Standard du secteur.", color: "text-yellow-500" },
+  { range: "35-40%", level: "Moyen", description: "Acceptable mais perfectible. Surveillance requise.", color: "text-orange-500" },
+  { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500" },
+];
+
 const NewIngredientRow = ({
     newIng,
     sortedIngredients,
@@ -242,6 +250,64 @@ const NewIngredientRow = ({
             <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
         </TableRow>
     );
+};
+
+const NewPreparationRow = ({
+  prep,
+  allPreparations,
+  recipeId,
+  handleNewPreparationChange,
+  handleRemoveNewPreparation,
+}: {
+  prep: NewRecipePreparation;
+  allPreparations: Preparation[];
+  recipeId: string;
+  handleNewPreparationChange: (tempId: string, field: keyof NewRecipePreparation, value: any) => void;
+  handleRemoveNewPreparation: (tempId: string) => void;
+}) => {
+  const [openPrepCombobox, setOpenPrepCombobox] = useState(false);
+
+  return (
+    <TableRow key={prep.id}>
+      <TableCell>
+        <Select
+          value={prep.childPreparationId}
+          onValueChange={(value) => handleNewPreparationChange(prep.id, 'childPreparationId', value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Choisir..." />
+          </SelectTrigger>
+          <SelectContent>
+            {allPreparations.map((p) =>
+              p.id && p.id !== recipeId ? (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ) : null
+            )}
+          </SelectContent>
+        </Select>
+      </TableCell>
+      <TableCell>
+        <Input
+          type="number"
+          placeholder="Qté"
+          className="w-20"
+          value={prep.quantity === 0 ? '' : prep.quantity}
+          onChange={(e) =>
+            handleNewPreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)
+          }
+        />
+      </TableCell>
+      <TableCell>{prep.unit || '-'}</TableCell>
+      <TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell>
+      <TableCell>
+        <Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}>
+          <Trash2 className="h-4 w-4 text-red-500" />
+        </Button>
+      </TableCell>
+    </TableRow>
+  );
 };
 
 
@@ -691,7 +757,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
                             ))}
                             {isEditing && newPreparations.map((prep) => (
-                                <TableRow key={prep.id}><TableCell><Select value={prep.childPreparationId} onValueChange={(value) => handleNewPreparationChange(prep.id, 'childPreparationId', value)} ><SelectTrigger><SelectValue placeholder="Choisir..." /></SelectTrigger><SelectContent>{allPreparations.map(p => ( p.id && p.id !== recipeId ? <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem> : null ))}</SelectContent></Select></TableCell><TableCell><Input type="number" placeholder="Qté" className="w-20" value={prep.quantity === 0 ? '' : prep.quantity} onChange={(e) => handleNewPreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell><TableCell>{prep.unit || "-"}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell><TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}><Trash2 className="h-4 w-4 text-red-500"/></Button></TableCell></TableRow>
+                                <NewPreparationRow
+                                    key={prep.id}
+                                    prep={prep}
+                                    allPreparations={allPreparations}
+                                    recipeId={recipeId}
+                                    handleNewPreparationChange={handleNewPreparationChange}
+                                    handleRemoveNewPreparation={handleRemoveNewPreparation}
+                                />
                             ))}
                             {currentPreparationsData.length === 0 && newPreparations.length === 0 && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
                         </TableBody>
@@ -799,4 +872,3 @@ function RecipeDetailSkeleton() {
     );
 }
 
-    
