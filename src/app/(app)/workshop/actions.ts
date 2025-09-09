@@ -29,7 +29,7 @@ export async function createDishFromWorkshop(concept: DishConceptOutput): Promis
             commercialArgument: concept.commercialArgument,
             price: 0, 
             status: 'Inactif',
-            category: 'Plats et Grillades', // Default category, user can change later
+            category: concept.category, // Use the category from the AI
             tvaRate: 10, // Default TVA rate
             // Les allergènes et les tags peuvent être ajoutés plus tard
         };
@@ -83,3 +83,5 @@ export async function createPreparation(prepData: Partial<Omit<Preparation, 'id'
         throw new Error("An unknown error occurred while creating the preparation.");
     }
 }
+
+    

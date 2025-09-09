@@ -32,6 +32,15 @@ export type DishConceptInput = z.infer<typeof DishConceptInputSchema>;
 const DishConceptOutputSchema = z.object({
     name: z.string().describe("Le nom final et marketing du plat."),
     description: z.string().describe("Une description alléchante et créative du plat."),
+    category: z.enum([
+        'Entrées froides et chaudes',
+        'Plats et Grillades',
+        'Les mets de chez nous',
+        'Symphonie de pâtes',
+        'Nos Burgers Bistronomiques',
+        'Dessert',
+        'Élixirs & Rafraîchissements'
+    ]).describe("La catégorie la plus appropriée pour ce plat, choisie dans la liste fournie."),
     ingredients: z.array(z.object({
         name: z.string().describe("Le nom de l'ingrédient."),
         quantity: z.number().describe("La quantité nécessaire."),
@@ -114,16 +123,17 @@ const recipeConceptPrompt = ai.definePrompt({
         Votre tâche est de générer une fiche technique détaillée avec les éléments suivants :
         1.  **name**: {{#if dishName}}Conservez impérativement le nom "{{{dishName}}}".{{else}}Inventez un nom de plat. Pour une carte gastronomique, un intitulé clair, sobre et précis inspire plus confiance que des noms trop lyriques. Le nom doit mettre en avant le produit principal et son accompagnement le plus significatif, pas une liste. Exemple : "Noix de Saint-Jacques justes snackées, mousseline de chou-fleur à la noisette". Mauvais exemple : "Symphonie marine et son trésor des champs".{{/if}}
         2.  **description**: Une description courte, poétique et alléchante qui met l'eau à la bouche.
-        3.  **ingredients**: Une liste de TOUS les ingrédients bruts nécessaires pour réaliser l'assemblage final du plat. Règle impérative : **privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes, plutôt que "pièce" ou "unité".** Réservez "pièce" uniquement lorsque c'est indispensable (ex: 1 œuf). N'incluez PAS ici les ingrédients des sous-recettes (existantes ou nouvelles).
-        4.  **subRecipes**: Listez ici UNIQUEMENT les noms des préparations de la recette qui correspondent EXACTEMENT à un nom dans la liste des préparations disponibles que vous avez récupérées via l'outil.
-        5.  **newSubRecipes**: Listez ici les NOUVELLES préparations que vous avez inventées (selon la règle de discernement IMPÉRATIVE) car elles n'étaient pas dans la liste de l'outil. Chaque élément doit avoir un nom et une description.
-        6.  **procedure_preparation**: Les étapes claires pour la mise en place et l'assemblage. Mentionnez l'utilisation des sous-recettes (ex: "Préparer la sauce bolognaise comme indiqué sur sa fiche."). Utilisez le format Markdown (titres avec '###', listes avec '-', sous-listes).
-        7.  **procedure_cuisson**: Les étapes techniques pour la cuisson de l'assemblage. Utilisez le format Markdown. Si le plat est cru, indiquez "Aucune cuisson nécessaire.".
-        8.  **procedure_service**: Les instructions de dressage précises pour une assiette spectaculaire. Utilisez le format Markdown. Par exemple: "### Dressage\\n1. Déposer la purée...\\n2. Placer le poisson..."
-        9.  **duration**: Estimez la durée totale de préparation en minutes (nombre entier).
-        10. **difficulty**: Évaluez la difficulté de la recette ('Facile', 'Moyen', 'Difficile').
-        11. **portions**: Estimez le nombre de portions que cette recette produit (ex: 1, 2, 4...).
-        12. **commercialArgument**: Rédigez un argumentaire de vente court, percutant et savoureux pour convaincre un client de choisir ce plat.
+        3.  **category**: En vous basant sur la nature du plat (ingrédients, type de service, etc.), choisissez la catégorie la plus appropriée parmi la liste suivante : 'Entrées froides et chaudes', 'Plats et Grillades', 'Les mets de chez nous', 'Symphonie de pâtes', 'Nos Burgers Bistronomiques', 'Dessert', 'Élixirs & Rafraîchissements'. C'est un champ obligatoire.
+        4.  **ingredients**: Une liste de TOUS les ingrédients bruts nécessaires pour réaliser l'assemblage final du plat. Règle impérative : **privilégiez systématiquement les unités de poids (grammes, kg) pour les viandes, poissons, et la plupart des légumes, plutôt que "pièce" ou "unité".** Réservez "pièce" uniquement lorsque c'est indispensable (ex: 1 œuf). N'incluez PAS ici les ingrédients des sous-recettes (existantes ou nouvelles).
+        5.  **subRecipes**: Listez ici UNIQUEMENT les noms des préparations de la recette qui correspondent EXACTEMENT à un nom dans la liste des préparations disponibles que vous avez récupérées via l'outil.
+        6.  **newSubRecipes**: Listez ici les NOUVELLES préparations que vous avez inventées (selon la règle de discernement IMPÉRATIVE) car elles n'étaient pas dans la liste de l'outil. Chaque élément doit avoir un nom et une description.
+        7.  **procedure_preparation**: Les étapes claires pour la mise en place et l'assemblage. Mentionnez l'utilisation des sous-recettes (ex: "Préparer la sauce bolognaise comme indiqué sur sa fiche."). Utilisez le format Markdown (titres avec '###', listes avec '-', sous-listes).
+        8.  **procedure_cuisson**: Les étapes techniques pour la cuisson de l'assemblage. Utilisez le format Markdown. Si le plat est cru, indiquez "Aucune cuisson nécessaire.".
+        9.  **procedure_service**: Les instructions de dressage précises pour une assiette spectaculaire. Utilisez le format Markdown. Par exemple: "### Dressage\\n1. Déposer la purée...\\n2. Placer le poisson..."
+        10. **duration**: Estimez la durée totale de préparation en minutes (nombre entier).
+        11. **difficulty**: Évaluez la difficulté de la recette ('Facile', 'Moyen', 'Difficile').
+        12. **portions**: Estimez le nombre de portions que cette recette produit (ex: 1, 2, 4...).
+        13. **commercialArgument**: Rédigez un argumentaire de vente court, percutant et savoureux pour convaincre un client de choisir ce plat.
 
         Soyez créatif, audacieux et respectez les contraintes à la lettre. Fournissez une réponse structurée au format JSON.
     `,
@@ -185,3 +195,5 @@ const generateDishConceptFlow = ai.defineFlow(
         };
     }
 );
+
+    
