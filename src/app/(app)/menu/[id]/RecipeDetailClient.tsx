@@ -126,11 +126,15 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
         return 0;
     }
 
-    const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
-    const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, "g");
+    const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+    const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
+
+    const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
+    const targetUnit = isLiquid ? 'ml' : 'g';
     
-    return quantityInGrams * netCostPerGram;
+    const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
+    
+    return quantityInBaseUnit * netCostPerGramOrMl;
 };
 
 
@@ -182,7 +186,7 @@ const MarkdownRenderer = ({ text }: { text: string | undefined }) => {
             elements.push(<br key={`br-${index}`} />);
         } else {
             flushList();
-            elements.push(<p key={index}>{trimmedLine}</p>);
+            elements.push(<p key={index} className="mb-2 last:mb-0">{trimmedLine}</p>);
         }
     });
 
@@ -620,7 +624,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }
 
     const handleRemoveNewPreparation = (tempId: string) => { setNewPreparations(current => current.filter(p => p.tempId !== tempId)); };
-    const handleRemoveExistingPreparation = (preparationLinkId: string) => { setEditablePreparations(current => current.filter(p => p.id !== preparationLinkId)); };
+    const handleRemoveExistingPreparation = (preparationLinkId: string) => {
+        setEditablePreparations(current => current.filter(p => p.id !== preparationLinkId));
+        toast({
+          title: "Sous-recette retirée",
+          description: "La modification sera appliquée à la sauvegarde.",
+        });
+    };
     const handlePreparationChange = (linkId: string, field: 'quantity', value: any) => {
         setEditablePreparations(current => current.map(prep => {
             if (prep.id === linkId) {
