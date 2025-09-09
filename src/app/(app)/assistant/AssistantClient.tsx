@@ -117,7 +117,7 @@ export default function AssistantClient() {
   return (
     <div className="flex flex-col h-full max-h-[calc(100vh-4rem)] bg-muted/40 w-full">
         <ScrollArea className="flex-1" ref={scrollAreaRef as any}>
-             <div className="space-y-6 p-4 md:p-6">
+             <div className="space-y-6 p-4 md:p-6 lg:p-8">
                 {messages.length === 0 && !isLoading && (
                     <div className="text-center pt-16 mx-auto max-w-4xl">
                         <div className="inline-block p-4 bg-primary/10 rounded-full">
@@ -135,7 +135,7 @@ export default function AssistantClient() {
                     </div>
                 )}
                  {messages.map((m) => (
-                    <div key={m.id} className={cn("flex items-start gap-4 max-w-6xl mx-auto", m.role === 'user' ? 'justify-end' : '')}>
+                    <div key={m.id} className={cn("flex items-start gap-4 max-w-5xl mx-auto", m.role === 'user' ? 'justify-end' : '')}>
                         {m.role === 'assistant' && (
                             <Avatar className="w-8 h-8 border">
                                 <AvatarFallback><Bot className="w-5 h-5"/></AvatarFallback>
@@ -152,7 +152,7 @@ export default function AssistantClient() {
                     </div>
                 ))}
                  {isLoading && (
-                    <div className="flex items-start gap-4 max-w-4xl mx-auto">
+                    <div className="flex items-start gap-4 max-w-5xl mx-auto">
                         <Avatar className="w-8 h-8 border">
                             <AvatarFallback><Bot className="w-5 h-5"/></AvatarFallback>
                         </Avatar>
@@ -168,7 +168,7 @@ export default function AssistantClient() {
             </div>
         </ScrollArea>
       <div className="border-t bg-card">
-        <div className="relative p-4 max-w-4xl mx-auto">
+        <div className="relative p-4 max-w-5xl mx-auto">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
