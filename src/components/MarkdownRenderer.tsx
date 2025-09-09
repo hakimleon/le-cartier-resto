@@ -18,49 +18,48 @@ type MarkdownNode = {
 }
 
 function parseMarkdown(md: string): MarkdownNode[] {
-  md = md.replace(/\r\n/g, "\n");
-  md = md.replace(/([^\n])(?=###\s)/g, "$1\n");
+    if (!md) return [];
+    md = md.replace(/\r\n/g, "\n");
+    const lines = md.split("\n");
+    const nodes: MarkdownNode[] = [];
+    let i = 0;
 
-  const lines = md.split("\n");
-  const nodes: MarkdownNode[] = [];
-  let i = 0;
-  while (i < lines.length) {
-    const line = lines[i].trim();
-    if (!line) {
-      i++;
-      continue;
+    while (i < lines.length) {
+        const line = lines[i];
+        
+        const hMatch = line.trim().match(/^(#{1,6})\s*(.*)$/);
+        if (hMatch) {
+            const level = hMatch[1].length;
+            nodes.push({ type: `h${level}`, content: hMatch[2].trim() });
+            i++;
+            continue;
+        }
+
+        if (line.trim().startsWith("- ")) {
+            const items: string[] = [];
+            while (i < lines.length && lines[i].trim().startsWith("- ")) {
+                items.push(lines[i].trim().substring(2));
+                i++;
+            }
+            nodes.push({ type: "ul", items });
+            continue;
+        }
+
+        if (line.trim() !== "") {
+            const paraLines: string[] = [];
+            while (i < lines.length && lines[i].trim() !== "" && !lines[i].trim().match(/^(#{1,6})\s/) && !lines[i].trim().startsWith("- ")) {
+                paraLines.push(lines[i].trim());
+                i++;
+            }
+            nodes.push({ type: "p", content: paraLines.join("\n") }); // Join with newline to preserve breaks within paragraphs
+            continue;
+        }
+
+        i++; // Move to next line if current line is empty
     }
-    const hMatch = line.match(/^(#{1,6})\s*(.*)$/);
-    if (hMatch) {
-      const level = hMatch[1].length;
-      nodes.push({ type: `h${level}`, content: hMatch[2].trim() });
-      i++;
-      continue;
-    }
-    if (line.startsWith("- ")) {
-      const items: string[] = [];
-      let j = i;
-      while (j < lines.length && lines[j].trim().startsWith("- ")) {
-        items.push(lines[j].trim().replace(/^-\s+/, ""));
-        j++;
-      }
-      nodes.push({ type: "ul", items });
-      i = j;
-      continue;
-    }
-    let j = i;
-    const paraLines: string[] = [];
-    while (j < lines.length) {
-      const l = lines[j].trim();
-      if (!l || l.match(/^(#{1,6})\s/) || l.startsWith("- ")) break;
-      paraLines.push(l);
-      j++;
-    }
-    nodes.push({ type: "p", content: paraLines.join(" ") });
-    i = j;
-  }
-  return nodes;
+    return nodes;
 }
+
 
 export default function MarkdownRenderer({ text }: { text: string | undefined }) {
   if (!text) return null;
@@ -86,7 +85,9 @@ export default function MarkdownRenderer({ text }: { text: string | undefined })
           );
         }
         if (n.type === "p") {
-          return <p key={idx} className="mb-4" dangerouslySetInnerHTML={{ __html: inlineFormat(n.content) }} />;
+          // Replace \n with <br /> for manual line breaks
+          const contentWithBreaks = inlineFormat(n.content).replace(/\n/g, '<br />');
+          return <p key={idx} className="mb-4" dangerouslySetInnerHTML={{ __html: contentWithBreaks }} />;
         }
         return null;
       })}
