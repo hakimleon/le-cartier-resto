@@ -115,7 +115,7 @@ const recipeGenPrompt = ai.definePrompt({
         - **Toujours remplir :** \`name\`, \`description\`, \`ingredients\`, \`subRecipes\`, \`newSubRecipes\`, les 3 \`procedure_...\`, \`duration\`, \`difficulty\`.
         - **Unités :** Préférez g, kg, l, ml. Utilisez "pièce" seulement si indispensable.
         - **Procédures :** Formatées en Markdown (### Titres, - Listes).
-        - **Sortie :** Fournissez une réponse structurée au format JSON. Ne laissez aucun champ vide, utilisez des tableaux vides `[]` ou des chaînes vides `""` si nécessaire.
+        - **Sortie :** Fournissez une réponse structurée au format JSON. Ne laissez aucun champ vide, utilisez des tableaux vides '[]' ou des chaînes vides '""' si nécessaire.
     `,
 });
 
