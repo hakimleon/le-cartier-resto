@@ -639,16 +639,16 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setNewIngredients(newIngs);
     };
 
-    const processSuggestedPreparations = (suggestedNames: string[], currentAllPreps: Preparation[]) => {
-        const newPreps: NewRecipePreparation[] = suggestedNames.map(name => {
-            const existing = currentAllPreps.find(p => p.name.toLowerCase() === name.toLowerCase());
+    const processSuggestedPreparations = (suggested: {name: string, quantity: number, unit: string}[], currentAllPreps: Preparation[]) => {
+        const newPreps: NewRecipePreparation[] = suggested.map(prep => {
+            const existing = currentAllPreps.find(p => p.name.toLowerCase() === prep.name.toLowerCase());
             const tempId = `new-prep-ws-${Date.now()}-${Math.random()}`;
             return {
                 tempId,
                 childPreparationId: existing?.id,
-                name: existing?.name || name,
-                quantity: 1, // Default quantity, user must adjust
-                unit: existing?.usageUnit || existing?.productionUnit || 'g',
+                name: existing?.name || prep.name,
+                quantity: prep.quantity, 
+                unit: prep.unit,
                 totalCost: 0, // Will be calculated when linked
                 _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0,
                 _productionUnit: existing?.productionUnit || ''
@@ -1217,7 +1217,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <div>
                                     <h4 className="font-semibold mb-1">Sous-recettes suggérées</h4>
                                     <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
-                                        {workshopConcept.subRecipes.map(prep => <li key={prep}>{prep}</li>)}
+                                        {workshopConcept.subRecipes.map(prep => <li key={prep.name}>{prep.quantity} {prep.unit} {prep.name}</li>)}
                                     </ul>
                                 </div>
                                 <div>

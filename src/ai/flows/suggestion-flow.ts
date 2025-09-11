@@ -81,7 +81,11 @@ const RecipeOutputSchema = z.object({
         quantity: z.number().describe("La quantité nécessaire."),
         unit: z.string().describe("L'unité de mesure (ex: g, kg, ml, l, pièce).")
     })).describe("La liste des ingrédients SIMPLES pour la recette. NE PAS inclure de sous-recettes ici."),
-    subRecipes: z.array(z.string()).describe("La liste des noms des sous-recettes EXISTANTES (qui étaient dans la liste fournie par l'outil) utilisées dans ce plat."),
+    subRecipes: z.array(z.object({
+        name: z.string().describe("Le nom de la sous-recette EXISTANTE (qui était dans la liste fournie par l'outil) utilisée dans ce plat."),
+        quantity: z.number().describe("La quantité estimée de cette sous-recette à utiliser."),
+        unit: z.string().describe("L'unité de mesure pour cette quantité (ex: g, kg, ml, l, pièce)."),
+    })).describe("La liste des sous-recettes EXISTANTES (qui étaient dans la liste fournie par l'outil) utilisées dans ce plat, avec leur quantité."),
     newSubRecipes: z.array(z.object({
         name: z.string().describe("Le nom de la NOUVELLE préparation que l'IA a dû créer car elle n'était pas dans la liste des préparations existantes."),
         description: z.string().describe("Une courte description de ce qu'est cette nouvelle préparation."),
@@ -120,10 +124,10 @@ const recipeGenerationPrompt = ai.definePrompt({
         Pour déterminer quelles préparations de base peuvent être utilisées, vous devez OBLIGATOIREMENT utiliser l'outil \`getAvailablePreparations\`. La liste retournée par cet outil est la SEULE source de vérité des préparations existantes.
 
         **Règle d'or : PRIVILÉGIER LES PRÉPARATIONS EXISTANTES**
-        Avant de lister les ingrédients, analysez la demande. Si un ingrédient demandé (ex: "mayonnaise", "sauce tomate", "fond de veau") correspond à une préparation existante dans la liste fournie par l'outil, vous devez **IMPÉRATIVEMENT** utiliser cette préparation dans le champ \`subRecipes\` au lieu de lister ses composants comme des ingrédients bruts. N'ajoutez PAS les ingrédients de la préparation existante (ex: huile, oeuf pour la mayonnaise) dans le champ \`ingredients\` du plat.
+        Avant de lister les ingrédients, analysez la demande. Si un ingrédient demandé (ex: "mayonnaise", "sauce tomate", "fond de veau") correspond à une préparation existante dans la liste fournie par l'outil, vous devez **IMPÉRATIVEMENT** utiliser cette préparation dans le champ \`subRecipes\` au lieu de lister ses composants comme des ingrédients bruts. Pour cette sous-recette, vous devez estimer une quantité et une unité pertinentes pour son utilisation dans le plat. N'ajoutez PAS les ingrédients de la préparation existante (ex: huile, oeuf pour la mayonnaise) dans le champ \`ingredients\` du plat.
 
         **Règles de gestion des sous-recettes (préparations) - TRÈS IMPORTANT :**
-        1.  Si une préparation nécessaire pour la recette existe dans la liste fournie par l'outil (cf. Règle d'or), vous devez l'ajouter au tableau \`subRecipes\`.
+        1.  Si une préparation nécessaire pour la recette existe dans la liste fournie par l'outil (cf. Règle d'or), vous devez l'ajouter au tableau \`subRecipes\` avec un nom, une quantité et une unité.
         2.  **Règle de discernement CRUCIALE et IMPÉRATIVE :** Une préparation ne doit être listée dans \`newSubRecipes\` que si elle représente une VRAIE préparation de base, complexe, qui a un intérêt à être stockée et réutilisée dans d'autres plats.
             -   **EXEMPLES DE BONNES NOUVELLES PRÉPARATIONS :** "Fond de veau", "Sauce hollandaise", "Pâte brisée", "Confit d'oignons".
             -   **EXEMPLES DE MAUVAISES NOUVELLES PRÉPARATIONS (À NE PAS FAIRE) :** "Sauce à la crème pour poulet", "Sauce minute au poivre", "Garniture de légumes rôtis".

@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { generateRecipe } from "@/ai/flows/suggestion-flow";
+import { generateRecipe, RecipeOutput as GeneratedRecipeOutput } from "@/ai/flows/suggestion-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -74,7 +74,7 @@ type FullRecipePreparation = {
 
 type NewRecipePreparation = {
     id: string; // Temporary client-side ID
-    childPreparationId: string;
+    childPreparationId?: string;
     name: string;
     quantity: number;
     unit: string;
@@ -604,7 +604,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         await replaceRecipeIngredients(recipeId, allCurrentIngredients);
         
         const existingPrepLinks = editablePreparations.map(p => ({ parentRecipeId: recipeId, childPreparationId: p.childPreparationId, quantity: p.quantity, unitUse: p.unit }));
-        const newPrepLinks = newPreparations.map(p => ({ parentRecipeId: recipeId, childPreparationId: p.childPreparationId, quantity: p.quantity, unitUse: p.unit })).filter(p => p.childPreparationId);
+        const newPrepLinks = newPreparations.map(p => ({ parentRecipeId: recipeId, childPreparationId: p.childPreparationId, quantity: p.quantity, unitUse: p.unit })).filter(p => !!p.childPreparationId);
         const allPrepLinks = [...existingPrepLinks, ...newPrepLinks] as Omit<RecipePreparationLink, 'id'>[];
         await replaceRecipePreparations(recipeId, allPrepLinks);
         
@@ -620,11 +620,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     if (!recipe) return;
     setIsGenerating(true);
     try {
-      const result = await generateRecipe({ name: recipe.name, description: recipe.description, type: recipe.type, });
+      const result: GeneratedRecipeOutput = await generateRecipe({ name: recipe.name, description: recipe.description, type: recipe.type, });
       if (result) {
         if (!isEditing) { setIsEditing(true); }
         
-        // Reset and populate from AI
         setEditableIngredients([]);
         setNewIngredients([]);
         setEditablePreparations([]);
@@ -661,16 +660,16 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setNewIngredients(generatedIngredients);
 
         // Populate new preparations (which are linked from existing ones)
-        const generatedPreparations: NewRecipePreparation[] = result.subRecipes.map(prepName => {
-            const existingPrep = allPreparations.find(p => p.name.toLowerCase() === prepName.toLowerCase());
+        const generatedPreparations: NewRecipePreparation[] = result.subRecipes.map(prep => {
+            const existingPrep = allPreparations.find(p => p.name.toLowerCase() === prep.name.toLowerCase());
             const tempId = `new-prep-gen-${Date.now()}-${Math.random()}`;
             if (existingPrep) {
                 return {
                     id: tempId,
                     childPreparationId: existingPrep.id!,
                     name: existingPrep.name,
-                    quantity: 1, // Default quantity, user must adjust
-                    unit: existingPrep.usageUnit || 'g',
+                    quantity: prep.quantity,
+                    unit: prep.unit,
                     totalCost: 0, // Recalculated later
                      _productionUnit: existingPrep.productionUnit || 'g',
                     _costPerUnit: preparationsCosts[existingPrep.id!] || 0,
@@ -678,7 +677,17 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             }
             return null; // Should not happen if AI respects the tools
         }).filter(Boolean) as NewRecipePreparation[];
-        setNewPreparations(generatedPreparations);
+        
+        // This is a bit of a hacky recalculation, but it's better than nothing
+        const updatedNewPreps = generatedPreparations.map(p => {
+             const costPerProductionUnit = p._costPerUnit || 0;
+             const conversionFactor = getConversionFactor(p.unit, p._productionUnit);
+             const costPerUseUnit = costPerProductionUnit / conversionFactor;
+             p.totalCost = (p.quantity || 0) * costPerUseUnit;
+             return p;
+        });
+
+        setNewPreparations(updatedNewPreps);
 
 
         toast({ title: "Recette générée !", description: "La fiche technique a été pré-remplie. Veuillez vérifier les informations." });
