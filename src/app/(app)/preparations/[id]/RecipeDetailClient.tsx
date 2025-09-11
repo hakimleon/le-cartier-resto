@@ -29,15 +29,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { generateRecipe, RecipeOutput as GeneratedRecipeOutput } from "@/ai/flows/suggestion-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
+import { PreparationModal } from "../PreparationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { RecipeConceptOutput } from "@/ai/flows/recipe-workshop-flow";
 
+
+const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
 
 type RecipeDetailClientProps = {
   recipeId: string;
@@ -73,7 +76,7 @@ type FullRecipePreparation = {
 }
 
 type NewRecipePreparation = {
-    id: string; // Temporary client-side ID
+    tempId: string; // Temporary client-side ID
     childPreparationId?: string;
     name: string;
     quantity: number;
@@ -149,14 +152,6 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
     return quantityInBaseUnit * netCostPerGramOrMl;
 };
 
-
-const foodCostIndicators = [
-  { range: "< 25%", level: "Exceptionnel", description: "Performance rare. Maîtrise parfaite ou prix très élevés.", color: "text-green-500" },
-  { range: "25-30%", level: "Excellent", description: "Performance optimale. Très bonne maîtrise des coûts.", color: "text-emerald-500" },
-  { range: "30-35%", level: "Bon", description: "Standard du secteur.", color: "text-yellow-500" },
-  { range: "35-40%", level: "Moyen", description: "Acceptable mais perfectible. Surveillance requise.", color: "text-orange-500" },
-  { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500" },
-];
 
 const NewIngredientRow = ({
     newIng,
@@ -259,36 +254,59 @@ const NewPreparationRow = ({
   allPreparations,
   recipeId,
   handleNewPreparationChange,
+  openNewPreparationModal,
   handleRemoveNewPreparation,
 }: {
   prep: NewRecipePreparation;
   allPreparations: Preparation[];
   recipeId: string;
   handleNewPreparationChange: (tempId: string, field: keyof NewRecipePreparation, value: any) => void;
+  openNewPreparationModal: (tempId: string) => void;
   handleRemoveNewPreparation: (tempId: string) => void;
 }) => {
   const [openPrepCombobox, setOpenPrepCombobox] = useState(false);
 
   return (
-    <TableRow key={prep.id}>
+    <TableRow key={prep.tempId}>
       <TableCell>
-        <Select
-          value={prep.childPreparationId}
-          onValueChange={(value) => handleNewPreparationChange(prep.id, 'childPreparationId', value)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Choisir..." />
-          </SelectTrigger>
-          <SelectContent>
-            {allPreparations.map((p) =>
-              p.id && p.id !== recipeId ? (
-                <SelectItem key={p.id} value={p.id}>
-                  {p.name}
-                </SelectItem>
-              ) : null
+         <div className="flex items-center gap-2">
+            <Popover open={openPrepCombobox} onOpenChange={setOpenPrepCombobox}>
+                <PopoverTrigger asChild>
+                    <Button
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={openPrepCombobox}
+                        className="w-full justify-between"
+                    >
+                        {prep.childPreparationId
+                            ? allPreparations.find(p => p.id === prep.childPreparationId)?.name
+                            : prep.name || "Choisir..."}
+                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                        <CommandInput placeholder="Rechercher une préparation..." />
+                        <CommandList>
+                            <CommandEmpty>Aucune préparation trouvée.</CommandEmpty>
+                            <CommandGroup>
+                                {allPreparations.filter(p => p.id !== recipeId).map(p => (
+                                    p.id ? <CommandItem key={p.id} value={p.name} onSelect={() => { handleNewPreparationChange(prep.tempId, 'childPreparationId', p.id!); setOpenPrepCombobox(false); }}>
+                                        <Check className={cn("mr-2 h-4 w-4", prep.childPreparationId === p.id ? "opacity-100" : "opacity-0")} />
+                                        {p.name}
+                                    </CommandItem> : null
+                                ))}
+                            </CommandGroup>
+                        </CommandList>
+                    </Command>
+                </PopoverContent>
+            </Popover>
+             {!prep.childPreparationId && (
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewPreparationModal(prep.tempId)} title={`Créer la préparation "${prep.name}"`}>
+                    <PlusCircle className="h-4 w-4 text-primary" />
+                </Button>
             )}
-          </SelectContent>
-        </Select>
+        </div>
       </TableCell>
       <TableCell>
         <Input
@@ -297,14 +315,14 @@ const NewPreparationRow = ({
           className="w-20"
           value={prep.quantity === 0 ? '' : prep.quantity}
           onChange={(e) =>
-            handleNewPreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)
+            handleNewPreparationChange(prep.tempId, 'quantity', parseFloat(e.target.value) || 0)
           }
         />
       </TableCell>
       <TableCell>{prep.unit || '-'}</TableCell>
       <TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell>
       <TableCell>
-        <Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.id)}>
+        <Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.tempId)}>
           <Trash2 className="h-4 w-4 text-red-500" />
         </Button>
       </TableCell>
@@ -326,7 +344,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -338,9 +355,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [preparationsCosts, setPreparationsCosts] = useState<Record<string, number>>({});
 
   const [isNewIngredientModalOpen, setIsNewIngredientModalOpen] = useState(false);
+  const [isNewPreparationModalOpen, setIsNewPreparationModalOpen] = useState(false);
   const [newIngredientDefaults, setNewIngredientDefaults] = useState<Partial<Ingredient> | null>(null);
+  const [newPreparationDefaults, setNewPreparationDefaults] = useState<Partial<Preparation> | null>(null);
   const [currentTempId, setCurrentTempId] = useState<string | null>(null);
-
+  const [currentPrepTempId, setCurrentPrepTempId] = useState<string | null>(null);
+  
   const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
     const costs: Record<string, number> = {};
     const prepDependencies: Record<string, string[]> = {};
@@ -409,11 +429,16 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return ingredientsList;
   }, []);
 
+   const fetchAllPreparations = useCallback(async () => {
+        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
+        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+        setAllPreparations(prepsList);
+        return prepsList;
+    }, []);
+
   const fullDataRefresh = useCallback(async () => {
     const ingredientsList = await fetchAllIngredients();
-    const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
-    const allPrepsData = allPrepsSnap.docs.map(doc => ({...doc.data(), id: doc.id} as Preparation));
-    setAllPreparations(allPrepsData);
+    const allPrepsData = await fetchAllPreparations();
     const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
     setPreparationsCosts(costs);
     
@@ -462,7 +487,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     setPreparations(preparationsData);
     setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
 
-}, [recipeId, calculatePreparationsCosts, fetchAllIngredients]);
+}, [recipeId, calculatePreparationsCosts, fetchAllIngredients, fetchAllPreparations]);
 
   useEffect(() => {
     if (!recipeId) { setIsLoading(false); setError("L'identifiant de la recette est manquante."); return; }
@@ -474,9 +499,35 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         try {
             setIsLoading(true);
             await fullDataRefresh();
+
+            const conceptJSON = sessionStorage.getItem(PREPARATION_WORKSHOP_CONCEPT_KEY);
+            if (conceptJSON && isMounted) {
+                setIsEditing(true);
+                const concept: RecipeConceptOutput = JSON.parse(conceptJSON);
+
+                setEditableRecipe(current => ({ ...current!, ...concept }));
+                
+                const ingredientsList = await fetchAllIngredients();
+                const newIngs: NewRecipeIngredient[] = (concept.ingredients || []).map(sugIng => {
+                    const existing = ingredientsList.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
+                    let totalCost = existing ? recomputeIngredientCost({ quantity: sugIng.quantity, unit: sugIng.unit }, existing) : 0;
+                    return { tempId: `new-ws-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost };
+                });
+                setNewIngredients(newIngs);
+                
+                const allPrepsList = await fetchAllPreparations();
+                const newPreps: NewRecipePreparation[] = (concept.subRecipes || []).map(sugPrep => {
+                    const existing = allPrepsList.find(dbPrep => dbPrep.name.toLowerCase() === sugPrep.name.toLowerCase());
+                    return { tempId: `new-ws-prep-${Date.now()}-${Math.random()}`, childPreparationId: existing?.id, name: existing?.name || sugPrep.name, quantity: sugPrep.quantity, unit: sugPrep.unit, totalCost: 0, _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0, _productionUnit: existing?.productionUnit || '' };
+                });
+                setNewPreparations(newPreps);
+
+                toast({ title: "Fiche importée de l'Atelier !", description: "Vérifiez et sauvegardez les informations." });
+                sessionStorage.removeItem(PREPARATION_WORKSHOP_CONCEPT_KEY);
+            }
         } catch(e: any) {
              console.error("Error during initial load: ", e);
-            if (isMounted) { setError("Impossible de charger les données de support. " + e.message); }
+            if (isMounted) { setError("Impossible de charger les données. " + e.message); }
         } finally {
             if(isMounted) setIsLoading(false);
         }
@@ -485,7 +536,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     initialLoad();
 
     return () => { isMounted = false; };
-  }, [recipeId, fullDataRefresh]);
+  }, [recipeId, fullDataRefresh, fetchAllIngredients, fetchAllPreparations]);
 
   const handleToggleEditMode = () => {
     if (isEditing) {
@@ -548,8 +599,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   }
   const openNewIngredientModal = (tempId: string) => { const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId); if(ingredientToCreate) { setCurrentTempId(tempId); setNewIngredientDefaults({ name: ingredientToCreate.name }); setIsNewIngredientModalOpen(true); } }
 
-  const handleAddNewPreparation = () => { setNewPreparations([ ...newPreparations, { id: `new-prep-${Date.now()}`, childPreparationId: '', name: '', quantity: 0, unit: '', totalCost: 0, _productionUnit: '', }, ]); };
-  const handleRemoveNewPreparation = (tempId: string) => { setNewPreparations(current => current.filter(p => p.id !== tempId)); };
+  const handleAddNewPreparation = () => { setNewPreparations([ ...newPreparations, { tempId: `new-prep-${Date.now()}`, childPreparationId: '', name: '', quantity: 0, unit: '', totalCost: 0, _productionUnit: '', }, ]); };
+  const handleRemoveNewPreparation = (tempId: string) => { setNewPreparations(current => current.filter(p => p.tempId !== tempId)); };
   const handlePreparationChange = (linkId: string, field: 'quantity', value: any) => {
       setEditablePreparations(current => current.map(prep => {
           if (prep.id === linkId) {
@@ -565,7 +616,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   };
   const handleNewPreparationChange = (tempId: string, field: keyof NewRecipePreparation, value: any) => {
       setNewPreparations(current => current.map(p => {
-              if (p.id === tempId) {
+              if (p.tempId === tempId) {
                   const updatedPrep = { ...p, [field]: value };
                   if (field === 'childPreparationId') {
                       const selectedPrep = allPreparations.find(prep => prep.id === value);
@@ -587,6 +638,24 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     setEditablePreparations(current => current.filter(p => p.id !== preparationLinkId));
     toast({ title: "Sous-recette retirée", description: "La modification sera appliquée à la sauvegarde.", }); 
   };
+
+  const openNewPreparationModal = (tempId: string) => {
+        const prepToCreate = newPreparations.find(p => p.tempId === tempId);
+        if (prepToCreate) {
+            setCurrentPrepTempId(tempId);
+            setNewPreparationDefaults({ name: prepToCreate.name, description: `Préparation pour "${recipe?.name}"` });
+            setIsNewPreparationModalOpen(true);
+        }
+    };
+
+    const handleCreateAndLinkPreparation = (tempId: string, newPreparation: Preparation) => {
+        fetchAllPreparations().then(updatedList => {
+            const newlyAdded = updatedList.find(p => p.id === newPreparation.id);
+            if (newlyAdded) {
+                handleNewPreparationChange(tempId, 'childPreparationId', newlyAdded.id!);
+            }
+        })
+    }
   
   const handleSave = async () => {
     if (!editableRecipe) return;
@@ -614,86 +683,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setIsEditing(false); setNewIngredients([]); setNewPreparations([]);
     } catch (error) { console.error("Error saving changes:", error); toast({ title: "Erreur", description: "La sauvegarde des modifications a échoué.", variant: "destructive", });
     } finally { setIsSaving(false); }
-  };
-
-  const handleGenerateRecipe = async () => {
-    if (!recipe) return;
-    setIsGenerating(true);
-    try {
-      const result: GeneratedRecipeOutput = await generateRecipe({ name: recipe.name, description: recipe.description, type: recipe.type, });
-      if (result) {
-        if (!isEditing) { setIsEditing(true); }
-        
-        setEditableIngredients([]);
-        setNewIngredients([]);
-        setEditablePreparations([]);
-        setNewPreparations([]);
-        
-        setEditableRecipe(current => {
-            if (!current) return null;
-            const updated = { ...current,
-                 procedure_preparation: result.procedure_preparation, 
-                 procedure_cuisson: result.procedure_cuisson, 
-                 procedure_service: result.procedure_service, 
-                 difficulty: result.difficulty, 
-                 duration: result.duration, 
-            };
-            if (updated.type === 'Préparation') { 
-                (updated as Preparation).productionQuantity = result.productionQuantity; 
-                (updated as Preparation).productionUnit = result.productionUnit; 
-                (updated as Preparation).usageUnit = result.usageUnit;
-            }
-            return updated;
-        });
-
-        // Populate new ingredients
-        const generatedIngredients: NewRecipeIngredient[] = result.ingredients.map(ing => {
-          const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === ing.name.toLowerCase());
-          const tempId = `new-gen-${Date.now()}-${Math.random()}`;
-          let totalCost = 0;
-          if(existingIngredient) {
-             const tempNewIng: {quantity: number, unit: string} = {quantity: ing.quantity, unit: ing.unit};
-             totalCost = recomputeIngredientCost(tempNewIng, existingIngredient);
-          }
-          return { tempId, ingredientId: existingIngredient?.id, name: ing.name, quantity: ing.quantity, unit: ing.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, };
-        });
-        setNewIngredients(generatedIngredients);
-
-        // Populate new preparations (which are linked from existing ones)
-        const generatedPreparations: NewRecipePreparation[] = result.subRecipes.map(prep => {
-            const existingPrep = allPreparations.find(p => p.name.toLowerCase() === prep.name.toLowerCase());
-            const tempId = `new-prep-gen-${Date.now()}-${Math.random()}`;
-            if (existingPrep) {
-                return {
-                    id: tempId,
-                    childPreparationId: existingPrep.id!,
-                    name: existingPrep.name,
-                    quantity: prep.quantity,
-                    unit: prep.unit,
-                    totalCost: 0, // Recalculated later
-                     _productionUnit: existingPrep.productionUnit || 'g',
-                    _costPerUnit: preparationsCosts[existingPrep.id!] || 0,
-                };
-            }
-            return null; // Should not happen if AI respects the tools
-        }).filter(Boolean) as NewRecipePreparation[];
-        
-        // This is a bit of a hacky recalculation, but it's better than nothing
-        const updatedNewPreps = generatedPreparations.map(p => {
-             const costPerProductionUnit = p._costPerUnit || 0;
-             const conversionFactor = getConversionFactor(p.unit, p._productionUnit);
-             const costPerUseUnit = costPerProductionUnit / conversionFactor;
-             p.totalCost = (p.quantity || 0) * costPerUseUnit;
-             return p;
-        });
-
-        setNewPreparations(updatedNewPreps);
-
-
-        toast({ title: "Recette générée !", description: "La fiche technique a été pré-remplie. Veuillez vérifier les informations." });
-      }
-    } catch (e) { console.error("Failed to generate recipe with AI", e); toast({ title: "Erreur de l'IA", description: "Impossible de générer la recette. Veuillez réessayer.", variant: 'destructive', });
-    } finally { setIsGenerating(false); }
   };
 
   const sortedIngredients = useMemo(() => {
@@ -727,6 +716,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   return (
     <div className="space-y-4">
       {isNewIngredientModalOpen && (<IngredientModal open={isNewIngredientModalOpen} onOpenChange={setIsNewIngredientModalOpen} ingredient={newIngredientDefaults} onSuccess={(newDbIngredient) => { if (newDbIngredient && currentTempId) { handleCreateAndLinkIngredient(currentTempId, newDbIngredient); } }}><div/></IngredientModal>)}
+      {isNewPreparationModalOpen && (<PreparationModal open={isNewPreparationModalOpen} onOpenChange={setIsNewPreparationModalOpen} preparation={newPreparationDefaults} onSuccess={(newDbPrep) => { if (newDbPrep && currentPrepTempId) { handleCreateAndLinkPreparation(currentPrepTempId, newDbPrep); } }}><div/></PreparationModal>)}
 
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-4 flex-grow">
@@ -751,7 +741,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-            <Button variant="outline" onClick={handleGenerateRecipe} disabled={isGenerating || isEditing}><Sparkles className="mr-2 h-4 w-4" />{isGenerating ? 'Génération...' : 'Élaborer avec l\'IA'}</Button>
             <Button variant="outline" onClick={handleToggleEditMode}>{isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}</Button>
         </div>
       </header>
@@ -806,11 +795,12 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             ))}
                             {isEditing && newPreparations.map((prep) => (
                                 <NewPreparationRow
-                                    key={prep.id}
+                                    key={prep.tempId}
                                     prep={prep}
                                     allPreparations={allPreparations}
                                     recipeId={recipeId}
                                     handleNewPreparationChange={handleNewPreparationChange}
+                                    openNewPreparationModal={openNewPreparationModal}
                                     handleRemoveNewPreparation={handleRemoveNewPreparation}
                                 />
                             ))}

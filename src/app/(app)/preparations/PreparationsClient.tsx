@@ -9,7 +9,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, PlusCircle, Search, FileText, Pencil, Trash2 } from "lucide-react";
-import { PreparationModal } from "./PreparationModal";
 import { useToast } from "@/hooks/use-toast";
 import { deletePreparation } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,6 +33,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { useRouter } from "next/navigation";
 
 export default function PreparationsClient() {
   const [preparations, setPreparations] = useState<Preparation[]>([]);
@@ -41,6 +41,7 @@ export default function PreparationsClient() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
@@ -157,11 +158,6 @@ export default function PreparationsClient() {
                                     <FileText className="h-4 w-4" />
                                 </Button>
                             </Link>
-                            <PreparationModal preparation={prep} onSuccess={() => { /* onSnapshot handles updates */ }}>
-                                <Button variant="ghost" size="icon" className="h-8 w-8" title="Modifier">
-                                    <Pencil className="h-4 w-4" />
-                                </Button>
-                            </PreparationModal>
                             <AlertDialog>
                               <AlertDialogTrigger asChild>
                                 <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Supprimer">
@@ -228,12 +224,10 @@ export default function PreparationsClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <PreparationModal preparation={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Nouvelle Préparation
-                </Button>
-            </PreparationModal>
+             <Button onClick={() => router.push('/preparations/workshop')}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Nouvelle Préparation
+            </Button>
         </div>
       </header>
 

@@ -1,3 +1,4 @@
+
 "use client";
 
 import {
@@ -32,16 +33,12 @@ export function PreparationModal({ children, preparation, onSuccess, open, onOpe
         setIsOpen(false);
         onSuccess(newPreparation);
 
-        // Si c'est une nouvelle préparation, rediriger vers sa page de détail.
-        if (newPreparation && !preparation?.id) {
-            router.push(`/preparations/${newPreparation.id}`);
-        }
+        // This modal is now only for editing, not creating.
+        // The creation flow is handled by the workshop.
     }
     
-    const title = preparation?.id ? `Modifier la préparation` : `Nouvelle préparation`;
-    const description = preparation?.id
-      ? `Modifiez les détails de la préparation ci-dessous.`
-      : `Ajoutez une nouvelle préparation à votre base de données.`;
+    const title = `Modifier la préparation`;
+    const description = `Modifiez les détails de la préparation ci-dessous.`;
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
