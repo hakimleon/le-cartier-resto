@@ -1,4 +1,3 @@
-
 'use client';
 
 import { ReactNode } from 'react';
@@ -22,8 +21,13 @@ import { cn } from '@/lib/utils';
 import AssistantWidget from './assistant/AssistantClient';
 
 const Logo = () => (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6 text-primary">
-        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+    <svg role="img" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" fill="hsl(var(--primary-foreground))" stroke="hsl(var(--primary-foreground))" >
+      <path d="M60.6,102.5a2.5,2.5,0,0,0,5,0V50.1a2.5,2.5,0,0,0-5,0V102.5Z" stroke="none"/>
+      <path d="M54.5,44.7v-5a2.5,2.5,0,0,1,5,0v5a2.5,2.5,0,0,1-5,0Z" stroke="none"/>
+      <path d="M60.6,39.7a2.5,2.5,0,0,1,0-5h2.5a2.5,2.5,0,0,1,0,5Z" stroke="none"/>
+      <path d="M74.4,39.7a2.5,2.5,0,0,1,0-5h2.5a2.5,2.5,0,0,1,0,5Z" stroke="none"/>
+      <path d="M96.9,49.8V102.5a2.5,2.5,0,0,1-5,0V49.8a7.5,7.5,0,0,0-7.5-7.5H91A2.5,2.5,0,0,1,91,37.3h1a12.5,12.5,0,0,1,12.5,12.5v52.7a2.5,2.5,0,0,1-5,0V50.1a7.5,7.5,0,0,0-7.5-7.5H91A2.5,2.5,0,0,1,91,37.3h.9A12.5,12.5,0,0,1,96.9,49.8Z" stroke="none"/>
+      <path d="M80,22.3a42.5,42.5,0,0,0-42.5,42.5V110a5,5,0,0,0,5,5H117.5a5,5,0,0,0,5-5V64.8A42.5,42.5,0,0,0,80,22.3Zm40,87.7H40a2.5,2.5,0,0,1-2.5-2.5V64.8A40,40,0,0,1,80,24.8a40,40,0,0,1,40,40Z" stroke-width="3" fill="none"/>
     </svg>
 );
 
@@ -43,7 +47,7 @@ export default function AppLayout({
         <Sidebar variant="sidebar" collapsible="icon">
           <SidebarHeader className="p-4">
             <Link href="/" className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 rounded-lg">
+                <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 rounded-lg bg-primary">
                     <Logo />
                 </Button>
                 <div className="flex flex-col">
