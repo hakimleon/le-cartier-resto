@@ -81,6 +81,11 @@ const RecipeOutputSchema = z.object({
         quantity: z.number().describe("La quantité nécessaire."),
         unit: z.string().describe("L'unité de mesure (ex: g, kg, ml, l, pièce).")
     })).describe("La liste des ingrédients SIMPLES pour la recette. NE PAS inclure de sous-recettes ici."),
+    subRecipes: z.array(z.string()).describe("La liste des noms des sous-recettes EXISTANTES (qui étaient dans la liste fournie par l'outil) utilisées dans ce plat."),
+    newSubRecipes: z.array(z.object({
+        name: z.string().describe("Le nom de la NOUVELLE préparation que l'IA a dû créer car elle n'était pas dans la liste des préparations existantes."),
+        description: z.string().describe("Une courte description de ce qu'est cette nouvelle préparation."),
+    })).describe("La liste des NOUVELLES préparations que l'IA a dû inventer pour cette recette."),
     procedure_preparation: z.string().describe("Les étapes détaillées de la phase de préparation. DOIT être formaté en Markdown."),
     procedure_cuisson: z.string().describe("Les étapes détaillées de la phase de cuisson. DOIT être formaté en Markdown."),
     procedure_service: z.string().describe("Les étapes détaillées pour le service ou le dressage. DOIT être formaté en Markdown."),
@@ -103,7 +108,8 @@ export async function generateRecipe(input: RecipeInput): Promise<RecipeOutput> 
 const recipeGenerationPrompt = ai.definePrompt({
     name: 'recipeGenerationPrompt',
     input: { schema: RecipeInputSchema },
-    output: { schema: RecipeOutputSchema.omit({ subRecipes: true, newSubRecipes: true } as any) }, // Simplify output
+    output: { schema: RecipeOutputSchema },
+    tools: [getAvailablePreparationsTool],
     prompt: `
         Vous êtes un chef de cuisine expert. Votre mission est de créer une fiche technique détaillée pour des restaurants.
         
@@ -111,13 +117,24 @@ const recipeGenerationPrompt = ai.definePrompt({
         Description: {{{description}}}
         Type de Fiche: {{{type}}}
 
+        Pour déterminer quelles préparations de base peuvent être utilisées, vous devez OBLIGATOIREMENT utiliser l'outil \`getAvailablePreparations\`. La liste retournée par cet outil est la SEULE source de vérité des préparations existantes.
+
+        **Règle d'or : PRIVILÉGIER LES PRÉPARATIONS EXISTANTES**
+        Avant de lister les ingrédients, analysez la demande. Si un ingrédient demandé (ex: "mayonnaise", "sauce tomate", "fond de veau") correspond à une préparation existante dans la liste fournie par l'outil, vous devez **IMPÉRATIVEMENT** utiliser cette préparation dans le champ \`subRecipes\` au lieu de lister ses composants comme des ingrédients bruts. N'ajoutez PAS les ingrédients de la préparation existante (ex: huile, oeuf pour la mayonnaise) dans le champ \`ingredients\` du plat.
+
+        **Règles de gestion des sous-recettes (préparations) - TRÈS IMPORTANT :**
+        1.  Si une préparation nécessaire pour la recette existe dans la liste fournie par l'outil (cf. Règle d'or), vous devez l'ajouter au tableau \`subRecipes\`.
+        2.  **Règle de discernement CRUCIALE et IMPÉRATIVE :** Une préparation ne doit être listée dans \`newSubRecipes\` que si elle représente une VRAIE préparation de base, complexe, qui a un intérêt à être stockée et réutilisée dans d'autres plats.
+            -   **EXEMPLES DE BONNES NOUVELLES PRÉPARATIONS :** "Fond de veau", "Sauce hollandaise", "Pâte brisée", "Confit d'oignons".
+            -   **EXEMPLES DE MAUVAISES NOUVELLES PRÉPARATIONS (À NE PAS FAIRE) :** "Sauce à la crème pour poulet", "Sauce minute au poivre", "Garniture de légumes rôtis".
+        3.  **Si une sauce, une vinaigrette, un jus ou une garniture est simple et fait "à la minute", ses ingrédients doivent être listés dans le tableau \`ingredients\` principal et ses étapes intégrées directement dans la \`procedure\`. Ne la déclarez JAMAIS comme une nouvelle sous-recette.**
+        4.  Les ingrédients et étapes des NOUVELLES préparations (celles listées dans \`newSubRecipes\`) ne doivent PAS être détaillés dans la procédure du plat principal. La procédure doit simplement mentionner "utiliser la Sauce X".
+        
         **Instructions FONDAMENTALES :**
-        1.  **Règle sur les Ingrédients :** Listez UNIQUEMENT les ingrédients BRUTS et SIMPLES. Si la recette nécessite un composant complexe comme une "Mayonnaise" ou une "Sauce Tomate", listez simplement cet ingrédient par son nom (ex: "Mayonnaise", "Sauce Tomate"). Ne décomposez JAMAIS ces composants en leurs propres ingrédients (ne listez pas huile, oeuf, etc. pour une mayonnaise).
-        2.  **Règle sur les noms :** Utilisez des noms d'ingrédients génériques (ex: "Tomate", "Oignon", "Poulet", "Mayonnaise").
-        3.  **Règle sur les unités :** Privilégiez systématiquement les unités de poids (g, kg) et de volume (l, ml). Utilisez "pièce" uniquement quand c'est indispensable.
-        4.  **Procédure :** Rédigez une procédure technique détaillée en trois phases : "Préparation", "Cuisson", et "Service", en format Markdown. Si une phase n'est pas applicable, retournez une chaîne vide. La procédure doit mentionner l'utilisation des composants complexes (ex: "Ajouter 100g de Mayonnaise").
-        5.  **Estimations :** Estimez la durée, la difficulté, la quantité produite (et son unité), et l'unité d'utilisation.
-        6.  **Sortie :** Fournissez la sortie au format JSON structuré attendu. Ne générez pas de champs 'subRecipes' ou 'newSubRecipes'.
+        1.  **Règle sur les unités :** Privilégiez systématiquement les unités de poids (g, kg) et de volume (l, ml). Utilisez "pièce" uniquement quand c'est indispensable.
+        2.  **Procédure :** Rédigez une procédure technique détaillée en trois phases : "Préparation", "Cuisson", et "Service", en format Markdown. Si une phase n'est pas applicable, retournez une chaîne vide.
+        3.  **Estimations :** Estimez la durée, la difficulté, la quantité produite (et son unité), et l'unité d'utilisation.
+        4.  **Sortie :** Fournissez la sortie au format JSON structuré attendu.
     `,
 });
 
@@ -134,5 +151,13 @@ const generateRecipeFlow = ai.defineFlow({
         throw new Error("La génération de la recette a échoué car la sortie de l'IA est vide.");
     }
     
-    return output;
+    // Ensure arrays are not undefined
+    const finalOutput: RecipeOutput = {
+        ...output,
+        ingredients: output.ingredients || [],
+        subRecipes: output.subRecipes || [],
+        newSubRecipes: output.newSubRecipes || [],
+    };
+    
+    return finalOutput;
 });
