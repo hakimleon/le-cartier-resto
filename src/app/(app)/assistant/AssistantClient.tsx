@@ -13,12 +13,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
-interface Message {
+// Structure pour l'API Genkit
+interface ApiMessage {
   role: 'user' | 'model';
   content: { text: string }[];
 }
 
-// L'interface pour l'affichage, plus simple
+// Structure pour l'affichage dans l'UI
 interface DisplayMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -43,15 +44,17 @@ export default function AssistantClient() {
     };
     
     const newDisplayMessages = [...displayMessages, userDisplayMessage];
-    setDisplayMessages(newDisplayMessages);
-    setInput('');
-    setIsLoading(true);
 
     // Convertir les messages d'affichage en format pour l'API
-    const apiMessages: Message[] = newDisplayMessages.map(msg => ({
+    const apiMessages: ApiMessage[] = newDisplayMessages.map(msg => ({
         role: msg.role === 'assistant' ? 'model' : 'user',
         content: [{ text: msg.content }]
     }));
+
+    // Mettre à jour l'interface utilisateur immédiatement
+    setDisplayMessages(newDisplayMessages);
+    setInput('');
+    setIsLoading(true);
 
     try {
         const response = await fetch('/api/chatbot', {
@@ -69,7 +72,8 @@ export default function AssistantClient() {
 
         const responseData = await response.json();
         
-        if (!responseData?.content) {
+        // Vérification robuste de la réponse
+        if (!responseData || typeof responseData.content !== 'string') {
              throw new Error("La réponse de l'assistant est vide ou mal formée.");
         }
 
