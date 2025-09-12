@@ -49,7 +49,7 @@ export default function AssistantClient() {
 
     try {
       // Format history for Genkit: convert ClientMessage[] to Genkit's Message[]
-      // Each message's content must be an array of "parts".
+      // Each message's content must be an array of "parts" with a text property.
       const history: Message[] = currentMessages.slice(0, -1).map(msg => ({
           role: msg.role,
           content: [{ text: msg.content }]
