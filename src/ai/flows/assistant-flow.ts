@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Flow pour l'assistant IA, maintenant avec des outils.
@@ -20,9 +19,9 @@ Si tu as besoin de connaître les plats du menu pour répondre à une question, 
 Ne réponds que sur la base des informations que tu peux obtenir, sinon dis que tu ne sais pas.
 Sois concis et direct.`;
 
-export const assistantChatFlow = ai.defineFlow(
+export const chatbotFlow = ai.defineFlow(
   {
-    name: 'assistantChatFlow',
+    name: 'chatbotFlow',
     inputSchema: AssistantInputSchema,
     outputSchema: AssistantOutputSchema,
   },

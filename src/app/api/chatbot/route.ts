@@ -1,7 +1,6 @@
-
 'use server';
 
-import { assistantChatFlow } from '@/ai/flows/assistant-flow';
+import { chatbotFlow } from '@/ai/flows/chatbot-flow';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Importer les outils pour s'assurer qu'ils sont enregistrés
@@ -20,7 +19,7 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ content: "Bonjour ! Comment puis-je vous aider aujourd'hui ?" });
     }
 
-    const result = await assistantChatFlow(messages);
+    const result = await chatbotFlow(messages);
 
     return NextResponse.json(result);
 

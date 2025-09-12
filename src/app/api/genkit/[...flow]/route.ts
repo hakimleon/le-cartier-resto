@@ -21,7 +21,7 @@ import { appRoute } from '@genkit-ai/next';
 import { config } from 'dotenv';
 
 // Import all flows to ensure they are registered with Genkit
-import { assistantChatFlow } from '@/ai/flows/assistant-flow';
+import { chatbotFlow } from '@/ai/flows/chatbot-flow';
 import { generateRecipeConceptFlow } from '@/ai/flows/recipe-workshop-flow';
 import '@/ai/flows/suggestion-flow';
 import '@/ai/flows/workshop-flow';
@@ -32,7 +32,7 @@ config();
 // Registry of flows accessible via URL
 // Note: The key here must match the `name` property of the flow defined with `ai.defineFlow`.
 const flowRegistry: Record<string, any> = {
-  assistantChatFlow: assistantChatFlow,
+  chatbotFlow: chatbotFlow,
   generateRecipeConceptFlow: generateRecipeConceptFlow,
 };
 
