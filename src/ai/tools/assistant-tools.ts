@@ -4,17 +4,12 @@
 /**
  * @fileOverview Outils Genkit pour l'assistant IA.
  * Fournit à l'IA un accès en lecture aux données de l'application (recettes, ingrédients, etc.).
+ * VERSION SIMPLIFIÉE POUR LE DÉBOGAGE.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-// Firestore imports are kept for future re-activation, but are not used in this simplified version.
-import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
-import type { Ingredient, Preparation, Recipe, RecipeIngredientLink, RecipePreparationLink } from '@/lib/types';
 
-
-// Schema for the output of the getRecipes tool
 const RecipeToolOutputSchema = z.array(z.object({
     id: z.string(),
     name: z.string(),
@@ -35,7 +30,6 @@ export const getRecipesTool = ai.defineTool(
     },
     async () => {
         console.log('[TOOL CALL] getRecipesTool triggered (simplified).');
-        // Returning static data to avoid complex DB calls during debugging.
         return [
             {
                 id: 'recipe-1',
@@ -47,6 +41,17 @@ export const getRecipesTool = ai.defineTool(
                 status: 'Actif',
                 ingredients: ['Pain Burger', 'Steak haché', 'Cheddar', 'Salade', 'Tomate', 'Oignon'],
                 preparations: ['Sauce Burger Maison']
+            },
+            {
+                id: 'recipe-2',
+                name: 'Salade César',
+                category: 'Entrées froides et chaudes',
+                price: 1200,
+                costPerPortion: 300,
+                portions: 1,
+                status: 'Actif',
+                ingredients: ['Laitue romaine', 'Poulet grillé', 'Croûtons', 'Parmesan'],
+                preparations: ['Sauce César']
             }
         ];
     }
@@ -78,6 +83,15 @@ export const getPreparationsTool = ai.defineTool(
                 productionUnit: 'kg',
                 ingredients: ['Mayonnaise', 'Ketchup', 'Cornichons'],
                 preparations: []
+            },
+            {
+                id: 'prep-2',
+                name: 'Sauce César',
+                description: 'Sauce onctueuse pour la salade César.',
+                productionQuantity: 0.5,
+                productionUnit: 'L',
+                ingredients: ['Jaune d\'oeuf', 'Huile', 'Anchois', 'Ail', 'Parmesan'],
+                preparations: []
             }
         ];
     }
@@ -102,6 +116,8 @@ export const getIngredientsTool = ai.defineTool(
             { id: 'ing-1', name: 'Tomate', category: 'Légumes frais', stockQuantity: 5, lowStockThreshold: 2, purchaseUnit: 'kg' },
             { id: 'ing-2', name: 'Steak haché', category: 'Viandes', stockQuantity: 10, lowStockThreshold: 5, purchaseUnit: 'kg' },
             { id: 'ing-3', name: 'Pain Burger', category: 'Boulangerie', stockQuantity: 20, lowStockThreshold: 10, purchaseUnit: 'pièce' },
+            { id: 'ing-4', name: 'Mayonnaise', category: 'Condiments', stockQuantity: 2, lowStockThreshold: 1, purchaseUnit: 'kg' },
+            { id: 'ing-5', name: 'Laitue romaine', category: 'Légumes frais', stockQuantity: 3, lowStockThreshold: 5, purchaseUnit: 'pièce' },
         ];
     }
 );

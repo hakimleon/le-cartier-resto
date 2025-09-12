@@ -1,17 +1,17 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
-import { Bot, User, Send, CornerDownLeft, Mic, Sparkles, X } from 'lucide-react';
+import { Bot, User, Send, CornerDownLeft, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface Message {
   id: string;
@@ -24,25 +24,9 @@ const allExamplePrompts = [
     "Suggère-moi un plat végétarien pour l'automne.",
     "Liste-moi tous les ingrédients en stock critique.",
     "Donne-moi une idée de plat à base de saumon et d'avocat.",
-    "Quel est le plat le moins cher à produire ?",
-    "Quels sont les allergènes présents dans le Tiramisu ?",
-    "Propose une entrée de saison avec des champignons.",
-    "Combien de préparations utilisent de la crème ?"
 ];
 
-const shuffleArray = (array: string[]) => {
-  let currentIndex = array.length,  randomIndex;
-  while (currentIndex > 0) {
-    randomIndex = Math.floor(Math.random() * currentIndex);
-    currentIndex--;
-    [array[currentIndex], array[randomIndex]] = [
-      array[randomIndex], array[currentIndex]];
-  }
-  return array;
-}
-
-export default function AssistantWidget() {
-  const [isOpen, setIsOpen] = useState(false);
+export default function AssistantClient() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +36,7 @@ export default function AssistantWidget() {
    
   useEffect(() => {
     // This will only run on the client, preventing hydration mismatches.
-    setDisplayedPrompts(shuffleArray([...allExamplePrompts]).slice(0, 4));
+    setDisplayedPrompts([...allExamplePrompts].sort(() => 0.5 - Math.random()).slice(0, 4));
   }, []);
 
   const handleSendMessage = async (prompt?: string) => {
@@ -86,9 +70,9 @@ export default function AssistantWidget() {
         });
         
         if (!response.ok) {
-            const errorBody = await response.text();
+            const errorBody = await response.json();
             console.error("API Error Response:", errorBody);
-            throw new Error(`Le serveur a répondu avec le statut : ${response.status}`);
+            throw new Error(errorBody.error?.message || `Le serveur a répondu avec le statut : ${response.status}`);
         }
 
         const responseData = await response.json();
@@ -111,8 +95,8 @@ export default function AssistantWidget() {
             description: error.message || "Je n'ai pas pu traiter votre demande. Veuillez réessayer.",
             variant: "destructive"
         });
-        // Remove the user message if the call failed
-        setMessages(prev => prev.filter(m => m.id !== userMessage.id));
+        // Keep the user message on screen even if the call failed
+        setIsLoading(false);
     } finally {
         setIsLoading(false);
     }
@@ -135,97 +119,87 @@ export default function AssistantWidget() {
   }, [messages]);
 
   return (
-    <div className="fixed bottom-6 right-6 z-50">
-        {isOpen && (
-             <Card className="flex flex-col h-[720px] w-[520px] shadow-2xl">
-                <CardHeader className="flex flex-row items-center justify-between border-b">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary/10 rounded-full">
-                           <Bot className="w-6 h-6 text-primary" />
+    <div className="flex flex-col h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto">
+        <header className="flex items-center gap-4 mb-6">
+            <div className="bg-muted text-muted-foreground rounded-lg h-12 w-12 flex items-center justify-center shrink-0">
+                <Bot className="h-6 w-6" />
+            </div>
+            <div>
+                <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Assistant IA</h1>
+                <p className="text-muted-foreground">Posez-moi des questions sur vos recettes, vos stocks et votre rentabilité.</p>
+            </div>
+        </header>
+
+        <Card className="flex-1 flex flex-col h-full overflow-hidden">
+            <ScrollArea className="flex-1" ref={scrollAreaRef as any}>
+                <div className="space-y-6 p-4">
+                    {messages.length === 0 && !isLoading && (
+                        <div className="text-center py-8">
+                            <div className="flex justify-center mb-4">
+                                <Sparkles className="w-10 h-10 text-primary" />
+                            </div>
+                            <h2 className="mt-2 text-lg font-semibold text-foreground">Comment puis-je vous aider ?</h2>
+                             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
+                                {displayedPrompts.map(prompt => (
+                                    <Card key={prompt} className="p-3 text-left hover:bg-muted transition-colors cursor-pointer" onClick={() => handleSendMessage(prompt)}>
+                                        <p className="text-sm font-medium">{prompt}</p>
+                                    </Card>
+                                ))}
+                            </div>
                         </div>
-                        <CardTitle className="text-lg">Assistant Le Singulier</CardTitle>
-                    </div>
-                     <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
-                        <X className="h-5 w-5" />
-                    </Button>
-                </CardHeader>
-                <div className="flex-1 flex flex-col h-full overflow-hidden">
-                    <ScrollArea className="flex-1" ref={scrollAreaRef as any}>
-                        <div className="space-y-6 p-4">
-                            {messages.length === 0 && !isLoading && (
-                                <div className="text-center pt-8">
-                                    <h2 className="mt-2 text-lg font-semibold text-foreground">Comment puis-je vous aider ?</h2>
-                                    <div className="mt-4 grid grid-cols-1 gap-2">
-                                        {displayedPrompts.map(prompt => (
-                                            <Card key={prompt} className="p-3 text-left hover:bg-muted transition-colors cursor-pointer" onClick={() => handleSendMessage(prompt)}>
-                                                <p className="text-sm font-medium">{prompt}</p>
-                                            </Card>
-                                        ))}
-                                    </div>
-                                </div>
+                    )}
+                    {messages.map((m) => (
+                        <div key={m.id} className={cn("flex items-start gap-3 w-full", m.role === 'user' ? 'justify-end' : 'justify-start')}>
+                            {m.role === 'assistant' && (
+                                <Avatar className="w-8 h-8 border shrink-0">
+                                    <AvatarFallback><Bot className="w-5 h-5"/></AvatarFallback>
+                                </Avatar>
                             )}
-                            {messages.map((m) => (
-                                <div key={m.id} className={cn("flex items-start gap-3", m.role === 'user' ? 'justify-end' : '')}>
-                                    {m.role === 'assistant' && (
-                                        <Avatar className="w-8 h-8 border">
-                                            <AvatarFallback><Bot className="w-5 h-5"/></AvatarFallback>
-                                        </Avatar>
-                                    )}
-                                    <div className={cn("max-w-[85%] rounded-lg p-3 text-sm", m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card border')}>
-                                        {m.role === 'assistant' ? <MarkdownRenderer text={m.content} /> : m.content}
-                                    </div>
-                                    {m.role === 'user' && (
-                                        <Avatar className="w-8 h-8 border">
-                                            <AvatarFallback><User className="w-5 h-5"/></AvatarFallback>
-                                        </Avatar>
-                                    )}
-                                </div>
-                            ))}
-                            {isLoading && (
-                                <div className="flex items-start gap-3">
-                                    <Avatar className="w-8 h-8 border">
-                                        <AvatarFallback><Bot className="w-5 h-5"/></AvatarFallback>
-                                    </Avatar>
-                                    <div className="max-w-[85%] rounded-lg p-3 text-sm bg-card border w-full">
-                                    <div className="space-y-2">
-                                        <Skeleton className="h-4 w-4/5" />
-                                        <Skeleton className="h-4 w-full" />
-                                        <Skeleton className="h-4 w-2/3" />
-                                    </div>
-                                    </div>
-                                </div>
+                            <div className={cn("max-w-[85%] rounded-lg p-3 text-sm", m.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-card border')}>
+                                {m.role === 'assistant' ? <MarkdownRenderer text={m.content} /> : m.content}
+                            </div>
+                            {m.role === 'user' && (
+                                <Avatar className="w-8 h-8 border shrink-0">
+                                    <AvatarFallback><User className="w-5 h-5"/></AvatarFallback>
+                                </Avatar>
                             )}
                         </div>
-                    </ScrollArea>
-                    <div className="border-t">
-                        <div className="relative p-3">
-                        <Textarea
-                            value={input}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={handleKeyDown}
-                            placeholder="Posez une question..."
-                            className="w-full resize-none pr-12 min-h-[40px]"
-                            rows={1}
-                            disabled={isLoading}
-                        />
-                        <div className="absolute right-4 top-1/2 -translate-y-1/2 flex gap-2">
-                            <Button type="submit" size="icon" className="h-8 w-8" onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading}>
-                            <Send className="w-4 h-4" />
-                            </Button>
+                    ))}
+                    {isLoading && (
+                        <div className="flex items-start gap-3">
+                            <Avatar className="w-8 h-8 border shrink-0">
+                                <AvatarFallback><Bot className="w-5 h-5"/></AvatarFallback>
+                            </Avatar>
+                            <div className="max-w-[85%] rounded-lg p-3 text-sm bg-card border w-full">
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-4/5" />
+                                <Skeleton className="h-4 w-full" />
+                                <Skeleton className="h-4 w-2/3" />
+                            </div>
+                            </div>
                         </div>
-                        </div>
-                    </div>
+                    )}
                 </div>
-            </Card>
-        )}
-       
-        <Button 
-            size="lg"
-            className="rounded-full w-16 h-16 shadow-lg"
-            onClick={() => setIsOpen(!isOpen)}
-        >
-            {isOpen ? <X className="h-7 w-7" /> : <Bot className="h-7 w-7" />}
-        </Button>
+            </ScrollArea>
+            <div className="border-t">
+                <div className="relative p-3">
+                <Textarea
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Posez une question à votre assistant..."
+                    className="w-full resize-none pr-12 min-h-[48px] rounded-lg"
+                    rows={1}
+                    disabled={isLoading}
+                />
+                <div className="absolute right-5 top-1/2 -translate-y-1/2 flex gap-2">
+                    <Button type="submit" size="icon" className="h-9 w-9" onClick={() => handleSendMessage()} disabled={!input.trim() || isLoading}>
+                        <Send className="w-4 h-4" />
+                    </Button>
+                </div>
+                </div>
+            </div>
+        </Card>
     </div>
   );
 }

@@ -43,22 +43,21 @@ export const chatFlow = ai.defineFlow(
   async (input) => {
     console.log('======== [ASSISTANT FLOW START] ========');
     console.log('Received input:', JSON.stringify(input, null, 2));
-    
+
     try {
         if (!input.history || input.history.length === 0) {
-            console.error('Flow Error: History is empty or undefined.');
-            return { content: "Désolé, je n'ai pas reçu de message. L'historique est vide." };
+            throw new Error("L'historique des messages est vide.");
         }
 
         const lastUserMessage = input.history[input.history.length - 1];
         if (!lastUserMessage || lastUserMessage.role !== 'user') {
-            console.error('Flow Error: No valid last user message found.');
-            return { content: "Désolé, je n'ai pas reçu de question valide de votre part." };
+            throw new Error("Le dernier message n'est pas une question de l'utilisateur.");
         }
         
         const currentPrompt = lastUserMessage.content;
         console.log('Current user prompt:', currentPrompt);
 
+        // L'historique pour le modèle est tout sauf le dernier message
         const historyForModel = input.history.slice(0, -1).map(msg => ({
           role: msg.role === 'assistant' ? 'model' as const : 'user' as const,
           content: [{ text: msg.content }],
@@ -70,18 +69,24 @@ export const chatFlow = ai.defineFlow(
           prompt: currentPrompt,
           system: assistantPrompt,
           tools: [getRecipesTool, getPreparationsTool, getIngredientsTool],
-          history: historyForModel,
+          history: historyForModel.length > 0 ? historyForModel : undefined,
         });
         
         console.log('\n======== [RAW MODEL OUTPUT] ========');
-        console.log(JSON.stringify(result.output, null, 2));
+        console.log(JSON.stringify(result, null, 2));
         console.log('====================================\n');
         
-        const textResponse = result.text;
+        const textResponse = result.text();
         
         if (!textResponse) {
-          console.warn('Text response is empty. This might be due to a tool call. The flow will not crash.');
-          return { content: "J'ai utilisé mes outils pour traiter votre demande. Comment puis-je vous aider davantage ?" };
+            // Check if there was a tool call
+            const toolCalls = result.toolCalls();
+            if (toolCalls && toolCalls.length > 0) {
+                 console.log(`Tool call detected, but no text response. Returning a placeholder message.`);
+                 return { content: "J'ai utilisé mes outils pour traiter votre demande. Comment puis-je vous aider davantage ?" };
+            }
+             console.warn('Text response is empty and no tool calls detected.');
+             throw new Error("La réponse de l'IA est vide.");
         }
 
         console.log('Final textResponse to be returned:', textResponse);
@@ -94,7 +99,8 @@ export const chatFlow = ai.defineFlow(
         console.error('Error message:', e.message);
         console.error('Error stack:', e.stack);
         console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
-        return { content: `Désolé, une erreur critique est survenue sur le serveur : ${e.message}` };
+        // Re-throw the error to be caught by the API handler and send a 500 response
+        throw new Error(`Erreur interne du serveur: ${e.message}`);
     }
   }
 );
