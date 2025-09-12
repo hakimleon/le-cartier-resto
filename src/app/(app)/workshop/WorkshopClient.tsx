@@ -11,7 +11,8 @@ import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, M
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
-import { generateDishConcept, DishConceptOutput, DishConceptInput } from "@/ai/flows/workshop-flow";
+import { generateRecipeConcept, RecipeConceptOutput, RecipeConceptInput } from "@/ai/flows/recipe-workshop-flow";
+
 import { useRouter } from "next/navigation";
 import { createDishFromWorkshop, createPreparation } from "./actions";
 import { Badge } from "@/components/ui/badge";
@@ -23,7 +24,7 @@ const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
 export default function WorkshopClient() {
     const [isLoading, setIsLoading] = useState(false);
-    const [generatedConcept, setGeneratedConcept] = useState<DishConceptOutput | null>(null);
+    const [generatedConcept, setGeneratedConcept] = useState<RecipeConceptOutput | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
     const router = useRouter();
@@ -31,12 +32,12 @@ export default function WorkshopClient() {
     const initialFormRef = useRef<HTMLFormElement>(null);
     const refinementFormRef = useRef<HTMLFormElement>(null);
     
-    const [context, setContext] = useState<DishConceptInput>({});
+    const [context, setContext] = useState<RecipeConceptInput>({ type: 'Plat' });
     const [refinementHistory, setRefinementHistory] = useState<string[]>([]);
     const [prepsToIntegrate, setPrepsToIntegrate] = useState<string[]>([]);
 
 
-    const handleSubmit = async (instructions: DishConceptInput) => {
+    const handleSubmit = async (instructions: RecipeConceptInput) => {
         setIsLoading(true);
         setPrepsToIntegrate([]); // Reset selection on new generation/refinement
         
@@ -47,7 +48,7 @@ export default function WorkshopClient() {
         }
 
         try {
-            const result = await generateDishConcept(instructions);
+            const result = await generateRecipeConcept(instructions);
             setGeneratedConcept(result);
             if (refinementFormRef.current) {
                 refinementFormRef.current.reset();
@@ -67,8 +68,9 @@ export default function WorkshopClient() {
     const handleInitialSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
-        const instructions = {
-            dishName: formData.get("dishName") as string || undefined,
+        const instructions: RecipeConceptInput = {
+            type: 'Plat',
+            name: formData.get("dishName") as string,
             mainIngredients: formData.get("mainIngredients") as string || undefined,
             excludedIngredients: formData.get("excludedIngredients") as string || undefined,
             recommendations: formData.get("recommendations") as string || undefined,
@@ -96,7 +98,7 @@ export default function WorkshopClient() {
         const instruction = `Intègre la ou les préparations ${namesString} directement dans la recette principale au lieu de la traiter comme une ou des sous-recettes. Ajoute leurs ingrédients à la liste principale et leurs étapes à la procédure.`;
         const newHistory = [...refinementHistory, instruction];
 
-        const instructions = { ...context, refinementHistory: newHistory, currentRefinement: instruction };
+        const instructions: RecipeConceptInput = { ...context, refinementHistory: newHistory, currentRefinement: instruction };
         
         setRefinementHistory(newHistory);
         handleSubmit(instructions);
@@ -129,7 +131,7 @@ export default function WorkshopClient() {
     
     const handleNewRecipe = () => {
         setGeneratedConcept(null);
-        setContext({});
+        setContext({ type: 'Plat' });
         setRefinementHistory([]);
         setPrepsToIntegrate([]);
         if (initialFormRef.current) initialFormRef.current.reset();
@@ -141,9 +143,13 @@ export default function WorkshopClient() {
             const newPrepId = await createPreparation({ name: prepName, description: prepDescription });
             toast({ title: "Préparation créée", description: `La fiche pour "${prepName}" est prête à être complétée.` });
             
+            // Open the new preparation in a new tab
+            window.open(`/preparations/${newPrepId}`, '_blank');
+            
+            // Refresh the current concept to reflect the new preparation
             const instruction = `La préparation '${prepName}' a été créée et est maintenant disponible. Elle doit désormais apparaître dans la liste 'subRecipes'.`;
             const newHistory = [...refinementHistory, instruction];
-            const instructions = { ...context, refinementHistory: newHistory, currentRefinement: instruction };
+            const instructions: RecipeConceptInput = { ...context, refinementHistory: newHistory, currentRefinement: instruction };
 
             setRefinementHistory(newHistory);
             handleSubmit(instructions);
@@ -178,8 +184,8 @@ export default function WorkshopClient() {
                                 <div className="space-y-2">
                                     <h4 className="font-medium text-sm">Créer à partir d'instructions</h4>
                                     <div>
-                                        <Label htmlFor="dishName">Nom du plat (Optionnel)</Label>
-                                        <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." disabled={isLoading || !!generatedConcept}/>
+                                        <Label htmlFor="dishName">Nom du plat</Label>
+                                        <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." disabled={isLoading || !!generatedConcept} required/>
                                     </div>
                                     <div>
                                         <Label htmlFor="mainIngredients">Ingrédients principaux (Optionnel)</Label>
@@ -235,7 +241,7 @@ export default function WorkshopClient() {
 
                 </div>
                 <div className="lg:col-span-2">
-                    <Card className="min-h-[500px]">
+                    <Card className="min-h-[500px] sticky top-4">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle>Proposition de l'IA</CardTitle>
@@ -260,7 +266,7 @@ export default function WorkshopClient() {
                                 <div className="space-y-6">
                                      <div className="relative w-full h-80 rounded-lg overflow-hidden border">
                                         {isLoading && <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10"><Sparkles className="h-8 w-8 animate-spin text-primary"/></div>}
-                                        <Image src={generatedConcept.imageUrl} alt={generatedConcept.name} fill style={{ objectFit: 'cover' }} data-ai-hint="artistic food plating" />
+                                        <Image src={generatedConcept.imageUrl || "https://placehold.co/1024x768.png"} alt={generatedConcept.name} fill style={{ objectFit: 'cover' }} data-ai-hint="artistic food plating" />
                                     </div>
                                     <div>
                                         <h3 className="text-2xl font-bold">{generatedConcept.name}</h3>
@@ -269,7 +275,7 @@ export default function WorkshopClient() {
                                     <div className="grid grid-cols-3 gap-4 text-center p-2 rounded-lg border bg-muted/50">
                                         <div className="flex flex-col items-center gap-1"><Clock className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.duration} min</span></div>
                                         <div className="flex flex-col items-center gap-1"><Soup className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.difficulty}</span></div>
-                                        <div className="flex flex-col items-center gap-1"><Users className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.portions} portion{generatedConcept.portions > 1 ? 's' : ''}</span></div>
+                                        <div className="flex flex-col items-center gap-1"><Users className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.portions} portion{generatedConcept.portions! > 1 ? 's' : ''}</span></div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
@@ -285,7 +291,7 @@ export default function WorkshopClient() {
                                         <div>
                                             <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Sous-Recettes</h4>
                                             <div className="space-y-2">
-                                                {generatedConcept.subRecipes.map((prep: string) => <div key={prep}><Badge variant="secondary" className="text-sm">{prep}</Badge></div>)}
+                                                {generatedConcept.subRecipes.map((prep) => <div key={prep.name}><Badge variant="secondary" className="text-sm">{prep.name}</Badge></div>)}
                                                 
                                                 {generatedConcept.newSubRecipes.map((prep) => (
                                                     <div key={prep.name} className="flex items-center gap-2">
@@ -349,3 +355,5 @@ export default function WorkshopClient() {
         </div>
     );
 }
+
+    
