@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -12,7 +11,6 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface Message {
   id: string;
@@ -20,26 +18,13 @@ interface Message {
   content: string;
 }
 
-const allExamplePrompts = [
-    "Quel est le plat le plus rentable de ma carte ?",
-    "Suggère-moi un plat végétarien pour l'automne.",
-    "Liste-moi tous les ingrédients en stock critique.",
-    "Donne-moi une idée de plat à base de saumon et d'avocat.",
-];
-
 export default function AssistantClient() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
-  const [displayedPrompts, setDisplayedPrompts] = useState<string[]>([]);
    
-  useEffect(() => {
-    // This will only run on the client, preventing hydration mismatches.
-    setDisplayedPrompts([...allExamplePrompts].sort(() => 0.5 - Math.random()).slice(0, 4));
-  }, []);
-
   const handleSendMessage = async (prompt?: string) => {
     const messageContent = prompt || input;
     if (!messageContent.trim()) return;
@@ -50,34 +35,22 @@ export default function AssistantClient() {
       content: messageContent,
     };
     
-    const newMessages: Message[] = [...messages, userMessage];
-    setMessages(newMessages);
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-        const chatHistoryForApi = newMessages
-            .filter(msg => msg.role === 'user' || msg.role === 'assistant')
-            .map(({ role, content }) => ({ role, content }));
-
-        const response = await fetch('/api/genkit/assistantChatFlow', {
+        const response = await fetch('/api/chatbot', { // Appel de la nouvelle route dédiée
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            // Correction : envoyer directement le tableau, pas un objet l'encapsulant.
-            body: JSON.stringify(chatHistoryForApi),
+            body: JSON.stringify(messageContent),
         });
         
         if (!response.ok) {
-            let errorBody;
-            try {
-                errorBody = await response.json();
-            } catch (e) {
-                errorBody = { error: { message: `Le serveur a répondu avec le statut : ${response.status}` } };
-            }
-            console.error("API Error Response:", errorBody);
-            throw new Error(errorBody.error?.message || `Internal Error`);
+            const errorBody = await response.json().catch(() => ({error: {message: "Réponse invalide du serveur."}}));
+            throw new Error(errorBody.error?.message || `Le serveur a répondu avec le statut : ${response.status}`);
         }
 
         const responseData = await response.json();
@@ -96,11 +69,10 @@ export default function AssistantClient() {
     } catch (error: any) {
         console.error("Error calling chat flow:", error);
         toast({
-            title: "Erreur de l'assistant",
-            description: error.message || "Je n'ai pas pu traiter votre demande. Veuillez réessayer.",
+            title: "Erreur du Chatbot",
+            description: error.message || "Je n'ai pas pu traiter votre demande.",
             variant: "destructive"
         });
-        // Retirer le message utilisateur en cas d'échec pour permettre de le renvoyer.
         setMessages(prev => prev.filter(msg => msg.id !== userMessage.id)); 
     } finally {
         setIsLoading(false);
@@ -131,7 +103,7 @@ export default function AssistantClient() {
             </div>
             <div>
                 <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Assistant IA</h1>
-                <p className="text-muted-foreground">Posez-moi des questions sur vos recettes, vos stocks et votre rentabilité.</p>
+                <p className="text-muted-foreground">Posez-moi une question sur votre restaurant.</p>
             </div>
         </header>
 
@@ -143,14 +115,7 @@ export default function AssistantClient() {
                             <div className="flex justify-center mb-4">
                                 <Sparkles className="w-10 h-10 text-primary" />
                             </div>
-                            <h2 className="mt-2 text-lg font-semibold text-foreground">Comment puis-je vous aider ?</h2>
-                             <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                {displayedPrompts.map(prompt => (
-                                    <Card key={prompt} className="p-3 text-left hover:bg-muted transition-colors cursor-pointer" onClick={() => handleSendMessage(prompt)}>
-                                        <p className="text-sm font-medium">{prompt}</p>
-                                    </Card>
-                                ))}
-                            </div>
+                            <h2 className="mt-2 text-lg font-semibold text-foreground">Posez-moi une question.</h2>
                         </div>
                     )}
                     {messages.map((m) => (
@@ -192,7 +157,7 @@ export default function AssistantClient() {
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="Posez une question à votre assistant..."
+                    placeholder="Posez une question..."
                     className="w-full resize-none pr-12 min-h-[48px] rounded-lg"
                     rows={1}
                     disabled={isLoading}
@@ -208,5 +173,3 @@ export default function AssistantClient() {
     </div>
   );
 }
-
-    
