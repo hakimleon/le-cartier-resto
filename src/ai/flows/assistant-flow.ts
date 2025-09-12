@@ -55,7 +55,7 @@ const chatFlow = ai.defineFlow(
     }
 
     const { output } = await ai.generate({
-      model: 'googleai/gemini-pro',
+      model: 'googleai/gemini-2.5-flash',
       prompt: lastUserMessage.content[0].text,
       system: assistantPrompt,
       tools: [getRecipesTool, getPreparationsTool, getIngredientsTool],
@@ -75,7 +75,21 @@ const chatFlow = ai.defineFlow(
     }
 
     if (!textResponse) {
-      return { content: "Je suis désolé, je n'ai pas pu générer de réponse pour le moment. Veuillez réessayer." };
+      // Check if there was a tool call that should have been handled
+      const toolCall = output?.content?.parts.find(part => part.toolRequest);
+      if (toolCall) {
+        // This case indicates Genkit should have handled the tool call but didn't return text.
+        // It's a state that shouldn't happen in normal operation if tools are set up correctly.
+        // We can ask the model to summarize what it just did.
+        const followup = await ai.generate({
+            model: 'googleai/gemini-2.5-flash',
+            prompt: "Summarize the result of the tool call you just made in a user-friendly way.",
+            history: [...history, lastUserMessage, {role: 'model', content: output.content.parts}]
+        });
+        textResponse = followup.output?.content?.parts.map(p => p.text).join('') || "J'ai utilisé un outil, mais je n'ai pas pu formuler de réponse. Veuillez reformuler.";
+      } else {
+        return { content: "Je suis désolé, je n'ai pas pu générer de réponse pour le moment. Veuillez réessayer." };
+      }
     }
 
     return { content: textResponse };
