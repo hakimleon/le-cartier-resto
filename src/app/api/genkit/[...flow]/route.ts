@@ -25,8 +25,6 @@ import { assistantChatFlow } from '@/ai/flows/assistant-flow';
 import { generateRecipeConceptFlow } from '@/ai/flows/recipe-workshop-flow';
 import '@/ai/flows/suggestion-flow';
 import '@/ai/flows/workshop-flow';
-// chatbotFlow is no longer handled by this generic route
-// import { chatbotFlow } from '@/ai/flows/chatbot-flow';
 
 
 config();
