@@ -11,11 +11,10 @@ import { searchMenuTool } from '../tools/menu-tools';
 import { getAvailablePreparationsTool } from '../tools/recipe-tools';
 
 const ChatbotInputSchema = z.object({
-  history: z.array(z.object({
-    role: z.enum(['user', 'model', 'tool']),
+  messages: z.array(z.object({
+    role: z.enum(['user', 'model']),
     content: z.array(partSchema),
-  })).optional().describe("L'historique des messages de la conversation."),
-  prompt: z.string().describe("La dernière question ou instruction de l'utilisateur."),
+  })).describe("L'historique complet des messages de la conversation, y compris le dernier message de l'utilisateur."),
 });
 
 const ChatbotOutputSchema = z.object({
@@ -28,13 +27,16 @@ export const chatbotFlow = ai.defineFlow(
     inputSchema: ChatbotInputSchema,
     outputSchema: ChatbotOutputSchema,
   },
-  async ({ history, prompt }) => {
+  async ({ messages }) => {
     
-    // Réactiver les outils
+    // Le dernier message est le prompt, le reste est l'historique.
+    const history = messages.slice(0, -1) as Message[];
+    const prompt = messages[messages.length - 1].content[0].text || '';
+
     const llmResponse = await ai.generate({
-      model: 'googleai/gemini-2.5-flash',
+      model: 'googleai/gemini-1.5-flash',
       prompt: prompt,
-      history: history as Message[],
+      history: history,
       tools: [searchMenuTool, getAvailablePreparationsTool],
     });
 

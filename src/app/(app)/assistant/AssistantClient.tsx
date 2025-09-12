@@ -22,7 +22,6 @@ export default function AssistantClient() {
   };
 
   useEffect(() => {
-    // Scroll to bottom when messages change
     if (scrollAreaRef.current) {
         const viewport = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
         if (viewport) {
@@ -39,12 +38,10 @@ export default function AssistantClient() {
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
 
-    const currentInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
-      // Appel direct au flow Genkit
       const response = await fetch('/api/genkit/flow/chatbotFlow', {
         method: 'POST',
         headers: {
@@ -52,15 +49,15 @@ export default function AssistantClient() {
         },
         body: JSON.stringify({
           input: {
-             prompt: currentInput,
-             history: messages, // L'historique AVANT le message courant
+             messages: newMessages,
           }
         }),
       });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Erreur du serveur (${response.status}): ${errorText}`);
+        const errorData = await response.json();
+        const errorMessage = errorData.error?.message || `Erreur du serveur (${response.status})`;
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -72,9 +69,10 @@ export default function AssistantClient() {
 
     } catch (error) {
       console.error('Error calling chatbot flow:', error);
+      const errorMessageContent = `Désolé, une erreur est survenue. ${error instanceof Error ? error.message : 'Erreur inconnue.'}`;
       const errorMessage: Message = {
         role: 'model',
-        content: [{ text: `Désolé, une erreur est survenue. ${error instanceof Error ? error.message : ''}`}],
+        content: [{ text: errorMessageContent}],
       };
       setMessages((prevMessages) => [...prevMessages, errorMessage]);
     } finally {
@@ -102,8 +100,9 @@ export default function AssistantClient() {
                 </div>
               ) : (
                 messages.map((message, index) => {
-                  const messageText = (message.content && Array.isArray(message.content) && message.content[0]?.text) ? message.content[0].text : "";
                   if (message.role === 'tool') return null; // Don't render tool messages
+                  
+                  const messageText = message.content[0]?.text || '';
 
                   return (
                   <div
