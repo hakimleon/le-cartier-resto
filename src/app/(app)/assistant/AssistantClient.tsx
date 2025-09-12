@@ -17,6 +17,13 @@ type ClientMessage = {
   content: string;
 };
 
+// This is the format Genkit's gemini-pro model history expects
+type GenkitMessage = {
+  role: 'user' | 'model';
+  content: { text: string }[];
+};
+
+
 export default function AssistantClient() {
   const [messages, setMessages] = useState<ClientMessage[]>([]);
   const [input, setInput] = useState('');
@@ -49,10 +56,12 @@ export default function AssistantClient() {
     setIsLoading(true);
 
     // Prepare history in the correct format for Genkit
-    const history: Message[] = [...messages, userMessage].slice(0, -1).map(msg => ({
+    // The same simple format used in the workshop refinement
+    const history: Message[] = [...messages].map(msg => ({
         role: msg.role,
         content: [{ text: msg.content }]
     }));
+
 
     try {
       const response = await fetch('/api/chatbot', {
