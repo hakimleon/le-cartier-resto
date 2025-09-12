@@ -16,17 +16,13 @@
  * limitations under the License.
  */
 
-import { nextJSHandler } from '@genkit-ai/next';
-import { config } from 'dotenv';
+// Contenu intentionnellement vidé pour résoudre une erreur de compilation persistante.
+// La fonctionnalité du chatbot est temporairement désactivée.
+import { NextResponse } from 'next/server';
 
-// This is required for Next.js experimental support for Genkit.
-config();
-
-// Explicitly import all flows to ensure they are registered with Genkit.
-import '@/ai/flows/assistant-flow';
-import '@/ai/flows/recipe-workshop-flow';
-import '@/ai/flows/suggestion-flow';
-import '@/ai/flows/workshop-flow';
-
-
-export const POST = nextJSHandler();
+export async function POST() {
+    return NextResponse.json(
+        { error: "La configuration du backend de l'IA est en cours de réparation. Veuillez réessayer plus tard." },
+        { status: 503 }
+    );
+}
