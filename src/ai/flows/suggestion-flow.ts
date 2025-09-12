@@ -32,8 +32,8 @@ Ingrédients clés : ${input.ingredients?.join(', ') || 'Non fournis'}
 Ton unique sortie doit être l'argumentaire.`;
 
   const { output } = await ai.generate({
-    prompt,
     model: 'googleai/gemini-2.5-flash',
+    prompt,
     output: {
       schema: CommercialArgumentOutputSchema,
     }
@@ -77,8 +77,8 @@ Si c'est une préparation, estime une quantité produite (productionQuantity) et
 Ne fournis QUE la réponse au format JSON demandé.
 `;
   const { output } = await ai.generate({
-    prompt,
     model: 'googleai/gemini-2.5-flash',
+    prompt,
     output: {
       format: 'json',
       schema: RecipeOutputSchema,
@@ -120,8 +120,8 @@ IMPORTANT : Ne suggère JAMAIS de plats finis (comme 'Lasagnes'), mais bien des 
 Fournis uniquement la réponse au format JSON demandé.`;
 
     const { output } = await ai.generate({
-        prompt,
         model: 'googleai/gemini-2.5-flash',
+        prompt,
         output: {
             format: 'json',
             schema: DerivedPreparationsOutputSchema,

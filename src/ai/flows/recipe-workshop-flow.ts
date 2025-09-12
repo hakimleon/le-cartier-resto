@@ -72,6 +72,7 @@ const recipeGenPrompt = ai.definePrompt({
     input: { schema: RecipeConceptInputSchema },
     output: { schema: RecipeConceptOutputSchema },
     tools: [getAvailablePreparationsTool],
+    model: 'googleai/gemini-2.5-flash',
     prompt: `
         Vous êtes un chef expert créant une fiche technique pour un restaurant. La cible est une fiche de type : {{{type}}}.
 
