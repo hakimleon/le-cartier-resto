@@ -18,38 +18,37 @@
 
 import { appRoute } from '@genkit-ai/next';
 import { config } from 'dotenv';
+
+// Import all flows to ensure they are registered with Genkit
 import { chatFlow } from '@/ai/flows/assistant-flow';
 import { generateRecipeConceptFlow } from '@/ai/flows/recipe-workshop-flow';
-
-config();
-
-// Registre des flows accessibles par URL.
-// La clé (ex: 'assistantChatFlow') doit correspondre exactement au dernier segment de l'URL de l'API.
-// ex: POST /api/genkit/assistantChatFlow
-const flows: Record<string, any> = {
-  assistantChatFlow: chatFlow,
-  generateRecipeConceptFlow: generateRecipeConceptFlow,
-  // Ajoutez d'autres flows exportés ici si nécessaire
-};
-
-// Importe tous les flows pour s'assurer qu'ils sont bien enregistrés auprès de Genkit,
-// même s'ils ne sont pas dans le registre ci-dessus.
-import '@/ai/flows/assistant-flow';
-import '@/ai/flows/recipe-workshop-flow';
 import '@/ai/flows/suggestion-flow';
 import '@/ai/flows/workshop-flow';
 
 
-export async function POST(req: Request, { params }: { params: { flow: string[] } }) {
-  const flowName = params.flow?.[0]; // Ex: "assistantChatFlow"
-  const flow = flowName ? flows[flowName] : null;
+config();
 
-  if (!flow) {
-    // If no specific flow is matched in our registry, fall back to the default handler
-    // which will try to find any registered flow matching the name.
-    return appRoute()(req, { params });
+// Registry of flows accessible via URL
+// Note: The key here must match the `name` property of the flow defined with `ai.defineFlow`.
+const flowRegistry: Record<string, any> = {
+  assistantChatFlow: chatFlow,
+  generateRecipeConceptFlow: generateRecipeConceptFlow,
+};
+
+
+export async function POST(req: Request, { params }: { params: { flow: string[] } }) {
+  const flowName = params.flow?.[0];
+  
+  // First, check our explicit registry for a match.
+  // This is useful if the URL slug is different from the flow's defined name.
+  const registeredFlow = flowName ? flowRegistry[flowName] : null;
+
+  if (registeredFlow) {
+    return appRoute({ flow: registeredFlow })(req, { params });
   }
 
-  // Délègue la requête au handler de Genkit pour le flow trouvé
-  return appRoute({flow})(req, { params });
+  // If not in the registry, fall back to the default Genkit behavior
+  // which finds any flow by its defined `name`. This should handle all flows
+  // as long as their name is consistent with the URL.
+  return appRoute()(req, { params });
 }
