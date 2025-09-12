@@ -1,19 +1,21 @@
 
 'use server';
 
-import { chatbotFlow } from '@/ai/flows/chatbot-flow';
+import { assistantChatFlow } from '@/ai/flows/assistant-flow';
 import { NextRequest, NextResponse } from 'next/server';
+
+// Importer les outils pour s'assurer qu'ils sont enregistrés
+import '@/ai/tools/assistant-tools';
 
 export async function POST(req: NextRequest) {
   try {
-    // L'entrée est maintenant un tableau de messages
     const messages = await req.json();
 
     if (!Array.isArray(messages)) {
       return NextResponse.json({ error: { message: 'Invalid input, expected an array of messages.' } }, { status: 400 });
     }
 
-    const result = await chatbotFlow(messages);
+    const result = await assistantChatFlow(messages);
 
     return NextResponse.json(result);
 

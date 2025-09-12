@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -13,13 +14,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
 interface Message {
+  role: 'user' | 'model';
+  content: { text: string }[];
+}
+
+// L'interface pour l'affichage, plus simple
+interface DisplayMessage {
   id: string;
   role: 'user' | 'assistant';
   content: string;
 }
 
 export default function AssistantClient() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [displayMessages, setDisplayMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -29,16 +36,22 @@ export default function AssistantClient() {
     const messageContent = prompt || input;
     if (!messageContent.trim()) return;
 
-    const userMessage: Message = {
+    const userDisplayMessage: DisplayMessage = {
       id: `user-${Date.now()}`,
       role: 'user',
       content: messageContent,
     };
     
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    const newDisplayMessages = [...displayMessages, userDisplayMessage];
+    setDisplayMessages(newDisplayMessages);
     setInput('');
     setIsLoading(true);
+
+    // Convertir les messages d'affichage en format pour l'API
+    const apiMessages: Message[] = newDisplayMessages.map(msg => ({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        content: [{ text: msg.content }]
+    }));
 
     try {
         const response = await fetch('/api/chatbot', {
@@ -46,8 +59,7 @@ export default function AssistantClient() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            // Envoi de l'historique complet
-            body: JSON.stringify(newMessages),
+            body: JSON.stringify(apiMessages),
         });
         
         if (!response.ok) {
@@ -61,12 +73,12 @@ export default function AssistantClient() {
              throw new Error("La réponse de l'assistant est vide ou mal formée.");
         }
 
-        const aiMessage: Message = {
+        const aiMessage: DisplayMessage = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
             content: responseData.content
         };
-        setMessages(prev => [...prev, aiMessage]);
+        setDisplayMessages(prev => [...prev, aiMessage]);
 
     } catch (error: any) {
         console.error("Error calling chat flow:", error);
@@ -76,7 +88,7 @@ export default function AssistantClient() {
             variant: "destructive"
         });
         // Si l'IA échoue, on retire le dernier message utilisateur pour qu'il puisse le renvoyer
-        setMessages(prev => prev.slice(0, -1)); 
+        setDisplayMessages(prev => prev.slice(0, -1)); 
     } finally {
         setIsLoading(false);
     }
@@ -96,7 +108,7 @@ export default function AssistantClient() {
             behavior: 'smooth'
         });
     }
-  }, [messages]);
+  }, [displayMessages]);
 
   return (
     <div className="flex flex-col h-[calc(100vh-10rem)] w-full max-w-4xl mx-auto">
@@ -113,15 +125,16 @@ export default function AssistantClient() {
         <Card className="flex-1 flex flex-col h-full overflow-hidden">
             <ScrollArea className="flex-1" ref={scrollAreaRef as any}>
                 <div className="space-y-6 p-4">
-                    {messages.length === 0 && !isLoading && (
+                    {displayMessages.length === 0 && !isLoading && (
                         <div className="text-center py-8">
                             <div className="flex justify-center mb-4">
                                 <Sparkles className="w-10 h-10 text-primary" />
                             </div>
                             <h2 className="mt-2 text-lg font-semibold text-foreground">Posez-moi une question.</h2>
+                            <p className="text-sm text-muted-foreground mt-1">Par exemple : "Liste-moi tous les plats du menu".</p>
                         </div>
                     )}
-                    {messages.map((m) => (
+                    {displayMessages.map((m) => (
                         <div key={m.id} className={cn("flex items-start gap-3 w-full", m.role === 'user' ? 'justify-end' : 'justify-start')}>
                             {m.role === 'assistant' && (
                                 <Avatar className="w-8 h-8 border shrink-0">
