@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -10,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { Message } from 'genkit';
+import { sendMessageToChat } from './actions';
 
 export default function AssistantClient() {
   const [history, setHistory] = useState<Message[]>([]);
@@ -39,39 +39,13 @@ export default function AssistantClient() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/genkit/flow/chatbotFlow', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          input: {
-            history: history, // Send previous history
-            prompt: currentInput, // Send current user message
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        let errorBody = 'Erreur inconnue du serveur.';
-        try {
-            const errorJson = await response.json();
-            errorBody = errorJson.error?.message || JSON.stringify(errorJson);
-        } catch (e) { /* Ignore parsing error */ }
-        
-        throw new Error(`Erreur du serveur (${response.status}): ${errorBody}`);
-      }
-      
-      const result = await response.json();
-      const modelResponseText = result.output;
-
-      if (typeof modelResponseText !== 'string') {
-        throw new Error("La réponse du serveur n'est pas dans le format attendu.");
-      }
+      const modelResponseText = await sendMessageToChat(history, currentInput);
 
       const modelMessage: Message = { role: 'model', content: [{ text: modelResponseText }] };
       setHistory((prevHistory) => [...prevHistory, modelMessage]);
 
     } catch (error) {
-      console.error('Error calling chatbot flow:', error);
+      console.error('Error calling chat action:', error);
       const errorMessageContent = error instanceof Error ? error.message : 'Erreur inconnue.';
       const errorMessage: Message = {
         role: 'model',
@@ -99,8 +73,8 @@ export default function AssistantClient() {
             <div className="p-6 space-y-6">
               {history.length === 0 ? (
                 <div className="text-center text-muted-foreground pt-16">
-                  <p>Posez-moi une question sur vos recettes !</p>
-                  <p className="text-xs mt-2">Ex: "Liste les entrées" ou "Donne moi la recette du burger"</p>
+                  <p>Posez-moi une question !</p>
+                   <p className="text-xs mt-2">Ex: "Bonjour, qui es-tu ?"</p>
                 </div>
               ) : (
                 history.map((message, index) => {

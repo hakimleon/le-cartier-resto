@@ -24,7 +24,7 @@ import { config } from 'dotenv';
 import '@/ai/flows/recipe-workshop-flow';
 import '@/ai/flows/suggestion-flow';
 import '@/ai/flows/workshop-flow';
-import '@/ai/flows/assistant-flow';
+// import '@/ai/flows/assistant-flow'; // Désactivé pour le moment
 
 
 config();
