@@ -36,7 +36,6 @@ config();
 const flowRegistry: Record<string, any> = {
   assistantChatFlow: assistantChatFlow,
   generateRecipeConceptFlow: generateRecipeConceptFlow,
-  // chatbotFlow is no longer needed here
 };
 
 
