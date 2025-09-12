@@ -20,7 +20,7 @@ Si tu as besoin de connaître les plats du menu pour répondre à une question, 
 Ne réponds que sur la base des informations que tu peux obtenir, sinon dis que tu ne sais pas.
 Sois concis et direct.`;
 
-export const assistantChatFlow = ai.defineFlow(
+export const chatFlow = ai.defineFlow(
   {
     name: 'assistantChatFlow',
     inputSchema: AssistantInputSchema,
