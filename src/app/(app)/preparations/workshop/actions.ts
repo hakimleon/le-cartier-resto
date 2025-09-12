@@ -19,7 +19,7 @@ export async function createPreparationFromWorkshop(concept: RecipeConceptOutput
             type: 'Préparation',
             name: concept.name,
             description: concept.description,
-            imageUrl: concept.imageUrl, // Image is part of the new flow
+            imageUrl: concept.imageUrl || '', // Correction: Ensure imageUrl is not undefined
             procedure_preparation: concept.procedure_preparation,
             procedure_cuisson: concept.procedure_cuisson,
             procedure_service: concept.procedure_service,
