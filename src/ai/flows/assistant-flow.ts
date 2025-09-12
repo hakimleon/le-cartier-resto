@@ -7,6 +7,7 @@
 import { ai } from '@/ai/genkit';
 import { getRecipesTool } from '../tools/assistant-tools';
 import { z } from 'zod';
+import { content, part } from 'genkit';
 
 const AssistantInputSchema = z.array(z.object({
     role: z.enum(['user', 'model', 'system', 'tool']),
@@ -38,11 +39,12 @@ export const assistantChatFlow = ai.defineFlow(
     outputSchema: AssistantOutputSchema,
   },
   async (messages) => {
-    
+
+    const systemInstruction = content({ role: 'system' }, systemPrompt);
+
     const result = await ai.generate({
       model: 'googleai/gemini-1.5-flash-latest',
-      history: messages,
-      prompt: systemPrompt,
+      history: [systemInstruction, ...messages],
       tools: [getRecipesTool],
     });
     
