@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -15,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // Structure pour l'API Genkit
 interface ApiMessage {
-  role: 'user' | 'model';
+  role: 'user' | 'model' | 'system' | 'tool';
   content: { text: string }[];
 }
 
@@ -43,9 +42,10 @@ export default function AssistantClient() {
       content: messageContent,
     };
     
+    // Ajoute le nouveau message de l'utilisateur à l'état d'affichage
     const newDisplayMessages = [...displayMessages, userDisplayMessage];
-
-    // Convertir les messages d'affichage en format pour l'API
+    
+    // Prépare les messages pour l'API Genkit
     const apiMessages: ApiMessage[] = newDisplayMessages.map(msg => ({
         role: msg.role === 'assistant' ? 'model' : 'user',
         content: [{ text: msg.content }]
@@ -73,14 +73,16 @@ export default function AssistantClient() {
         const responseData = await response.json();
         
         // Vérification robuste de la réponse
-        if (!responseData || typeof responseData.content !== 'string') {
+        const aiContent = responseData?.content;
+
+        if (typeof aiContent !== 'string') {
              throw new Error("La réponse de l'assistant est vide ou mal formée.");
         }
 
         const aiMessage: DisplayMessage = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
-            content: responseData.content
+            content: aiContent
         };
         setDisplayMessages(prev => [...prev, aiMessage]);
 
