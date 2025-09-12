@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import FloatingAssistant from '../assistant/FloatingAssistant';
 
 const Logo = () => (
     <svg role="img" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" fill="hsl(var(--primary-foreground))" stroke="hsl(var(--primary-foreground))" >
@@ -41,7 +42,7 @@ export default function AppLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex min-h-screen bg-background">
+      <div className="flex min-h-screen bg-background ">
         <Sidebar variant="sidebar" collapsible="icon">
           <SidebarHeader className="p-4">
             <Link href="/" className="flex items-center gap-2">
@@ -115,18 +116,6 @@ export default function AppLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton
-                  asChild
-                  isActive={pathname.startsWith('/assistant')}
-                  tooltip="Assistant"
-                >
-                  <Link href="/assistant">
-                    <Bot />
-                    <span>Assistant</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-4">
@@ -154,6 +143,7 @@ export default function AppLayout({
           <main className={cn("flex-1 overflow-y-auto", "p-4 md:p-8 pt-6")}>
              {children}
           </main>
+           <FloatingAssistant />
         </SidebarInset>
       </div>
     </SidebarProvider>
