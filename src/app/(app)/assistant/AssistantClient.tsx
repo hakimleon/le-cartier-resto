@@ -42,19 +42,19 @@ export default function AssistantClient() {
     if (!input.trim() || isLoading) return;
 
     const userMessage: ClientMessage = { role: 'user', content: input };
-    const currentMessages = [...messages, userMessage];
-    setMessages(currentMessages);
+    setMessages(prev => [...prev, userMessage]);
+    
+    const currentPrompt = input;
     setInput('');
     setIsLoading(true);
 
-    try {
-      // Format history for Genkit: convert ClientMessage[] to Genkit's Message[]
-      // Each message's content must be an array of "parts" with a text property.
-      const history: Message[] = currentMessages.slice(0, -1).map(msg => ({
-          role: msg.role,
-          content: [{ text: msg.content }]
-      }));
+    // Prepare history in the correct format for Genkit
+    const history: Message[] = [...messages, userMessage].slice(0, -1).map(msg => ({
+        role: msg.role,
+        content: [{ text: msg.content }]
+    }));
 
+    try {
       const response = await fetch('/api/chatbot', {
         method: 'POST',
         headers: {
@@ -62,7 +62,7 @@ export default function AssistantClient() {
         },
         body: JSON.stringify({ 
             history: history, 
-            prompt: input 
+            prompt: currentPrompt 
         }),
       });
 
