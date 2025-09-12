@@ -8,11 +8,16 @@ import { Bot, Send, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import type { Message } from 'genkit';
+
+// Type simplifié pour l'affichage local, car l'historique n'est plus envoyé.
+type DisplayMessage = {
+    role: 'user' | 'model';
+    text: string;
+}
 
 
 export default function AssistantClient() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<DisplayMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -34,10 +39,10 @@ export default function AssistantClient() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: [{ text: input }] };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    const userMessage: DisplayMessage = { role: 'user', text: input };
+    setMessages((prevMessages) => [...prevMessages, userMessage]);
 
+    const currentInput = input;
     setInput('');
     setIsLoading(true);
 
@@ -47,9 +52,10 @@ export default function AssistantClient() {
         headers: {
           'Content-Type': 'application/json',
         },
+        // Le corps de la requête est simplifié pour n'envoyer que le prompt.
         body: JSON.stringify({
           input: {
-             messages: newMessages,
+             prompt: currentInput,
           }
         }),
       });
@@ -64,15 +70,15 @@ export default function AssistantClient() {
       
       const modelResponseText = data.output?.response || "Désolé, je n'ai pas de réponse.";
       
-      const modelMessage: Message = { role: 'model', content: [{ text: modelResponseText }] };
+      const modelMessage: DisplayMessage = { role: 'model', text: modelResponseText };
       setMessages((prevMessages) => [...prevMessages, modelMessage]);
 
     } catch (error) {
       console.error('Error calling chatbot flow:', error);
       const errorMessageContent = `Désolé, une erreur est survenue. ${error instanceof Error ? error.message : 'Erreur inconnue.'}`;
-      const errorMessage: Message = {
+      const errorMessage: DisplayMessage = {
         role: 'model',
-        content: [{ text: errorMessageContent}],
+        text: errorMessageContent,
       };
       setMessages((prevMessages) => [...prevMessages, errorMessage]);
     } finally {
@@ -100,9 +106,7 @@ export default function AssistantClient() {
                 </div>
               ) : (
                 messages.map((message, index) => {
-                  if (message.role === 'tool') return null; // Don't render tool messages
-                  
-                  const messageText = message.content[0]?.text || '';
+                  const messageText = message.text || '';
 
                   return (
                   <div

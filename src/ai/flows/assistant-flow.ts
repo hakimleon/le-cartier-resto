@@ -1,20 +1,17 @@
 'use server';
 /**
  * @fileOverview Flux Genkit pour l'assistant conversationnel.
- * - chatbotFlow: Gère la conversation avec l'historique et les outils.
+ * - chatbotFlow: Gère une simple interaction question-réponse sans mémoire.
  */
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { Message, partSchema } from 'genkit';
 import { searchMenuTool } from '../tools/menu-tools';
 import { getAvailablePreparationsTool } from '../tools/recipe-tools';
 
+// Le schéma d'entrée n'accepte plus qu'un simple prompt (chaîne de caractères)
 const ChatbotInputSchema = z.object({
-  messages: z.array(z.object({
-    role: z.enum(['user', 'model', 'tool']),
-    content: z.array(partSchema),
-  })).describe("L'historique complet des messages de la conversation, y compris le dernier message de l'utilisateur."),
+  prompt: z.string().describe("La question de l'utilisateur."),
 });
 
 const ChatbotOutputSchema = z.object({
@@ -27,22 +24,12 @@ export const chatbotFlow = ai.defineFlow(
     inputSchema: ChatbotInputSchema,
     outputSchema: ChatbotOutputSchema,
   },
-  async ({ messages }) => {
+  async ({ prompt }) => {
     
-    // Sépare le dernier message (le prompt) du reste de l'historique.
-    const history = messages.slice(0, -1) as Message[];
-    const lastMessage = messages[messages.length - 1];
-    
-    // Assure que le prompt est bien un texte. Les outils ne sont pas des prompts.
-    if (lastMessage.role !== 'user') {
-      return { response: "Je ne peux pas traiter une réponse d'outil comme une nouvelle question." };
-    }
-    const promptText = lastMessage.content[0]?.text || '';
-
+    // L'appel à `ai.generate` est simplifié, sans le paramètre `history`
     const llmResponse = await ai.generate({
       model: 'googleai/gemini-1.5-flash',
-      prompt: promptText,
-      history: history,
+      prompt: prompt,
       tools: [searchMenuTool, getAvailablePreparationsTool],
     });
 
