@@ -31,15 +31,17 @@ export default function AssistantClient() {
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = { role: 'user', content: [{ text: input }] };
-    const newHistory = [...history, userMessage];
+    // L'historique pour le prochain appel API ne doit pas inclure le message actuel
+    const historyForApi = [...history];
 
-    setHistory(newHistory);
+    setHistory(currentHistory => [...currentHistory, userMessage]);
     const currentInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
-      const modelResponseText = await sendMessageToChat(history, currentInput);
+      // On passe l'historique SANS le message actuel
+      const modelResponseText = await sendMessageToChat(historyForApi, currentInput);
 
       const modelMessage: Message = { role: 'model', content: [{ text: modelResponseText }] };
       setHistory((prevHistory) => [...prevHistory, modelMessage]);
@@ -51,7 +53,6 @@ export default function AssistantClient() {
         role: 'model',
         content: [{ text: `Désolé, une erreur est survenue: ${errorMessageContent}` }],
       };
-      // Add error message to history to display it to the user
       setHistory((prevHistory) => [...prevHistory, errorMessage]);
     } finally {
       setIsLoading(false);

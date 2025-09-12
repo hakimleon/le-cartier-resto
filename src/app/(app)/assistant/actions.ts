@@ -48,6 +48,7 @@ const convertToGoogleAIMessages = (history: Message[]) => {
 export async function sendMessageToChat(history: Message[], prompt: string): Promise<string> {
     try {
         const chat = model.startChat({
+            // L'historique ne doit contenir que les messages PRÉCÉDENTS.
             history: convertToGoogleAIMessages(history),
             generationConfig: {
                 maxOutputTokens: 1000,
