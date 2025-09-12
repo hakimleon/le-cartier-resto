@@ -24,7 +24,7 @@ import { config } from 'dotenv';
 import { generateRecipeConceptFlow } from '@/ai/flows/recipe-workshop-flow';
 import '@/ai/flows/suggestion-flow';
 import '@/ai/flows/workshop-flow';
-import { chatbotFlow } from '@/ai/flows/assistant-flow';
+import '@/ai/flows/assistant-flow';
 
 
 config();
@@ -33,7 +33,6 @@ config();
 // Note: The key here must match the `name` property of the flow defined with `ai.defineFlow`.
 const flowRegistry: Record<string, any> = {
   generateRecipeConceptFlow: generateRecipeConceptFlow,
-  chatbotFlow: chatbotFlow,
 };
 
 

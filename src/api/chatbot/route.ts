@@ -3,6 +3,7 @@
 
 import { chatbotFlow } from '@/ai/flows/assistant-flow';
 import { NextRequest, NextResponse } from 'next/server';
+import type { Message } from 'genkit';
 
 // Importer les outils pour s'assurer qu'ils sont enregistrés
 import '@/ai/tools/recipe-tools';
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     }
     
     // Le streaming n'est pas nécessaire pour ce chatbot simple, on attend la réponse complète.
-    const result = await chatbotFlow({ history: history || [], prompt });
+    const result = await chatbotFlow({ history: (history || []) as Message[], prompt });
 
     return NextResponse.json({ message: result.response });
 
