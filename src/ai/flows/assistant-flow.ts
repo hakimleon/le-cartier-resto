@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Flux Genkit pour l'assistant conversationnel.
@@ -60,12 +61,6 @@ export const chatbotFlow = ai.defineFlow(
     outputSchema: ChatbotOutputSchema,
   },
   async ({ history, prompt }) => {
-
-    console.log("--- Étape 2: Flow Genkit Exécuté ---");
-    console.log("Historique passé au modèle LLM :");
-    console.log(JSON.stringify(history, null, 2));
-    console.log("Prompt actuel :", prompt);
-    console.log("------------------------------------");
 
     const llmResponse = await ai.generate({
       model: 'googleai/gemini-2.5-flash',
