@@ -38,9 +38,6 @@ export const chatbotFlow = ai.defineFlow(
       tools: [searchMenuTool, getAvailablePreparationsTool],
     });
 
-    // La réponse peut contenir du texte ou un appel d'outil
-    // Pour ce chatbot simple, nous retournons juste le texte.
-    // Si un outil est appelé, Genkit le gère et ré-exécute avec le résultat.
     const responseText = llmResponse.text;
     
     return { response: responseText };
