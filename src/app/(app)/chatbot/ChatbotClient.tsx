@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -35,8 +36,7 @@ export default function ChatbotClient() {
       content: messageContent,
     };
     
-    const newMessages: Message[] = [...messages, userMessage];
-    setMessages(newMessages);
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
@@ -46,11 +46,12 @@ export default function ChatbotClient() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(newMessages.map(m => ({role: m.role, content: m.content}))),
+            // Envoi UNIQUEMENT de la question actuelle pour simplifier
+            body: JSON.stringify(messageContent),
         });
         
         if (!response.ok) {
-            const errorBody = await response.json();
+            const errorBody = await response.json().catch(() => ({error: {message: "Réponse invalide du serveur."}}));
             throw new Error(errorBody.error?.message || `Le serveur a répondu avec le statut : ${response.status}`);
         }
 
