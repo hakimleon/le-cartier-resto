@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Flux Genkit pour l'assistant conversationnel.
@@ -30,12 +29,15 @@ export const chatbotFlow = ai.defineFlow(
   },
   async ({ messages }) => {
     
-    // Le dernier message est le prompt, le reste est l'historique.
+    // Sépare le dernier message (le prompt) du reste de l'historique.
     const history = messages.slice(0, -1) as Message[];
     const lastMessage = messages[messages.length - 1];
     
-    // S'assurer que le prompt est bien un texte. Les outils ne sont pas des prompts.
-    const promptText = lastMessage.role === 'user' ? (lastMessage.content[0]?.text || '') : '';
+    // Assure que le prompt est bien un texte. Les outils ne sont pas des prompts.
+    if (lastMessage.role !== 'user') {
+      return { response: "Je ne peux pas traiter une réponse d'outil comme une nouvelle question." };
+    }
+    const promptText = lastMessage.content[0]?.text || '';
 
     const llmResponse = await ai.generate({
       model: 'googleai/gemini-1.5-flash',
