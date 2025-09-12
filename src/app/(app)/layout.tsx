@@ -114,6 +114,18 @@ export default function AppLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/assistant')}
+                  tooltip="Assistant"
+                >
+                  <Link href="/assistant">
+                    <Bot />
+                    <span>Assistant</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-4">

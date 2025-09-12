@@ -24,6 +24,7 @@ import { config } from 'dotenv';
 import { generateRecipeConceptFlow } from '@/ai/flows/recipe-workshop-flow';
 import '@/ai/flows/suggestion-flow';
 import '@/ai/flows/workshop-flow';
+import '@/ai/flows/assistant-flow';
 
 
 config();
