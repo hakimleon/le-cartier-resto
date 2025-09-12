@@ -43,30 +43,28 @@ export const chatFlow = ai.defineFlow(
   async (input) => {
     console.log('======== [ASSISTANT FLOW START] ========');
     console.log('Received input:', JSON.stringify(input, null, 2));
-
-    if (!input.history || input.history.length === 0) {
-        console.error('Flow Error: History is empty or undefined.');
-        return { content: "Désolé, je n'ai pas reçu de message. L'historique est vide." };
-    }
-
-    // Isoler le dernier message de l'utilisateur qui est le prompt actuel
-    const lastUserMessage = input.history[input.history.length - 1];
-    if (!lastUserMessage || lastUserMessage.role !== 'user') {
-        console.error('Flow Error: No valid last user message found.');
-        return { content: "Désolé, je n'ai pas reçu de question valide de votre part." };
-    }
     
-    const currentPrompt = lastUserMessage.content;
-    console.log('Current user prompt:', currentPrompt);
-
-    // Convertir l'historique simple (sans le dernier message) en format Genkit pour le modèle
-    const historyForModel = input.history.slice(0, -1).map(msg => ({
-      role: msg.role === 'assistant' ? 'model' as const : 'user' as const,
-      content: [{ text: msg.content }],
-    }));
-    console.log('History being sent to model:', JSON.stringify(historyForModel, null, 2));
-
     try {
+        if (!input.history || input.history.length === 0) {
+            console.error('Flow Error: History is empty or undefined.');
+            return { content: "Désolé, je n'ai pas reçu de message. L'historique est vide." };
+        }
+
+        const lastUserMessage = input.history[input.history.length - 1];
+        if (!lastUserMessage || lastUserMessage.role !== 'user') {
+            console.error('Flow Error: No valid last user message found.');
+            return { content: "Désolé, je n'ai pas reçu de question valide de votre part." };
+        }
+        
+        const currentPrompt = lastUserMessage.content;
+        console.log('Current user prompt:', currentPrompt);
+
+        const historyForModel = input.history.slice(0, -1).map(msg => ({
+          role: msg.role === 'assistant' ? 'model' as const : 'user' as const,
+          content: [{ text: msg.content }],
+        }));
+        console.log('History being sent to model:', JSON.stringify(historyForModel, null, 2));
+
         const result = await ai.generate({
           model: 'googleai/gemini-pro',
           prompt: currentPrompt,
@@ -76,26 +74,20 @@ export const chatFlow = ai.defineFlow(
         });
         
         console.log('\n======== [RAW MODEL OUTPUT] ========');
-        const output = result.output;
-        console.log(JSON.stringify(output, null, 2));
+        console.log(JSON.stringify(result.output, null, 2));
         console.log('====================================\n');
         
-        let textResponse = result.text;
+        const textResponse = result.text;
         
-        // Gérer le cas où l'IA appelle un outil mais ne renvoie pas de texte
         if (!textResponse) {
-          console.warn('Text response is empty. Checking for tool calls or other content...');
-          const toolCalls = output?.content?.parts?.filter(part => part.toolRequest);
-          if (toolCalls && toolCalls.length > 0) {
-            textResponse = `J'ai utilisé mes outils pour trouver des informations. Lesquels ? ${toolCalls.map(tc => tc.toolRequest?.name).join(', ')}. Comment puis-je vous aider avec ces données ?`;
-          } else {
-             textResponse = "Je suis désolé, je n'ai pas pu générer une réponse texte. Veuillez reformuler votre question ou réessayer.";
-          }
+          console.warn('Text response is empty. This might be due to a tool call. The flow will not crash.');
+          return { content: "J'ai utilisé mes outils pour traiter votre demande. Comment puis-je vous aider davantage ?" };
         }
 
         console.log('Final textResponse to be returned:', textResponse);
         console.log('======== [ASSISTANT FLOW END] ========');
         return { content: textResponse };
+
     } catch(e: any) {
         console.error('!!!!!!!!! CRITICAL ERROR IN FLOW !!!!!!!!!');
         console.error('Error name:', e.name);
