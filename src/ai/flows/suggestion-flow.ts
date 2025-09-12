@@ -111,11 +111,13 @@ Description : ${input.basePreparationDescription || 'Aucune description.'}
 
 Pour chaque suggestion, donne un nom et une courte description (1-2 phrases) expliquant l'idée.
 
-Exemple:
+Exemple de ce qui est attendu :
 Si la base est "Sauce Tomate", tu pourrais suggérer :
 - Sauce Arrabbiata: Une version pimentée avec de l'ail et des flocons de piment rouge, idéale pour les pâtes.
 - Sauce Bolognaise: Enrichie de viande hachée, mirepoix et vin rouge pour un classique réconfortant.
 - Sauce Piperade: Complétée avec des poivrons et oignons fondus, parfaite pour accompagner viandes blanches et poissons.
+
+IMPORTANT : Ne suggère pas de plats finis, mais bien des variations de la préparation de base.
 
 Fournis uniquement la réponse au format JSON demandé.`;
 
