@@ -8,7 +8,7 @@ import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold, type Content } fr
 import type { Message } from 'genkit';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Recipe, Preparation } from '@/lib/types';
+import type { Recipe, Preparation, Ingredient, RecipeIngredientLink } from '@/lib/types';
 
 
 const API_KEY = process.env.GEMINI_API_KEY;
@@ -32,30 +32,47 @@ const convertToGoogleAIMessages = (history: Message[]): Content[] => {
  */
 async function getApplicationContext(): Promise<string> {
     try {
-        // Fetch dishes
-        const recipesQuery = query(collection(db, "recipes"), where("type", "==", "Plat"));
-        const recipesSnapshot = await getDocs(recipesQuery);
-        const allDishes = recipesSnapshot.docs.map(doc => doc.data() as Recipe);
+        // Fetch all base data in parallel
+        const [recipesSnap, prepsSnap, ingredientsSnap, linksSnap] = await Promise.all([
+            getDocs(query(collection(db, "recipes"), where("type", "==", "Plat"))),
+            getDocs(collection(db, "preparations")),
+            getDocs(collection(db, "ingredients")),
+            getDocs(collection(db, "recipeIngredients"))
+        ]);
 
-        // Fetch preparations
-        const preparationsSnapshot = await getDocs(collection(db, "preparations"));
-        const allPreparations = preparationsSnapshot.docs.map(doc => doc.data() as Preparation);
+        const allDishes = recipesSnap.docs.map(doc => doc.data() as Recipe);
+        const allPreparations = prepsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Preparation));
+        const allIngredients = ingredientsSnap.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
+        const allLinks = linksSnap.docs.map(doc => doc.data() as RecipeIngredientLink);
 
-        let context = "Voici les données de l'application que tu dois utiliser pour répondre aux questions. Ne te base que sur ces informations.\n\n";
+        // Create a map for quick ingredient lookup
+        const ingredientsMap = new Map(allIngredients.map(ing => [ing.id, ing.name]));
+
+        let context = "Tu es un assistant pour le restaurant 'Le Singulier'. Réponds aux questions en te basant sur le contexte suivant. Sois concis et direct.\n\n";
 
         context += "=== PLATS AU MENU ===\n";
         if (allDishes.length > 0) {
             allDishes.forEach(dish => {
-                context += `- ${dish.name} (Catégorie: ${dish.category}, Prix: ${dish.price} DZD, Statut: ${dish.status})\n`;
+                context += `- NOM: ${dish.name} (Catégorie: ${dish.category}, Prix: ${dish.price} DZD, Statut: ${dish.status})\n`;
             });
         } else {
             context += "Aucun plat au menu pour le moment.\n";
         }
 
-        context += "\n=== PRÉPARATIONS DISPONIBLES ===\n";
+        context += "\n=== PRÉPARATIONS DISPONIBLES ET LEURS INGRÉDIENTS ===\n";
         if (allPreparations.length > 0) {
             allPreparations.forEach(prep => {
-                context += `- ${prep.name}\n`;
+                context += `- NOM: ${prep.name}\n`;
+                const prepIngredients = allLinks
+                    .filter(link => link.recipeId === prep.id)
+                    .map(link => ingredientsMap.get(link.ingredientId))
+                    .filter(Boolean);
+                
+                if (prepIngredients.length > 0) {
+                    context += `  - Ingrédients: ${prepIngredients.join(', ')}\n`;
+                } else {
+                    context += `  - Ingrédients: Non spécifiés.\n`;
+                }
             });
         } else {
             context += "Aucune préparation disponible pour le moment.\n";
@@ -75,8 +92,7 @@ export async function sendMessageToChat(history: Message[], prompt: string): Pro
 
         const model = genAI.getGenerativeModel({
           model: "gemini-1.5-flash",
-          // Correction: L'instruction système est passée ici, au moment de la récupération du modèle.
-          systemInstruction: `Tu es un assistant pour le restaurant "Le Singulier". Réponds aux questions en te basant sur le contexte suivant. Sois concis et direct.\n\n${applicationContext}`,
+          systemInstruction: applicationContext,
           safetySettings: [
             {
               category: HarmCategory.HARM_CATEGORY_HARASSMENT,
@@ -98,7 +114,6 @@ export async function sendMessageToChat(history: Message[], prompt: string): Pro
         });
         
         const chat = model.startChat({
-            // L'historique ne doit contenir que les messages PRÉCÉDENTS.
             history: convertToGoogleAIMessages(history),
             generationConfig: {
                 maxOutputTokens: 1000,
@@ -113,6 +128,10 @@ export async function sendMessageToChat(history: Message[], prompt: string): Pro
     } catch (error) {
         console.error("Error in sendMessageToChat:", error);
         if (error instanceof Error) {
+            // Provide a more user-friendly error message
+            if (error.message.includes('400 Bad Request')) {
+                return `Désolé, la requête vers le service d'IA a été jugée invalide. Cela peut être dû à un problème de formatage du contexte.`;
+            }
             return `Erreur lors de la communication avec l'IA: ${error.message}`;
         }
         return "Erreur inconnue lors de la communication avec l'IA.";
