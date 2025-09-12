@@ -32,7 +32,6 @@ export default function AssistantClient() {
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = { role: 'user', content: [{ text: input }] };
-    // L'historique pour le prochain appel API ne doit pas inclure le message actuel
     const historyForApi = [...history];
 
     setHistory(currentHistory => [...currentHistory, userMessage]);
@@ -41,9 +40,7 @@ export default function AssistantClient() {
     setIsLoading(true);
 
     try {
-      // On passe l'historique SANS le message actuel
       const modelResponseText = await sendMessageToChat(historyForApi, currentInput);
-
       const modelMessage: Message = { role: 'model', content: [{ text: modelResponseText }] };
       setHistory((prevHistory) => [...prevHistory, modelMessage]);
 
@@ -62,8 +59,8 @@ export default function AssistantClient() {
 
 
   return (
-      <Card className="w-full h-[calc(100vh-11rem)] flex flex-col">
-        <CardHeader className="border-b">
+      <Card className="w-full h-screen flex flex-col rounded-none border-0 md:border md:rounded-lg">
+        <CardHeader className="border-b px-4 md:px-6">
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-6 w-6" />
             <span>Assistant Le Singulier</span>
@@ -71,11 +68,11 @@ export default function AssistantClient() {
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden p-0">
           <ScrollArea className="h-full" ref={scrollAreaRef}>
-            <div className="p-6 space-y-6">
+            <div className="p-4 md:p-6 space-y-6">
               {history.length === 0 ? (
                 <div className="text-center text-muted-foreground pt-16">
                   <p>Posez-moi une question !</p>
-                   <p className="text-xs mt-2">Ex: "Bonjour, qui es-tu ?"</p>
+                   <p className="text-xs mt-2">Ex: "Quels sont les ingrédients de la sauce béchamel ?"</p>
                 </div>
               ) : (
                 history.map((message, index) => {
@@ -126,7 +123,7 @@ export default function AssistantClient() {
             </div>
           </ScrollArea>
         </CardContent>
-        <CardFooter className="border-t pt-6">
+        <CardFooter className="border-t pt-6 px-4 md:px-6">
           <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
             <Input
               value={input}
