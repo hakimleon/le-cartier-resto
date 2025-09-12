@@ -42,14 +42,15 @@ export default function AssistantClient() {
     if (!input.trim() || isLoading) return;
 
     const userMessage: ClientMessage = { role: 'user', content: input };
-    const newMessages = [...messages, userMessage];
-    setMessages(newMessages);
+    const currentMessages = [...messages, userMessage];
+    setMessages(currentMessages);
     setInput('');
     setIsLoading(true);
 
     try {
       // Format history for Genkit: convert ClientMessage[] to Genkit's Message[]
-      const history: Message[] = newMessages.slice(0, -1).map(msg => ({
+      // Each message's content must be an array of "parts".
+      const history: Message[] = currentMessages.slice(0, -1).map(msg => ({
           role: msg.role,
           content: [{ text: msg.content }]
       }));
