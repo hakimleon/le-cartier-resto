@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -9,22 +8,14 @@ import { Bot, Send, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import { chatbotFlow } from '@/ai/flows/assistant-flow';
-
-type DisplayMessage = {
-    role: 'user' | 'model';
-    text: string;
-}
+import { Message } from 'genkit';
+import { sendMessageToChat } from './actions';
 
 export default function AssistantClient() {
-  const [messages, setMessages] = useState<DisplayMessage[]>([]);
+  const [history, setHistory] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
-  };
 
   useEffect(() => {
     if (scrollAreaRef.current) {
@@ -33,54 +24,36 @@ export default function AssistantClient() {
             viewport.scrollTop = viewport.scrollHeight;
         }
     }
-  }, [messages]);
+  }, [history]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: DisplayMessage = { role: 'user', text: input };
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    const userMessage: Message = { role: 'user', content: [{ text: input }] };
+    const newHistory = [...history, userMessage];
 
+    setHistory(newHistory);
     const currentInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
-      // We are now calling the chatbotFlow directly, which has no memory.
-      const response = await fetch('/api/genkit/flow/chatbotFlow', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          input: {
-             prompt: currentInput,
-          }
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        const errorMessage = errorData.details || errorData.error?.message || `Erreur du serveur (${response.status})`;
-        throw new Error(errorMessage);
-      }
-
-      const data = await response.json();
+      // Appel direct au Server Action avec l'historique complet
+      const modelResponseText = await sendMessageToChat(history, currentInput);
       
-      const modelResponseText = data.output?.response || "Désolé, je n'ai pas de réponse.";
-      
-      const modelMessage: DisplayMessage = { role: 'model', text: modelResponseText };
-      setMessages((prevMessages) => [...prevMessages, modelMessage]);
+      const modelMessage: Message = { role: 'model', content: [{ text: modelResponseText }] };
+
+      setHistory((prevHistory) => [...prevHistory, modelMessage]);
 
     } catch (error) {
-      console.error('Error calling chatbot flow:', error);
+      console.error('Error calling chat action:', error);
       const errorMessageContent = `Désolé, une erreur est survenue. ${error instanceof Error ? error.message : 'Erreur inconnue.'}`;
-      const errorMessage: DisplayMessage = {
+      const errorMessage: Message = {
         role: 'model',
-        text: errorMessageContent,
+        content: [{ text: errorMessageContent }],
       };
-      setMessages((prevMessages) => [...prevMessages, errorMessage]);
+      setHistory((prevHistory) => [...prevHistory, errorMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -99,14 +72,14 @@ export default function AssistantClient() {
         <CardContent className="flex-1 overflow-hidden p-0">
           <ScrollArea className="h-full" ref={scrollAreaRef}>
             <div className="p-6 space-y-6">
-              {messages.length === 0 ? (
+              {history.length === 0 ? (
                 <div className="text-center text-muted-foreground pt-16">
-                  <p>Posez-moi une question sur le menu ou les préparations !</p>
-                  <p className="text-xs mt-2">Ex: "Quels sont les plats avec du poisson ?"</p>
+                  <p>Posez-moi n'importe quelle question !</p>
+                  <p className="text-xs mt-2">Ex: "Qui a écrit Les Misérables ?"</p>
                 </div>
               ) : (
-                messages.map((message, index) => {
-                  const messageText = message.text || '';
+                history.map((message, index) => {
+                  const messageText = message.content[0].text || '';
 
                   return (
                   <div
@@ -157,7 +130,7 @@ export default function AssistantClient() {
           <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
             <Input
               value={input}
-              onChange={handleInputChange}
+              onChange={(e) => setInput(e.target.value)}
               placeholder="Posez votre question ici..."
               disabled={isLoading}
             />
