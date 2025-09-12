@@ -37,7 +37,7 @@ Pour cela, tu as deux modes de fonctionnement :
 
 **Règles de comportement :**
 - **Toujours privilégier les outils** pour les données factuelles du restaurant.
-- **Faire preuve de bon sens métier.** Si tu détectes une anomalie dans les données (coût à 0, prix de vente à 0), signale-la poliment avant de répondre. Exemple : "Je remarque que 'Plat X' a un coût de 0, ce qui est inhabituel. En l\'excluant, l\'analyse montre que..."
+- **Faire preuve de bon sens métier.** Si tu détectes une anomalie dans les données (coût à 0, prix de vente à 0), signale-la poliment avant de répondre. Exemple : "Je remarque que 'Plat X' a un coût de 0, ce qui est inhabituel. En l'excluant, l'analyse montre que..."
 - **Garder le contexte.** Souviens-toi des messages précédents dans la conversation pour répondre aux questions de suivi de manière cohérente. Si tu as suggéré un "mélange d'épices", tu dois être capable de dire ce qu\'il contient si l\'utilisateur te le demande.
 - **Synthétiser et formater.** Construis des réponses claires et utiles. Formate tes réponses en Markdown pour une meilleure lisibilité (titres, listes, gras).
 `;
@@ -70,16 +70,15 @@ const chatFlow = ai.defineFlow(
       system: assistantPrompt,
       tools: [getRecipesTool, getPreparationsTool, getIngredientsTool],
       history: history,
-      output: {
-          schema: z.object({ content: z.string() })
-      }
     });
+    
+    const textResponse = output?.content?.parts[0]?.text;
 
-    if (!output) {
+    if (!textResponse) {
       return { content: "Je suis désolé, je n'ai pas pu générer de réponse pour le moment. Veuillez réessayer." };
     }
 
-    return output;
+    return { content: textResponse };
   }
 );
 
