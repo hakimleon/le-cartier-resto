@@ -13,9 +13,9 @@ import { Message, partSchema } from 'genkit';
 
 const ChatbotInputSchema = z.object({
   history: z.array(z.object({
-    role: z.enum(['user', 'model']),
+    role: z.enum(['user', 'model', 'tool']),
     content: z.array(partSchema),
-  })).describe("L'historique des messages de la conversation."),
+  })).optional().describe("L'historique des messages de la conversation."),
   prompt: z.string().describe("La dernière question ou instruction de l'utilisateur."),
 });
 
@@ -38,6 +38,9 @@ export const chatbotFlow = ai.defineFlow(
       tools: [searchMenuTool, getAvailablePreparationsTool],
     });
 
+    // La réponse peut contenir du texte ou un appel d'outil
+    // Pour ce chatbot simple, nous retournons juste le texte.
+    // Si un outil est appelé, Genkit le gère et ré-exécute avec le résultat.
     const responseText = llmResponse.text;
     
     return { response: responseText };

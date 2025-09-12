@@ -12,20 +12,8 @@ import MarkdownRenderer from '@/components/MarkdownRenderer';
 import type { Message } from 'genkit';
 
 
-type ClientMessage = {
-  role: 'user' | 'model';
-  content: string;
-};
-
-// This is the format Genkit's gemini-pro model history expects
-type GenkitMessage = {
-  role: 'user' | 'model';
-  content: { text: string }[];
-};
-
-
 export default function AssistantClient() {
-  const [messages, setMessages] = useState<ClientMessage[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -48,20 +36,13 @@ export default function AssistantClient() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: ClientMessage = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
+    const userMessage: Message = { role: 'user', content: [{ text: input }] };
+    const newMessages: Message[] = [...messages, userMessage];
+    setMessages(newMessages);
     
     const currentPrompt = input;
     setInput('');
     setIsLoading(true);
-
-    // Prepare history in the correct format for Genkit
-    // The same simple format used in the workshop refinement
-    const history: Message[] = [...messages].map(msg => ({
-        role: msg.role,
-        content: [{ text: msg.content }]
-    }));
-
 
     try {
       const response = await fetch('/api/chatbot', {
@@ -70,7 +51,7 @@ export default function AssistantClient() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-            history: history, 
+            history: messages, // Send the history *before* the new user message
             prompt: currentPrompt 
         }),
       });
@@ -81,14 +62,14 @@ export default function AssistantClient() {
       }
 
       const data = await response.json();
-      const modelMessage: ClientMessage = { role: 'model', content: data.message };
+      const modelMessage: Message = { role: 'model', content: [{ text: data.message }] };
       setMessages((prevMessages) => [...prevMessages, modelMessage]);
 
     } catch (error) {
       console.error('Error calling chatbot API:', error);
-      const errorMessage: ClientMessage = {
+      const errorMessage: Message = {
         role: 'model',
-        content: `Désolé, une erreur est survenue. ${error instanceof Error ? error.message : ''}`,
+        content: [{ text: `Désolé, une erreur est survenue. ${error instanceof Error ? error.message : ''}`}],
       };
       setMessages((prevMessages) => [...prevMessages, errorMessage]);
     } finally {
@@ -114,7 +95,11 @@ export default function AssistantClient() {
                   <p className="text-xs mt-2">Ex: "Quels sont les plats avec du poisson ?"</p>
                 </div>
               ) : (
-                messages.map((message, index) => (
+                messages.map((message, index) => {
+                  const messageText = message.content[0].text || "";
+                  if (message.role === 'tool') return null; // Don't render tool messages
+
+                  return (
                   <div
                     key={index}
                     className={cn(
@@ -135,7 +120,7 @@ export default function AssistantClient() {
                           : 'bg-muted'
                       )}
                     >
-                      <MarkdownRenderer text={message.content}/>
+                      <MarkdownRenderer text={messageText}/>
                     </div>
                      {message.role === 'user' && (
                       <div className="flex-shrink-0 h-8 w-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center">
@@ -143,7 +128,7 @@ export default function AssistantClient() {
                       </div>
                     )}
                   </div>
-                ))
+                )})
               )}
                {isLoading && (
                  <div className="flex items-start gap-4">
