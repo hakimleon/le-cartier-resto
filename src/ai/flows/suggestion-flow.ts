@@ -98,13 +98,13 @@ const DerivedPreparationsOutputSchema = z.object({
     suggestions: z.array(z.object({
         name: z.string().describe("Nom de la préparation dérivée suggérée."),
         description: z.string().describe("Courte description expliquant la suggestion et ses cas d'usage."),
-    })).describe("Liste de 3 suggestions de préparations dérivées."),
+    })).describe("Liste de 5 suggestions de préparations dérivées."),
 });
 
 export type DerivedPreparationsOutput = z.infer<typeof DerivedPreparationsOutputSchema>;
 
 export async function generateDerivedPreparations(input: z.infer<typeof DerivedPreparationsInputSchema>): Promise<DerivedPreparationsOutput> {
-    const prompt = `En tant que chef expert, je te donne une préparation de base. Propose-moi 3 préparations "filles" (dérivées) qui peuvent être créées à partir de cette base.
+    const prompt = `En tant que chef expert, je te donne une préparation de base. Propose-moi 5 préparations "filles" (dérivées) qui peuvent être créées à partir de cette base.
 
 Préparation de base : "${input.basePreparationName}"
 Description : ${input.basePreparationDescription || 'Aucune description.'}
