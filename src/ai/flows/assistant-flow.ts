@@ -9,11 +9,14 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getAvailablePreparationsTool } from '../tools/recipe-tools';
 import { searchMenuTool } from '../tools/menu-tools';
-import { Message } from 'genkit';
+import { Message, partSchema } from 'genkit';
 
 const ChatbotInputSchema = z.object({
-  history: z.array(z.any()).describe("L'historique des messages de la conversation."),
-  prompt: z.string().describe('La dernière question ou instruction de l\'utilisateur.'),
+  history: z.array(z.object({
+    role: z.enum(['user', 'model']),
+    content: z.array(partSchema),
+  })).describe("L'historique des messages de la conversation."),
+  prompt: z.string().describe("La dernière question ou instruction de l'utilisateur."),
 });
 
 const ChatbotOutputSchema = z.object({

@@ -9,7 +9,7 @@ import { Bot, Send, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import { Message } from 'genkit';
+import type { Message } from 'genkit';
 
 
 type ClientMessage = {
