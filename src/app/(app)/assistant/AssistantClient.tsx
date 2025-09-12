@@ -65,9 +65,8 @@ export default function AssistantClient() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                history: chatHistoryForApi,
-            }),
+            // Correction : envoyer directement le tableau, pas un objet l'encapsulant.
+            body: JSON.stringify(chatHistoryForApi),
         });
         
         if (!response.ok) {
@@ -78,7 +77,7 @@ export default function AssistantClient() {
                 errorBody = { error: { message: `Le serveur a répondu avec le statut : ${response.status}` } };
             }
             console.error("API Error Response:", errorBody);
-            throw new Error(errorBody.error?.message || `Le serveur a répondu avec le statut : ${response.status}`);
+            throw new Error(errorBody.error?.message || `Internal Error`);
         }
 
         const responseData = await response.json();
@@ -101,9 +100,8 @@ export default function AssistantClient() {
             description: error.message || "Je n'ai pas pu traiter votre demande. Veuillez réessayer.",
             variant: "destructive"
         });
-        // Keep the user message on screen even if the call failed
-        setMessages(prev => prev.filter(msg => msg.id !== userMessage.id)); // Remove user message on failure
-        setIsLoading(false);
+        // Retirer le message utilisateur en cas d'échec pour permettre de le renvoyer.
+        setMessages(prev => prev.filter(msg => msg.id !== userMessage.id)); 
     } finally {
         setIsLoading(false);
     }
@@ -210,3 +208,5 @@ export default function AssistantClient() {
     </div>
   );
 }
+
+    
