@@ -7,8 +7,6 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { getAvailablePreparationsTool } from '../tools/recipe-tools';
-import { searchMenuTool } from '../tools/menu-tools';
 import { Message, partSchema } from 'genkit';
 
 const ChatbotInputSchema = z.object({
@@ -35,7 +33,8 @@ export const chatbotFlow = ai.defineFlow(
       model: 'googleai/gemini-2.5-flash',
       prompt: prompt,
       history: history as Message[],
-      tools: [searchMenuTool, getAvailablePreparationsTool],
+      // Les outils sont temporairement retirés pour le test de mémoire
+      // tools: [searchMenuTool, getAvailablePreparationsTool],
     });
 
     const responseText = llmResponse.text;
