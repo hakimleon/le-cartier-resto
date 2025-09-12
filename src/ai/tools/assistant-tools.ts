@@ -146,11 +146,13 @@ export const getRecipesTool = ai.defineTool(
 export const getPreparationsTool = ai.defineTool(
     {
         name: 'getPreparationsTool',
-        description: 'Récupère la liste de toutes les préparations (sous-recettes) disponibles.',
+        description: 'Récupère la liste de toutes les préparations (sous-recettes) disponibles, y compris la quantité produite et son unité.',
         outputSchema: z.array(z.object({
             id: z.string(),
             name: z.string(),
             description: z.string().optional(),
+            productionQuantity: z.number().optional().describe("La quantité totale produite par cette fiche technique."),
+            productionUnit: z.string().optional().describe("L'unité de la quantité produite (ex: kg, L, pièce)."),
         })),
     },
     async () => {
@@ -162,6 +164,8 @@ export const getPreparationsTool = ai.defineTool(
                     id: doc.id,
                     name: data.name,
                     description: data.description,
+                    productionQuantity: data.productionQuantity,
+                    productionUnit: data.productionUnit,
                 }
             });
         } catch (error) {
