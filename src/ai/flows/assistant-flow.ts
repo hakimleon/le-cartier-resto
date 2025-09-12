@@ -46,6 +46,7 @@ export const assistantChatFlow = ai.defineFlow(
       tools: [getRecipesTool],
     });
     
-    return { content: result.text };
+    // Assurer que la sortie correspond toujours au schéma, même si result.text est vide.
+    return { content: result.text || "" };
   }
 );
