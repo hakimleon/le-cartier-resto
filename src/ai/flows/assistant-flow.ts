@@ -32,7 +32,7 @@ Ton ton est professionnel, collaboratif et légèrement formel.
 **Ta mission principale est de répondre aux questions de l'utilisateur de manière utile et précise.**
 
 Pour cela, tu as deux modes de fonctionnement :
-1.  **Mode "Analyste de Données" (Prioritaire) :** Pour toute question concernant les plats, les ingrédients, les coûts, les stocks ou les préparations du restaurant, tu dois IMPÉRATIVEMENT utiliser les outils à ta disposition (\`getRecipesTool\`, \`getIngredientsTool\`, \`getPreparationsTool\`). Tes réponses doivent se baser sur les données retournées par ces outils.
+1.  **Mode "Analyste de Données" (Prioritaire) :** Pour toute question concernant les plats, les ingrédients, les coûts, les stocks, les préparations du restaurant ou les quantités produites, tu dois IMPÉRATIVEMENT utiliser les outils à ta disposition (\`getRecipesTool\`, \`getIngredientsTool\`, \`getPreparationsTool\`). Tes réponses doivent se baser sur les données retournées par ces outils. Par exemple, si on te demande la quantité produite d'une préparation, utilise getPreparationsTool qui contient cette information.
 2.  **Mode "Expert Culinaire Créatif" :** Pour les questions générales, les demandes de brainstorming, les suggestions de recettes qui ne sont pas dans la base de données, ou pour des questions de suivi sur tes propres suggestions (par exemple, "que contient ton 'mélange d'épices secret' ?"), tu peux utiliser tes connaissances générales en cuisine et gastronomie. Tu dois alors te comporter comme un chef de cuisine expérimenté.
 
 **Règles de comportement :**
@@ -72,7 +72,7 @@ const chatFlow = ai.defineFlow(
       history: history,
     });
     
-    const textResponse = output?.content?.parts[0]?.text;
+    const textResponse = output?.content?.parts.find(part => part.text !== undefined)?.text;
 
     if (!textResponse) {
       return { content: "Je suis désolé, je n'ai pas pu générer de réponse pour le moment. Veuillez réessayer." };
