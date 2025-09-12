@@ -55,7 +55,7 @@ const chatFlow = ai.defineFlow(
     }
 
     const { output } = await ai.generate({
-      model: 'googleai/gemini-2.5-flash',
+      model: 'googleai/gemini-pro',
       prompt: lastUserMessage.content[0].text,
       system: assistantPrompt,
       tools: [getRecipesTool, getPreparationsTool, getIngredientsTool],
