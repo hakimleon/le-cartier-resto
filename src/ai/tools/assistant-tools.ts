@@ -270,10 +270,3 @@ export const getIngredientsTool = ai.defineTool(
         }
     }
 );
-
-    
-
-    
-
-    
-
