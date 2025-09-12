@@ -83,20 +83,13 @@ export const chatFlow = ai.defineFlow(
         let textResponse = result.text;
         
         // Gérer le cas où l'IA appelle un outil mais ne renvoie pas de texte
-        if (!textResponse && output?.content) {
-          console.warn('Text response is empty. Checking for tool calls...');
-          const toolCalls = output.content.parts.filter(part => part.toolRequest);
-          const toolResponses = output.content.parts.filter(part => part.toolResponse);
-
-          if (toolCalls.length > 0) {
-            textResponse = "J'ai utilisé mes outils pour chercher l'information, mais je n'ai pas encore formulé de réponse. Pouvez-vous préciser votre question pour que je puisse vous aider ?.";
-          } else if (toolResponses.length > 0) {
-             textResponse = "J'ai consulté mes données. Que souhaitez-vous savoir de plus ?";
+        if (!textResponse) {
+          console.warn('Text response is empty. Checking for tool calls or other content...');
+          if (output?.content?.parts?.some(part => part.toolRequest || part.toolResponse)) {
+            textResponse = "J'ai consulté mes outils. Que puis-je faire pour vous avec ces informations ?";
           } else {
-             textResponse = "Je suis désolé, une erreur inattendue est survenue et je n'ai pas pu formuler de réponse. Veuillez réessayer.";
+             textResponse = "Je suis désolé, je n'ai pas pu générer une réponse texte. Veuillez reformuler votre question ou réessayer.";
           }
-        } else if (!textResponse) {
-             textResponse = "Je n'ai pas de réponse pour le moment. Veuillez reformuler votre question.";
         }
 
         console.log('Final textResponse to be returned:', textResponse);
@@ -104,7 +97,9 @@ export const chatFlow = ai.defineFlow(
         return { content: textResponse };
     } catch(e: any) {
         console.error('!!!!!!!!! CRITICAL ERROR IN FLOW !!!!!!!!!');
-        console.error(e);
+        console.error('Error name:', e.name);
+        console.error('Error message:', e.message);
+        console.error('Error stack:', e.stack);
         console.error('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!');
         // Renvoyer une erreur plus explicite au client serait idéal, mais pour l'instant, on assure que ça ne crashe pas.
         return { content: `Désolé, une erreur critique est survenue sur le serveur : ${e.message}` };
