@@ -39,8 +39,6 @@ export default function AppLayout({
 }>) {
   const pathname = usePathname();
 
-  const isAssistantPage = pathname.startsWith('/assistant');
-
   return (
     <SidebarProvider>
       <div className="flex min-h-screen bg-background">
