@@ -87,6 +87,7 @@ export const getRecipesTool = ai.defineTool(
         outputSchema: RecipeToolOutputSchema,
     },
     async () => {
+        console.log('[TOOL CALL] getRecipesTool triggered.');
         try {
             // 1. Pre-fetch all base data
             const ingredientsSnap = await getDocs(collection(db, "ingredients"));
@@ -163,10 +164,11 @@ export const getRecipesTool = ai.defineTool(
                     preparations: preparationNames,
                 };
             }));
-
+            
+            console.log('[TOOL RESULT] getRecipesTool returning:', JSON.stringify(recipesWithDetails, null, 2));
             return recipesWithDetails;
         } catch (error) {
-            console.error("Error fetching recipes for tool:", error);
+            console.error("Error in getRecipesTool:", error);
             return [];
         }
     }
@@ -188,6 +190,7 @@ export const getPreparationsTool = ai.defineTool(
         })),
     },
     async () => {
+        console.log('[TOOL CALL] getPreparationsTool triggered.');
         try {
             const ingredientsSnap = await getDocs(collection(db, "ingredients"));
             const allIngredients = ingredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
@@ -195,7 +198,7 @@ export const getPreparationsTool = ai.defineTool(
             const preparationsSnapshot = await getDocs(collection(db, 'preparations'));
             const allPreparations = preparationsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
 
-            return await Promise.all(allPreparations.map(async (prep) => {
+            const result = await Promise.all(allPreparations.map(async (prep) => {
                  // Get ingredient names for the current preparation
                 const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
                 const ingredientsLinksSnap = await getDocs(ingredientsQuery);
@@ -222,8 +225,10 @@ export const getPreparationsTool = ai.defineTool(
                     preparations: preparationNames,
                 }
             }));
+            console.log('[TOOL RESULT] getPreparationsTool returning:', JSON.stringify(result, null, 2));
+            return result;
         } catch (error) {
-            console.error("Error fetching preparations for tool:", error);
+            console.error("Error in getPreparationsTool:", error);
             return [];
         }
     }
@@ -243,9 +248,10 @@ export const getIngredientsTool = ai.defineTool(
         })),
     },
     async () => {
+        console.log('[TOOL CALL] getIngredientsTool triggered.');
         try {
             const ingredientsSnapshot = await getDocs(collection(db, 'ingredients'));
-            return ingredientsSnapshot.docs.map(doc => {
+            const result = ingredientsSnapshot.docs.map(doc => {
                 const data = doc.data() as Ingredient;
                 return {
                     id: doc.id,
@@ -256,8 +262,10 @@ export const getIngredientsTool = ai.defineTool(
                     purchaseUnit: data.purchaseUnit,
                 }
             });
+            console.log('[TOOL RESULT] getIngredientsTool returning:', JSON.stringify(result, null, 2));
+            return result;
         } catch (error) {
-            console.error("Error fetching ingredients for tool:", error);
+            console.error("Error in getIngredientsTool:", error);
             return [];
         }
     }
@@ -268,3 +276,4 @@ export const getIngredientsTool = ai.defineTool(
     
 
     
+
