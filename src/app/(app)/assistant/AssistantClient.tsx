@@ -37,11 +37,11 @@ export default function AssistantClient() {
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = { role: 'user', content: [{ text: input }] };
-    setMessages((prevMessages) => [...prevMessages, userMessage]);
+    const newMessages = [...messages, userMessage];
+    
+    setMessages(newMessages);
     
     const currentPrompt = input;
-    const historyToSend = [...messages]; // Capture history *before* new user message for the API call
-
     setInput('');
     setIsLoading(true);
 
@@ -52,7 +52,8 @@ export default function AssistantClient() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-            history: historyToSend,
+            // Send the history including the new user message, but exclude the very last one (which is the prompt itself)
+            history: newMessages.slice(0, -1),
             prompt: currentPrompt 
         }),
       });
@@ -98,7 +99,7 @@ export default function AssistantClient() {
               ) : (
                 messages.map((message, index) => {
                   // Ensure content is an array and has at least one element with text
-                  const messageText = (message.content && message.content[0]?.text) ? message.content[0].text : "";
+                  const messageText = (message.content && Array.isArray(message.content) && message.content[0]?.text) ? message.content[0].text : "";
                   if (message.role === 'tool') return null; // Don't render tool messages
 
                   return (
