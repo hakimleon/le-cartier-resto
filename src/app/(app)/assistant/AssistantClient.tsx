@@ -57,6 +57,7 @@ export default function AssistantClient() {
     setIsLoading(true);
 
     try {
+        console.log('--- Sending to API ---', apiMessages);
         const response = await fetch('/api/chatbot', {
             method: 'POST',
             headers: {
@@ -65,17 +66,20 @@ export default function AssistantClient() {
             body: JSON.stringify(apiMessages),
         });
         
+        const responseData = await response.json();
+        console.log('--- Raw API Response ---', responseData);
+
+
         if (!response.ok) {
-            const errorBody = await response.json().catch(() => ({error: {message: "Réponse invalide du serveur."}}));
+            const errorBody = responseData;
             throw new Error(errorBody.error?.message || `Le serveur a répondu avec le statut : ${response.status}`);
         }
-
-        const responseData = await response.json();
         
         // Vérification robuste de la réponse
         const aiContent = responseData?.content;
 
         if (typeof aiContent !== 'string') {
+             console.error("La réponse de l'assistant est mal formée ou vide:", responseData);
              throw new Error("La réponse de l'assistant est vide ou mal formée.");
         }
 
