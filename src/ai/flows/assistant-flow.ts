@@ -50,16 +50,15 @@ const chatFlow = ai.defineFlow(
   },
   async (input) => {
     
-    // Transform the input history to match the expected format for `generate`
+    // Transforme l'historique pour l'API Genkit
     const history = input.history.map(msg => ({
       role: msg.role === 'assistant' ? 'model' as const : 'user' as const,
       content: [{ text: msg.content }],
     }));
     
-    // The last message from the user is the current prompt
+    // Le dernier message de l'utilisateur est le prompt actuel
     const lastUserMessage = history.pop();
     if (!lastUserMessage || lastUserMessage.role !== 'user') {
-      // Should not happen with a well-formed input
       return { content: "Désolé, je n'ai pas reçu de question valide." };
     }
 
@@ -72,7 +71,15 @@ const chatFlow = ai.defineFlow(
       history: history,
     });
     
-    const textResponse = output?.content?.parts.find(part => part.text !== undefined)?.text;
+    // Gestion plus robuste de la réponse
+    let textResponse = '';
+    if (output?.content?.parts) {
+        for (const part of output.content.parts) {
+            if (part.text) {
+                textResponse += part.text;
+            }
+        }
+    }
 
     if (!textResponse) {
       return { content: "Je suis désolé, je n'ai pas pu générer de réponse pour le moment. Veuillez réessayer." };
@@ -86,5 +93,3 @@ const chatFlow = ai.defineFlow(
 export async function chat(input: ChatInput): Promise<ChatOutput> {
     return chatFlow(input);
 }
-
-    
