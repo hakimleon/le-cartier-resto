@@ -39,14 +39,10 @@ export const assistantChatFlow = ai.defineFlow(
   },
   async (messages) => {
 
-    const systemInstruction = {
-        role: 'system' as const,
-        content: [{ text: systemPrompt }]
-    };
-
     const result = await ai.generate({
       model: 'googleai/gemini-1.5-flash-latest',
-      history: [systemInstruction, ...messages],
+      system: systemPrompt,
+      history: messages,
       tools: [getRecipesTool],
     });
     

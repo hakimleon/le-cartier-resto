@@ -14,6 +14,11 @@ export async function POST(req: NextRequest) {
     if (!Array.isArray(messages)) {
       return NextResponse.json({ error: { message: 'Invalid input, expected an array of messages.' } }, { status: 400 });
     }
+    
+    // S'il n'y a aucun message, l'API GenAI renverra une erreur.
+    if (messages.length === 0) {
+        return NextResponse.json({ content: "Bonjour ! Comment puis-je vous aider aujourd'hui ?" });
+    }
 
     const result = await assistantChatFlow(messages);
 
