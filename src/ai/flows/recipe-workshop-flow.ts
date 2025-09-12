@@ -67,10 +67,13 @@ const RecipeConceptOutputSchema = z.object({
 });
 export type RecipeConceptOutput = z.infer<typeof RecipeConceptOutputSchema>;
 
+// Schéma interne sans imageUrl pour le prompt de génération de texte
+const RecipeTextConceptSchema = RecipeConceptOutputSchema.omit({ imageUrl: true });
+
 const recipeGenPrompt = ai.definePrompt({
     name: 'recipeWorkshopPrompt',
     input: { schema: RecipeConceptInputSchema },
-    output: { schema: RecipeConceptOutputSchema },
+    output: { schema: RecipeTextConceptSchema },
     tools: [getAvailablePreparationsTool],
     model: 'googleai/gemini-2.5-flash',
     prompt: `
@@ -134,7 +137,7 @@ export const generateRecipeConceptFlow = ai.defineFlow(
             throw new Error("La génération du concept de la recette a échoué.");
         }
         
-        let finalOutput = { ...recipeConcept };
+        let finalOutput: RecipeConceptOutput = { ...recipeConcept, imageUrl: undefined };
 
         // 2. Si c'est un plat, générer une image
         if (input.type === 'Plat') {
