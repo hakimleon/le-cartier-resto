@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Flux Genkit pour l'assistant conversationnel.
@@ -8,6 +7,8 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { Message, partSchema } from 'genkit';
+import { searchMenuTool } from '../tools/menu-tools';
+import { getAvailablePreparationsTool } from '../tools/recipe-tools';
 
 const ChatbotInputSchema = z.object({
   history: z.array(z.object({
@@ -33,8 +34,7 @@ export const chatbotFlow = ai.defineFlow(
       model: 'googleai/gemini-2.5-flash',
       prompt: prompt,
       history: history as Message[],
-      // Les outils sont temporairement retirés pour le test de mémoire
-      // tools: [searchMenuTool, getAvailablePreparationsTool],
+      tools: [searchMenuTool, getAvailablePreparationsTool],
     });
 
     const responseText = llmResponse.text;

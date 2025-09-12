@@ -1,5 +1,4 @@
-
-'use client';
+"use client";
 
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
@@ -38,37 +37,42 @@ export default function AssistantClient() {
 
     const userMessage: Message = { role: 'user', content: [{ text: input }] };
     const newMessages = [...messages, userMessage];
-    
     setMessages(newMessages);
-    
-    const currentPrompt = input;
+
+    const currentInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chatbot', {
+      // Direct call to Genkit flow endpoint
+      const response = await fetch('/api/genkit/flow/chatbotFlow', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-            // Send the history including the new user message, but exclude the very last one (which is the prompt itself)
-            history: newMessages.slice(0, -1),
-            prompt: currentPrompt 
+        body: JSON.stringify({
+          input: {
+            prompt: currentInput,
+            history: messages, // Send history BEFORE adding the current message
+          }
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'La réponse du serveur n\'est pas valide.');
+        throw new Error(errorData.error?.message || 'La réponse du serveur n\'est pas valide.');
       }
 
       const data = await response.json();
-      const modelMessage: Message = { role: 'model', content: [{ text: data.message }] };
+      
+      // Genkit flow response is nested under 'output'
+      const modelResponseText = data.output?.response || "Désolé, je n'ai pas de réponse.";
+      
+      const modelMessage: Message = { role: 'model', content: [{ text: modelResponseText }] };
       setMessages((prevMessages) => [...prevMessages, modelMessage]);
 
     } catch (error) {
-      console.error('Error calling chatbot API:', error);
+      console.error('Error calling chatbot flow:', error);
       const errorMessage: Message = {
         role: 'model',
         content: [{ text: `Désolé, une erreur est survenue. ${error instanceof Error ? error.message : ''}`}],
@@ -78,6 +82,7 @@ export default function AssistantClient() {
       setIsLoading(false);
     }
   };
+
 
   return (
     <div className="flex h-[calc(100vh-10rem)] justify-center items-center">
@@ -98,7 +103,6 @@ export default function AssistantClient() {
                 </div>
               ) : (
                 messages.map((message, index) => {
-                  // Ensure content is an array and has at least one element with text
                   const messageText = (message.content && Array.isArray(message.content) && message.content[0]?.text) ? message.content[0].text : "";
                   if (message.role === 'tool') return null; // Don't render tool messages
 
