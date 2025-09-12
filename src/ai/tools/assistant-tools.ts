@@ -90,7 +90,8 @@ export const getRecipesTool = ai.defineTool(
             // Calculate cost for each preparation first
             const allPreparations: (Preparation & { cost?: number })[] = [];
             for(const prep of allPreparationsData) {
-                const cost = await calculateRecipeCost(prep.id!, allIngredients, []); // Base preps have no sub-preps
+                // Pass an empty array for sub-preparations to avoid circular dependencies in this first pass
+                const cost = await calculateRecipeCost(prep.id!, allIngredients, []); 
                 const costPerUnit = prep.productionQuantity > 0 ? cost / prep.productionQuantity : 0;
                 allPreparations.push({ ...prep, cost: costPerUnit });
             }
@@ -101,6 +102,7 @@ export const getRecipesTool = ai.defineTool(
             
             const recipesWithDetails = await Promise.all(recipesSnapshot.docs.map(async (doc) => {
                 const recipe = doc.data() as Recipe;
+                // Now, pass the preparations with their calculated costs
                 const totalCost = await calculateRecipeCost(doc.id, allIngredients, allPreparations);
                 const costPerPortion = recipe.portions > 0 ? totalCost / recipe.portions : 0;
 
@@ -232,5 +234,7 @@ export const getIngredientsTool = ai.defineTool(
         }
     }
 );
+
+    
 
     
