@@ -12,7 +12,7 @@ import { getAvailablePreparationsTool } from '../tools/recipe-tools';
 
 const ChatbotInputSchema = z.object({
   messages: z.array(z.object({
-    role: z.enum(['user', 'model']),
+    role: z.enum(['user', 'model', 'tool']),
     content: z.array(partSchema),
   })).describe("L'historique complet des messages de la conversation, y compris le dernier message de l'utilisateur."),
 });
@@ -31,11 +31,14 @@ export const chatbotFlow = ai.defineFlow(
     
     // Le dernier message est le prompt, le reste est l'historique.
     const history = messages.slice(0, -1) as Message[];
-    const prompt = messages[messages.length - 1].content[0].text || '';
+    const lastMessage = messages[messages.length - 1];
+    
+    // S'assurer que le prompt est bien un texte. Les outils ne sont pas des prompts.
+    const promptText = lastMessage.role === 'user' ? (lastMessage.content[0]?.text || '') : '';
 
     const llmResponse = await ai.generate({
       model: 'googleai/gemini-1.5-flash',
-      prompt: prompt,
+      prompt: promptText,
       history: history,
       tools: [searchMenuTool, getAvailablePreparationsTool],
     });
