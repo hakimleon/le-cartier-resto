@@ -1,3 +1,4 @@
+
 /**
  * @license
  * Copyright 2024 Google LLC
@@ -10,7 +11,6 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
-
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
@@ -18,17 +18,15 @@
 
 import { nextJSHandler } from '@genkit-ai/next';
 import { config } from 'dotenv';
-import cors from 'cors';
-import express from 'express';
 
 // This is required for Next.js experimental support for Genkit.
 config();
 
-// Dynamically import all flows from the flows directory
-const flows = require.context('@/ai/flows', true, /\.ts$/);
-flows.keys().forEach(flows);
+// Explicitly import all flows to ensure they are registered with Genkit.
+import '@/ai/flows/assistant-flow';
+import '@/ai/flows/recipe-workshop-flow';
+import '@/ai/flows/suggestion-flow';
+import '@/ai/flows/workshop-flow';
 
-const app = express();
-app.use(cors({ origin: '*' }));
 
 export const POST = nextJSHandler();
