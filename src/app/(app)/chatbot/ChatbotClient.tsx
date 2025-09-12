@@ -41,12 +41,11 @@ export default function ChatbotClient() {
     setIsLoading(true);
 
     try {
-        const response = await fetch('/api/genkit/chatbotFlow', {
+        const response = await fetch('/api/chatbot', { // Appel de la nouvelle route dédiée
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            // Envoi UNIQUEMENT de la question actuelle pour simplifier
             body: JSON.stringify(messageContent),
         });
         
