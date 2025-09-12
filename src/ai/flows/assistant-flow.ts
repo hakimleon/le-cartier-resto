@@ -9,6 +9,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getAvailablePreparationsTool } from '../tools/recipe-tools';
 import { searchMenuTool } from '../tools/menu-tools';
+import { Message } from 'genkit';
 
 const ChatbotInputSchema = z.object({
   history: z.array(z.any()).describe("L'historique des messages de la conversation."),
@@ -57,10 +58,11 @@ export const chatbotFlow = ai.defineFlow(
     outputSchema: ChatbotOutputSchema,
   },
   async ({ history, prompt }) => {
+
     const llmResponse = await ai.generate({
       model: 'googleai/gemini-2.5-flash',
       prompt: prompt,
-      history: history,
+      history: history as Message[],
       tools: [searchMenuTool, getAvailablePreparationsTool],
       system: assistantPrompt,
     });

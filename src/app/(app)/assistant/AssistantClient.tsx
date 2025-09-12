@@ -55,7 +55,7 @@ export default function AssistantClient() {
             // We format the history for the Genkit flow
             history: newMessages.slice(0, -1).map(msg => ({
                 role: msg.role,
-                parts: [{ text: msg.content }]
+                content: [{ text: msg.content }]
             })), 
             prompt: input 
         }),
