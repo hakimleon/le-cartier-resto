@@ -24,6 +24,7 @@ import { chatFlow } from '@/ai/flows/assistant-flow';
 import { generateRecipeConceptFlow } from '@/ai/flows/recipe-workshop-flow';
 import '@/ai/flows/suggestion-flow';
 import '@/ai/flows/workshop-flow';
+import { chatbotFlow } from '@/ai/flows/chatbot-flow';
 
 
 config();
@@ -33,6 +34,7 @@ config();
 const flowRegistry: Record<string, any> = {
   assistantChatFlow: chatFlow,
   generateRecipeConceptFlow: generateRecipeConceptFlow,
+  chatbotFlow: chatbotFlow,
 };
 
 
