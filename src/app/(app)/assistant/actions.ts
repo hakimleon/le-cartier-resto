@@ -60,7 +60,7 @@ async function getApplicationContext(): Promise<string> {
         context += "\n=== PRÉPARATIONS DISPONIBLES (FICHES TECHNIQUES) ===\n";
         if (allPreparations.length > 0) {
             allPreparations.forEach(prep => {
-                context += `- NOM: ${prep.name}\n`;
+                context += `- NOM: ${prep.name} (Production: ${prep.productionQuantity || 'Non spécifiée'} ${prep.productionUnit || ''})\n`;
                 const prepIngredients = allLinks
                     .filter(link => link.recipeId === prep.id)
                     .map(link => {
