@@ -119,7 +119,7 @@ const recipeGenPrompt = ai.definePrompt({
     `,
 });
 
-const generateRecipeConceptFlow = ai.defineFlow(
+export const generateRecipeConceptFlow = ai.defineFlow(
     {
         name: 'generateRecipeConceptFlow',
         inputSchema: RecipeConceptInputSchema,

@@ -34,7 +34,7 @@ Si une donnée semble anormale (ex: coût à 0), signale-le poliment.
 Formate tes réponses en Markdown pour une meilleure lisibilité.
 `;
 
-const chatFlow = ai.defineFlow(
+export const chatFlow = ai.defineFlow(
   {
     name: 'assistantChatFlow',
     inputSchema: ChatInputSchema,

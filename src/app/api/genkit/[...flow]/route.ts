@@ -14,19 +14,42 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+'use server';
 
 import { appRoute } from '@genkit-ai/next';
 import { config } from 'dotenv';
+import { chatFlow } from '@/ai/flows/assistant-flow';
+import { generateRecipeConceptFlow } from '@/ai/flows/recipe-workshop-flow';
 
 config();
 
-// Import all flows so that they are registered with Genkit and available to the handler.
+// Registre des flows accessibles par URL.
+// La clé (ex: 'assistantChatFlow') doit correspondre exactement au dernier segment de l'URL de l'API.
+// ex: POST /api/genkit/assistantChatFlow
+const flows: Record<string, any> = {
+  assistantChatFlow: chatFlow,
+  generateRecipeConceptFlow: generateRecipeConceptFlow,
+  // Ajoutez d'autres flows exportés ici si nécessaire
+};
+
+// Importe tous les flows pour s'assurer qu'ils sont bien enregistrés auprès de Genkit,
+// même s'ils ne sont pas dans le registre ci-dessus.
 import '@/ai/flows/assistant-flow';
 import '@/ai/flows/recipe-workshop-flow';
 import '@/ai/flows/suggestion-flow';
 import '@/ai/flows/workshop-flow';
 
-// This dynamic route handler uses appRoute() to automatically find and
-// execute the flow specified in the URL.
-// For example, a POST to /api/genkit/assistantChatFlow will run the assistantChatFlow.
-export const POST = appRoute();
+
+export async function POST(req: Request, { params }: { params: { flow: string[] } }) {
+  const flowName = params.flow?.[0]; // Ex: "assistantChatFlow"
+  const flow = flowName ? flows[flowName] : null;
+
+  if (!flow) {
+    // If no specific flow is matched in our registry, fall back to the default handler
+    // which will try to find any registered flow matching the name.
+    return appRoute()(req, { params });
+  }
+
+  // Délègue la requête au handler de Genkit pour le flow trouvé
+  return appRoute({flow})(req, { params });
+}
