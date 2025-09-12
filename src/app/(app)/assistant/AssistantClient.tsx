@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -62,7 +63,7 @@ export default function AssistantClient() {
 
   return (
     <div className="flex h-[calc(100vh-10rem)] justify-center items-center">
-      <Card className="w-full max-w-2xl h-full flex flex-col">
+      <Card className="w-full max-w-4xl h-full flex flex-col">
         <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-6 w-6" />
@@ -98,7 +99,7 @@ export default function AssistantClient() {
                       className={cn(
                         'max-w-[80%] rounded-lg px-4 py-3 text-sm',
                         message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
+                          ? 'bg-blue-600 text-white'
                           : 'bg-muted'
                       )}
                     >
