@@ -97,13 +97,32 @@ export const getRecipesTool = ai.defineTool(
 
             // 2. Calculate costs for all preparations first (handling potential dependencies)
             const preparationCosts: Record<string, number> = {};
-            // Simple loop for now, assuming no deep circular dependencies for this tool's purpose
+            // This is a simplified calculation loop. For deep dependencies, a topological sort would be more robust.
+            // However, for most restaurant use cases, dependency depth is shallow.
             for (const prep of allPreparations) {
-                // For this calculation, we assume preparations don't depend on other preps whose costs aren't yet known.
-                // A more robust solution would involve topological sorting if deep dependencies are common.
-                const totalCost = await calculateEntityCost(prep.id!, allIngredients, {}, []); // Pass empty prep costs initially
-                preparationCosts[prep.id!] = prep.productionQuantity > 0 ? totalCost / prep.productionQuantity : 0;
+                const prepIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id!));
+                const prepIngredientsSnap = await getDocs(prepIngredientsQuery);
+                let prepTotalCost = 0;
+                prepIngredientsSnap.forEach(doc => {
+                    const link = doc.data() as RecipeIngredientLink;
+                    const ingData = allIngredients.find(i => i.id === link.ingredientId);
+                    if (ingData) {
+                         const isUnitBased = ['pièce', 'piece'].includes(ingData.purchaseUnit.toLowerCase());
+                        if (isUnitBased) {
+                             prepTotalCost += (link.quantity || 0) * (ingData.purchasePrice || 0);
+                        } else if (ingData.purchasePrice && ingData.purchaseWeightGrams) {
+                            const costPerGram = ingData.purchasePrice / ingData.purchaseWeightGrams;
+                            const netCostPerGram = costPerGram / ((ingData.yieldPercentage || 100) / 100);
+                            const u = (unit: string) => unit.toLowerCase().trim();
+                            const factors: Record<string, number> = { 'kg': 1000, 'g': 1, 'l': 1000, 'ml': 1 };
+                            const conversionFactor = factors[u(link.unitUse)] || 1;
+                            prepTotalCost += (link.quantity || 0) * conversionFactor * netCostPerGram;
+                        }
+                    }
+                });
+                preparationCosts[prep.id!] = prep.productionQuantity > 0 ? prepTotalCost / prep.productionQuantity : 0;
             }
+
 
             // 3. Fetch all dishes
             const recipesQuery = query(collection(db, "recipes"), where("type", "==", "Plat"));
