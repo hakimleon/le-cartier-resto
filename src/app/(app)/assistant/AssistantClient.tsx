@@ -35,17 +35,19 @@ export default function AssistantClient() {
       content: messageContent,
     };
     
-    setMessages(prev => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInput('');
     setIsLoading(true);
 
     try {
-        const response = await fetch('/api/chatbot', { // Appel de la nouvelle route dédiée
+        const response = await fetch('/api/chatbot', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify(messageContent),
+            // Envoi de l'historique complet
+            body: JSON.stringify(newMessages),
         });
         
         if (!response.ok) {
@@ -69,11 +71,12 @@ export default function AssistantClient() {
     } catch (error: any) {
         console.error("Error calling chat flow:", error);
         toast({
-            title: "Erreur du Chatbot",
+            title: "Erreur de l'Assistant",
             description: error.message || "Je n'ai pas pu traiter votre demande.",
             variant: "destructive"
         });
-        setMessages(prev => prev.filter(msg => msg.id !== userMessage.id)); 
+        // Si l'IA échoue, on retire le dernier message utilisateur pour qu'il puisse le renvoyer
+        setMessages(prev => prev.slice(0, -1)); 
     } finally {
         setIsLoading(false);
     }
@@ -102,7 +105,7 @@ export default function AssistantClient() {
                 <Bot className="h-6 w-6" />
             </div>
             <div>
-                <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Assistant IA</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Assistant</h1>
                 <p className="text-muted-foreground">Posez-moi une question sur votre restaurant.</p>
             </div>
         </header>
