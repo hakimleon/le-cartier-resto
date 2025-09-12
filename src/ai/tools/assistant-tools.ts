@@ -1,4 +1,5 @@
 
+
 'use server';
 /**
  * @fileOverview Outils Genkit pour l'assistant IA.
@@ -12,12 +13,17 @@ import { db } from '@/lib/firebase';
 import type { Ingredient, Preparation, Recipe, RecipeIngredientLink, RecipePreparationLink } from '@/lib/types';
 
 
-// Helper function to calculate cost per portion for a recipe
-const calculateRecipeCost = async (recipeId: string, allIngredients: Ingredient[], allPreparations: (Preparation & { cost?: number })[]): Promise<number> => {
+// Helper function to calculate cost for a single recipe/preparation entity
+const calculateEntityCost = async (
+    entityId: string, 
+    allIngredients: Ingredient[], 
+    preparationCosts: Record<string, number>, // Pre-calculated costs of all preparations
+    allPreparations: Preparation[]
+): Promise<number> => {
     let totalCost = 0;
 
     // Fetch and calculate cost of direct ingredients
-    const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
+    const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", entityId));
     const ingredientsSnap = await getDocs(ingredientsQuery);
     for (const ingDoc of ingredientsSnap.docs) {
         const link = ingDoc.data() as RecipeIngredientLink;
@@ -39,19 +45,21 @@ const calculateRecipeCost = async (recipeId: string, allIngredients: Ingredient[
         }
     }
 
-    // Fetch and calculate cost of sub-preparations
-    const preparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
+    // Fetch and add cost of sub-preparations
+    const preparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", entityId));
     const preparationsSnap = await getDocs(preparationsQuery);
     for (const prepDoc of preparationsSnap.docs) {
         const link = prepDoc.data() as RecipePreparationLink;
+        const prepCostPerUnit = preparationCosts[link.childPreparationId];
         const prepData = allPreparations.find(p => p.id === link.childPreparationId);
-        if (prepData?.cost !== undefined) {
+
+        if (prepCostPerUnit !== undefined && prepData) {
              const u = (unit: string) => unit.toLowerCase().trim();
-             const factors: Record<string, number> = { 'kg': 1000, 'g': 1, 'l': 1000, 'ml': 1 };
+             const factors: Record<string, number> = { 'kg': 1000, 'g': 1, 'l': 1000, 'ml': 1, 'pièce': 1, 'piece': 1 };
              const toFactor = factors[u(prepData.productionUnit)] || 1;
              const fromFactor = factors[u(link.unitUse)] || 1;
              const conversionFactor = fromFactor / toFactor;
-             totalCost += (link.quantity || 0) * prepData.cost * conversionFactor;
+             totalCost += (link.quantity || 0) * prepCostPerUnit * conversionFactor;
         }
     }
     
@@ -80,34 +88,36 @@ export const getRecipesTool = ai.defineTool(
     },
     async () => {
         try {
-            // Pre-fetch all ingredients and preparations to calculate costs and get names efficiently
+            // 1. Pre-fetch all base data
             const ingredientsSnap = await getDocs(collection(db, "ingredients"));
             const allIngredients = ingredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
 
             const preparationsSnap = await getDocs(collection(db, "preparations"));
-            const allPreparationsData = preparationsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+            const allPreparations = preparationsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
 
-            // Calculate cost for each preparation first
-            const allPreparations: (Preparation & { cost?: number })[] = [];
-            for(const prep of allPreparationsData) {
-                // Pass an empty array for sub-preparations to avoid circular dependencies in this first pass
-                const cost = await calculateRecipeCost(prep.id!, allIngredients, []); 
-                const costPerUnit = prep.productionQuantity > 0 ? cost / prep.productionQuantity : 0;
-                allPreparations.push({ ...prep, cost: costPerUnit });
+            // 2. Calculate costs for all preparations first (handling potential dependencies)
+            const preparationCosts: Record<string, number> = {};
+            // Simple loop for now, assuming no deep circular dependencies for this tool's purpose
+            for (const prep of allPreparations) {
+                // For this calculation, we assume preparations don't depend on other preps whose costs aren't yet known.
+                // A more robust solution would involve topological sorting if deep dependencies are common.
+                const totalCost = await calculateEntityCost(prep.id!, allIngredients, {}, []); // Pass empty prep costs initially
+                preparationCosts[prep.id!] = prep.productionQuantity > 0 ? totalCost / prep.productionQuantity : 0;
             }
 
-            // Fetch all dishes
+            // 3. Fetch all dishes
             const recipesQuery = query(collection(db, "recipes"), where("type", "==", "Plat"));
             const recipesSnapshot = await getDocs(recipesQuery);
             
-            const recipesWithDetails = await Promise.all(recipesSnapshot.docs.map(async (doc) => {
-                const recipe = doc.data() as Recipe;
-                // Now, pass the preparations with their calculated costs
-                const totalCost = await calculateRecipeCost(doc.id, allIngredients, allPreparations);
+            const recipesWithDetails = await Promise.all(recipesSnapshot.docs.map(async (recipeDoc) => {
+                const recipe = recipeDoc.data() as Recipe;
+                
+                // 4. Calculate final cost for each dish using the pre-calculated preparation costs
+                const totalCost = await calculateEntityCost(recipeDoc.id, allIngredients, preparationCosts, allPreparations);
                 const costPerPortion = recipe.portions > 0 ? totalCost / recipe.portions : 0;
 
                 // Get ingredient names for the current recipe
-                const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", doc.id));
+                const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeDoc.id));
                 const ingredientsLinksSnap = await getDocs(ingredientsQuery);
                 const ingredientNames = ingredientsLinksSnap.docs.map(linkDoc => {
                     const link = linkDoc.data() as RecipeIngredientLink;
@@ -115,16 +125,15 @@ export const getRecipesTool = ai.defineTool(
                 }).filter((name): name is string => !!name);
 
                 // Get preparation names for the current recipe
-                const preparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", doc.id));
+                const preparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeDoc.id));
                 const preparationsLinksSnap = await getDocs(preparationsQuery);
                 const preparationNames = preparationsLinksSnap.docs.map(linkDoc => {
                     const link = linkDoc.data() as RecipePreparationLink;
                     return allPreparations.find(p => p.id === link.childPreparationId)?.name;
                 }).filter((name): name is string => !!name);
 
-
                 return {
-                    id: doc.id,
+                    id: recipeDoc.id,
                     name: recipe.name,
                     category: recipe.category,
                     price: recipe.price,
@@ -234,6 +243,8 @@ export const getIngredientsTool = ai.defineTool(
         }
     }
 );
+
+    
 
     
 
