@@ -146,28 +146,52 @@ export const getRecipesTool = ai.defineTool(
 export const getPreparationsTool = ai.defineTool(
     {
         name: 'getPreparationsTool',
-        description: 'Récupère la liste de toutes les préparations (sous-recettes) disponibles, y compris la quantité produite et son unité.',
+        description: 'Récupère la liste de toutes les préparations (sous-recettes) disponibles, y compris la quantité produite, son unité, et les ingrédients et sous-préparations qui la composent.',
         outputSchema: z.array(z.object({
             id: z.string(),
             name: z.string(),
             description: z.string().optional(),
             productionQuantity: z.number().optional().describe("La quantité totale produite par cette fiche technique."),
             productionUnit: z.string().optional().describe("L'unité de la quantité produite (ex: kg, L, pièce)."),
+            ingredients: z.array(z.string()).describe("La liste des noms des ingrédients bruts utilisés dans cette préparation."),
+            preparations: z.array(z.string()).describe("La liste des noms des autres préparations (sous-recettes) utilisées dans celle-ci."),
         })),
     },
     async () => {
         try {
+            const ingredientsSnap = await getDocs(collection(db, "ingredients"));
+            const allIngredients = ingredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+
             const preparationsSnapshot = await getDocs(collection(db, 'preparations'));
-            return preparationsSnapshot.docs.map(doc => {
-                const data = doc.data() as Preparation;
+            const allPreparations = preparationsSnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+
+            return await Promise.all(allPreparations.map(async (prep) => {
+                 // Get ingredient names for the current preparation
+                const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
+                const ingredientsLinksSnap = await getDocs(ingredientsQuery);
+                const ingredientNames = ingredientsLinksSnap.docs.map(linkDoc => {
+                    const link = linkDoc.data() as RecipeIngredientLink;
+                    return allIngredients.find(i => i.id === link.ingredientId)?.name;
+                }).filter((name): name is string => !!name);
+
+                 // Get sub-preparation names for the current preparation
+                const preparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", prep.id));
+                const preparationsLinksSnap = await getDocs(preparationsQuery);
+                const preparationNames = preparationsLinksSnap.docs.map(linkDoc => {
+                    const link = linkDoc.data() as RecipePreparationLink;
+                    return allPreparations.find(p => p.id === link.childPreparationId)?.name;
+                }).filter((name): name is string => !!name);
+
                 return {
-                    id: doc.id,
-                    name: data.name,
-                    description: data.description,
-                    productionQuantity: data.productionQuantity,
-                    productionUnit: data.productionUnit,
+                    id: prep.id!,
+                    name: prep.name,
+                    description: prep.description,
+                    productionQuantity: prep.productionQuantity,
+                    productionUnit: prep.productionUnit,
+                    ingredients: ingredientNames,
+                    preparations: preparationNames,
                 }
-            });
+            }));
         } catch (error) {
             console.error("Error fetching preparations for tool:", error);
             return [];
@@ -208,3 +232,5 @@ export const getIngredientsTool = ai.defineTool(
         }
     }
 );
+
+    
