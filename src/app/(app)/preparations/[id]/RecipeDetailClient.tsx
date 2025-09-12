@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, Merge } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, Merge } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { generateDerivedPreparations, DerivedPreparationsOutput } from "@/ai/flows/suggestion-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
 import { PreparationModal } from "../PreparationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -344,6 +345,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -353,6 +355,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
   const [allPreparations, setAllPreparations] = useState<Preparation[]>([]);
   const [preparationsCosts, setPreparationsCosts] = useState<Record<string, number>>({});
+  
+  const [derivedSuggestions, setDerivedSuggestions] = useState<DerivedPreparationsOutput['suggestions'] | null>(null);
+
 
   const [isNewIngredientModalOpen, setIsNewIngredientModalOpen] = useState(false);
   const [isNewPreparationModalOpen, setIsNewPreparationModalOpen] = useState(false);
@@ -684,6 +689,30 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     } catch (error) { console.error("Error saving changes:", error); toast({ title: "Erreur", description: "La sauvegarde des modifications a échoué.", variant: "destructive", });
     } finally { setIsSaving(false); }
   };
+  
+    const handleGenerateSuggestions = async () => {
+        if (!recipe) return;
+        setIsGenerating(true);
+        setDerivedSuggestions(null);
+        try {
+            const result = await generateDerivedPreparations({
+                basePreparationName: recipe.name,
+                basePreparationDescription: recipe.description,
+            });
+            if (result && result.suggestions) {
+                setDerivedSuggestions(result.suggestions);
+            }
+        } catch (e) {
+            console.error("Failed to generate derived preparations", e);
+            toast({
+                title: "Erreur de l'IA",
+                description: "Impossible de générer des suggestions. Veuillez réessayer.",
+                variant: 'destructive',
+            });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
 
   const sortedIngredients = useMemo(() => {
     return [...allIngredients].sort((a, b) => a.name.localeCompare(b.name));
@@ -886,6 +915,35 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <span className="text-muted-foreground">Coût de revient / {currentRecipeData.productionUnit || 'unité'}</span>
                                 <span className="font-bold text-primary text-base">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)} DZD</span>
                             </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Lightbulb className="h-5 w-5 text-amber-500" />
+                        Préparations Dérivées
+                    </CardTitle>
+                    <CardDescription>
+                        Trouvez des idées de recettes qui peuvent être créées à partir de cette base.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <Button onClick={handleGenerateSuggestions} disabled={isGenerating} className="w-full">
+                        <Sparkles className={cn("mr-2 h-4 w-4", isGenerating && "animate-spin")} />
+                        {isGenerating ? "Recherche d'idées..." : "Suggérer des dérivés"}
+                    </Button>
+
+                    {derivedSuggestions && (
+                        <div className="space-y-3 pt-4 border-t">
+                            {derivedSuggestions.map((suggestion, index) => (
+                                <div key={index} className="text-sm">
+                                    <p className="font-semibold">{suggestion.name}</p>
+                                    <p className="text-muted-foreground">{suggestion.description}</p>
+                                </div>
+                            ))}
                         </div>
                     )}
                 </CardContent>
