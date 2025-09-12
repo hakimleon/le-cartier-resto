@@ -12,7 +12,7 @@ import { getIngredientsTool, getPreparationsTool, getRecipesTool } from '../tool
 
 const ChatInputSchema = z.object({
     history: z.array(z.object({
-        role: z.enum(['user', 'assistant', 'model', 'system', 'tool']),
+        role: z.enum(['user', 'assistant']),
         content: z.string(),
     })),
 });
