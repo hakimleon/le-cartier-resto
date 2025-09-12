@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -52,7 +53,6 @@ export default function AssistantClient() {
         headers: {
           'Content-Type': 'application/json',
         },
-        // Le corps de la requête est simplifié pour n'envoyer que le prompt.
         body: JSON.stringify({
           input: {
              prompt: currentInput,
