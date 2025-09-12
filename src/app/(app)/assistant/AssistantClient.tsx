@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -70,7 +71,12 @@ export default function AssistantClient() {
         });
         
         if (!response.ok) {
-            const errorBody = await response.json();
+            let errorBody;
+            try {
+                errorBody = await response.json();
+            } catch (e) {
+                errorBody = { error: { message: `Le serveur a répondu avec le statut : ${response.status}` } };
+            }
             console.error("API Error Response:", errorBody);
             throw new Error(errorBody.error?.message || `Le serveur a répondu avec le statut : ${response.status}`);
         }
@@ -96,6 +102,7 @@ export default function AssistantClient() {
             variant: "destructive"
         });
         // Keep the user message on screen even if the call failed
+        setMessages(prev => prev.filter(msg => msg.id !== userMessage.id)); // Remove user message on failure
         setIsLoading(false);
     } finally {
         setIsLoading(false);
