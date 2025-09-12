@@ -15,14 +15,16 @@
  * limitations under the License.
  */
 
-// CE FICHIER A ÉTÉ INTENTIONNELLEMENT VIDÉ POUR RÉSOUDRE UNE ERREUR DE COMPILATION.
-// La fonctionnalité du chatbot est temporairement désactivée.
+import nextJSHandler from '@genkit-ai/next';
+import { config } from 'dotenv';
 
-import { NextResponse } from 'next/server';
+// This is required for Next.js experimental support for Genkit.
+config();
 
-export async function POST() {
-  return NextResponse.json(
-    { error: "Le backend de l'IA est temporairement désactivé pour maintenance." },
-    { status: 503 } // Service Unavailable
-  );
-}
+// Import all flows so that they are registered with Genkit
+import '@/ai/flows/assistant-flow';
+import '@/ai/flows/recipe-workshop-flow';
+import '@/ai/flows/suggestion-flow';
+import '@/ai/flows/workshop-flow';
+
+export const POST = nextJSHandler();
