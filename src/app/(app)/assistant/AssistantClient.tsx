@@ -59,8 +59,8 @@ export default function AssistantClient() {
 
 
   return (
-      <Card className="w-full h-screen flex flex-col rounded-none border-0 md:border md:rounded-lg">
-        <CardHeader className="border-b px-4 md:px-6">
+      <Card className="w-full h-full flex flex-col rounded-lg border-0 md:border">
+        <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-6 w-6" />
             <span>Assistant Le Singulier</span>
@@ -123,7 +123,7 @@ export default function AssistantClient() {
             </div>
           </ScrollArea>
         </CardContent>
-        <CardFooter className="border-t pt-6 px-4 md:px-6">
+        <CardFooter className="border-t pt-6">
           <form onSubmit={handleSubmit} className="flex w-full items-center gap-2">
             <Input
               value={input}
