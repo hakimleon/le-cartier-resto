@@ -1,6 +1,6 @@
 'use server';
 
-import { chatbotFlow } from '@/ai/flows/chatbot-flow';
+import { chatbotFlow } from '@/ai/flows/assistant-flow';
 import { NextRequest, NextResponse } from 'next/server';
 
 // Importer les outils pour s'assurer qu'ils sont enregistrés
