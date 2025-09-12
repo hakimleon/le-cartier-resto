@@ -27,6 +27,6 @@ export const chatbotFlow = ai.defineFlow(
       // Pas d'historique pour l'instant pour assurer la stabilité
     });
     
-    return { content: result.text() };
+    return { content: result.text };
   }
 );
