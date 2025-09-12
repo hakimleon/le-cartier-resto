@@ -95,7 +95,7 @@ export default function AssistantClient() {
                       className={cn(
                         'max-w-[80%] rounded-lg px-4 py-3 text-sm',
                         message.role === 'user'
-                          ? 'bg-blue-600 text-white'
+                          ? 'bg-primary text-primary-foreground'
                           : 'bg-muted'
                       )}
                     >
