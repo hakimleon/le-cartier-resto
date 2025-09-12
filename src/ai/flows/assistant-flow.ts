@@ -8,18 +8,7 @@ import { ai } from '@/ai/genkit';
 import { getRecipesTool } from '../tools/assistant-tools';
 import { z } from 'zod';
 
-const AssistantInputSchema = z.array(z.object({
-    role: z.enum(['user', 'model', 'system', 'tool']),
-    content: z.array(z.object({
-        text: z.string().optional(),
-        media: z.object({
-            contentType: z.string(),
-            url: z.string(),
-        }).optional(),
-        toolRequest: z.any().optional(),
-        toolResponse: z.any().optional(),
-    })),
-}));
+const AssistantInputSchema = z.any();
 
 const AssistantOutputSchema = z.object({
     content: z.string(),
