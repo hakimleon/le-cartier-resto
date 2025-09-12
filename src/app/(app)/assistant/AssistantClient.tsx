@@ -9,13 +9,12 @@ import { Bot, Send, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { chatbotFlow } from '@/ai/flows/assistant-flow';
 
-// Type simplifié pour l'affichage local, car l'historique n'est plus envoyé.
 type DisplayMessage = {
     role: 'user' | 'model';
     text: string;
 }
-
 
 export default function AssistantClient() {
   const [messages, setMessages] = useState<DisplayMessage[]>([]);
@@ -48,6 +47,7 @@ export default function AssistantClient() {
     setIsLoading(true);
 
     try {
+      // We are now calling the chatbotFlow directly, which has no memory.
       const response = await fetch('/api/genkit/flow/chatbotFlow', {
         method: 'POST',
         headers: {
@@ -62,7 +62,7 @@ export default function AssistantClient() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        const errorMessage = errorData.error?.message || `Erreur du serveur (${response.status})`;
+        const errorMessage = errorData.details || errorData.error?.message || `Erreur du serveur (${response.status})`;
         throw new Error(errorMessage);
       }
 
