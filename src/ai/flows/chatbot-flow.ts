@@ -19,7 +19,7 @@ export const chatbotFlow = ai.defineFlow(
   },
   async (prompt) => {
     
-    const model = 'googleai/gemini-pro';
+    const model = 'googleai/gemini-1.5-flash-latest';
     
     const result = await ai.generate({
       model,
