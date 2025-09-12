@@ -15,16 +15,18 @@
  * limitations under the License.
  */
 
-import nextJSHandler from '@genkit-ai/next';
+import { appRoute } from '@genkit-ai/next';
 import { config } from 'dotenv';
 
-// This is required for Next.js experimental support for Genkit.
 config();
 
-// Import all flows so that they are registered with Genkit
+// Import all flows so that they are registered with Genkit and available to the handler.
 import '@/ai/flows/assistant-flow';
 import '@/ai/flows/recipe-workshop-flow';
 import '@/ai/flows/suggestion-flow';
 import '@/ai/flows/workshop-flow';
 
-export const POST = nextJSHandler();
+// This dynamic route handler uses appRoute() to automatically find and
+// execute the flow specified in the URL.
+// For example, a POST to /api/genkit/assistantChatFlow will run the assistantChatFlow.
+export const POST = appRoute();
