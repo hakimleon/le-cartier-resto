@@ -1,4 +1,3 @@
-
 'use client';
 
 import { ReactNode } from 'react';
@@ -17,9 +16,9 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical, Bot } from 'lucide-react';
+import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import FloatingAssistant from '../assistant/FloatingAssistant';
+import FloatingAssistant from '@/app/(app)/assistant/FloatingAssistant';
 
 const Logo = () => (
     <svg role="img" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" fill="hsl(var(--primary-foreground))" stroke="hsl(var(--primary-foreground))" >
