@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -45,31 +44,34 @@ export default function AssistantClient() {
     setIsLoading(true);
 
     try {
-      const response = await fetch('/api/chatbot', {
+      // Appel direct au flow Genkit
+      const response = await fetch('/api/genkit/flow/chatbotFlow', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          prompt: currentInput,
-          history: messages, // Send history BEFORE adding the current user message
+          input: {
+             prompt: currentInput,
+             history: messages, // L'historique AVANT le message courant
+          }
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'La réponse du serveur n\'est pas valide.');
+        const errorText = await response.text();
+        throw new Error(`Erreur du serveur (${response.status}): ${errorText}`);
       }
 
       const data = await response.json();
       
-      const modelResponseText = data.message || "Désolé, je n'ai pas de réponse.";
+      const modelResponseText = data.output?.response || "Désolé, je n'ai pas de réponse.";
       
       const modelMessage: Message = { role: 'model', content: [{ text: modelResponseText }] };
       setMessages((prevMessages) => [...prevMessages, modelMessage]);
 
     } catch (error) {
-      console.error('Error calling chatbot:', error);
+      console.error('Error calling chatbot flow:', error);
       const errorMessage: Message = {
         role: 'model',
         content: [{ text: `Désolé, une erreur est survenue. ${error instanceof Error ? error.message : ''}`}],

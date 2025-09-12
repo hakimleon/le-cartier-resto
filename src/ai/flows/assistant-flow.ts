@@ -30,6 +30,7 @@ export const chatbotFlow = ai.defineFlow(
   },
   async ({ history, prompt }) => {
     
+    // Réactiver les outils
     const llmResponse = await ai.generate({
       model: 'googleai/gemini-2.5-flash',
       prompt: prompt,
