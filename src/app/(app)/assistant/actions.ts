@@ -19,28 +19,6 @@ if (!API_KEY) {
 
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
-  safetySettings: [
-    {
-      category: HarmCategory.HARM_CATEGORY_HARASSMENT,
-      threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
-    {
-      category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
-      threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
-    {
-      category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
-      threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
-    {
-      category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
-      threshold: HarmBlockThreshold.BLOCK_NONE,
-    },
-  ],
-});
-
 // Convertir notre type Message Genkit en type attendu par le SDK @google/genai
 const convertToGoogleAIMessages = (history: Message[]): Content[] => {
     return history.map(msg => ({
@@ -94,6 +72,30 @@ async function getApplicationContext(): Promise<string> {
 export async function sendMessageToChat(history: Message[], prompt: string): Promise<string> {
     try {
         const applicationContext = await getApplicationContext();
+
+        const model = genAI.getGenerativeModel({
+          model: "gemini-1.5-flash",
+          // Correction: L'instruction système est passée ici, au moment de la récupération du modèle.
+          systemInstruction: `Tu es un assistant pour le restaurant "Le Singulier". Réponds aux questions en te basant sur le contexte suivant. Sois concis et direct.\n\n${applicationContext}`,
+          safetySettings: [
+            {
+              category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+              threshold: HarmBlockThreshold.BLOCK_NONE,
+            },
+            {
+              category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+              threshold: HarmBlockThreshold.BLOCK_NONE,
+            },
+            {
+              category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+              threshold: HarmBlockThreshold.BLOCK_NONE,
+            },
+            {
+              category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+              threshold: HarmBlockThreshold.BLOCK_NONE,
+            },
+          ],
+        });
         
         const chat = model.startChat({
             // L'historique ne doit contenir que les messages PRÉCÉDENTS.
@@ -101,8 +103,6 @@ export async function sendMessageToChat(history: Message[], prompt: string): Pro
             generationConfig: {
                 maxOutputTokens: 1000,
             },
-            // Injection du contexte comme instruction système
-            systemInstruction: `Tu es un assistant pour le restaurant "Le Singulier". Réponds aux questions en te basant sur le contexte suivant. Sois concis et direct.\n\n${applicationContext}`,
         });
 
         const result = await chat.sendMessage(prompt);
