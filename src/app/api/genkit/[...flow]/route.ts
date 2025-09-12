@@ -11,18 +11,22 @@
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
+
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
 
-// Contenu intentionnellement vidé pour résoudre une erreur de compilation persistante.
-// La fonctionnalité du chatbot est temporairement désactivée.
-import { NextResponse } from 'next/server';
+import nextJSHandler from '@genkit-ai/next';
+import { config } from 'dotenv';
 
-export async function POST() {
-    return NextResponse.json(
-        { error: "La configuration du backend de l'IA est en cours de réparation. Veuillez réessayer plus tard." },
-        { status: 503 }
-    );
-}
+// Import all flows so that they are registered with Genkit
+import '@/ai/flows/assistant-flow';
+import '@/ai/flows/recipe-workshop-flow';
+import '@/ai/flows/suggestion-flow';
+import '@/ai/flows/workshop-flow';
+
+
+config();
+
+export const POST = nextJSHandler();
