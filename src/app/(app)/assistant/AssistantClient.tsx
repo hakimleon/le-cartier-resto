@@ -9,14 +9,16 @@ import { Bot, Send, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { Message } from 'genkit';
 
-type Message = {
+
+type ClientMessage = {
   role: 'user' | 'model';
   content: string;
 };
 
 export default function AssistantClient() {
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<ClientMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -39,24 +41,26 @@ export default function AssistantClient() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: ClientMessage = { role: 'user', content: input };
     const newMessages = [...messages, userMessage];
     setMessages(newMessages);
     setInput('');
     setIsLoading(true);
 
     try {
+      // Format history for Genkit: convert ClientMessage[] to Genkit's Message[]
+      const history: Message[] = newMessages.slice(0, -1).map(msg => ({
+          role: msg.role,
+          content: [{ text: msg.content }]
+      }));
+
       const response = await fetch('/api/chatbot', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ 
-            // We format the history for the Genkit flow
-            history: newMessages.slice(0, -1).map(msg => ({
-                role: msg.role,
-                content: [{ text: msg.content }]
-            })), 
+            history: history, 
             prompt: input 
         }),
       });
@@ -67,12 +71,12 @@ export default function AssistantClient() {
       }
 
       const data = await response.json();
-      const modelMessage: Message = { role: 'model', content: data.message };
+      const modelMessage: ClientMessage = { role: 'model', content: data.message };
       setMessages((prevMessages) => [...prevMessages, modelMessage]);
 
     } catch (error) {
       console.error('Error calling chatbot API:', error);
-      const errorMessage: Message = {
+      const errorMessage: ClientMessage = {
         role: 'model',
         content: `Désolé, une erreur est survenue. ${error instanceof Error ? error.message : ''}`,
       };
