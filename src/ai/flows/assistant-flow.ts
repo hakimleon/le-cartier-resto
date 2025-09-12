@@ -9,7 +9,6 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { searchMenuTool } from '../tools/menu-tools';
 import { getAvailablePreparationsTool } from '../tools/recipe-tools';
-import { Message }.
 import { MessageData } from 'genkit';
 
 const ChatbotInputSchema = z.object({
