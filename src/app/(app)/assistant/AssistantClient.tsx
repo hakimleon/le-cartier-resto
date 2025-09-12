@@ -11,7 +11,6 @@ import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Skeleton } from '@/components/ui/skeleton';
-import { chat } from '@/ai/flows/assistant-flow';
 import { useToast } from '@/hooks/use-toast';
 
 interface Message {
@@ -72,28 +71,48 @@ export default function AssistantWidget() {
     setIsLoading(true);
 
     try {
-        const chatHistoryForApi = newMessages.map(({ id, ...rest }) => rest);
-        const response = await chat({ history: chatHistoryForApi });
+        const chatHistoryForApi = newMessages
+            .filter(msg => msg.role === 'user' || msg.role === 'assistant')
+            .map(({ role, content }) => ({ role, content }));
+
+        const response = await fetch('/api/genkit/assistantChatFlow', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                history: chatHistoryForApi,
+            }),
+        });
         
-        if (!response?.content) {
-             throw new Error("La réponse de l'assistant est vide.");
+        if (!response.ok) {
+            const errorBody = await response.text();
+            console.error("API Error Response:", errorBody);
+            throw new Error(`Le serveur a répondu avec le statut : ${response.status}`);
+        }
+
+        const responseData = await response.json();
+        
+        if (!responseData?.content) {
+             throw new Error("La réponse de l'assistant est vide ou mal formée.");
         }
 
         const aiMessage: Message = {
             id: `assistant-${Date.now()}`,
             role: 'assistant',
-            content: response.content
+            content: responseData.content
         };
         setMessages(prev => [...prev, aiMessage]);
-    } catch (error) {
+
+    } catch (error: any) {
         console.error("Error calling chat flow:", error);
         toast({
             title: "Erreur de l'assistant",
-            description: "Je n'ai pas pu traiter votre demande. Veuillez réessayer.",
+            description: error.message || "Je n'ai pas pu traiter votre demande. Veuillez réessayer.",
             variant: "destructive"
         });
         // Remove the user message if the call failed
-        setMessages(prev => prev.slice(0, -1));
+        setMessages(prev => prev.filter(m => m.id !== userMessage.id));
     } finally {
         setIsLoading(false);
     }

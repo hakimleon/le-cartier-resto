@@ -12,7 +12,7 @@ import { getIngredientsTool, getPreparationsTool, getRecipesTool } from '../tool
 
 const ChatInputSchema = z.object({
     history: z.array(z.object({
-        role: z.enum(['user', 'assistant']),
+        role: z.enum(['user', 'assistant', 'model', 'system', 'tool']),
         content: z.string(),
     })),
 });
@@ -94,7 +94,7 @@ const chatFlow = ai.defineFlow(
             textResponse = "J'ai utilisé un outil pour chercher l'information, mais je n'ai pas pu formuler de réponse. Pourriez-vous reformuler votre question différemment ?";
        } else {
            console.error('No text response and no tool call detected. Returning generic error.');
-           return { content: "Je suis désolé, je n'ai pas pu générer de réponse pour le moment. Veuillez réessayer." };
+           textResponse = "Je suis désolé, je n'ai pas pu générer de réponse pour le moment. Veuillez réessayer.";
        }
     }
 
@@ -103,8 +103,3 @@ const chatFlow = ai.defineFlow(
     return { content: textResponse };
   }
 );
-
-
-export async function chat(input: ChatInput): Promise<ChatOutput> {
-    return chatFlow(input);
-}
