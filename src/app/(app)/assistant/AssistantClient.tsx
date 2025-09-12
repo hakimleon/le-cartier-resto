@@ -62,8 +62,8 @@ export default function AssistantClient() {
 
 
   return (
-    <div className="flex h-[calc(100vh-10rem)] justify-center items-center">
-      <Card className="w-full max-w-full h-full flex flex-col">
+    <div className="-m-4 md:-m-8 h-[calc(100vh-4rem)]">
+      <Card className="w-full h-full flex flex-col rounded-none border-0 md:border">
         <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-6 w-6" />
