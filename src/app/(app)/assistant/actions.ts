@@ -57,7 +57,7 @@ async function getApplicationContext(): Promise<string> {
             context += "Aucun plat au menu pour le moment.\n";
         }
 
-        context += "\n=== PRÉPARATIONS DISPONIBLES ET LEURS INGRÉDIENTS ===\n";
+        context += "\n=== PRÉPARATIONS DISPONIBLES (FICHES TECHNIQUES) ===\n";
         if (allPreparations.length > 0) {
             allPreparations.forEach(prep => {
                 context += `- NOM: ${prep.name}\n`;
@@ -76,6 +76,14 @@ async function getApplicationContext(): Promise<string> {
                     context += `  - Ingrédients: ${prepIngredients.join(', ')}\n`;
                 } else {
                     context += `  - Ingrédients: Non spécifiés.\n`;
+                }
+
+                // Ajout des étapes de la procédure
+                let procedureText = [prep.procedure_preparation, prep.procedure_cuisson, prep.procedure_service].filter(Boolean).join('\n');
+                if (procedureText) {
+                    context += `  - Procédure:\n${procedureText.split('\n').map(line => `    ${line}`).join('\n')}\n`;
+                } else {
+                    context += `  - Procédure: Non spécifiée.\n`;
                 }
             });
         } else {
