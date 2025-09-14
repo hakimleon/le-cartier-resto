@@ -629,7 +629,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                   }
                   if (field === 'quantity' || field === 'childPreparationId') {
                       const costPerProductionUnit = updatedPrep._costPerUnit || 0;
-                      const conversionFactor = getConversionFactor(updatedPrep.unit, updatedPrep.productionUnit);
+                      const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
                       const costPerUseUnit = costPerProductionUnit / conversionFactor;
                       updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
                   }
@@ -924,23 +924,23 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Lightbulb className="h-5 w-5 text-amber-500" />
-                        Accompagnements / utilisations
+                        Accompagnements / Utilisations
                     </CardTitle>
                     <CardDescription>
-                        Trouvez des idées de recettes qui peuvent être créées à partir de cette base.
+                        Découvrez comment cette préparation peut être utilisée dans d'autres plats.
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                      <Button onClick={handleGenerateSuggestions} disabled={isGenerating} className="w-full">
                         <Sparkles className={cn("mr-2 h-4 w-4", isGenerating && "animate-spin")} />
-                        {isGenerating ? "Recherche d'idées..." : "Suggérer des dérivés"}
+                        {isGenerating ? "Recherche d'idées..." : "Suggérer des applications"}
                     </Button>
 
                     {derivedSuggestions && (
                         <div className="space-y-3 pt-4 border-t">
                             {derivedSuggestions.map((suggestion, index) => (
-                                <div key={index} className="text-sm">
-                                    <p className="font-semibold">{suggestion.name}</p>
+                                <div key={index} className="text-sm p-2 rounded-md bg-muted/50">
+                                    <p className="font-semibold text-foreground">{suggestion.name}</p>
                                     <p className="text-muted-foreground">{suggestion.description}</p>
                                 </div>
                             ))}

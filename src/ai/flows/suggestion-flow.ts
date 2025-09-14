@@ -96,28 +96,38 @@ const DerivedPreparationsInputSchema = z.object({
 
 const DerivedPreparationsOutputSchema = z.object({
     suggestions: z.array(z.object({
-        name: z.string().describe("Nom de la préparation dérivée ou de l'utilisation suggérée."),
-        description: z.string().describe("Courte description expliquant la suggestion et ses cas d'usage."),
-    })).describe("Liste de 5 suggestions de préparations dérivées ou d'utilisations."),
+        name: z.string().describe("Nom de l'utilisation ou de la préparation dérivée (ex: 'Pour les viandes rouges', 'Sauce Bigarade')."),
+        description: z.string().describe("Courte description expliquant l'application concrète (ex: 'Nappage pour côtes de bœuf', 'Dérivée avec des agrumes pour le canard')."),
+    })).describe("Liste de 5 suggestions d'applications culinaires concrètes pour la préparation."),
 });
 
 export type DerivedPreparationsOutput = z.infer<typeof DerivedPreparationsOutputSchema>;
 
 export async function generateDerivedPreparations(input: z.infer<typeof DerivedPreparationsInputSchema>): Promise<DerivedPreparationsOutput> {
-    const prompt = `En tant que chef expert, je te donne une préparation de base. Propose-moi 5 idées créatives de "préparations dérivées" ou "d'utilisations / accompagnements" qui peuvent être créées à partir de cette base.
+    const prompt = `En tant que chef exécutif, je te donne une préparation de base et tu dois me fournir un guide d'application culinaire. L'objectif est de standardiser son utilisation, de maîtriser la créativité et d'éviter le gaspillage.
 
 Préparation de base : "${input.basePreparationName}"
 Description : ${input.basePreparationDescription || 'Aucune description.'}
 
-Pour chaque suggestion, donne un titre (le "name") et une courte description (1-2 phrases) expliquant l'idée ou le contexte.
+Ta tâche est de proposer 5 "accompagnements / utilisations" concrets. Pense comme une "boîte à outils" : comment cette base peut-elle être utilisée ou transformée ?
 
-Voici des exemples de ce qui est attendu :
-- Exemple 1: Si la base est "Sauce Tomate", tu pourrais suggérer "Sauce Arrabbiata" (version pimentée), "Base pour pizza", ou "Sauce Bolognaise" (enrichie de viande).
-- Exemple 2: Si la base est "Fond brun de veau", tu pourrais suggérer "Réduction en jus corsé pour viandes rouges", "Base pour sauce chasseur", ou "Mouillement pour risotto".
+Pour chaque suggestion :
+1.  **Nom (name)** : Donne un titre clair et concis. Ce peut être une catégorie d'utilisation (ex: "Pour viandes rouges") ou le nom d'une préparation dérivée (ex: "Sauce Chasseur").
+2.  **Description (description)** : Explique l'application précise. Sois spécifique. Au lieu de dire "pour la viande", dis "en nappage sur un filet de bœuf" ou "comme base pour une sauce au poivre".
 
-IMPORTANT : Ne suggère JAMAIS de plats finis trop complexes (comme 'Lasagnes à la bolognaise'), mais bien des variations, des bases ou des utilisations directes de la préparation.
+Exemple pour un "Fond brun de veau" :
+- name: "Jus corsé pour viandes rouges"
+  description: "Réduction simple pour napper un filet de bœuf ou une côte de veau."
+- name: "Base de sauces classiques"
+  description: "Utiliser comme mouillement pour monter une sauce bordelaise ou chasseur."
+- name: "Mouillement pour braisés"
+  description: "Idéal pour braiser des joues de bœuf ou un jarret d'agneau, apporte de la profondeur."
+- name: "Glace de viande"
+  description: "Réduire à consistance sirupeuse pour monter des sauces minute au beurre."
+- name: "Liaison de farces"
+  description: "Ajouter une petite quantité pour renforcer le goût des farces ou garnitures."
 
-Fournis uniquement la réponse au format JSON demandé.`;
+Fournis uniquement la réponse au format JSON demandé. Ne crée pas de plats finis complexes, mais bien des applications directes ou des transformations simples de la base.`;
 
     const { output } = await ai.generate({
         model: 'googleai/gemini-2.5-flash',
