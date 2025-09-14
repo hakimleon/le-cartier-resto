@@ -21,8 +21,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { AlertCircle, Info } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Info } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const ingredientCategories = [
@@ -52,16 +51,6 @@ const formSchema = z.object({
   purchaseUnit: z.string().min(1, "L'unité d'achat est requise."),
   purchaseWeightGrams: z.coerce.number().positive("Le poids de l'unité d'achat doit être positif."),
   yieldPercentage: z.coerce.number().min(0, "Le rendement doit être entre 0 et 100.").max(100, "Le rendement doit être entre 0 et 100."),
-  finalUseUnit: z.string().optional(),
-  convertedQuantity: z.coerce.number().optional(),
-}).refine(data => {
-    if (data.finalUseUnit && !data.convertedQuantity) {
-        return false;
-    }
-    return true;
-}, {
-    message: "La quantité convertie est requise si une unité finale est spécifiée.",
-    path: ["convertedQuantity"],
 });
 
 
@@ -86,8 +75,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       purchaseUnit: ingredient?.purchaseUnit || "kg",
       purchaseWeightGrams: ingredient?.purchaseWeightGrams || 1000,
       yieldPercentage: ingredient?.yieldPercentage || 100,
-      finalUseUnit: ingredient?.finalUseUnit || "",
-      convertedQuantity: ingredient?.convertedQuantity || undefined,
     },
   });
 
@@ -115,8 +102,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       const ingredientToSave: Omit<Ingredient, 'id'> = {
         ...values,
         supplier: values.supplier || "",
-        finalUseUnit: values.finalUseUnit || "",
-        convertedQuantity: values.finalUseUnit ? values.convertedQuantity : undefined,
       };
 
       const savedIngredient = await saveIngredient(ingredientToSave, ingredient?.id || null);

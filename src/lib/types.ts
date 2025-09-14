@@ -7,17 +7,13 @@ export type Ingredient = {
     category: string;
     stockQuantity: number;
     lowStockThreshold: number;
-    supplier: string;
+    supplier?: string;
 
     // Nouvelle structure pour le prix et le rendement
     purchasePrice: number;        // Prix d'achat (ex: 150 pour une botte)
     purchaseUnit: string;         // Unité d'achat (ex: "botte", "kg", "pièce", "l")
     purchaseWeightGrams: number;  // Poids en grammes de l'unité d'achat (pour les solides ET les liquides, on assume 1ml=1g)
     yieldPercentage: number;      // Rendement en pourcentage (ex: 60 pour 60%)
-
-    // Champs optionnels pour la conversion d'unité (utiles si un ingrédient est transformé)
-    finalUseUnit?: string;         // Unité finale après transformation (ex: "ml", "g de purée")
-    convertedQuantity?: number;    // Quantité obtenue dans l'unité finale pour 1 unité d'achat (ex: 400 pour 400ml de jus pour 1kg de citrons)
 };
 
 // Types pour la génération de recette par l'IA

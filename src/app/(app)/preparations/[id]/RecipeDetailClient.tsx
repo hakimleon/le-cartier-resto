@@ -123,34 +123,16 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice) return 0;
-    
-    const isUnitBased = ['pièce', 'piece'].includes(ingredientData.purchaseUnit.toLowerCase());
-
-    if (isUnitBased) {
-        // Cost is per piece.
-        // We assume the purchase price is the price for ONE piece.
-        const costPerPiece = ingredientData.purchasePrice; 
-        
-        // This handles cases where the recipe might ask for "0.5 piece", etc.
-        const conversionFactor = getConversionFactor(ingredientLink.unit, ingredientData.purchaseUnit);
-        
-        // No yield applied to unit-based items for simplicity, unless specifically requested.
-        return ingredientLink.quantity * costPerPiece * conversionFactor;
+    if (!ingredientData?.purchasePrice || !ingredientData?.purchaseUnit || !ingredientData.purchaseWeightGrams) {
+        return 0;
     }
 
-    // --- Weight/Volume based calculation (for kg, g, l, ml, botte, etc.) ---
-    if (!ingredientData.purchaseWeightGrams) return 0;
-    
-    const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
+    const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+    const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
 
-    const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
-    const targetUnit = isLiquid ? 'ml' : 'g';
+    const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, 'g');
     
-    const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
-    
-    return quantityInBaseUnit * netCostPerGramOrMl;
+    return quantityInGrams * netCostPerGram;
 };
 
 
