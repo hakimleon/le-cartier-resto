@@ -93,9 +93,9 @@ export default function AssistantClient() {
                     )}
                     <div
                       className={cn(
-                        'max-w-[80%] rounded-lg px-4 py-3 text-sm',
+                        'max-w-[80%] rounded-lg px-4 p-3 text-sm',
                         message.role === 'user'
-                          ? 'bg-primary text-white'
+                          ? 'border p-2 text-primary-foreground bg-gray-200'
                           : 'bg-muted'
                       )}
                     >

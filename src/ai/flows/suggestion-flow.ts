@@ -96,26 +96,26 @@ const DerivedPreparationsInputSchema = z.object({
 
 const DerivedPreparationsOutputSchema = z.object({
     suggestions: z.array(z.object({
-        name: z.string().describe("Nom de la préparation dérivée suggérée."),
+        name: z.string().describe("Nom de la préparation dérivée ou de l'utilisation suggérée."),
         description: z.string().describe("Courte description expliquant la suggestion et ses cas d'usage."),
-    })).describe("Liste de 5 suggestions de préparations dérivées."),
+    })).describe("Liste de 5 suggestions de préparations dérivées ou d'utilisations."),
 });
 
 export type DerivedPreparationsOutput = z.infer<typeof DerivedPreparationsOutputSchema>;
 
 export async function generateDerivedPreparations(input: z.infer<typeof DerivedPreparationsInputSchema>): Promise<DerivedPreparationsOutput> {
-    const prompt = `En tant que chef expert, je te donne une préparation de base. Propose-moi 5 préparations "filles" (dérivées) qui peuvent être créées à partir de cette base.
+    const prompt = `En tant que chef expert, je te donne une préparation de base. Propose-moi 5 idées créatives de "préparations dérivées" ou "d'utilisations / accompagnements" qui peuvent être créées à partir de cette base.
 
 Préparation de base : "${input.basePreparationName}"
 Description : ${input.basePreparationDescription || 'Aucune description.'}
 
-Pour chaque suggestion, donne un nom et une courte description (1-2 phrases) expliquant l'idée.
+Pour chaque suggestion, donne un titre (le "name") et une courte description (1-2 phrases) expliquant l'idée ou le contexte.
 
 Voici des exemples de ce qui est attendu :
-- Exemple 1: Si la base est "Sauce Tomate", tu pourrais suggérer "Sauce Arrabbiata" (version pimentée), "Sauce Bolognaise" (enrichie de viande), ou "Sauce Piperade" (complétée avec des poivrons).
-- Exemple 2: Si la base est "Sauce Béchamel", tu pourrais suggérer "Sauce Mornay" (avec du fromage), "Sauce à la crème" (enrichie de crème fraîche), ou "Sauce Soubise" (avec une purée d'oignons).
+- Exemple 1: Si la base est "Sauce Tomate", tu pourrais suggérer "Sauce Arrabbiata" (version pimentée), "Base pour pizza", ou "Sauce Bolognaise" (enrichie de viande).
+- Exemple 2: Si la base est "Fond brun de veau", tu pourrais suggérer "Réduction en jus corsé pour viandes rouges", "Base pour sauce chasseur", ou "Mouillement pour risotto".
 
-IMPORTANT : Ne suggère JAMAIS de plats finis (comme 'Lasagnes'), mais bien des variations de la préparation de base qui sont elles-mêmes des préparations.
+IMPORTANT : Ne suggère JAMAIS de plats finis trop complexes (comme 'Lasagnes à la bolognaise'), mais bien des variations, des bases ou des utilisations directes de la préparation.
 
 Fournis uniquement la réponse au format JSON demandé.`;
 
