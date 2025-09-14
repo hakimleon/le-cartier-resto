@@ -73,6 +73,8 @@ Nom : ${input.name}
 Description : ${input.description || 'Non fournie.'}
 
 Fournis une liste d'ingrédients réaliste et des étapes claires (préparation, cuisson, service). Estime la durée et la difficulté.
+Pour la liste des ingrédients, fournis IMPÉRATIVEMENT juste le nom, la quantité et l'unité. N'ajoute aucun qualificatif ou commentaire dans le nom de l'ingrédient (ex: "carottes fraîches" doit être juste "carottes").
+
 Si c'est une préparation, estime une quantité produite (productionQuantity) et une unité (productionUnit), ainsi qu'une unité d'utilisation (usageUnit).
 Ne fournis QUE la réponse au format JSON demandé.
 `;
