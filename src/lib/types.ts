@@ -11,11 +11,11 @@ export type Ingredient = {
 
     // Nouvelle structure pour le prix et le rendement
     purchasePrice: number;        // Prix d'achat (ex: 150 pour une botte)
-    purchaseUnit: string;         // Unité d'achat (ex: "botte", "kg", "pièce", "litres")
+    purchaseUnit: string;         // Unité d'achat (ex: "botte", "kg", "pièce", "l")
     purchaseWeightGrams: number;  // Poids en grammes de l'unité d'achat (pour les solides ET les liquides, on assume 1ml=1g)
     yieldPercentage: number;      // Rendement en pourcentage (ex: 60 pour 60%)
 
-    // Champs optionnels pour la conversion d'unité (DEPRECATED car la logique est gérée par le rendement)
+    // Champs optionnels pour la conversion d'unité (utiles si un ingrédient est transformé)
     finalUseUnit?: string;         // Unité finale après transformation (ex: "ml", "g de purée")
     convertedQuantity?: number;    // Quantité obtenue dans l'unité finale pour 1 unité d'achat (ex: 400 pour 400ml de jus pour 1kg de citrons)
 };
@@ -48,8 +48,8 @@ export type Preparation = {
   allergens?: string[];
   
   // Champs spécifiques à la Préparation
-  productionQuantity: number; // Quantité produite
-  productionUnit: string; // Unité de la quantité produite (kg, litre, pièce)
+  productionQuantity?: number; // Quantité produite
+  productionUnit?: string; // Unité de la quantité produite (kg, litre, pièce)
   usageUnit?: string; // Unité d'utilisation suggérée (g, ml, pièce)
 };
 
@@ -103,4 +103,15 @@ export type RecipePreparationLink = {
     childPreparationId: string; // L'ID de la "Préparation"
     quantity: number;
     unitUse: string;
+};
+
+// Utilisé pour passer des données complètes aux composants clients
+export type FullRecipeIngredient = {
+    id: string; // Ingredient ID
+    recipeIngredientId: string; // The ID of the document in recipeIngredients collection
+    name: string;
+    quantity: number;
+    unit: string;
+    category: string;
+    totalCost: number;
 };

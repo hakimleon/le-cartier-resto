@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -26,7 +26,7 @@ import { cn } from "@/lib/utils";
 import { Separator } from "@/components/ui/separator";
 
 const ingredientCategories = [
-    { name: "Viandes", examples: "Bœuf (entrecôte, steak haché, joue), Agneau (carré, gigot), Porc (filet, échine, côte), Produits transformés : bacon, chorizo, jambon, saucisse" },
+    { name: "Viandes & Gibiers", examples: "Bœuf (entrecôte, steak haché, joue), Agneau (carré, gigot), Porc (filet, échine, côte), Produits transformés : bacon, chorizo, jambon, saucisse" },
     { name: "Volaille", examples: "Poulet entier, Cuisse, aile, blanc, filet" },
     { name: "Poissons & Fruits de mer", examples: "Poissons frais : saumon, rouget, cabillaud, bar, dorade. Produits transformés : saumon fumé, morue salée, anchois marinés, surimi. Fruits de mer : crevettes, moules, calamars, huîtres" },
     { name: "Légumes frais", examples: "Carotte, courgette, aubergine, poivron, oignon, échalote, Ail, poireau, pomme de terre, brocoli, champignon" },
@@ -96,20 +96,24 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   const purchaseUnit = form.watch("purchaseUnit");
   const isWeightEditable = purchaseUnit === "botte" || purchaseUnit === "pièce";
 
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "purchaseUnit") {
+        if(value.purchaseUnit === "kg") form.setValue('purchaseWeightGrams', 1000);
+        else if(value.purchaseUnit === "g") form.setValue('purchaseWeightGrams', 1);
+        else if(value.purchaseUnit === "l") form.setValue('purchaseWeightGrams', 1000);
+        else if(value.purchaseUnit === "ml") form.setValue('purchaseWeightGrams', 1);
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [form]);
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
       
-      let finalPurchaseWeightGrams = values.purchaseWeightGrams;
-      if (values.purchaseUnit === "kg") finalPurchaseWeightGrams = 1000;
-      else if (values.purchaseUnit === "g") finalPurchaseWeightGrams = 1;
-      else if (values.purchaseUnit === "l") finalPurchaseWeightGrams = 1000;
-      else if (values.purchaseUnit === "ml") finalPurchaseWeightGrams = 1;
-
-
       const ingredientToSave: Omit<Ingredient, 'id'> = {
         ...values,
-        purchaseWeightGrams: finalPurchaseWeightGrams,
         supplier: values.supplier || "",
         finalUseUnit: values.finalUseUnit || "",
         convertedQuantity: values.finalUseUnit ? values.convertedQuantity : undefined,
@@ -165,8 +169,9 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                                     <TooltipTrigger asChild>
                                         <Info className="h-4 w-4 text-muted-foreground cursor-help" />
                                     </TooltipTrigger>
-                                    <TooltipContent>
-                                        <p className="max-w-xs">{categoryExamples}</p>
+                                    <TooltipContent className="max-w-xs">
+                                        <p className="font-semibold mb-1">Exemples:</p>
+                                        <p>{categoryExamples}</p>
                                     </TooltipContent>
                                 </Tooltip>
                             </TooltipProvider>
@@ -263,7 +268,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                             <Input type="number" step="1" placeholder="Ex: 250" {...field} disabled={!isWeightEditable}/>
                             </FormControl>
                             <FormDescription className="text-xs">
-                                Si unité = botte/pièce.
+                                Pour 1 unité d'achat.
                             </FormDescription>
                             <FormMessage />
                             </FormItem>
@@ -293,46 +298,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
             
             <Separator />
             
-            <div>
-                <h4 className="font-medium text-sm text-muted-foreground mb-2">Conversion d'Unité (Optionnel)</h4>
-                <div className="p-3 border rounded-md bg-muted/50 space-y-2">
-                    <p className="text-xs text-muted-foreground flex gap-2 items-center"><AlertCircle className="h-4 w-4 shrink-0" />Remplissez si l'ingrédient est transformé (ex: citron en jus).</p>
-                    <div className="grid grid-cols-2 gap-4">
-                         <FormField
-                            control={form.control}
-                            name="finalUseUnit"
-                            render={({ field }) => (
-                                <FormItem>
-                                <FormLabel>Unité d'Utilisation</FormLabel>
-                                <FormControl>
-                                <Input placeholder="Ex: ml, g de purée" {...field} />
-                                </FormControl>
-                                <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="convertedQuantity"
-                            render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Quantité Obtenue</FormLabel>
-                                <FormControl>
-                                <Input type="number" step="any" placeholder="Ex: 400" {...field} value={field.value ?? ''} />
-                                </FormControl>
-                                <FormDescription className="text-xs">
-                                    Qté obtenue pour 1 {purchaseUnit} acheté.
-                                </FormDescription>
-                                <FormMessage />
-                            </FormItem>
-                            )}
-                        />
-                    </div>
-                </div>
-            </div>
-
-            <Separator />
-
             <div>
                 <h4 className="font-medium text-sm text-muted-foreground mb-2">Gestion du Stock</h4>
                 <div className="grid grid-cols-2 gap-4">
