@@ -5,7 +5,7 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Preparation } from "@/lib/types";
+import { Preparation, preparationCategories } from "@/lib/types";
 import { savePreparation } from "./actions";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,10 +19,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
   description: z.string().optional(),
+  category: z.string().min(1, "La catégorie est requise."),
 });
 
 
@@ -40,6 +42,7 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
     defaultValues: {
         name: preparation?.name || "",
         description: preparation?.description || "",
+        category: preparation?.category || "",
     }
   });
 
@@ -86,6 +89,28 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
               <FormMessage />
             </FormItem>
           )}
+        />
+        <FormField
+            control={form.control}
+            name="category"
+            render={({ field }) => (
+            <FormItem>
+                <FormLabel>Catégorie</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                    <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez une catégorie..." />
+                    </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                    {preparationCategories.map(cat => (
+                        <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                </SelectContent>
+                </Select>
+                <FormMessage />
+            </FormItem>
+            )}
         />
         <FormField
           control={form.control}

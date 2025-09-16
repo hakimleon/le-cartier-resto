@@ -23,6 +23,19 @@ export type GeneratedIngredient = {
     unit: string;
 };
 
+export const preparationCategories = [
+    "Fonds, fumets et bouillons",
+    "Sauces chaudes",
+    "Sauces froides & vinaigrettes",
+    "Coulis, purées & huiles colorées",
+    "Préparations de légumes et garnitures",
+    "Bases céréalières et pâtes",
+    "Préparations pâtissières de base",
+    "Préparations modernes & signatures"
+] as const;
+
+export type PreparationCategory = typeof preparationCategories[number];
+
 
 // Le type pour une préparation/sous-recette (fiche technique de base)
 export type Preparation = {
@@ -30,6 +43,7 @@ export type Preparation = {
   type: 'Préparation'; // Champ ajouté pour la cohérence
   name: string;
   description: string;
+  category: PreparationCategory;
   
   // Champs communs
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';

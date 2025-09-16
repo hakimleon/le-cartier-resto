@@ -4,11 +4,11 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Preparation } from "@/lib/types";
+import { Preparation, preparationCategories } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, PlusCircle, Search, FileText, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, PlusCircle, Search, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { deletePreparation } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -34,12 +34,15 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Trash2 } from "lucide-react";
 
 export default function PreparationsClient() {
   const [preparations, setPreparations] = useState<Preparation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("Tous");
   const { toast } = useToast();
   const router = useRouter();
 
@@ -99,14 +102,18 @@ export default function PreparationsClient() {
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    if (e.target.value) {
+        setSelectedCategory("Tous");
+    }
   };
 
   const filteredPreparations = useMemo(() => {
-    if (!searchTerm) return preparations;
-    return preparations.filter(p =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [preparations, searchTerm]);
+    return preparations.filter(p => {
+        const searchTermMatch = searchTerm === '' || p.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const categoryMatch = selectedCategory === 'Tous' || p.category === selectedCategory;
+        return searchTermMatch && categoryMatch;
+    });
+  }, [preparations, searchTerm, selectedCategory]);
 
   const renderSkeleton = () => (
     <Card className="shadow-none border">
@@ -130,7 +137,7 @@ export default function PreparationsClient() {
   );
 
   const renderTable = (prepList: Preparation[]) => (
-     <Card className="shadow-none border">
+     <Card className="shadow-none border mt-4">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
@@ -184,7 +191,7 @@ export default function PreparationsClient() {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={4} className="h-24 text-center">
-                      Aucune préparation trouvée.
+                      Aucune préparation dans cette catégorie.
                     </TableCell>
                   </TableRow>
                 )}
@@ -206,6 +213,8 @@ export default function PreparationsClient() {
         </Alert>
       );
   }
+
+  const allPreparationCategories = ["Tous", ...preparationCategories];
 
   return (
     <div className="space-y-6">
@@ -239,10 +248,16 @@ export default function PreparationsClient() {
         </Alert>
       )}
 
-      <div className="pt-4">
-        {isLoading ? renderSkeleton() : renderTable(filteredPreparations)}
-      </div>
-
+      <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
+        <TabsList>
+            {allPreparationCategories.map((category) => (
+                <TabsTrigger key={category} value={category}>{category}</TabsTrigger>
+            ))}
+        </TabsList>
+        <TabsContent value={selectedCategory}>
+             {isLoading ? renderSkeleton() : renderTable(filteredPreparations)}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

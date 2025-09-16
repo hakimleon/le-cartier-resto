@@ -3,7 +3,7 @@
 
 import { collection, addDoc, doc, setDoc, deleteDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Preparation } from '@/lib/types';
+import type { Preparation, PreparationCategory } from '@/lib/types';
 
 /**
  * Sauvegarde une préparation (crée ou met à jour).
@@ -12,6 +12,7 @@ export async function savePreparation(preparation: Partial<Omit<Preparation, 'id
   const dataToSave = {
     name: preparation.name || 'Nouvelle Préparation',
     description: preparation.description || '',
+    category: preparation.category || 'Sauces chaudes', // Default category
     type: 'Préparation' as const,
     difficulty: 'Moyen',
     duration: 0,

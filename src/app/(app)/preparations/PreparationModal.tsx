@@ -33,12 +33,16 @@ export function PreparationModal({ children, preparation, onSuccess, open, onOpe
         setIsOpen(false);
         onSuccess(newPreparation);
 
-        // This modal is now only for editing, not creating.
-        // The creation flow is handled by the workshop.
+        // If a new preparation is created and we have its ID, navigate.
+        if (!preparation?.id && newPreparation?.id) {
+             router.push(`/preparations/${newPreparation.id}`);
+        }
     }
     
-    const title = `Modifier la préparation`;
-    const description = `Modifiez les détails de la préparation ci-dessous.`;
+    const title = preparation?.id ? `Modifier la préparation` : "Nouvelle Préparation";
+    const description = preparation?.id 
+        ? "Modifiez les détails de la préparation ci-dessous."
+        : "Créez une nouvelle fiche de préparation. Vous la compléterez à l'étape suivante.";
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>

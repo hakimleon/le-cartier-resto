@@ -15,11 +15,11 @@ import type { RecipeConceptOutput } from '@/ai/flows/recipe-workshop-flow';
  */
 export async function createPreparationFromWorkshop(concept: RecipeConceptOutput): Promise<string> {
     try {
-        const prepData: Omit<Preparation, 'id'> = {
+        const prepData: Partial<Omit<Preparation, 'id'>> = {
             type: 'Préparation',
             name: concept.name,
             description: concept.description,
-            imageUrl: concept.imageUrl || '', // Correction: Ensure imageUrl is not undefined
+            imageUrl: concept.imageUrl || '',
             procedure_preparation: concept.procedure_preparation,
             procedure_cuisson: concept.procedure_cuisson,
             procedure_service: concept.procedure_service,
@@ -28,6 +28,7 @@ export async function createPreparationFromWorkshop(concept: RecipeConceptOutput
             productionQuantity: concept.productionQuantity,
             productionUnit: concept.productionUnit,
             usageUnit: concept.usageUnit,
+            category: "Sauces chaudes", // Default value, user should change it
         };
 
         const prepsCol = collection(db, 'preparations');
