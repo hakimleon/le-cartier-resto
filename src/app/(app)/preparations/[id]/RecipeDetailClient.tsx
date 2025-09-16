@@ -328,6 +328,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [preparationsCosts, setPreparationsCosts] = useState<Record<string, number>>({});
   
   const [derivedSuggestions, setDerivedSuggestions] = useState<DerivedPreparationsOutput['suggestions'] | null>(null);
+  const [generatedConcept, setGeneratedConcept] = useState<Awaited<ReturnType<typeof generateRecipe>> | null>(null);
 
 
   const [isNewIngredientModalOpen, setIsNewIngredientModalOpen] = useState(false);
@@ -522,6 +523,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         if(preparations) setEditablePreparations(JSON.parse(JSON.stringify(preparations)));
         setNewIngredients([]);
         setNewPreparations([]);
+        setGeneratedConcept(null);
     } else {
         // Recalculate costs for existing items when entering edit mode
         const recalculatedIngredients = ingredients.map(ing => {
@@ -682,6 +684,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setIsEditing(false); 
         setNewIngredients([]); 
         setNewPreparations([]);
+        setGeneratedConcept(null);
 
     } catch (error) { console.error("Error saving changes:", error); toast({ title: "Erreur", description: "La sauvegarde des modifications a échoué.", variant: "destructive", });
     } finally { setIsSaving(false); }
@@ -714,13 +717,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const handleGenerateRecipe = async () => {
         if (!recipe) return;
         setIsGenerating(true);
+        setGeneratedConcept(null);
         try {
             const result = await generateRecipe({ name: recipe.name, description: recipe.description, type: 'Préparation' });
 
-            // Mettre à jour l'état `editableRecipe` avec les nouvelles données
+            setGeneratedConcept(result);
             setEditableRecipe(current => ({...current!, ...result}));
 
-            // Traiter les ingrédients suggérés
             const ingredientsList = await fetchAllIngredients();
             const newIngs = (result.ingredients || []).map(sugIng => {
                 const existing = ingredientsList.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
@@ -728,7 +731,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 return { tempId: `new-gen-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
             });
 
-            // Entrer en mode édition
             setIsEditing(true);
             setEditableIngredients([]); // Clear existing ones
             setNewIngredients(newIngs); // Add newly generated ones
@@ -920,6 +922,30 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         </div>
 
         <div className="space-y-8">
+            {generatedConcept && isEditing && (
+                <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-between text-lg text-primary">
+                            <div className="flex items-center gap-2"><Lightbulb className="h-5 w-5" />Suggestion de l'IA</div>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-primary/70 hover:text-primary" onClick={() => setGeneratedConcept(null)}><X className="h-4 w-4" /></Button>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 text-sm">
+                        <div>
+                            <h4 className="font-semibold mb-1">Ingrédients bruts suggérés</h4>
+                            <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
+                                {generatedConcept.ingredients.map(ing => <li key={ing.name}>{ing.quantity} {ing.unit} {ing.name}</li>)}
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-1">Procédure brute</h4>
+                            <div className="text-xs text-muted-foreground p-2 border rounded-md max-h-48 overflow-y-auto">
+                                <MarkdownRenderer text={`${generatedConcept.procedure_preparation}\n${generatedConcept.procedure_cuisson}\n${generatedConcept.procedure_service}`} />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle>
