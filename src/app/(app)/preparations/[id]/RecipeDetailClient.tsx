@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { generateDerivedPreparations, DerivedPreparationsOutput } from "@/ai/flows/suggestion-flow";
+import { generateDerivedPreparations, DerivedPreparationsOutput, generateRecipe } from "@/ai/flows/suggestion-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
 import { PreparationModal } from "../PreparationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -711,6 +711,39 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         }
     };
 
+    const handleGenerateRecipe = async () => {
+        if (!recipe) return;
+        setIsGenerating(true);
+        try {
+            const result = await generateRecipe({ name: recipe.name, description: recipe.description, type: 'Préparation' });
+
+            // Mettre à jour l'état `editableRecipe` avec les nouvelles données
+            setEditableRecipe(current => ({...current!, ...result}));
+
+            // Traiter les ingrédients suggérés
+            const ingredientsList = await fetchAllIngredients();
+            const newIngs = (result.ingredients || []).map(sugIng => {
+                const existing = ingredientsList.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
+                let totalCost = existing ? recomputeIngredientCost({ quantity: sugIng.quantity, unit: sugIng.unit }, existing) : 0;
+                return { tempId: `new-gen-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
+            });
+
+            // Entrer en mode édition
+            setIsEditing(true);
+            setEditableIngredients([]); // Clear existing ones
+            setNewIngredients(newIngs); // Add newly generated ones
+            setEditablePreparations([]); // Clear sub-recipes for a base preparation
+            setNewPreparations([]);
+
+            toast({ title: "Recette générée !", description: "Vérifiez les détails et sauvegardez pour appliquer les changements." });
+        } catch (e) {
+            console.error("Failed to generate recipe content", e);
+            toast({ title: "Erreur de l'IA", description: "Impossible de générer le contenu de la recette.", variant: 'destructive' });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
   const sortedIngredients = useMemo(() => {
     return [...allIngredients].sort((a, b) => a.name.localeCompare(b.name));
   }, [allIngredients]);
@@ -740,6 +773,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   if (!recipe || !currentRecipeData) { return ( <div className="container mx-auto py-10 text-center"><p>Fiche technique non trouvée ou erreur de chargement.</p></div> ); }
   
   const isPlat = currentRecipeData.type === 'Plat';
+  const isRecipeEmpty = ingredients.length === 0 && preparations.length === 0 && !recipe.procedure_preparation;
 
   return (
     <div className="space-y-4">
@@ -772,6 +806,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             <Button variant="outline" onClick={handleToggleEditMode}>{isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}</Button>
         </div>
       </header>
+
+       {isRecipeEmpty && !isEditing && (
+            <Card className="border-dashed border-primary/50 bg-primary/5">
+                <CardHeader className="text-center">
+                    <CardTitle>Cette fiche technique est vide.</CardTitle>
+                    <CardDescription>Générez le contenu avec l'IA pour commencer.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                    <Button onClick={handleGenerateRecipe} disabled={isGenerating}>
+                        <Sparkles className={cn("mr-2 h-4 w-4", isGenerating && "animate-spin")} />
+                        {isGenerating ? "Génération en cours..." : "Générer la recette avec l'IA"}
+                    </Button>
+                </CardContent>
+            </Card>
+        )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
@@ -966,5 +1015,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
