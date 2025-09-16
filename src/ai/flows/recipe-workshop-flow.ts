@@ -85,8 +85,9 @@ const recipeGenPrompt = ai.definePrompt({
         Si un composant demandé (ex: "mayonnaise", "fond de veau") existe dans la liste de l'outil, vous devez l'utiliser dans \`subRecipes\` avec une quantité et une unité estimées. N'incluez PAS ses ingrédients dans la liste \`ingredients\`.
 
         **GESTION DES NOUVELLES SOUS-RECETTES (newSubRecipes) - RÈGLE CRUCIALE :**
-        - Une préparation est "nouvelle" SEULEMENT si c'est une base complexe et réutilisable (ex: "Pâte brisée", "Confit d'oignons").
-        - Les assemblages simples ou sauces "minute" (ex: "Vinaigrette pour salade", "Sauce crème-champignons") NE SONT PAS de nouvelles sous-recettes. Leurs ingrédients vont dans \`ingredients\` et leurs étapes dans la procédure principale.
+        - Vous devez proposer une "nouvelle préparation" pour tout composant qui a ses propres étapes et ingrédients, même s'il s'agit d'une sauce "minute" (ex: "Sauce au poivre", "Vinaigrette"). C'est l'utilisateur qui décidera ensuite de la créer ou de l'intégrer.
+        - Un composant ne devient une nouvelle sous-recette que s'il est composé d'au moins deux ingrédients et implique une action (mélanger, chauffer, etc.). Ne proposez pas "Tomates concassées" comme sous-recette.
+        - Les ingrédients d'une nouvelle sous-recette ne doivent PAS apparaître dans la liste \`ingredients\` principale.
         
         **RÈGLES STRICTES POUR LES INGRÉDIENTS :**
         1.  **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron"). N'ajoutez JAMAIS de qualificatifs comme "frais", "jaunes d'", "en poudre". On veut "Oeuf", pas "Jaunes d'oeufs".
