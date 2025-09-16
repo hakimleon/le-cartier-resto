@@ -38,7 +38,7 @@ const RecipeConceptOutputSchema = z.object({
         name: z.string().describe("Nom de l'ingrédient."),
         quantity: z.number().describe("Quantité."),
         unit: z.string().describe("Unité (g, kg, ml, l, pièce).")
-    })).describe("Liste des ingrédients SIMPLES."),
+    })).describe("Liste des ingrédients SIMPLES nécessaires pour l'assemblage final."),
     subRecipes: z.array(z.object({
         name: z.string().describe("Nom de la sous-recette EXISTANTE."),
         quantity: z.number().describe("Quantité de sous-recette."),
@@ -47,7 +47,7 @@ const RecipeConceptOutputSchema = z.object({
     newSubRecipes: z.array(z.object({
         name: z.string().describe("Nom de la NOUVELLE préparation inventée."),
         description: z.string().describe("Description de la nouvelle préparation."),
-    })).describe("Liste des NOUVELLES préparations inventées."),
+    })).describe("Liste des NOUVELLES préparations inventées, qui ne sont PAS dans la base de données. L'utilisateur décidera de les créer ou les intégrer."),
     procedure_preparation: z.string().describe("Procédure de préparation (Markdown)."),
     procedure_cuisson: z.string().describe("Procédure de cuisson (Markdown)."),
     procedure_service: z.string().describe("Procédure de service/dressage (Markdown)."),
@@ -79,22 +79,23 @@ const recipeGenPrompt = ai.definePrompt({
     prompt: `
         Vous êtes un chef expert créant une fiche technique pour un restaurant. La cible est une fiche de type : {{{type}}}.
 
-        OBLIGATOIRE : Utilisez l'outil \`getAvailablePreparations\` pour connaître les sous-recettes existantes.
+        OBLIGATOIRE : Appelez l'outil \`getAvailablePreparations\` pour connaître les sous-recettes déjà existantes.
 
         **RÈGLE D'OR : PRIORISER LES PRÉPARATIONS EXISTANTES.**
         Si un composant demandé (ex: "mayonnaise", "fond de veau") existe dans la liste de l'outil, vous devez l'utiliser dans \`subRecipes\` avec une quantité et une unité estimées. N'incluez PAS ses ingrédients dans la liste \`ingredients\`.
 
         **GESTION DES NOUVELLES SOUS-RECETTES (newSubRecipes) - RÈGLE CRUCIALE :**
-        - Vous devez proposer une "nouvelle préparation" pour tout composant qui a ses propres étapes et ingrédients, même s'il s'agit d'une sauce "minute" (ex: "Sauce au poivre", "Vinaigrette"). C'est l'utilisateur qui décidera ensuite de la créer ou de l'intégrer.
-        - Un composant ne devient une nouvelle sous-recette que s'il est composé d'au moins deux ingrédients et implique une action (mélanger, chauffer, etc.). Ne proposez pas "Tomates concassées" comme sous-recette.
-        - Les ingrédients d'une nouvelle sous-recette ne doivent PAS apparaître dans la liste \`ingredients\` principale.
-        
-        **RÈGLES STRICTES POUR LES INGRÉDIENTS :**
-        1.  **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron"). N'ajoutez JAMAIS de qualificatifs comme "frais", "jaunes d'", "en poudre". On veut "Oeuf", pas "Jaunes d'oeufs".
-        2.  **UNITÉS INTELLIGENTES :** Utilisez l'unité la plus logique pour le contexte de la recette. Pour les œufs, utilisez "pièce" pour une omelette, mais "g" pour une crème pâtissière où la précision est clé. Privilégiez "g", "kg", "ml", "l" pour la précision, mais utilisez "pièce" si c'est plus naturel et que le poids n'est pas critique.
+        - Pour tout composant d'une recette qui nécessite ses propres ingrédients et étapes (ex: "Sauce au poivre", "Vinaigrette", "Marinade"), vous devez le déclarer comme une NOUVELLE préparation dans le champ \`newSubRecipes\`.
+        - Fournissez juste son \`name\` et une \`description\` courte.
+        - **INTERDICTION** : Ne mettez JAMAIS les ingrédients ou les étapes d'une nouvelle préparation dans les champs \`ingredients\` ou \`procedure_...\` principaux. L'utilisateur décidera s'il veut créer une fiche séparée ou l'intégrer plus tard.
+
+        **RÈGLES STRICTES POUR LES INGRÉDIENTS (champ \`ingredients\`) :**
+        1. Ce champ ne contient que les ingrédients nécessaires à l'ASSEMBLAGE FINAL du plat/préparation, c'est-à-dire ceux qui ne font partie ni d'une \`subRecipes\` existante, ni d'une \`newSubRecipes\`.
+        2. **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron"). N'ajoutez JAMAIS de qualificatifs. On veut "Oeuf", pas "Jaunes d'oeufs".
+        3. **UNITÉS INTELLIGENTES :** Utilisez l'unité la plus logique. Privilégiez "g", "kg", "ml", "l" pour la précision, mais utilisez "pièce" si c'est plus naturel (ex: 1 œuf).
 
         {{#if rawRecipe}}
-        PRIORITÉ : Reformatez la recette brute suivante en respectant la structure et les règles ci-dessus.
+        PRIORITÉ : Reformatez la recette brute suivante en respectant la structure et toutes les règles ci-dessus.
         ---
         {{{rawRecipe}}}
         ---
@@ -121,8 +122,7 @@ const recipeGenPrompt = ai.definePrompt({
         **INSTRUCTIONS DE FORMATAGE**
         - **Pour un Plat :** Remplir les champs \`portions\`, \`category\`, \`commercialArgument\`.
         - **Pour une Préparation :** Remplir les champs \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.
-        - **Toujours remplir :** \`name\`, \`description\`, \`ingredients\`, \`subRecipes\`, \`newSubRecipes\`, les 3 \`procedure_...\`, \`duration\`, \`difficulty\`.
-        - **Procédures :** Formatées en Markdown (### Titres, - Listes).
+        - **Procédures :** Elles doivent être concises et ne concerner que l'assemblage final, la cuisson et le dressage. Ne détaillez PAS la fabrication des sous-recettes (existantes ou nouvelles).
         - **Sortie :** Fournissez une réponse structurée au format JSON. Ne laissez aucun champ vide, utilisez des tableaux vides '[]' ou des chaînes vides '""' si nécessaire.
     `,
 });

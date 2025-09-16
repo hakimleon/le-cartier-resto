@@ -300,7 +300,7 @@ export default function WorkshopClient() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                                         <div>
-                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients suggérés</h4>
+                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients d'assemblage</h4>
                                             {generatedConcept.ingredients && generatedConcept.ingredients.length > 0 ? (
                                                 <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
                                                     {generatedConcept.ingredients.map((ing) => (<li key={ing.name}><span className="font-medium text-foreground">{ing.quantity} {ing.unit}</span> - {ing.name}</li>))}
@@ -309,40 +309,46 @@ export default function WorkshopClient() {
                                         </div>
                                          
                                         <div>
-                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Sous-Recettes</h4>
-                                            <div className="space-y-2">
-                                                {generatedConcept.subRecipes.map((prep) => <div key={prep.name}><Badge variant="secondary" className="text-sm">{prep.name}</Badge></div>)}
-                                                
-                                                {generatedConcept.newSubRecipes.map((prep) => (
-                                                    <div key={prep.name} className="flex items-center gap-2">
-                                                        <Checkbox id={`integrate-${prep.name}`} onCheckedChange={(checked) => {
-                                                            setPrepsToIntegrate(current => checked ? [...current, prep.name] : current.filter(p => p !== prep.name));
-                                                        }}/>
-                                                        <label htmlFor={`integrate-${prep.name}`} className="flex items-center gap-2 cursor-pointer">
-                                                            <Badge variant="outline" className="text-sm border-dashed">{prep.name}</Badge>
-                                                        </label>
-                                                         <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleCreatePreparation(prep.name, prep.description)} title={`Créer la fiche pour "${prep.name}"`}>
-                                                                <PlusCircle className="h-4 w-4 text-primary" />
-                                                            </Button>
+                                            {generatedConcept.subRecipes.length > 0 && (
+                                                <div className="mb-4">
+                                                    <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Sous-Recettes Existantes</h4>
+                                                    <div className="space-y-2">
+                                                        {generatedConcept.subRecipes.map((prep) => <div key={prep.name}><Badge variant="secondary" className="text-sm">{prep.name}</Badge></div>)}
                                                     </div>
-                                                ))}
+                                                </div>
+                                            )}
 
-                                                {prepsToIntegrate.length > 0 && (
-                                                    <Button variant="secondary" size="sm" className="mt-2" onClick={() => handleIntegration(prepsToIntegrate)} disabled={isLoading}>
-                                                        <Merge className="mr-2 h-4 w-4"/>
-                                                        Intégrer la sélection ({prepsToIntegrate.length})
-                                                    </Button>
-                                                )}
-
-                                                {generatedConcept.subRecipes.length === 0 && generatedConcept.newSubRecipes.length === 0 && (
-                                                    <p className="text-sm text-muted-foreground">Aucune sous-recette utilisée.</p>
-                                                )}
-                                            </div>
+                                            {generatedConcept.newSubRecipes.length > 0 && (
+                                                <div>
+                                                    <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Nouvelles Préparations Suggérées</h4>
+                                                    <div className="space-y-3">
+                                                        {generatedConcept.newSubRecipes.map((prep) => (
+                                                            <div key={prep.name} className="flex items-center justify-between gap-2 p-2 rounded-md border border-dashed">
+                                                                <label htmlFor={`integrate-${prep.name}`} className="flex items-center gap-2 cursor-pointer text-sm font-medium">
+                                                                     <Checkbox id={`integrate-${prep.name}`} onCheckedChange={(checked) => {
+                                                                        setPrepsToIntegrate(current => checked ? [...current, prep.name] : current.filter(p => p !== prep.name));
+                                                                    }}/>
+                                                                    {prep.name}
+                                                                </label>
+                                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleCreatePreparation(prep.name, prep.description)} title={`Créer la fiche pour "${prep.name}"`}>
+                                                                    <PlusCircle className="h-4 w-4 text-primary" />
+                                                                </Button>
+                                                            </div>
+                                                        ))}
+                                                        {prepsToIntegrate.length > 0 && (
+                                                            <Button variant="secondary" size="sm" className="mt-2" onClick={() => handleIntegration(prepsToIntegrate)} disabled={isLoading}>
+                                                                <Merge className="mr-2 h-4 w-4"/>
+                                                                Intégrer la sélection ({prepsToIntegrate.length})
+                                                            </Button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                     
                                      <div>
-                                        <h4 className="font-semibold mb-2 flex items-center gap-2"><FileText className="h-4 w-4"/>Procédure Technique</h4>
+                                        <h4 className="font-semibold mb-2 flex items-center gap-2"><FileText className="h-4 w-4"/>Procédure (Assemblage final)</h4>
                                         <div className="prose prose-sm max-w-none text-muted-foreground p-4 border rounded-md mt-2">
                                             <MarkdownRenderer text={generatedConcept.procedure_preparation} />
                                             <MarkdownRenderer text={generatedConcept.procedure_cuisson} />
