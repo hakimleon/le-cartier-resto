@@ -99,7 +99,7 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         'kg': 1000, 'g': 1, 'mg': 0.001,
         'l': 1000, 'ml': 1,
         'litre': 1000, 'litres': 1000,
-        'pièce': 1, 'piece': 1,
+        'pièce': 1, 'piece': 1, 'botte': 1
     };
     
     const fromFactor = factors[u(fromUnit)];
@@ -113,15 +113,27 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
     return 1;
 };
 
-const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
+const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData: Ingredient): number => {
+    if (!ingredientLink.unit || !ingredientData.purchaseUnit) {
+        console.warn("recomputeIngredientCost: Missing unit information for cost calculation. Returning 0.", { ingredientLink, ingredientData });
+        return 0;
+    }
+    
     if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams) {
         return 0;
+    }
+    
+    const purchaseUnitLower = ingredientData.purchaseUnit.toLowerCase();
+    const unitUseLower = ingredientLink.unit.toLowerCase();
+
+    if (purchaseUnitLower === unitUseLower && (purchaseUnitLower === 'pièce' || purchaseUnitLower === 'botte')) {
+        return ingredientLink.quantity * ingredientData.purchasePrice;
     }
 
     const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
     const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
 
-    const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
+    const isLiquid = ['l', 'ml', 'litres'].includes(purchaseUnitLower);
     const targetUnit = isLiquid ? 'ml' : 'g';
     
     const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
