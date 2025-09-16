@@ -111,7 +111,7 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit) {
+    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit || !ingredientLink.unit) {
         return 0;
     }
 

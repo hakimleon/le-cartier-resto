@@ -123,7 +123,7 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit) {
+    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit || !ingredientLink.unit) {
         return 0;
     }
 
@@ -475,7 +475,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 }
             } catch (e: any) {
                 console.error("Error during initial load: ", e);
-                if (isMounted) { setError("Impossible de charger les données de support. " + e.message); }
+                if (isMounted) { setError("Impossible de charger les données. " + e.message); }
             } finally {
                 if (isMounted) setIsLoading(false);
             }
