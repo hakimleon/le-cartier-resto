@@ -111,13 +111,31 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit || !ingredientData.purchaseWeightGrams) {
+    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit) {
         return 0;
     }
 
+    const purchaseUnit = ingredientData.purchaseUnit.toLowerCase();
+    const recipeUnit = ingredientLink.unit.toLowerCase();
+
+    // Case 1: Purchase and recipe use are both 'pièce'
+    if (purchaseUnit === 'pièce' && recipeUnit === 'pièce') {
+        return ingredientLink.quantity * ingredientData.purchasePrice;
+    }
+    
+    // Case 2: Purchase is by 'pièce', but recipe uses weight (e.g. 80g of egg)
+    if (purchaseUnit === 'pièce' && ['g', 'kg', 'mg'].includes(recipeUnit)) {
+         if (!ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) return 0;
+         const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+         const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, 'g');
+         return quantityInGrams * costPerGram;
+    }
+
+    // Case 3: All other cases (kg/g, l/ml, botte/g) - based on weight
+    if (!ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) return 0;
+    
     const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
     const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
-
     const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, 'g');
     
     return quantityInGrams * netCostPerGram;
