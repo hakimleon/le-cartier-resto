@@ -120,6 +120,7 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
 
     // Case 1: Purchase and recipe use are both 'pièce'
     if (purchaseUnit === 'pièce' && recipeUnit === 'pièce') {
+        // No yield applied to unit-based items, cost is per piece.
         return ingredientLink.quantity * ingredientData.purchasePrice;
     }
     
@@ -128,10 +129,11 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
          if (!ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) return 0;
          const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
          const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, 'g');
+         // Yield is not applied when converting from piece to weight, assuming gross weight is used.
          return quantityInGrams * costPerGram;
     }
 
-    // Case 3: All other cases (kg/g, l/ml, botte/g) - based on weight
+    // Case 3: All other cases (kg/g, l/ml, botte/g) - based on weight and yield
     if (!ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) return 0;
     
     const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
@@ -538,6 +540,25 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         if(preparations) setEditablePreparations(JSON.parse(JSON.stringify(preparations)));
         setNewIngredients([]);
         setNewPreparations([]);
+    } else {
+        // **BUG FIX**: Recalculate costs when entering edit mode
+        setEditableIngredients(current => current.map(ing => {
+             const ingData = allIngredients.find(i => i.id === ing.id);
+             if(ingData) {
+                 return {...ing, totalCost: recomputeIngredientCost(ing, ingData) };
+             }
+             return ing;
+        }));
+        setEditablePreparations(current => current.map(prep => {
+            const childPrepData = allPreparations.find(p => p.id === prep.childPreparationId);
+            const costPerProdUnit = preparationsCosts[prep.childPreparationId] || 0;
+             if(childPrepData) {
+                const conversionFactor = getConversionFactor(childPrepData.productionUnit, prep.unit);
+                const costPerUseUnit = costPerProdUnit / conversionFactor;
+                return {...prep, totalCost: (prep.quantity || 0) * costPerUseUnit, _costPerUnit: costPerProdUnit, _productionUnit: childPrepData.productionUnit };
+             }
+             return prep;
+        }));
     }
     setIsEditing(!isEditing);
   };
@@ -956,3 +977,5 @@ function RecipeDetailSkeleton() {
 }
 
     
+
+  
