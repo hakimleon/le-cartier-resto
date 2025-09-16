@@ -113,6 +113,7 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
         
         if ((fromType === 'weight' && toType === 'volume') || (fromType === 'volume' && toType === 'weight')) {
+             // Basic assumption: 1ml = 1g for water-like density. This is a simplification.
              return fromFactor / toFactor;
         }
 
@@ -121,6 +122,7 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         }
     }
     
+    // Fallback if no direct conversion is possible
     return 1;
 };
 
@@ -133,6 +135,7 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
     const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
 
     const isLiquidPurchase = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
+    // Determine target unit based on purchase unit type (weight vs volume), not usage unit.
     const targetUnit = isLiquidPurchase ? 'ml' : 'g';
     
     const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
@@ -509,12 +512,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const handleToggleEditMode = () => {
         if (isEditing) {
+            // Cancel edits
             setEditableRecipe(JSON.parse(JSON.stringify(recipe)));
             setEditableIngredients(JSON.parse(JSON.stringify(ingredients)));
             setEditablePreparations(JSON.parse(JSON.stringify(preparations)));
             setNewIngredients([]);
             setNewPreparations([]);
-            setWorkshopConcept(null);
+            setWorkshopConcept(null); // Clear the workshop concept when cancelling
         }
         setIsEditing(!isEditing);
     };
@@ -604,21 +608,23 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             return;
         }
 
+        // Remove from ingredients list
         if (isNew) {
             setNewIngredients(current => current.filter(ing => ing.tempId !== ingredientId));
         } else {
             setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== ingredientId));
         }
 
+        // Add to new preparations list
         setNewPreparations(current => [
             ...current,
             {
                 tempId: `new-prep-${Date.now()}`,
                 childPreparationId: targetPreparation.id!,
                 name: targetPreparation.name,
-                quantity: 1, 
+                quantity: 1, // Default quantity, user must adjust
                 unit: targetPreparation.usageUnit || targetPreparation.productionUnit || 'g',
-                totalCost: 0, 
+                totalCost: 0, // Will be calculated when linked
                 _costPerUnit: preparationsCosts[targetPreparation.id!] || 0,
                 _productionUnit: targetPreparation.productionUnit || '',
             }
@@ -935,24 +941,26 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         const substitutionTarget = allPreparations.find(p => p.name.toLowerCase() === ing.name.toLowerCase());
                                         return (
                                             <TableRow key={ing.recipeIngredientId}>
-                                                <TableCell className="font-medium flex items-center gap-1">
-                                                    {substitutionTarget ? (
-                                                        <TooltipProvider>
-                                                            <Tooltip>
-                                                                <TooltipTrigger asChild>
-                                                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleSubstituteIngredient(ing.recipeIngredientId, false)}>
-                                                                        <Merge className="h-4 w-4 text-primary" />
-                                                                    </Button>
-                                                                </TooltipTrigger>
-                                                                <TooltipContent>
-                                                                    <p>Substituer par la préparation "{substitutionTarget.name}"</p>
-                                                                </TooltipContent>
-                                                            </Tooltip>
-                                                        </TooltipProvider>
-                                                    ) : (
-                                                        <div className="w-9 h-9" /> // Placeholder for alignment
-                                                    )}
-                                                    {ing.name}
+                                                <TableCell className="font-medium">
+                                                   <div className="flex items-center gap-1">
+                                                        {substitutionTarget ? (
+                                                            <TooltipProvider>
+                                                                <Tooltip>
+                                                                    <TooltipTrigger asChild>
+                                                                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleSubstituteIngredient(ing.recipeIngredientId, false)}>
+                                                                            <Merge className="h-4 w-4 text-primary" />
+                                                                        </Button>
+                                                                    </TooltipTrigger>
+                                                                    <TooltipContent>
+                                                                        <p>Substituer par la préparation "{substitutionTarget.name}"</p>
+                                                                    </TooltipContent>
+                                                                </Tooltip>
+                                                            </TooltipProvider>
+                                                        ) : (
+                                                            <div className="w-9 h-9" /> // Placeholder for alignment
+                                                        )}
+                                                        {ing.name}
+                                                    </div>
                                                 </TableCell>
                                                 <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
                                                 <TableCell>
@@ -1206,5 +1214,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
