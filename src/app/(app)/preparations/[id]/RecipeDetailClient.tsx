@@ -80,7 +80,10 @@ type NewRecipePreparation = {
 };
 
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (!fromUnit || !toUnit || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
+    if (!fromUnit || !toUnit || typeof fromUnit !== 'string' || typeof toUnit !== 'string') {
+        return 1;
+    }
+    if (fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
 
     const u = (unit: string) => unit.toLowerCase().trim();
     const factors: Record<string, number> = {
@@ -982,5 +985,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
 
     
