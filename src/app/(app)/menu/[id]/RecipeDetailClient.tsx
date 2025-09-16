@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -91,43 +92,50 @@ type NewRecipePreparation = {
 };
 
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (!fromUnit || !toUnit || typeof fromUnit !== 'string' || typeof toUnit !== 'string' || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) {
-      return 1;
-    }
-  
+    if (!fromUnit || !toUnit || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
+
     const u = (unit: string) => unit.toLowerCase().trim();
     const factors: Record<string, number> = {
         'kg': 1000, 'g': 1, 'mg': 0.001,
         'l': 1000, 'ml': 1,
         'litre': 1000, 'litres': 1000,
-        'pièce': 1, 'piece': 1, 'botte': 1
+        'pièce': 1, 'piece': 1, 'botte': 1,
     };
     
     const fromFactor = factors[u(fromUnit)];
     const toFactor = factors[u(toUnit)];
 
     if (fromFactor !== undefined && toFactor !== undefined) {
-        return fromFactor / toFactor;
+        const weightUnits = ['kg', 'g', 'mg'];
+        const volumeUnits = ['l', 'ml', 'litre', 'litres'];
+        const unitUnits = ['pièce', 'piece', 'botte'];
+
+        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
+        const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
+
+        if (fromType === toType) {
+            return fromFactor / toFactor;
+        }
     }
     
+    console.warn(`Incompatible unit conversion from '${fromUnit}' to '${toUnit}'. Defaulting to 1.`);
     return 1;
 };
 
-const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit || !ingredientLink.unit || !ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) {
+const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
+    if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams) {
         return 0;
     }
 
-    const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
-    
+    const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+    const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
+
     const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
-    const baseUnit = isLiquid ? 'ml' : 'g';
+    const targetUnit = isLiquid ? 'ml' : 'g';
     
-    const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, baseUnit);
+    const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
     
-    const finalCost = quantityInGrams * netCostPerGram;
-    return finalCost;
+    return quantityInBaseUnit * netCostPerGramOrMl;
 };
 
 
@@ -481,7 +489,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const processSuggestedPreparations = (suggested: {name: string, quantity: number, unit: string}[], currentAllPreps: Preparation[]) => {
         const newPreps: NewRecipePreparation[] = suggested.map(prep => {
             const existing = currentAllPreps.find(p => p.name.toLowerCase() === prep.name.toLowerCase());
-            const tempId = 'new-prep-ws-' + Date.now() + '-' + Math.random();
+            const tempId = `new-prep-ws-${Date.now()}-${Math.random()}`;
             return {
                 tempId,
                 childPreparationId: existing?.id,
@@ -847,7 +855,15 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsImagePreviewOpen(true) }}
                                     aria-label="Agrandir l'image du plat"
                                 >
-                                    <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{ objectFit: "contain" }} data-ai-hint="food image" className="transition-transform duration-300 group-hover:scale-105" />
+                                    <Image 
+                                      src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} 
+                                      alt={recipe.name}
+                                      fill
+                                      sizes="100vw"
+                                      style={{ objectFit: "contain" }} 
+                                      data-ai-hint="food image" 
+                                      className="transition-transform duration-300 group-hover:scale-105" 
+                                    />
                                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <p className="text-white bg-black/50 px-4 py-2 rounded-md">Agrandir</p>
                                     </div>
@@ -1187,5 +1203,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    

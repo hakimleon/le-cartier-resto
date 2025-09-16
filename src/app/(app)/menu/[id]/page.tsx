@@ -6,5 +6,3 @@ export default async function RecipeDetailPage({ params }: { params: { id: strin
     <RecipeDetailClient recipeId={params.id} />
   );
 }
-
-    
