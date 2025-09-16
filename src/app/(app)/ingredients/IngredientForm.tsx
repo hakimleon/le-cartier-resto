@@ -80,18 +80,28 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
 
   const selectedCategory = form.watch("category");
   const categoryExamples = ingredientCategories.find(c => c.name === selectedCategory)?.examples;
+  const purchaseUnit = form.watch("purchaseUnit");
+
+  const getWeightLabel = () => {
+    switch (purchaseUnit?.toLowerCase()) {
+      case 'pièce':
+        return "Poids moyen d'une pièce (g)";
+      case 'botte':
+        return "Poids moyen d'une botte (g)";
+      default:
+        return "Poids de l'unité d'achat (g)";
+    }
+  };
 
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
-      // We only auto-fill if the change is initiated by user interaction.
       if (name === "purchaseUnit" && type === 'change') {
         const unit = value.purchaseUnit?.toLowerCase();
-        if (unit === "kg" || unit === "l") {
+        if (unit === "kg" || unit === "l" || unit === "litre" || unit === "litres") {
           form.setValue('purchaseWeightGrams', 1000, { shouldValidate: true });
         } else if (unit === "g" || unit === "ml") {
           form.setValue('purchaseWeightGrams', 1, { shouldValidate: true });
         }
-        // For "pièce" or "botte", we leave the field as is for the user to fill.
       }
     });
     return () => subscription.unsubscribe();
@@ -250,9 +260,9 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                         name="purchaseWeightGrams"
                         render={({ field }) => (
                             <FormItem>
-                            <FormLabel>Poids Unitaire (g)</FormLabel>
+                            <FormLabel>{getWeightLabel()}</FormLabel>
                             <FormControl>
-                            <Input type="number" step="1" placeholder="Ex: 250" {...field} />
+                            <Input type="number" step="1" placeholder="Ex: 1000" {...field} />
                             </FormControl>
                             <FormDescription className="text-xs">
                                 Pour 1 unité d'achat.
@@ -333,5 +343,3 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
-
-    
