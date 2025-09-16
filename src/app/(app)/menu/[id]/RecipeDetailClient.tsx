@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -529,7 +528,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             setNewPreparations([]);
             setWorkshopConcept(null);
         } else {
-            // **BUG FIX**: Recalculate costs when entering edit mode
+            // Recalculate costs when entering edit mode
             setEditableIngredients(current => current.map(ing => {
                  const ingData = allIngredients.find(i => i.id === ing.id);
                  if(ingData) {
@@ -1220,5 +1219,3 @@ function RecipeDetailSkeleton() {
 }
 
     
-
-  
