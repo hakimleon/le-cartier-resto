@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -249,9 +248,9 @@ export default function PreparationsClient() {
       )}
 
       <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-9 h-auto p-2 gap-2">
+        <TabsList className="h-auto justify-start">
             {allPreparationCategories.map((category) => (
-                <TabsTrigger key={category} value={category} className="text-xs data-[state=active]:shadow-lg">{category}</TabsTrigger>
+                <TabsTrigger key={category} value={category} className="text-xs whitespace-normal sm:whitespace-nowrap data-[state=active]:shadow-lg">{category}</TabsTrigger>
             ))}
         </TabsList>
         <TabsContent value={selectedCategory}>
