@@ -21,6 +21,7 @@ import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Checkbox } from "@/components/ui/checkbox";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
+const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
 
 export default function WorkshopClient() {
     const [isLoading, setIsLoading] = useState(false);
@@ -69,7 +70,7 @@ export default function WorkshopClient() {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
         const instructions: RecipeConceptInput = {
-            type: 'Plat',
+            type: formData.get("type") as 'Plat' | 'Préparation',
             name: formData.get("dishName") as string,
             mainIngredients: formData.get("mainIngredients") as string || undefined,
             excludedIngredients: formData.get("excludedIngredients") as string || undefined,
@@ -105,25 +106,34 @@ export default function WorkshopClient() {
     }
 
 
-    const handleSaveToMenu = async () => {
+    const handleSave = async () => {
         if (!generatedConcept) return;
 
         setIsSaving(true);
         try {
-            const newDishId = await createDishFromWorkshop(generatedConcept);
-            if (newDishId) {
-                sessionStorage.setItem(WORKSHOP_CONCEPT_KEY, JSON.stringify(generatedConcept));
-                toast({
-                    title: "Recette enregistrée !",
-                    description: `"${generatedConcept.name}" a été ajouté au menu.`,
-                });
-                router.push(`/menu/${newDishId}`);
+            const newDocId = await createDishFromWorkshop(generatedConcept);
+            if (newDocId) {
+                if(generatedConcept.portions) { // It's a Plat
+                    sessionStorage.setItem(WORKSHOP_CONCEPT_KEY, JSON.stringify(generatedConcept));
+                    toast({
+                        title: "Plat enregistré !",
+                        description: `"${generatedConcept.name}" a été ajouté au menu.`,
+                    });
+                    router.push(`/menu/${newDocId}`);
+                } else { // It's a Préparation
+                    sessionStorage.setItem(PREPARATION_WORKSHOP_CONCEPT_KEY, JSON.stringify(generatedConcept));
+                     toast({
+                        title: "Préparation enregistrée !",
+                        description: `"${generatedConcept.name}" a été ajoutée.`,
+                    });
+                    router.push(`/preparations/${newDocId}`);
+                }
             } else {
-                 throw new Error("L'ID du plat n'a pas été retourné après la création.");
+                 throw new Error("L'ID du document n'a pas été retourné après la création.");
             }
         } catch (error) {
-            console.error("Error saving dish from workshop:", error);
-            toast({ title: "Erreur de sauvegarde", description: "Impossible d'enregistrer le plat.", variant: "destructive" });
+            console.error("Error saving from workshop:", error);
+            toast({ title: "Erreur de sauvegarde", description: "Impossible d'enregistrer le document.", variant: "destructive" });
         } finally {
             setIsSaving(false);
         }
@@ -169,7 +179,7 @@ export default function WorkshopClient() {
                 </div>
                 <div>
                     <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Atelier des Recettes</h1>
-                    <p className="text-muted-foreground">Donnez vie à vos idées de plats avec l'aide de l'IA.</p>
+                    <p className="text-muted-foreground">Donnez vie à vos idées avec l'aide de l'IA.</p>
                 </div>
             </header>
 
@@ -181,10 +191,17 @@ export default function WorkshopClient() {
                         </CardHeader>
                         <CardContent>
                             <form ref={initialFormRef} onSubmit={handleInitialSubmit} className="space-y-4">
+                                <div>
+                                    <Label>Type de Fiche</Label>
+                                    <select name="type" defaultValue="Plat" className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm rounded-md border" disabled={isLoading || !!generatedConcept}>
+                                        <option value="Plat">Plat (pour le menu)</option>
+                                        <option value="Préparation">Préparation (recette de base)</option>
+                                    </select>
+                                </div>
                                 <div className="space-y-2">
                                     <h4 className="font-medium text-sm">Créer à partir d'instructions</h4>
                                     <div>
-                                        <Label htmlFor="dishName">Nom du plat</Label>
+                                        <Label htmlFor="dishName">Nom ou idée de base</Label>
                                         <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." disabled={isLoading || !!generatedConcept} required/>
                                     </div>
                                     <div>
@@ -264,10 +281,12 @@ export default function WorkshopClient() {
                                 </div>
                             ) : generatedConcept ? (
                                 <div className="space-y-6">
-                                     <div className="relative w-full h-80 rounded-lg overflow-hidden border">
-                                        {isLoading && <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10"><Sparkles className="h-8 w-8 animate-spin text-primary"/></div>}
-                                        <Image src={generatedConcept.imageUrl || "https://placehold.co/1024x768.png"} alt={generatedConcept.name} fill style={{ objectFit: 'cover' }} data-ai-hint="artistic food plating" />
-                                    </div>
+                                     {generatedConcept.imageUrl && (
+                                        <div className="relative w-full h-80 rounded-lg overflow-hidden border">
+                                            {isLoading && <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10"><Sparkles className="h-8 w-8 animate-spin text-primary"/></div>}
+                                            <Image src={generatedConcept.imageUrl} alt={generatedConcept.name} fill style={{ objectFit: 'cover' }} data-ai-hint="artistic food plating" />
+                                        </div>
+                                     )}
                                     <div>
                                         <h3 className="text-2xl font-bold">{generatedConcept.name}</h3>
                                         <p className="text-muted-foreground mt-1">{generatedConcept.description}</p>
@@ -275,7 +294,8 @@ export default function WorkshopClient() {
                                     <div className="grid grid-cols-3 gap-4 text-center p-2 rounded-lg border bg-muted/50">
                                         <div className="flex flex-col items-center gap-1"><Clock className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.duration} min</span></div>
                                         <div className="flex flex-col items-center gap-1"><Soup className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.difficulty}</span></div>
-                                        <div className="flex flex-col items-center gap-1"><Users className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.portions} portion{generatedConcept.portions! > 1 ? 's' : ''}</span></div>
+                                        {generatedConcept.portions && <div className="flex flex-col items-center gap-1"><Users className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.portions} portion{generatedConcept.portions! > 1 ? 's' : ''}</span></div>}
+                                        {generatedConcept.productionQuantity && <div className="flex flex-col items-center gap-1"><Users className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.productionQuantity} {generatedConcept.productionUnit}</span></div>}
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
@@ -332,12 +352,14 @@ export default function WorkshopClient() {
                                     
                                     <Separator />
 
-                                    <div>
-                                        <h4 className="font-semibold mb-2 flex items-center gap-2"><MessageSquareQuote className="h-4 w-4"/>Argumentaire Commercial</h4>
-                                        <p className="text-sm text-muted-foreground italic border-l-2 pl-4">{generatedConcept.commercialArgument}</p>
-                                    </div>
+                                    {generatedConcept.commercialArgument && (
+                                        <div>
+                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><MessageSquareQuote className="h-4 w-4"/>Argumentaire Commercial</h4>
+                                            <p className="text-sm text-muted-foreground italic border-l-2 pl-4">{generatedConcept.commercialArgument}</p>
+                                        </div>
+                                    )}
 
-                                    <Button className="w-full" onClick={handleSaveToMenu} disabled={isSaving}>
+                                    <Button className="w-full" onClick={handleSave} disabled={isSaving}>
                                         <NotebookText className="mr-2 h-4 w-4" />
                                         {isSaving ? "Enregistrement..." : "Créer la Fiche Technique pour Finalisation"}
                                     </Button>
@@ -355,5 +377,3 @@ export default function WorkshopClient() {
         </div>
     );
 }
-
-    
