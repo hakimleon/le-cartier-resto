@@ -88,13 +88,17 @@ const recipeGenPrompt = ai.definePrompt({
         - Une préparation est "nouvelle" SEULEMENT si c'est une base complexe et réutilisable (ex: "Pâte brisée", "Confit d'oignons").
         - Les assemblages simples ou sauces "minute" (ex: "Vinaigrette pour salade", "Sauce crème-champignons") NE SONT PAS de nouvelles sous-recettes. Leurs ingrédients vont dans \`ingredients\` et leurs étapes dans la procédure principale.
         
+        **RÈGLES STRICTES POUR LES INGRÉDIENTS :**
+        1.  **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron"). N'ajoutez JAMAIS de qualificatifs comme "frais", "jaunes d'", "en poudre". On veut "Oeuf", pas "Jaunes d'oeufs".
+        2.  **UNITÉS PRÉCISES :** Utilisez TOUJOURS des unités de mesure précises en poids ou volume (`g`, `kg`, `ml`, `l`). N'utilisez "pièce" que si c'est absolument inévitable (ex: une gousse de vanille). Pour les œufs, donnez le poids en grammes.
+
         {{#if rawRecipe}}
-        PRIORITÉ : Reformatez la recette brute suivante en respectant la structure demandée.
+        PRIORITÉ : Reformatez la recette brute suivante en respectant la structure et les règles ci-dessus.
         ---
         {{{rawRecipe}}}
         ---
         {{else}}
-        CRÉATION : Créez une nouvelle fiche technique.
+        CRÉATION : Créez une nouvelle fiche technique en respectant les règles.
         - Nom/Idée : {{{name}}}
         - Description: {{{description}}}
         - Ingrédients principaux : {{{mainIngredients}}}
@@ -117,7 +121,6 @@ const recipeGenPrompt = ai.definePrompt({
         - **Pour un Plat :** Remplir les champs \`portions\`, \`category\`, \`commercialArgument\`.
         - **Pour une Préparation :** Remplir les champs \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.
         - **Toujours remplir :** \`name\`, \`description\`, \`ingredients\`, \`subRecipes\`, \`newSubRecipes\`, les 3 \`procedure_...\`, \`duration\`, \`difficulty\`.
-        - **Unités :** Préférez g, kg, l, ml. Utilisez "pièce" seulement si indispensable.
         - **Procédures :** Formatées en Markdown (### Titres, - Listes).
         - **Sortie :** Fournissez une réponse structurée au format JSON. Ne laissez aucun champ vide, utilisez des tableaux vides '[]' ou des chaînes vides '""' si nécessaire.
     `,
