@@ -634,7 +634,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     toast({ title: "Sous-recette retirée", description: "La modification sera appliquée à la sauvegarde.", }); 
   };
   
-  const openNewPreparationModal = (tempId: string) => {
+    const openNewPreparationModal = (tempId: string) => {
         const prepToCreate = newPreparations.find(p => p.tempId === tempId);
         if (prepToCreate) {
             setCurrentPrepTempId(tempId);
@@ -955,3 +955,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
