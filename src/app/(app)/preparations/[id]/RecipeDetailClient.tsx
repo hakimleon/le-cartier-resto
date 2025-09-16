@@ -4,7 +4,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation, GeneratedIngredient } from "@/lib/types";
+import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation, GeneratedIngredient, FullRecipeIngredient } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -47,16 +47,6 @@ type RecipeDetailClientProps = {
   recipeId: string;
 };
 
-export type FullRecipeIngredient = {
-    id: string; // Ingredient ID
-    recipeIngredientId: string; // The ID of the document in recipeIngredients collection
-    name: string;
-    quantity: number;
-    unit: string;
-    category: string;
-    totalCost: number;
-};
-
 type NewRecipeIngredient = {
     tempId: string; // Temporary client-side ID
     ingredientId?: string; // Linked ingredient ID from DB
@@ -97,16 +87,13 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         'kg': 1000, 'g': 1, 'mg': 0.001,
         'l': 1000, 'ml': 1,
         'litre': 1000, 'litres': 1000,
-        // For unit-based items, conversion factor is 1 if units match
         'pièce': 1, 'piece': 1, 'botte': 1,
     };
     
     const fromFactor = factors[u(fromUnit)];
     const toFactor = factors[u(toUnit)];
 
-    // Handle weight-to-volume and vice-versa as a simple 1-to-1 conversion if units are not compatible
     if (fromFactor !== undefined && toFactor !== undefined) {
-        // If one is weight and other is volume, and not a direct g/ml conversion
         const weightUnits = ['kg', 'g', 'mg'];
         const volumeUnits = ['l', 'ml', 'litre', 'litres'];
         const unitUnits = ['pièce', 'piece', 'botte'];
@@ -119,13 +106,12 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         }
     }
     
-    // If units are incompatible (e.g. 'kg' to 'pièce'), return 1 and log a warning.
-    console.warn(`Incompatible unit conversion from '${fromUnit}' to '${toUnit}'. Defaulting to 1.`);
+    console.warn(`Conversion incompatible de '${fromUnit}' à '${toUnit}'. Facteur par défaut: 1.`);
     return 1;
 };
 
 const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData?.purchaseUnit || !ingredientData.purchaseWeightGrams) {
+    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit || !ingredientData.purchaseWeightGrams) {
         return 0;
     }
 
@@ -431,7 +417,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
     setPreparationsCosts(costs);
     
-    const collectionName = "preparations"; // This is the preparations detail page
+    const collectionName = "preparations"; 
     const recipeDocRef = doc(db, collectionName, recipeId);
     const recipeSnap = await getDoc(recipeDocRef);
 
@@ -950,3 +936,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
