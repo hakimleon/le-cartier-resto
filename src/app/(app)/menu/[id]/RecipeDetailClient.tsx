@@ -117,33 +117,19 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit || !ingredientLink.unit) {
+    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit || !ingredientLink.unit || !ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) {
         return 0;
     }
 
-    const purchaseUnitLower = ingredientData.purchaseUnit.toLowerCase();
-    const unitUseLower = ingredientLink.unit.toLowerCase();
+    const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+    const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
 
-    // Cas simple: l'unité d'achat est la même que l'unité d'utilisation, et c'est une unité non divisible.
-    if (purchaseUnitLower === unitUseLower && ['pièce', 'botte'].includes(purchaseUnitLower)) {
-        return ingredientLink.quantity * ingredientData.purchasePrice;
-    }
+    const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
+    const baseUnit = isLiquid ? 'ml' : 'g';
 
-    // Cas de calcul par poids/volume
-    if (!ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) {
-        console.warn(`Cannot calculate cost for ${ingredientData.name}: purchaseWeightGrams is missing or zero.`);
-        return 0;
-    }
-
-    const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
+    const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, baseUnit);
     
-    const isLiquid = ['l', 'ml', 'litres'].includes(purchaseUnitLower);
-    const targetUnit = isLiquid ? 'ml' : 'g';
-    
-    const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
-    
-    return quantityInBaseUnit * netCostPerGramOrMl;
+    return quantityInGrams * netCostPerGram;
 };
 
 
@@ -506,7 +492,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 name: existing?.name || name,
                 quantity: prep.quantity || 1, 
                 unit: prep.unit || existing?.usageUnit || existing?.productionUnit || 'g',
-                totalCost: 0,
+                totalCost: 0, 
                 _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0,
                 _productionUnit: existing?.productionUnit || '',
             };
