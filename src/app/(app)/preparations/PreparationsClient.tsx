@@ -35,6 +35,7 @@ import {
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2 } from "lucide-react";
+import { PreparationModal } from "./PreparationModal";
 
 export default function PreparationsClient() {
   const [preparations, setPreparations] = useState<Preparation[]>([]);
@@ -232,10 +233,12 @@ export default function PreparationsClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <Button onClick={() => router.push('/preparations/workshop')}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Nouvelle Préparation
-            </Button>
+             <PreparationModal preparation={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
+                <Button>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Nouvelle Préparation
+                </Button>
+            </PreparationModal>
         </div>
       </header>
 
