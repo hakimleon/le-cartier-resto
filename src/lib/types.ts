@@ -111,5 +111,3 @@ export type FullRecipeIngredient = {
     category: string;
     totalCost: number;
 };
-
-  

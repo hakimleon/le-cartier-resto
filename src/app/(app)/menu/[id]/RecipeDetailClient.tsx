@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -91,67 +92,41 @@ type NewRecipePreparation = {
 };
 
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (!fromUnit || !toUnit || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
+    if (!fromUnit || !toUnit || fromUnit.toLowerCase() === toUnit.toLowerCase()) return 1;
 
     const u = (unit: string) => unit.toLowerCase().trim();
     const factors: Record<string, number> = {
         'kg': 1000, 'g': 1, 'mg': 0.001,
         'l': 1000, 'ml': 1,
         'litre': 1000, 'litres': 1000,
-        'pièce': 1, 'piece': 1, 'botte': 1,
+        'pièce': 1, 'piece': 1,
     };
     
     const fromFactor = factors[u(fromUnit)];
     const toFactor = factors[u(toUnit)];
 
     if (fromFactor !== undefined && toFactor !== undefined) {
-        const weightUnits = ['kg', 'g', 'mg'];
-        const volumeUnits = ['l', 'ml', 'litre', 'litres'];
-        const unitUnits = ['pièce', 'piece', 'botte'];
-
-        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
-        const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
-
-        if (fromType === toType) {
-            return fromFactor / toFactor;
-        }
+        return fromFactor / toFactor;
     }
     
-    console.warn(`Conversion incompatible de '${fromUnit}' à '${toUnit}'. Facteur par défaut: 1.`);
+    console.warn(`No conversion factor found between '${fromUnit}' and '${toUnit}'. Defaulting to 1.`);
     return 1;
 };
 
 const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit || !ingredientLink.unit) {
+    if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams) {
         return 0;
     }
 
-    const purchaseUnit = ingredientData.purchaseUnit.toLowerCase();
-    const recipeUnit = ingredientLink.unit.toLowerCase();
+    const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+    const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
 
-    // Case 1: Purchase and recipe use are both 'pièce'
-    if (purchaseUnit === 'pièce' && recipeUnit === 'pièce') {
-        // No yield applied to unit-based items, cost is per piece.
-        return ingredientLink.quantity * ingredientData.purchasePrice;
-    }
+    const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
+    const targetUnit = isLiquid ? 'ml' : 'g';
     
-    // Case 2: Purchase is by 'pièce', but recipe uses weight (e.g. 80g of egg)
-    if (purchaseUnit === 'pièce' && ['g', 'kg', 'mg'].includes(recipeUnit)) {
-         if (!ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) return 0;
-         const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-         const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, 'g');
-         // Yield is not applied when converting from piece to weight, assuming gross weight is used.
-         return quantityInGrams * costPerGram;
-    }
-
-    // Case 3: All other cases (kg/g, l/ml, botte/g) - based on weight and yield
-    if (!ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) return 0;
+    const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
     
-    const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
-    const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, 'g');
-    
-    return quantityInGrams * netCostPerGram;
+    return quantityInBaseUnit * netCostPerGramOrMl;
 };
 
 
@@ -378,139 +353,159 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }, []);
 
     const fullDataRefresh = useCallback(async () => {
-        setIsLoading(true);
-        setError(null);
-        try {
-            const ingredientsList = await fetchAllIngredients();
-            const allPrepsData = await fetchAllPreparations();
-            const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
-            setPreparationsCosts(costs);
+        const ingredientsList = await fetchAllIngredients();
+        const allPrepsData = await fetchAllPreparations();
+        const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
+        setPreparationsCosts(costs);
 
-            const isLikelyPreparation = window.location.pathname.includes('/preparations/');
-            const collectionName = isLikelyPreparation ? "preparations" : "recipes";
-            const recipeDocRef = doc(db, collectionName, recipeId);
-            const recipeSnap = await getDoc(recipeDocRef);
+        const isLikelyPreparation = window.location.pathname.includes('/preparations/');
+        const collectionName = isLikelyPreparation ? "preparations" : "recipes";
+        const recipeDocRef = doc(db, collectionName, recipeId);
+        const recipeSnap = await getDoc(recipeDocRef);
 
-            if (!recipeSnap.exists()) {
-                setError("Fiche technique non trouvée.");
-                setRecipe(null);
-                return;
-            }
-
-            const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe | Preparation;
-            setRecipe(fetchedRecipe);
-
-            const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
-            const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
-            const ingredientsData = recipeIngredientsSnap.docs.map(docSnap => {
-                const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
-                const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
-                if (ingredientData) {
-                    const totalCost = recomputeIngredientCost(recipeIngredientData, ingredientData);
-                    return {
-                        id: ingredientData.id!,
-                        recipeIngredientId: docSnap.id,
-                        name: ingredientData.name,
-                        quantity: recipeIngredientData.quantity,
-                        unit: recipeIngredientData.unitUse,
-                        category: ingredientData.category,
-                        totalCost: totalCost
-                    };
-                }
-                return null;
-            }).filter(Boolean) as FullRecipeIngredient[];
-            setIngredients(ingredientsData);
-
-            const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
-            const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
-            const preparationsData = recipePreparationsSnap.docs.map(linkDoc => {
-                const linkData = linkDoc.data() as RecipePreparationLink;
-                const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
-                if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
-                    const costPerProductionUnit = costs[linkData.childPreparationId];
-                    const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse);
-                    const costPerUseUnit = costPerProductionUnit / conversionFactor;
-                    return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit };
-                }
-                return null;
-            }).filter(Boolean) as FullRecipePreparation[];
-            setPreparations(preparationsData);
-
-        } catch (e: any) {
-            console.error("Error during full data refresh: ", e);
-            setError("Impossible de charger les données. " + e.message);
-        } finally {
+        if (!recipeSnap.exists()) {
+            setError("Fiche technique non trouvée.");
+            setRecipe(null);
             setIsLoading(false);
+            return;
         }
+
+        const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe | Preparation;
+        setRecipe(fetchedRecipe);
+        setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
+
+        const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
+        const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
+        const ingredientsData = recipeIngredientsSnap.docs.map(docSnap => {
+            const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
+            const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
+            if (ingredientData) {
+                const totalCost = recomputeIngredientCost(recipeIngredientData, ingredientData);
+
+                return {
+                    id: ingredientData.id!,
+                    recipeIngredientId: docSnap.id,
+                    name: ingredientData.name,
+                    quantity: recipeIngredientData.quantity,
+                    unit: recipeIngredientData.unitUse,
+                    category: ingredientData.category,
+                    totalCost: totalCost
+                };
+            }
+            return null;
+        }).filter(Boolean) as FullRecipeIngredient[];
+        setIngredients(ingredientsData);
+        setEditableIngredients(JSON.parse(JSON.stringify(ingredientsData)));
+
+        const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
+        const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
+        const preparationsData = recipePreparationsSnap.docs.map(linkDoc => {
+            const linkData = linkDoc.data() as RecipePreparationLink;
+            const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
+            if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
+                const costPerProductionUnit = costs[linkData.childPreparationId];
+                const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse);
+                const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit };
+            }
+            return null;
+        }).filter(Boolean) as FullRecipePreparation[];
+        setPreparations(preparationsData);
+        setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
+
     }, [recipeId, fetchAllIngredients, fetchAllPreparations, calculatePreparationsCosts]);
 
 
     useEffect(() => {
-        if (!recipeId || !isFirebaseConfigured) {
-            setIsLoading(false);
-            setError(!recipeId ? "L'identifiant de la recette est manquante." : "La configuration de Firebase est manquante.");
-            return;
+        if (!recipeId) { setIsLoading(false); setError("L'identifiant de la recette est manquante."); return; }
+        if (!isFirebaseConfigured) { setError("La configuration de Firebase est manquante."); setIsLoading(false); return; }
+
+        let isMounted = true;
+
+        const initialLoad = async () => {
+            try {
+                setIsLoading(true);
+                await fullDataRefresh();
+                const conceptJSON = sessionStorage.getItem(WORKSHOP_CONCEPT_KEY);
+                if (conceptJSON && isMounted) {
+                    setIsEditing(true);
+                    const concept: RecipeConceptOutput = JSON.parse(conceptJSON);
+                    setWorkshopConcept(concept); // <-- Store the raw concept
+
+                    setEditableRecipe(current => {
+                        if (!current) return null;
+                        return {
+                            ...current,
+                            ...concept
+                        };
+                    });
+
+                    const ingredientsList = await fetchAllIngredients();
+                    processSuggestedIngredients(concept.ingredients, ingredientsList);
+
+                    const allPrepsData = await fetchAllPreparations();
+                    processSuggestedPreparations(concept.subRecipes, allPrepsData);
+
+                    toast({ title: "Fiche technique importée !", description: "Vérifiez les informations et les liaisons suggérées." });
+                    sessionStorage.removeItem(WORKSHOP_CONCEPT_KEY);
+                }
+            } catch (e: any) {
+                console.error("Error during initial load: ", e);
+                if (isMounted) { setError("Impossible de charger les données de support. " + e.message); }
+            } finally {
+                if (isMounted) setIsLoading(false);
+            }
         }
 
-        fullDataRefresh();
-    }, [recipeId, fullDataRefresh]);
+        initialLoad();
 
-    useEffect(() => {
-        if (!recipe) return;
+        return () => { isMounted = false; };
+    }, [recipeId, fullDataRefresh, fetchAllIngredients, fetchAllPreparations]);
 
-        setEditableRecipe(JSON.parse(JSON.stringify(recipe)));
-        setEditableIngredients(JSON.parse(JSON.stringify(ingredients)));
-        setEditablePreparations(JSON.parse(JSON.stringify(preparations)));
 
-        const conceptJSON = sessionStorage.getItem(WORKSHOP_CONCEPT_KEY);
-        if (conceptJSON && isEditing) { // Only apply concept if we are already in edit mode
-            const concept: RecipeConceptOutput = JSON.parse(conceptJSON);
-            setWorkshopConcept(concept);
+    const processSuggestedIngredients = (suggested: GeneratedIngredient[], currentAllIngredients: Ingredient[]) => {
+        const newIngs: NewRecipeIngredient[] = suggested.map(sugIng => {
+            const existing = currentAllIngredients.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
+            const tempId = `new-ws-${Date.now()}-${Math.random()}`;
+            let totalCost = 0;
+            if (existing) {
+                totalCost = recomputeIngredientCost({quantity: sugIng.quantity, unit: sugIng.unit}, existing);
+            }
+            return { tempId, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
+        });
+        setNewIngredients(newIngs);
+    };
 
-            setEditableRecipe(current => ({ ...current!, ...concept }));
-            
-            const ingredientsList = allIngredients;
-            const newIngs: NewRecipeIngredient[] = (concept.ingredients || []).map(sugIng => {
-                const existing = ingredientsList.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
-                let totalCost = existing ? recomputeIngredientCost({ quantity: sugIng.quantity, unit: sugIng.unit }, existing) : 0;
-                return { tempId: `new-ws-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
-            });
-            setNewIngredients(newIngs);
-            
-            const allPrepsList = allPreparations;
-            const newPreps: NewRecipePreparation[] = (concept.subRecipes || []).map(sugPrep => {
-                const existing = allPrepsList.find(dbPrep => dbPrep.name.toLowerCase() === sugPrep.name.toLowerCase());
-                return { tempId: `new-ws-prep-${Date.now()}-${Math.random()}`, childPreparationId: existing?.id, name: existing?.name || sugPrep.name, quantity: sugPrep.quantity, unit: sugPrep.unit, totalCost: 0, _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0, _productionUnit: existing?.productionUnit || '' };
-            });
-            setNewPreparations(newPreps);
-
-            toast({ title: "Fiche technique importée !", description: "Vérifiez les informations et les liaisons suggérées." });
-            sessionStorage.removeItem(WORKSHOP_CONCEPT_KEY);
-        }
-    }, [recipe, ingredients, preparations, isEditing]);
-
+    const processSuggestedPreparations = (suggested: any[], currentAllPreps: Preparation[]) => {
+        const newPreps: NewRecipePreparation[] = suggested.map(prep => {
+            const name = typeof prep === 'string' ? prep : prep.name;
+            const existing = currentAllPreps.find(p => p.name.toLowerCase() === name.toLowerCase());
+            const tempId = `new-prep-ws-${Date.now()}-${Math.random()}`;
+            return {
+                tempId,
+                childPreparationId: existing?.id,
+                name: existing?.name || name,
+                quantity: prep.quantity || 1, 
+                unit: prep.unit || existing?.usageUnit || existing?.productionUnit || 'g',
+                totalCost: 0,
+                _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0,
+                _productionUnit: existing?.productionUnit || ''
+            };
+        });
+        setNewPreparations(newPreps);
+    }
 
     const handleToggleEditMode = () => {
+        setIsEditing(!isEditing);
         if (isEditing) {
-            // Cancel editing
+            // If cancelling edit
             setEditableRecipe(JSON.parse(JSON.stringify(recipe)));
             setEditableIngredients(JSON.parse(JSON.stringify(ingredients)));
             setEditablePreparations(JSON.parse(JSON.stringify(preparations)));
             setNewIngredients([]);
             setNewPreparations([]);
             setWorkshopConcept(null);
-        } else {
-             // Enter editing
-             const conceptJSON = sessionStorage.getItem(WORKSHOP_CONCEPT_KEY);
-             if(conceptJSON){
-                 setIsEditing(true); // This will trigger the useEffect to process the concept
-             } else {
-                setEditableRecipe(JSON.parse(JSON.stringify(recipe)));
-                setEditableIngredients(JSON.parse(JSON.stringify(ingredients)));
-                setEditablePreparations(JSON.parse(JSON.stringify(preparations)));
-             }
         }
-        setIsEditing(!isEditing);
     };
 
     const handleRecipeDataChange = (field: keyof Recipe | keyof Preparation, value: any) => {
@@ -549,8 +544,39 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         })
         );
     };
+
+    const handleRemoveNewIngredient = (tempId: string) => { setNewIngredients(current => current.filter(ing => ing.tempId !== tempId)); };
+    const handleRemoveExistingIngredient = (recipeIngredientId: string) => { setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId)); };
+    const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
+        fetchAllIngredients().then(updatedList => {
+            const newlyAdded = updatedList.find(i => i.id === newIngredient.id);
+            if (newlyAdded) {
+                handleNewIngredientChange(tempId, 'ingredientId', newlyAdded.id!);
+            }
+        });
+    };
+    const openNewIngredientModal = (tempId: string) => { const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId); if (ingredientToCreate) { setCurrentTempId(tempId); setNewIngredientDefaults({ name: ingredientToCreate.name }); setIsNewIngredientModalOpen(true); } }
+
+    // --- PREPARATION HANDLERS ---
+    const openNewPreparationModal = (tempId: string) => {
+        const prepToCreate = newPreparations.find(p => p.tempId === tempId);
+        if (prepToCreate) {
+            setCurrentPrepTempId(tempId);
+            setNewPreparationDefaults({ name: prepToCreate.name, description: `Préparation pour "${recipe?.name}"` });
+            setIsNewPreparationModalOpen(true);
+        }
+    };
+
+    const handleCreateAndLinkPreparation = (tempId: string, newPreparation: Preparation) => {
+        fetchAllPreparations().then(updatedList => {
+            const newlyAdded = updatedList.find(p => p.id === newPreparation.id);
+            if (newlyAdded) {
+                handleNewPreparationChange(tempId, 'childPreparationId', newlyAdded.id!);
+            }
+        })
+    }
     
-    const handleSubstituteIngredient = (ingredientId: string, isNew: boolean) => {
+     const handleSubstituteIngredient = (ingredientId: string, isNew: boolean) => {
         let ingredientToSubstitute: FullRecipeIngredient | NewRecipeIngredient | undefined;
 
         if (isNew) {
@@ -589,36 +615,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         toast({ title: "Substitution réussie", description: `"${ingredientToSubstitute.name}" a été remplacé par la préparation correspondante.` });
     };
-
-    const handleRemoveNewIngredient = (tempId: string) => { setNewIngredients(current => current.filter(ing => ing.tempId !== tempId)); };
-    const handleRemoveExistingIngredient = (recipeIngredientId: string) => { setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId)); };
-    const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
-        fetchAllIngredients().then(updatedList => {
-            const newlyAdded = updatedList.find(i => i.id === newIngredient.id);
-            if (newlyAdded) {
-                handleNewIngredientChange(tempId, 'ingredientId', newlyAdded.id!);
-            }
-        });
-    };
-    const openNewIngredientModal = (tempId: string) => { const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId); if (ingredientToCreate) { setCurrentTempId(tempId); setNewIngredientDefaults({ name: ingredientToCreate.name }); setIsNewIngredientModalOpen(true); } }
-
-    const openNewPreparationModal = (tempId: string) => {
-        const prepToCreate = newPreparations.find(p => p.tempId === tempId);
-        if (prepToCreate) {
-            setCurrentPrepTempId(tempId);
-            setNewPreparationDefaults({ name: prepToCreate.name, description: `Préparation pour "${recipe?.name}"` });
-            setIsNewPreparationModalOpen(true);
-        }
-    };
-
-    const handleCreateAndLinkPreparation = (tempId: string, newPreparation: Preparation) => {
-        fetchAllPreparations().then(updatedList => {
-            const newlyAdded = updatedList.find(p => p.id === newPreparation.id);
-            if (newlyAdded) {
-                handleNewPreparationChange(tempId, 'childPreparationId', newlyAdded.id!);
-            }
-        })
-    }
 
     const handleRemoveNewPreparation = (tempId: string) => { setNewPreparations(current => current.filter(p => p.tempId !== tempId)); };
     const handleRemoveExistingPreparation = (preparationLinkId: string) => { setEditablePreparations(current => current.filter(p => p.id !== preparationLinkId)); };
@@ -680,15 +676,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const newPrepLinks = newPreparations.map(p => ({ parentRecipeId: recipeId, childPreparationId: p.childPreparationId, quantity: p.quantity, unitUse: p.unit })).filter(p => p.childPreparationId);
             const allPrepLinks = [...existingPrepLinks, ...newPrepLinks] as Omit<RecipePreparationLink, 'id'>[];
             await replaceRecipePreparations(recipeId, allPrepLinks);
-            
-            setIsEditing(false); 
-            setNewIngredients([]); 
-            setNewPreparations([]); 
-            setWorkshopConcept(null);
-            
+
             await fullDataRefresh();
 
             toast({ title: "Succès", description: "Les modifications ont été sauvegardées." });
+            setIsEditing(false); setNewIngredients([]); setNewPreparations([]); setWorkshopConcept(null);
         } catch (error) { console.error("Error saving changes:", error); toast({ title: "Erreur", description: "La sauvegarde des modifications a échoué.", variant: "destructive", }); } finally { setIsSaving(false); }
     };
 
@@ -709,8 +701,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }, [allIngredients]);
 
     const currentRecipeData = isEditing ? editableRecipe : recipe;
-    const currentIngredientsData = isEditing ? editableIngredients : ingredients;
-    const currentPreparationsData = isEditing ? editablePreparations : preparations;
     
     const {
         totalRecipeCost,
@@ -729,10 +719,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         if (!currentRecipeData) return result;
 
-        const ingredientsToSum = isEditing ? [...editableIngredients, ...newIngredients] : ingredients;
-        const prepsToSum = isEditing ? [...editablePreparations, ...newPreparations] : preparations;
-
-        ingredientsToSum.forEach(item => {
+        const allCurrentIngredients = [...(isEditing ? editableIngredients : ingredients), ...(isEditing ? newIngredients : [])];
+        
+        allCurrentIngredients.forEach(item => {
             const category = item.category?.trim() || 'Non catégorisé';
             if (category) {
                 if (!result.costsByCategory[category]) {
@@ -742,9 +731,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             }
         });
 
-        const preparationsCost = prepsToSum.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+        const preparationsCost = (isEditing ? editablePreparations : preparations).reduce((acc, item) => acc + (item.totalCost || 0), 0);
+        const newPreparationsCost = newPreparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
         const ingredientsCost = Object.values(result.costsByCategory).reduce((acc, cost) => acc + cost, 0);
-        const totalCost = ingredientsCost + preparationsCost;
+        const totalCost = ingredientsCost + preparationsCost + newPreparationsCost;
 
         result.totalRecipeCost = totalCost;
 
@@ -968,7 +958,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             </TableRow>
                                         )
                                     })}
-                                    {!isEditing && currentIngredientsData.map(ing => (
+                                    {!isEditing && ingredients.map(ing => (
                                         <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
                                     ))}
                                     {isEditing && newIngredients.map((newIng) => (
@@ -981,7 +971,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                             handleRemoveNewIngredient={handleRemoveNewIngredient}
                                         />
                                     ))}
-                                    {currentIngredientsData.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
+                                    {ingredients.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
                                 </TableBody>
                             </Table>
                         </CardContent>
@@ -1000,7 +990,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 {isEditing && editablePreparations.map(prep => (
                                     <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell><Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell><TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer la préparation ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{prep.name}" de cette recette ?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingPreparation(prep.id)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>
                                 ))}
-                                {!isEditing && currentPreparationsData.map(prep => (
+                                {!isEditing && preparations.map(prep => (
                                     <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
                                 ))}
                                 {isEditing && newPreparations.map((prep) => {
@@ -1043,7 +1033,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         </TableRow>
                                     )
                                 })}
-                                {currentPreparationsData.length === 0 && newPreparations.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
+                                {preparations.length === 0 && newPreparations.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
                             </TableBody>
                         </Table>
                     </CardContent>
