@@ -7,18 +7,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, Weight, BookCopy, ChevronsRight, Merge } from "lucide-react";
+import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, Weight, BookCopy, ChevronsRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { generateRecipeConcept, RecipeConceptOutput, RecipeConceptInput } from "@/ai/flows/recipe-workshop-flow";
 
 import { useRouter } from "next/navigation";
-import { createDishFromWorkshop, createPreparation } from "./actions";
+import { createDishFromWorkshop } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
-import { Checkbox } from "@/components/ui/checkbox";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
@@ -35,12 +34,9 @@ export default function WorkshopClient() {
     
     const [context, setContext] = useState<RecipeConceptInput>({ type: 'Plat' });
     const [refinementHistory, setRefinementHistory] = useState<string[]>([]);
-    const [prepsToIntegrate, setPrepsToIntegrate] = useState<string[]>([]);
-
-
+    
     const handleSubmit = async (instructions: RecipeConceptInput) => {
         setIsLoading(true);
-        setPrepsToIntegrate([]); // Reset selection on new generation/refinement
         
         if (!instructions.refinementHistory || instructions.refinementHistory.length === 0) {
             setGeneratedConcept(null);
@@ -93,19 +89,6 @@ export default function WorkshopClient() {
         handleSubmit(instructions);
     }
     
-    const handleIntegration = (prepNames: string[]) => {
-        if (prepNames.length === 0) return;
-        const namesString = prepNames.map(name => `'${name}'`).join(' et ');
-        const instruction = `Intègre la ou les préparations ${namesString} directement dans la recette principale au lieu de la traiter comme une ou des sous-recettes. Ajoute leurs ingrédients à la liste principale et leurs étapes à la procédure.`;
-        const newHistory = [...refinementHistory, instruction];
-
-        const instructions: RecipeConceptInput = { ...context, refinementHistory: newHistory, currentRefinement: instruction };
-        
-        setRefinementHistory(newHistory);
-        handleSubmit(instructions);
-    }
-
-
     const handleSave = async () => {
         if (!generatedConcept) return;
 
@@ -143,33 +126,9 @@ export default function WorkshopClient() {
         setGeneratedConcept(null);
         setContext({ type: 'Plat' });
         setRefinementHistory([]);
-        setPrepsToIntegrate([]);
         if (initialFormRef.current) initialFormRef.current.reset();
         if (refinementFormRef.current) refinementFormRef.current.reset();
     };
-
-    const handleCreatePreparation = async (prepName: string, prepDescription: string) => {
-        try {
-            const newPrepId = await createPreparation({ name: prepName, description: prepDescription });
-            toast({ title: "Préparation créée", description: `La fiche pour "${prepName}" est prête à être complétée.` });
-            
-            // Open the new preparation in a new tab
-            window.open(`/preparations/${newPrepId}`, '_blank');
-            
-            // Refresh the current concept to reflect the new preparation
-            const instruction = `La préparation '${prepName}' a été créée et est maintenant disponible. Elle doit désormais apparaître dans la liste 'subRecipes'.`;
-            const newHistory = [...refinementHistory, instruction];
-            const instructions: RecipeConceptInput = { ...context, refinementHistory: newHistory, currentRefinement: instruction };
-
-            setRefinementHistory(newHistory);
-            handleSubmit(instructions);
-
-        } catch (error) {
-            console.error("Error creating preparation:", error);
-            toast({ title: "Erreur", description: "Impossible de créer la fiche de préparation.", variant: "destructive" });
-        }
-    }
-
 
     return (
         <div className="space-y-8">
@@ -300,7 +259,7 @@ export default function WorkshopClient() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                                         <div>
-                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients d'assemblage</h4>
+                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients</h4>
                                             {generatedConcept.ingredients && generatedConcept.ingredients.length > 0 ? (
                                                 <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
                                                     {generatedConcept.ingredients.map((ing) => (<li key={ing.name}><span className="font-medium text-foreground">{ing.quantity} {ing.unit}</span> - {ing.name}</li>))}
@@ -309,7 +268,7 @@ export default function WorkshopClient() {
                                         </div>
                                          
                                         <div>
-                                            {generatedConcept.subRecipes.length > 0 && (
+                                            {generatedConcept.subRecipes && generatedConcept.subRecipes.length > 0 && (
                                                 <div className="mb-4">
                                                     <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Sous-Recettes Existantes</h4>
                                                     <div className="space-y-2">
@@ -317,38 +276,11 @@ export default function WorkshopClient() {
                                                     </div>
                                                 </div>
                                             )}
-
-                                            {generatedConcept.newSubRecipes.length > 0 && (
-                                                <div>
-                                                    <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Nouvelles Préparations Suggérées</h4>
-                                                    <div className="space-y-3">
-                                                        {generatedConcept.newSubRecipes.map((prep) => (
-                                                            <div key={prep.name} className="flex items-center justify-between gap-2 p-2 rounded-md border border-dashed">
-                                                                <label htmlFor={`integrate-${prep.name}`} className="flex items-center gap-2 cursor-pointer text-sm font-medium">
-                                                                     <Checkbox id={`integrate-${prep.name}`} onCheckedChange={(checked) => {
-                                                                        setPrepsToIntegrate(current => checked ? [...current, prep.name] : current.filter(p => p !== prep.name));
-                                                                    }}/>
-                                                                    {prep.name}
-                                                                </label>
-                                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleCreatePreparation(prep.name, prep.description)} title={`Créer la fiche pour "${prep.name}"`}>
-                                                                    <PlusCircle className="h-4 w-4 text-primary" />
-                                                                </Button>
-                                                            </div>
-                                                        ))}
-                                                        {prepsToIntegrate.length > 0 && (
-                                                            <Button variant="secondary" size="sm" className="mt-2" onClick={() => handleIntegration(prepsToIntegrate)} disabled={isLoading}>
-                                                                <Merge className="mr-2 h-4 w-4"/>
-                                                                Intégrer la sélection ({prepsToIntegrate.length})
-                                                            </Button>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )}
                                         </div>
                                     </div>
                                     
                                      <div>
-                                        <h4 className="font-semibold mb-2 flex items-center gap-2"><FileText className="h-4 w-4"/>Procédure (Assemblage final)</h4>
+                                        <h4 className="font-semibold mb-2 flex items-center gap-2"><FileText className="h-4 w-4"/>Procédure</h4>
                                         <div className="prose prose-sm max-w-none text-muted-foreground p-4 border rounded-md mt-2">
                                             <MarkdownRenderer text={generatedConcept.procedure_preparation} />
                                             <MarkdownRenderer text={generatedConcept.procedure_cuisson} />

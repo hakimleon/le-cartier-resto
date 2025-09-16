@@ -38,16 +38,12 @@ const RecipeConceptOutputSchema = z.object({
         name: z.string().describe("Nom de l'ingrédient."),
         quantity: z.number().describe("Quantité."),
         unit: z.string().describe("Unité (g, kg, ml, l, pièce).")
-    })).describe("Liste des ingrédients SIMPLES nécessaires pour l'assemblage final."),
+    })).describe("Liste des ingrédients nécessaires."),
     subRecipes: z.array(z.object({
         name: z.string().describe("Nom de la sous-recette EXISTANTE."),
         quantity: z.number().describe("Quantité de sous-recette."),
         unit: z.string().describe("Unité pour la sous-recette."),
     })).describe("Liste des sous-recettes EXISTANTES utilisées."),
-    newSubRecipes: z.array(z.object({
-        name: z.string().describe("Nom de la NOUVELLE préparation inventée."),
-        description: z.string().describe("Description de la nouvelle préparation."),
-    })).describe("Liste des NOUVELLES préparations inventées, qui ne sont PAS dans la base de données. L'utilisateur décidera de les créer ou les intégrer."),
     procedure_preparation: z.string().describe("Procédure de préparation (Markdown)."),
     procedure_cuisson: z.string().describe("Procédure de cuisson (Markdown)."),
     procedure_service: z.string().describe("Procédure de service/dressage (Markdown)."),
@@ -82,17 +78,16 @@ const recipeGenPrompt = ai.definePrompt({
         OBLIGATOIRE : Appelez l'outil \`getAvailablePreparations\` pour connaître les sous-recettes déjà existantes.
 
         **RÈGLE D'OR : PRIORISER LES PRÉPARATIONS EXISTANTES.**
-        Si un composant demandé (ex: "mayonnaise", "fond de veau") existe dans la liste de l'outil, vous devez l'utiliser dans \`subRecipes\` avec une quantité et une unité estimées. N'incluez PAS ses ingrédients dans la liste \`ingredients\`.
+        - Si un composant demandé (ex: "mayonnaise", "fond de veau") existe dans la liste de l'outil, vous devez l'utiliser dans le champ \`subRecipes\` avec une quantité et une unité estimées.
+        - **INTERDICTION** : Ne mettez JAMAIS les ingrédients d'une sous-recette existante dans la liste \`ingredients\` principale.
 
-        **GESTION DES NOUVELLES SOUS-RECETTES (newSubRecipes) - RÈGLE CRUCIALE :**
-        - Pour tout composant d'une recette qui nécessite ses propres ingrédients et étapes (ex: "Sauce au poivre", "Vinaigrette", "Marinade"), vous devez le déclarer comme une NOUVELLE préparation dans le champ \`newSubRecipes\`.
-        - Fournissez juste son \`name\` et une \`description\` courte.
-        - **INTERDICTION** : Ne mettez JAMAIS les ingrédients ou les étapes d'une nouvelle préparation dans les champs \`ingredients\` ou \`procedure_...\` principaux. L'utilisateur décidera s'il veut créer une fiche séparée ou l'intégrer plus tard.
+        **LOGIQUE SIMPLIFIÉE :**
+        - Pour tout ce qui n'est pas une préparation existante (ex: une sauce minute, une marinade, une purée simple), vous devez inclure ses ingrédients directement dans la liste \`ingredients\` principale, et ses étapes dans les champs \`procedure_...\`.
+        - Ne tentez PAS de créer de "nouvelles préparations" ou d'isoler des recettes. Tout est intégré.
 
         **RÈGLES STRICTES POUR LES INGRÉDIENTS (champ \`ingredients\`) :**
-        1. Ce champ ne contient que les ingrédients nécessaires à l'ASSEMBLAGE FINAL du plat/préparation, c'est-à-dire ceux qui ne font partie ni d'une \`subRecipes\` existante, ni d'une \`newSubRecipes\`.
-        2. **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron"). N'ajoutez JAMAIS de qualificatifs. On veut "Oeuf", pas "Jaunes d'oeufs".
-        3. **UNITÉS INTELLIGENTES :** Utilisez l'unité la plus logique. Privilégiez "g", "kg", "ml", "l" pour la précision, mais utilisez "pièce" si c'est plus naturel (ex: 1 œuf).
+        1. **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron"). N'ajoutez JAMAIS de qualificatifs. On veut "Oeuf", pas "Jaunes d'oeufs".
+        2. **UNITÉS INTELLIGENTES :** Utilisez l'unité la plus logique. Privilégiez "g", "kg", "ml", "l" pour la précision, mais utilisez "pièce" si c'est plus naturel (ex: 1 œuf).
 
         {{#if rawRecipe}}
         PRIORITÉ : Reformatez la recette brute suivante en respectant la structure et toutes les règles ci-dessus.
@@ -122,7 +117,6 @@ const recipeGenPrompt = ai.definePrompt({
         **INSTRUCTIONS DE FORMATAGE**
         - **Pour un Plat :** Remplir les champs \`portions\`, \`category\`, \`commercialArgument\`.
         - **Pour une Préparation :** Remplir les champs \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.
-        - **Procédures :** Elles doivent être concises et ne concerner que l'assemblage final, la cuisson et le dressage. Ne détaillez PAS la fabrication des sous-recettes (existantes ou nouvelles).
         - **Sortie :** Fournissez une réponse structurée au format JSON. Ne laissez aucun champ vide, utilisez des tableaux vides '[]' ou des chaînes vides '""' si nécessaire.
     `,
 });
