@@ -167,20 +167,40 @@ const NewIngredientRow = ({
     sortedIngredients,
     handleNewIngredientChange,
     openNewIngredientModal,
-    handleRemoveNewIngredient
+    handleRemoveNewIngredient,
+    substitutionTarget,
+    handleSubstituteIngredient,
 }: {
     newIng: NewRecipeIngredient;
     sortedIngredients: Ingredient[];
     handleNewIngredientChange: (tempId: string, field: keyof NewRecipeIngredient, value: any) => void;
     openNewIngredientModal: (tempId: string) => void;
     handleRemoveNewIngredient: (tempId: string) => void;
+    substitutionTarget?: Preparation;
+    handleSubstituteIngredient: (id: string, isNew: boolean) => void;
 }) => {
     const [openCombobox, setOpenCombobox] = useState(false);
 
     return (
         <TableRow>
             <TableCell>
-                <div className="flex items-center gap-2">
+                 <div className="flex items-center gap-1">
+                     {substitutionTarget ? (
+                        <TooltipProvider>
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => handleSubstituteIngredient(newIng.tempId, true)}>
+                                        <Merge className="h-4 w-4 text-primary" />
+                                    </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    <p>Substituer par la préparation "{substitutionTarget.name}"</p>
+                                </TooltipContent>
+                            </Tooltip>
+                        </TooltipProvider>
+                    ) : (
+                        <div className="w-9 h-9" /> // Placeholder for alignment
+                    )}
                     <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
                         <PopoverTrigger asChild>
                             <Button
@@ -999,16 +1019,20 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     {!isEditing && ingredients.map(ing => (
                                         <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
                                     ))}
-                                    {isEditing && newIngredients.map((newIng) => (
-                                        <NewIngredientRow
-                                            key={newIng.tempId}
-                                            newIng={newIng}
-                                            sortedIngredients={sortedIngredients}
-                                            handleNewIngredientChange={handleNewIngredientChange}
-                                            openNewIngredientModal={openNewIngredientModal}
-                                            handleRemoveNewIngredient={handleRemoveNewIngredient}
-                                        />
-                                    ))}
+                                    {isEditing && newIngredients.map((newIng) => {
+                                         const substitutionTarget = allPreparations.find(p => p.name.toLowerCase() === newIng.name.toLowerCase());
+                                         return (
+                                            <NewIngredientRow
+                                                key={newIng.tempId}
+                                                newIng={newIng}
+                                                sortedIngredients={sortedIngredients}
+                                                handleNewIngredientChange={handleNewIngredientChange}
+                                                openNewIngredientModal={openNewIngredientModal}
+                                                handleRemoveNewIngredient={handleRemoveNewIngredient}
+                                                substitutionTarget={substitutionTarget}
+                                                handleSubstituteIngredient={handleSubstituteIngredient}
+                                            />
+                                    )})}
                                     {ingredients.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
                                 </TableBody>
                             </Table>
