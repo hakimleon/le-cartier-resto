@@ -90,7 +90,7 @@ const recipeGenPrompt = ai.definePrompt({
         
         **RÈGLES STRICTES POUR LES INGRÉDIENTS :**
         1.  **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron"). N'ajoutez JAMAIS de qualificatifs comme "frais", "jaunes d'", "en poudre". On veut "Oeuf", pas "Jaunes d'oeufs".
-        2.  **UNITÉS PRÉCISES :** Utilisez TOUJOURS des unités de mesure précises en poids ou volume (`g`, `kg`, `ml`, `l`). N'utilisez "pièce" que si c'est absolument inévitable (ex: une gousse de vanille). Pour les œufs, donnez le poids en grammes.
+        2.  **UNITÉS PRÉCISES :** Utilisez TOUJOURS des unités de mesure précises en poids ou volume (g, kg, ml, l). N'utilisez "pièce" que si c'est absolument inévitable (ex: une gousse de vanille). Pour les œufs, donnez le poids en grammes.
 
         {{#if rawRecipe}}
         PRIORITÉ : Reformatez la recette brute suivante en respectant la structure et les règles ci-dessus.
