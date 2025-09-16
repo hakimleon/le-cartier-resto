@@ -79,24 +79,32 @@ type NewRecipePreparation = {
 };
 
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (!fromUnit || !toUnit || fromUnit.toLowerCase() === toUnit.toLowerCase()) return 1;
+    if (!fromUnit || !toUnit || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
 
     const u = (unit: string) => unit.toLowerCase().trim();
     const factors: Record<string, number> = {
         'kg': 1000, 'g': 1, 'mg': 0.001,
         'l': 1000, 'ml': 1,
         'litre': 1000, 'litres': 1000,
-        'pièce': 1, 'piece': 1,
+        'pièce': 1, 'piece': 1, 'botte': 1,
     };
     
     const fromFactor = factors[u(fromUnit)];
     const toFactor = factors[u(toUnit)];
 
     if (fromFactor !== undefined && toFactor !== undefined) {
-        return fromFactor / toFactor;
+        const weightUnits = ['kg', 'g', 'mg'];
+        const volumeUnits = ['l', 'ml', 'litre', 'litres'];
+        const unitUnits = ['pièce', 'piece', 'botte'];
+
+        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
+        const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
+
+        if (fromType === toType) {
+            return fromFactor / toFactor;
+        }
     }
     
-    console.warn(`No conversion factor found between '${fromUnit}' and '${toUnit}'. Defaulting to 1.`);
     return 1;
 };
 
@@ -958,3 +966,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    

@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -113,7 +112,6 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
         const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
         
-        // Allow conversion between weight and volume assuming 1g = 1ml
         if ((fromType === 'weight' && toType === 'volume') || (fromType === 'volume' && toType === 'weight')) {
              return fromFactor / toFactor;
         }
@@ -123,7 +121,6 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         }
     }
     
-    // Fallback if no direct conversion is found
     return 1;
 };
 
@@ -132,16 +129,12 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
         return 0;
     }
 
-    // Cost per gram/ml of the purchased unit
     const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    // Cost per gram/ml adjusted for yield
     const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
 
-    // Determine the base unit for conversion (g for solids, ml for liquids)
     const isLiquidPurchase = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
     const targetUnit = isLiquidPurchase ? 'ml' : 'g';
     
-    // Convert the quantity used in the recipe to the base unit (g or ml)
     const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
     
     const finalCost = quantityInBaseUnit * netCostPerGramOrMl;
@@ -1213,3 +1206,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
