@@ -87,14 +87,12 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         'kg': 1000, 'g': 1, 'mg': 0.001,
         'l': 1000, 'ml': 1,
         'litre': 1000, 'litres': 1000,
-        // For unit-based items, conversion factor is 1 if units match
         'pièce': 1, 'piece': 1, 'botte': 1,
     };
     
     const fromFactor = factors[u(fromUnit)];
     const toFactor = factors[u(toUnit)];
 
-    // Handle weight-to-volume and vice-versa as a simple 1-to-1 conversion if units are not compatible
     if (fromFactor !== undefined && toFactor !== undefined) {
         const weightUnits = ['kg', 'g', 'mg'];
         const volumeUnits = ['l', 'ml', 'litre', 'litres'];
@@ -108,7 +106,6 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         }
     }
     
-    // If units are incompatible (e.g. 'kg' to 'pièce'), return 1 and log a warning.
     console.warn(`Incompatible unit conversion from '${fromUnit}' to '${toUnit}'. Defaulting to 1.`);
     return 1;
 };
@@ -116,6 +113,11 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
     if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams) {
         return 0;
+    }
+
+    // Special case for "pièce" or "botte" where the price is for the unit itself.
+    if (ingredientData.purchaseUnit.toLowerCase() === ingredientLink.unit.toLowerCase() && (ingredientData.purchaseUnit.toLowerCase() === 'pièce' || ingredientData.purchaseUnit.toLowerCase() === 'botte')) {
+        return ingredientLink.quantity * ingredientData.purchasePrice;
     }
 
     const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
@@ -217,6 +219,7 @@ const NewIngredientRow = ({
                         <SelectItem value="ml">ml</SelectItem>
                         <SelectItem value="l">l</SelectItem>
                         <SelectItem value="pièce">pièce</SelectItem>
+                        <SelectItem value="botte">botte</SelectItem>
                     </SelectContent>
                 </Select>
             </TableCell>
@@ -792,7 +795,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         {ing.name}
                                     </TableCell>
                                     <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20"/></TableCell>
-                                    <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell>
+                                    <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem><SelectItem value="botte">botte</SelectItem></SelectContent></Select></TableCell>
                                     <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
                                     <TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell>
                                 </TableRow>
@@ -971,3 +974,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    

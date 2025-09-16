@@ -233,6 +233,7 @@ const NewIngredientRow = ({
                         <SelectItem value="ml">ml</SelectItem>
                         <SelectItem value="l">l</SelectItem>
                         <SelectItem value="pièce">pièce</SelectItem>
+                        <SelectItem value="botte">botte</SelectItem>
                     </SelectContent>
                 </Select>
             </TableCell>
@@ -489,7 +490,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 unit: prep.unit || existing?.usageUnit || existing?.productionUnit || 'g',
                 totalCost: 0,
                 _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0,
-                _productionUnit: existing?.productionUnit || ''
+                _productionUnit: existing?.productionUnit || '',
             };
         });
         setNewPreparations(newPreps);
@@ -936,7 +937,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                                     {ing.name}
                                                 </TableCell>
                                                 <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
-                                                <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell>
+                                                <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem><SelectItem value="botte">botte</SelectItem></SelectContent></Select></TableCell>
                                                 <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
                                                 <TableCell>
                                                     <AlertDialog>
@@ -1176,3 +1177,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
