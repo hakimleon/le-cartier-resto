@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -725,7 +726,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
         if (!currentRecipeData) return result;
 
-        const allCurrentIngredients = [...(isEditing ? editableIngredients : ingredients), ...(isEditing ? newIngredients : [])];
+        const allCurrentIngredients = isEditing ? [...editableIngredients, ...newIngredients] : ingredients;
+        const allCurrentPreparations = isEditing ? [...editablePreparations, ...newPreparations] : preparations;
         
         allCurrentIngredients.forEach(item => {
             const category = item.category?.trim() || 'Non catégorisé';
@@ -737,10 +739,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             }
         });
 
-        const preparationsCost = (isEditing ? editablePreparations : preparations).reduce((acc, item) => acc + (item.totalCost || 0), 0);
-        const newPreparationsCost = (isEditing ? newPreparations: []).reduce((acc, item) => acc + (item.totalCost || 0), 0);
+        const preparationsCost = allCurrentPreparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
         const ingredientsCost = Object.values(result.costsByCategory).reduce((acc, cost) => acc + cost, 0);
-        const totalCost = ingredientsCost + preparationsCost + newPreparationsCost;
+        const totalCost = ingredientsCost + preparationsCost;
 
         result.totalRecipeCost = totalCost;
 
