@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -93,6 +92,7 @@ type NewRecipePreparation = {
 
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
     if (!fromUnit || !toUnit || typeof fromUnit !== 'string' || typeof toUnit !== 'string') {
+        console.warn(`getConversionFactor called with invalid units: from=${fromUnit}, to=${toUnit}. Defaulting to 1.`);
         return 1;
     }
     if (fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
@@ -117,20 +117,27 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams || !ingredientData.purchaseUnit || !ingredientLink.unit) {
+    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit || !ingredientLink.unit) {
         return 0;
     }
-    
+
     const purchaseUnitLower = ingredientData.purchaseUnit.toLowerCase();
     const unitUseLower = ingredientLink.unit.toLowerCase();
 
-    if (purchaseUnitLower === unitUseLower && (purchaseUnitLower === 'pièce' || purchaseUnitLower === 'botte')) {
+    // Cas simple: l'unité d'achat est la même que l'unité d'utilisation, et c'est une unité non divisible.
+    if (purchaseUnitLower === unitUseLower && ['pièce', 'botte'].includes(purchaseUnitLower)) {
         return ingredientLink.quantity * ingredientData.purchasePrice;
+    }
+
+    // Cas de calcul par poids/volume
+    if (!ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) {
+        console.warn(`Cannot calculate cost for ${ingredientData.name}: purchaseWeightGrams is missing or zero.`);
+        return 0;
     }
 
     const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
     const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
-
+    
     const isLiquid = ['l', 'ml', 'litres'].includes(purchaseUnitLower);
     const targetUnit = isLiquid ? 'ml' : 'g';
     
@@ -138,6 +145,7 @@ const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: strin
     
     return quantityInBaseUnit * netCostPerGramOrMl;
 };
+
 
 
 const GAUGE_LEVELS = {
@@ -243,6 +251,7 @@ const NewIngredientRow = ({
                         <SelectItem value="ml">ml</SelectItem>
                         <SelectItem value="l">l</SelectItem>
                         <SelectItem value="pièce">pièce</SelectItem>
+                        <SelectItem value="botte">botte</SelectItem>
                     </SelectContent>
                 </Select>
             </TableCell>
@@ -336,7 +345,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     const childPrep = preparationsList.find(p => p.id === depId);
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
-                        const conversionFactor = getConversionFactor(childPrep.productionUnit, linkData.unitUse);
+                        const conversionFactor = getConversionFactor(childPrep.productionUnit || 'g', linkData.unitUse);
                         const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
                         totalCost += (linkData.quantity || 0) * costPerUseUnit;
                     }
@@ -414,9 +423,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
             if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                 const costPerProductionUnit = costs[linkData.childPreparationId];
-                const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse);
+                const conversionFactor = getConversionFactor(childRecipeData.productionUnit || 'g', linkData.unitUse);
                 const costPerUseUnit = costPerProductionUnit / conversionFactor;
-                return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit };
+                return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit || 'g' };
             }
             return null;
         }).filter(Boolean) as FullRecipePreparation[];
@@ -742,14 +751,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         });
 
         const preparationsCost = (isEditing ? editablePreparations : preparations).reduce((acc, item) => acc + (item.totalCost || 0), 0);
-        const newPreparationsCost = newPreparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+        const newPreparationsCost = (isEditing ? newPreparations: []).reduce((acc, item) => acc + (item.totalCost || 0), 0);
         const ingredientsCost = Object.values(result.costsByCategory).reduce((acc, cost) => acc + cost, 0);
         const totalCost = ingredientsCost + preparationsCost + newPreparationsCost;
 
         result.totalRecipeCost = totalCost;
 
         if (currentRecipeData.type === 'Préparation') {
-            result.costPerPortion = totalCost / (currentRecipeData.productionQuantity || 1);
+            result.costPerPortion = totalCost / ((currentRecipeData as Preparation).productionQuantity || 1);
             return result;
         }
 
@@ -946,7 +955,19 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                                     {ing.name}
                                                 </TableCell>
                                                 <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
-                                                <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell>
+                                                <TableCell>
+                                                    <Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} >
+                                                        <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                                                        <SelectContent>
+                                                            <SelectItem value="g">g</SelectItem>
+                                                            <SelectItem value="kg">kg</SelectItem>
+                                                            <SelectItem value="ml">ml</SelectItem>
+                                                            <SelectItem value="l">l</SelectItem>
+                                                            <SelectItem value="pièce">pièce</SelectItem>
+                                                            <SelectItem value="botte">botte</SelectItem>
+                                                        </SelectContent>
+                                                    </Select>
+                                                </TableCell>
                                                 <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
                                                 <TableCell>
                                                     <AlertDialog>
@@ -1186,5 +1207,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
