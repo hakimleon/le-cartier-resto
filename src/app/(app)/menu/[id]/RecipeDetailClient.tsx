@@ -91,11 +91,10 @@ type NewRecipePreparation = {
 };
 
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (!fromUnit || !toUnit || typeof fromUnit !== 'string' || typeof toUnit !== 'string') {
-        return 1;
+    if (!fromUnit || !toUnit || typeof fromUnit !== 'string' || typeof toUnit !== 'string' || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) {
+      return 1;
     }
-    if (fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
-
+  
     const u = (unit: string) => unit.toLowerCase().trim();
     const factors: Record<string, number> = {
         'kg': 1000, 'g': 1, 'mg': 0.001,
@@ -121,10 +120,10 @@ const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: strin
 
     const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
     const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
-
+    
     const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
     const baseUnit = isLiquid ? 'ml' : 'g';
-
+    
     const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, baseUnit);
     
     const finalCost = quantityInGrams * netCostPerGram;
@@ -469,7 +468,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const processSuggestedIngredients = (suggested: GeneratedIngredient[], currentAllIngredients: Ingredient[]) => {
         const newIngs: NewRecipeIngredient[] = suggested.map(sugIng => {
             const existing = currentAllIngredients.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
-            const tempId = `new-ws-${Date.now()}-${Math.random()}`;
+            const tempId = 'new-ws-' + Date.now() + '-' + Math.random();
             let totalCost = 0;
             if (existing) {
                 totalCost = recomputeIngredientCost({quantity: sugIng.quantity, unit: sugIng.unit}, existing);
@@ -482,7 +481,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const processSuggestedPreparations = (suggested: {name: string, quantity: number, unit: string}[], currentAllPreps: Preparation[]) => {
         const newPreps: NewRecipePreparation[] = suggested.map(prep => {
             const existing = currentAllPreps.find(p => p.name.toLowerCase() === prep.name.toLowerCase());
-            const tempId = `new-prep-ws-${Date.now()}-${Math.random()}`;
+            const tempId = 'new-prep-ws-' + Date.now() + '-' + Math.random();
             return {
                 tempId,
                 childPreparationId: existing?.id,
@@ -505,9 +504,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             setNewIngredients([]);
             setNewPreparations([]);
             setWorkshopConcept(null);
-        } else {
-            fullDataRefresh().then(() => setIsEditing(true));
         }
+        setIsEditing(!isEditing);
     };
 
     const handleRecipeDataChange = (field: keyof Recipe | keyof Preparation, value: any) => {
@@ -759,7 +757,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         result.multiplierCoefficient = costPerPortionValue > 0 ? priceHTValue / costPerPortionValue : 0;
 
         return result;
-    }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations, isEditing]);
+    }, [isEditing, currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations]);
 
 
     const proteinCostBreakdown = useMemo(() => {
@@ -1110,7 +1108,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <div>
                                     <h4 className="font-semibold mb-1">Procédure brute</h4>
                                     <div className="text-xs text-muted-foreground p-2 border rounded-md max-h-48 overflow-y-auto">
-                                        <MarkdownRenderer text={`${workshopConcept.procedure_preparation}\n${workshopConcept.procedure_cuisson}\n${workshopConcept.procedure_service}`} />
+                                        <MarkdownRenderer text={[`${workshopConcept.procedure_preparation}`, `${workshopConcept.procedure_cuisson}`, `${workshopConcept.procedure_service}`].join('\n')} />
                                     </div>
                                 </div>
                             </CardContent>
@@ -1173,7 +1171,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 </div>
             </div>
 
-            {isEditing && (<div className="fixed bottom-6 right-6 z-50"><Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm shadow-lg"><Button onClick={handleSave} disabled={isSaving}><Save className="mr-2 h-4 w-4" />{isSaving ? "Sauvegarde..." : `Sauvegarder les modifications`}</Button></Card></div>)}
+            {isEditing && (<div className="fixed bottom-6 right-6 z-50"><Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm shadow-lg"><Button onClick={handleSave} disabled={isSaving}><Save className="mr-2 h-4 w-4" />{isSaving ? "Sauvegarde..." : 'Sauvegarder les modifications'}</Button></Card></div>)}
         </div>
     );
 }
