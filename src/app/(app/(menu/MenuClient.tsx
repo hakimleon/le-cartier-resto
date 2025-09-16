@@ -58,10 +58,8 @@ export default function MenuClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeCategories, setActiveCategories] = useState<string[]>([]);
-  const [inactiveCategories, setInactiveCategories] = useState<string[]>([]);
+  const [allCategories, setAllCategories] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("Tous");
-  const [selectedStatus, setSelectedStatus] = useState<'Actif' | 'Inactif'>('Actif');
   const { toast } = useToast();
 
   useEffect(() => {
@@ -83,29 +81,20 @@ export default function MenuClient() {
             
             setRecipes(recipesData);
             
-            const activeCategoryMap = new Map<string, string>();
-            const inactiveCategoryMap = new Map<string, string>();
+            const categoryMap = new Map<string, string>();
 
             recipesData.forEach(recipe => {
                 if (recipe.category) {
                     const normalizedCategory = recipe.category.toLowerCase().trim();
-                    if(recipe.status === 'Actif') {
-                        if (!activeCategoryMap.has(normalizedCategory)) {
-                            activeCategoryMap.set(normalizedCategory, recipe.category);
-                        }
-                    } else {
-                         if (!inactiveCategoryMap.has(normalizedCategory)) {
-                            inactiveCategoryMap.set(normalizedCategory, recipe.category);
-                        }
+                    if (!categoryMap.has(normalizedCategory)) {
+                        categoryMap.set(normalizedCategory, recipe.category);
                     }
                 }
             });
             
-            const uniqueActiveCategories = Array.from(activeCategoryMap.values());
-            const uniqueInactiveCategories = Array.from(inactiveCategoryMap.values());
+            const uniqueCategories = Array.from(categoryMap.values());
             
-            setActiveCategories(["Tous", ...sortCategories(uniqueActiveCategories)]);
-            setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
+            setAllCategories(["Tous", ...sortCategories(uniqueCategories)]);
             setError(null);
         } catch(e: any) {
             console.error("Error processing recipes snapshot: ", e);
@@ -125,10 +114,6 @@ export default function MenuClient() {
         }
     };
   }, []);
-  
-   useEffect(() => {
-    setSelectedCategory("Tous");
-  }, [selectedStatus]);
 
   const handleDelete = async (id: string, name: string) => {
       try {
@@ -156,12 +141,11 @@ export default function MenuClient() {
 
   const filteredRecipes = useMemo(() => {
     return recipes.filter(recipe => {
-        const statusMatch = recipe.status === selectedStatus;
         const searchTermMatch = searchTerm === '' || recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
         const categoryMatch = selectedCategory === 'Tous' || recipe.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim();
-        return statusMatch && searchTermMatch && categoryMatch;
+        return searchTermMatch && categoryMatch;
     });
-  }, [recipes, searchTerm, selectedCategory, selectedStatus]);
+  }, [recipes, searchTerm, selectedCategory]);
 
 
   const renderRecipeList = (recipeList: Recipe[]) => {
@@ -189,7 +173,7 @@ export default function MenuClient() {
           <RecipeCard 
             key={recipe.id} 
             recipe={recipe} 
-            allCategories={selectedStatus === 'Actif' ? activeCategories.filter(c => c !== "Tous") : inactiveCategories.filter(c => c !== "Tous")}
+            allCategories={allCategories.filter(c => c !== "Tous")}
             onDelete={() => handleDelete(recipe.id!, recipe.name)}
           />
         ))}
@@ -197,9 +181,6 @@ export default function MenuClient() {
     );
   };
   
-  const currentCategories = selectedStatus === 'Actif' ? activeCategories : inactiveCategories;
-
-
   if (error && !isFirebaseConfigured) {
     return (
         <Alert variant="destructive" className="max-w-2xl mx-auto">
@@ -229,7 +210,7 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} allCategories={activeCategories.filter(c => c !== "Tous")} onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <DishModal dish={null} allCategories={allCategories.filter(c => c !== "Tous")} onSuccess={() => { /* onSnapshot handles updates */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat
@@ -246,26 +227,16 @@ export default function MenuClient() {
         </Alert>
       )}
 
-      <div className="space-y-4 rounded-lg border p-4">
-        <div className="flex items-baseline gap-4">
-            <Label className="text-sm font-semibold">Statut :</Label>
-            <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')} className="w-full">
-                 <TabsList>
-                    <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
-                    <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
-                </TabsList>
-            </Tabs>
-        </div>
-      </div>
-
 
       <div className="pt-4">
-        <Tabs value={selectedStatus}>
-            <TabsContent value="Actif" forceMount>
-                {selectedStatus === 'Actif' && renderRecipeList(filteredRecipes)}
-            </TabsContent>
-            <TabsContent value="Inactif" forceMount>
-                {selectedStatus === 'Inactif' && renderRecipeList(filteredRecipes)}
+         <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
+            <TabsList>
+                {allCategories.map((category) => (
+                <TabsTrigger key={category} value={category}>{formatCategory(category)}</TabsTrigger>
+                ))}
+            </TabsList>
+            <TabsContent value={selectedCategory} className="pt-4">
+                {renderRecipeList(filteredRecipes)}
             </TabsContent>
         </Tabs>
       </div>
