@@ -53,6 +53,7 @@ export type FullRecipeIngredient = {
     name: string;
     quantity: number;
     unit: string;
+    category: string;
     totalCost: number;
 };
 
@@ -62,6 +63,7 @@ type NewRecipeIngredient = {
     name: string; // Name suggested by AI or entered by user
     quantity: number;
     unit: string;
+    category: string;
     totalCost: number;
 };
 
@@ -451,7 +453,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
         if (ingredientData) {
             const totalCost = recomputeIngredientCost(recipeIngredientData, ingredientData);
-            return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, totalCost };
+            return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, category: ingredientData.category, totalCost };
         }
         return null;
     }).filter(Boolean) as FullRecipeIngredient[];
@@ -498,7 +500,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 const newIngs: NewRecipeIngredient[] = (concept.ingredients || []).map(sugIng => {
                     const existing = ingredientsList.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
                     let totalCost = existing ? recomputeIngredientCost({ quantity: sugIng.quantity, unit: sugIng.unit }, existing) : 0;
-                    return { tempId: `new-ws-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost };
+                    return { tempId: `new-ws-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
                 });
                 setNewIngredients(newIngs);
                 
@@ -562,6 +564,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
           if (selectedIngredient) {
             if (field === 'ingredientId') {
               updatedIng.name = selectedIngredient.name;
+              updatedIng.category = selectedIngredient.category;
             }
             updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
           } else if(field === 'ingredientId') {
@@ -701,8 +704,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   }, [allIngredients]);
 
   const currentRecipeData = isEditing ? editableRecipe : recipe;
-  const currentIngredientsData = isEditing ? editableIngredients : ingredients;
-  const currentPreparationsData = isEditing ? editablePreparations : preparations;
   
   const { totalRecipeCost, costPerPortion, } = useMemo(() => {
     if (!currentRecipeData) { return { totalRecipeCost: 0, costPerPortion: 0 }; }
@@ -759,7 +760,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
              <Card>
-                <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0 }])}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Ingrédient</Button>}</CardTitle><CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription></CardHeader>
+                <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, category: '' }])}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Ingrédient</Button>}</CardTitle><CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription></CardHeader>
                 <CardContent>
                     <Table>
                         <TableHeader><TableRow><TableHead className="w-[35%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
@@ -786,7 +787,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     handleRemoveNewIngredient={handleRemoveNewIngredient}
                                 />
                             ))}
-                            {currentIngredientsData.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
+                            {ingredients.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -815,7 +816,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     handleRemoveNewPreparation={handleRemoveNewPreparation}
                                 />
                             ))}
-                            {currentPreparationsData.length === 0 && newPreparations.length === 0 && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
+                            {preparations.length === 0 && newPreparations.length === 0 && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
                         </TableBody>
                     </Table>
                 </CardContent>
@@ -949,5 +950,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
