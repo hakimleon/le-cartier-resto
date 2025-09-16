@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation, GeneratedIngredient, FullRecipeIngredient } from "@/lib/types";
+import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation, GeneratedIngredient, FullRecipeIngredient, preparationCategories } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -662,8 +663,15 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     if (!editableRecipe) return;
     setIsSaving(true);
     try {
-        const recipeDataToSave = {
-            name: editableRecipe.name, description: editableRecipe.description, difficulty: editableRecipe.difficulty, duration: editableRecipe.duration, procedure_preparation: editableRecipe.procedure_preparation, procedure_cuisson: editableRecipe.procedure_cuisson, procedure_service: editableRecipe.procedure_service,
+        const recipeDataToSave: Partial<Preparation> = {
+            name: editableRecipe.name,
+            description: editableRecipe.description,
+            category: editableRecipe.category,
+            difficulty: editableRecipe.difficulty,
+            duration: editableRecipe.duration,
+            procedure_preparation: editableRecipe.procedure_preparation,
+            procedure_cuisson: editableRecipe.procedure_cuisson,
+            procedure_service: editableRecipe.procedure_service,
             productionQuantity: (editableRecipe as Preparation).productionQuantity,
             productionUnit: (editableRecipe as Preparation).productionUnit,
             usageUnit: (editableRecipe as Preparation).usageUnit,
@@ -787,18 +795,30 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             <div className="bg-primary/10 text-primary rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
                 <NotebookText className="h-7 w-7" />
             </div>
-            <div className="w-full">
+            <div className="w-full space-y-2">
                  {isEditing ? (
-                    <Input
-                        value={editableRecipe?.name}
-                        onChange={(e) => handleRecipeDataChange('name', e.target.value)}
-                        className="text-2xl font-bold tracking-tight h-12 w-full"
-                    />
+                    <div className="space-y-2">
+                        <Input
+                            value={editableRecipe?.name}
+                            onChange={(e) => handleRecipeDataChange('name', e.target.value)}
+                            className="text-2xl font-bold tracking-tight h-12 w-full"
+                        />
+                        <Select value={editableRecipe?.category} onValueChange={(value) => handleRecipeDataChange('category', value)}>
+                            <SelectTrigger className="w-[280px]">
+                                <SelectValue placeholder="Choisir une catégorie..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {preparationCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </div>
                 ) : (
-                    <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
+                        <p className="text-muted-foreground">Préparation • {recipe.category}</p>
+                    </div>
                 )}
-                <p className="text-muted-foreground">Préparation</p>
-                 <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {recipe.duration} min</div>
                     <div className="flex items-center gap-1.5"><Soup className="h-4 w-4" /> {recipe.difficulty}</div>
                 </div>
@@ -1041,3 +1061,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
