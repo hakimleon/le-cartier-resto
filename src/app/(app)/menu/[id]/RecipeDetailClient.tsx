@@ -91,9 +91,8 @@ type NewRecipePreparation = {
 };
 
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    console.log(`[DEBUG] getConversionFactor: from '${fromUnit}' to '${toUnit}'`);
+    console.log(`[DEBUG] Conversion : from '${fromUnit}' to '${toUnit}'`);
     if (!fromUnit || !toUnit || typeof fromUnit !== 'string' || typeof toUnit !== 'string') {
-        console.warn(`[DEBUG] getConversionFactor: Invalid units, defaulting to 1. From: ${fromUnit}, To: ${toUnit}`);
         return 1;
     }
     if (fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
@@ -113,14 +112,11 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         return fromFactor / toFactor;
     }
     
-    console.warn(`[DEBUG] No conversion factor found between '${fromUnit}' and '${toUnit}'. Defaulting to 1.`);
     return 1;
 };
 
 const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData: Ingredient): number => {
-    console.log('[DEBUG] recomputeIngredientCost: Starting calculation for', ingredientData?.name);
     if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit || !ingredientLink.unit || !ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) {
-        console.warn('[DEBUG] recomputeIngredientCost: Missing data for cost calculation. Returning 0.', { ingredientLink, ingredientData });
         return 0;
     }
 
@@ -133,7 +129,6 @@ const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: strin
     const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, baseUnit);
     
     const finalCost = quantityInGrams * netCostPerGram;
-    console.log('[DEBUG] recomputeIngredientCost: Calculation complete.', { name: ingredientData.name, costPerGram, netCostPerGram, quantityInGrams, finalCost });
     return finalCost;
 };
 
@@ -723,21 +718,17 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         multiplierCoefficient,
         costsByCategory
     } = useMemo(() => {
-        console.log('[DEBUG] Main useMemo calculation triggered. isEditing:', isEditing);
         const result = {
             totalRecipeCost: 0, costPerPortion: 0, priceHT: 0, grossMargin: 0, grossMarginPercentage: 0, foodCostPercentage: 0, multiplierCoefficient: 0,
             costsByCategory: {} as Record<string, number>
         };
 
         if (!currentRecipeData) return result;
-
-        const allCurrentIngredients = isEditing ? [...editableIngredients, ...newIngredients] : ingredients;
-        const allCurrentPreparations = isEditing ? [...editablePreparations, ...newPreparations] : preparations;
-
-        console.log('[DEBUG] useMemo: Ingredients to sum', allCurrentIngredients);
-        console.log('[DEBUG] useMemo: Preparations to sum', allCurrentPreparations);
         
-        allCurrentIngredients.forEach(item => {
+        const ingredientsToSum = isEditing ? [...editableIngredients, ...newIngredients] : ingredients;
+        const prepsToSum = isEditing ? [...editablePreparations, ...newPreparations] : preparations;
+        
+        ingredientsToSum.forEach(item => {
             const category = item.category?.trim() || 'Non catégorisé';
             if (category) {
                 if (!result.costsByCategory[category]) {
@@ -747,11 +738,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             }
         });
 
-        const preparationsCost = allCurrentPreparations.reduce((acc, item) => acc + (item.totalCost || 0), 0);
+        const preparationsCost = prepsToSum.reduce((acc, item) => acc + (item.totalCost || 0), 0);
         const ingredientsCost = Object.values(result.costsByCategory).reduce((acc, cost) => acc + cost, 0);
         const totalCost = ingredientsCost + preparationsCost;
-
-        console.log('[DEBUG] useMemo: Calculated costs', { ingredientsCost, preparationsCost, totalCost });
 
         result.totalRecipeCost = totalCost;
 
@@ -773,7 +762,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         result.foodCostPercentage = priceHTValue > 0 ? (costPerPortionValue / priceHTValue) * 100 : 0;
         result.multiplierCoefficient = costPerPortionValue > 0 ? priceHTValue / costPerPortionValue : 0;
 
-        console.log('[DEBUG] useMemo: Final result', result);
         return result;
     }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations, isEditing]);
 
@@ -1205,3 +1193,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
