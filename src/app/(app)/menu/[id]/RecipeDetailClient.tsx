@@ -527,25 +527,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             setNewIngredients([]);
             setNewPreparations([]);
             setWorkshopConcept(null);
-        } else {
-            // Recalculate costs when entering edit mode
-            setEditableIngredients(current => current.map(ing => {
-                 const ingData = allIngredients.find(i => i.id === ing.id);
-                 if(ingData) {
-                     return {...ing, totalCost: recomputeIngredientCost(ing, ingData) };
-                 }
-                 return ing;
-            }));
-            setEditablePreparations(current => current.map(prep => {
-                const childPrepData = allPreparations.find(p => p.id === prep.childPreparationId);
-                const costPerProdUnit = preparationsCosts[prep.childPreparationId] || 0;
-                 if(childPrepData) {
-                    const conversionFactor = getConversionFactor(childPrepData.productionUnit, prep.unit);
-                    const costPerUseUnit = costPerProdUnit / conversionFactor;
-                    return {...prep, totalCost: (prep.quantity || 0) * costPerUseUnit, _costPerUnit: costPerProdUnit, _productionUnit: childPrepData.productionUnit };
-                 }
-                 return prep;
-            }));
         }
         setIsEditing(!isEditing);
     };
@@ -1217,5 +1198,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
