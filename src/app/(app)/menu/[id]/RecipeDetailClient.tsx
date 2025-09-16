@@ -481,15 +481,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setNewIngredients(newIngs);
     };
 
-    const processSuggestedPreparations = (suggested: any[], currentAllPreps: Preparation[]) => {
+    const processSuggestedPreparations = (suggested: {name: string, quantity: number, unit: string}[], currentAllPreps: Preparation[]) => {
         const newPreps: NewRecipePreparation[] = suggested.map(prep => {
-            const name = typeof prep === 'string' ? prep : prep.name;
-            const existing = currentAllPreps.find(p => p.name.toLowerCase() === name.toLowerCase());
+            const existing = currentAllPreps.find(p => p.name.toLowerCase() === prep.name.toLowerCase());
             const tempId = `new-prep-ws-${Date.now()}-${Math.random()}`;
             return {
                 tempId,
                 childPreparationId: existing?.id,
-                name: existing?.name || name,
+                name: existing?.name || prep.name,
                 quantity: prep.quantity || 1, 
                 unit: prep.unit || existing?.usageUnit || existing?.productionUnit || 'g',
                 totalCost: 0, 
@@ -501,9 +500,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     }
 
     const handleToggleEditMode = () => {
-        setIsEditing(!isEditing);
         if (isEditing) {
-            // If cancelling edit
+            // Reset state when canceling
             setEditableRecipe(JSON.parse(JSON.stringify(recipe)));
             setEditableIngredients(JSON.parse(JSON.stringify(ingredients)));
             setEditablePreparations(JSON.parse(JSON.stringify(preparations)));
@@ -511,6 +509,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             setNewPreparations([]);
             setWorkshopConcept(null);
         }
+        setIsEditing(!isEditing);
     };
 
     const handleRecipeDataChange = (field: keyof Recipe | keyof Preparation, value: any) => {
