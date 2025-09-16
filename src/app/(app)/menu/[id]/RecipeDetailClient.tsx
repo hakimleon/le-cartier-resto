@@ -180,6 +180,7 @@ const NewIngredientRow = ({
     handleSubstituteIngredient: (id: string, isNew: boolean) => void;
 }) => {
     const [openCombobox, setOpenCombobox] = useState(false);
+    const [searchValue, setSearchValue] = useState("");
 
     return (
         <TableRow>
@@ -217,9 +218,23 @@ const NewIngredientRow = ({
                         </PopoverTrigger>
                         <PopoverContent className="w-[300px] p-0">
                             <Command>
-                                <CommandInput placeholder="Rechercher un ingrédient..." />
+                                <CommandInput 
+                                    placeholder="Rechercher ou taper un nom..."
+                                    value={searchValue}
+                                    onValueChange={(search) => {
+                                        setSearchValue(search);
+                                        // Allow free text entry
+                                        handleNewIngredientChange(newIng.tempId, 'name', search);
+                                        handleNewIngredientChange(newIng.tempId, 'ingredientId', undefined);
+                                    }}
+                                />
                                 <CommandList>
-                                    <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                    <CommandEmpty>
+                                        <div className="p-4 text-sm">
+                                            <p>Aucun ingrédient trouvé pour "{searchValue}".</p>
+                                            <p className="text-xs text-muted-foreground">L'ingrédient sera ajouté comme "non lié".</p>
+                                        </div>
+                                    </CommandEmpty>
                                     <CommandGroup>
                                         {sortedIngredients.map((ing) => (
                                             ing.id ?
@@ -230,6 +245,7 @@ const NewIngredientRow = ({
                                                         const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
                                                         if (selected) {
                                                             handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!);
+                                                            setSearchValue(selected.name); // Update search value on selection
                                                         }
                                                         setOpenCombobox(false);
                                                     }}
@@ -676,6 +692,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         updatedIng.category = selectedIngredient.category;
                     }
                     updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
+                } else if (field === 'ingredientId') {
+                  updatedIng.ingredientId = undefined; // unlink if not found
+                  updatedIng.category = '';
+                  updatedIng.totalCost = 0;
                 }
                 return updatedIng;
             }
