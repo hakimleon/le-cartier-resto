@@ -237,7 +237,6 @@ const NewIngredientRow = ({
                         <SelectItem value="ml">ml</SelectItem>
                         <SelectItem value="l">l</SelectItem>
                         <SelectItem value="pièce">pièce</SelectItem>
-                        <SelectItem value="botte">botte</SelectItem>
                     </SelectContent>
                 </Select>
             </TableCell>
@@ -508,6 +507,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             setNewIngredients([]);
             setNewPreparations([]);
             setWorkshopConcept(null);
+        } else {
+             // Ensure data is fresh before entering edit mode
+            fullDataRefresh();
         }
         setIsEditing(!isEditing);
     };
@@ -949,7 +951,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                                             <SelectItem value="ml">ml</SelectItem>
                                                             <SelectItem value="l">l</SelectItem>
                                                             <SelectItem value="pièce">pièce</SelectItem>
-                                                            <SelectItem value="botte">botte</SelectItem>
                                                         </SelectContent>
                                                     </Select>
                                                 </TableCell>
