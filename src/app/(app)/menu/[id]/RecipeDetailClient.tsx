@@ -91,7 +91,6 @@ type NewRecipePreparation = {
 };
 
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    console.log(`[DEBUG] Conversion : from '${fromUnit}' to '${toUnit}'`);
     if (!fromUnit || !toUnit || typeof fromUnit !== 'string' || typeof toUnit !== 'string') {
         return 1;
     }
@@ -500,7 +499,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
     const handleToggleEditMode = () => {
         if (isEditing) {
-            // Reset state when canceling
             setEditableRecipe(JSON.parse(JSON.stringify(recipe)));
             setEditableIngredients(JSON.parse(JSON.stringify(ingredients)));
             setEditablePreparations(JSON.parse(JSON.stringify(preparations)));
@@ -508,10 +506,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             setNewPreparations([]);
             setWorkshopConcept(null);
         } else {
-             // Ensure data is fresh before entering edit mode
-            fullDataRefresh();
+            fullDataRefresh().then(() => setIsEditing(true));
         }
-        setIsEditing(!isEditing);
     };
 
     const handleRecipeDataChange = (field: keyof Recipe | keyof Preparation, value: any) => {
@@ -1193,5 +1189,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
