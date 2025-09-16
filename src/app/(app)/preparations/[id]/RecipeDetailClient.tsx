@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -80,61 +79,36 @@ type NewRecipePreparation = {
 };
 
 const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (!fromUnit || !toUnit || typeof fromUnit !== 'string' || typeof toUnit !== 'string') {
-        return 1;
-    }
-    if (fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
+    if (!fromUnit || !toUnit || fromUnit.toLowerCase() === toUnit.toLowerCase()) return 1;
 
     const u = (unit: string) => unit.toLowerCase().trim();
     const factors: Record<string, number> = {
         'kg': 1000, 'g': 1, 'mg': 0.001,
         'l': 1000, 'ml': 1,
         'litre': 1000, 'litres': 1000,
-        'pièce': 1, 'piece': 1, 'botte': 1,
+        'pièce': 1, 'piece': 1,
     };
     
     const fromFactor = factors[u(fromUnit)];
     const toFactor = factors[u(toUnit)];
 
     if (fromFactor !== undefined && toFactor !== undefined) {
-        const weightUnits = ['kg', 'g', 'mg'];
-        const volumeUnits = ['l', 'ml', 'litre', 'litres'];
-        const unitUnits = ['pièce', 'piece', 'botte'];
-
-        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
-        const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
-
-        if (fromType === toType) {
-            return fromFactor / toFactor;
-        }
+        return fromFactor / toFactor;
     }
     
-    console.warn(`Incompatible unit conversion from '${fromUnit}' to '${toUnit}'. Defaulting to 1.`);
+    console.warn(`No conversion factor found between '${fromUnit}' and '${toUnit}'. Defaulting to 1.`);
     return 1;
 };
 
-const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData: Ingredient): number => {
-    if (!ingredientLink.unit || !ingredientData.purchaseUnit) {
-        console.warn("recomputeIngredientCost: Missing unit information for cost calculation. Returning 0.", { ingredientLink, ingredientData });
-        return 0;
-    }
-
+const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
     if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams) {
         return 0;
-    }
-
-    const purchaseUnitLower = ingredientData.purchaseUnit.toLowerCase();
-    const unitUseLower = ingredientLink.unit.toLowerCase();
-
-    // Special case for "pièce" or "botte" where the price is for the unit itself.
-    if (purchaseUnitLower === unitUseLower && (purchaseUnitLower === 'pièce' || purchaseUnitLower === 'botte')) {
-        return ingredientLink.quantity * ingredientData.purchasePrice;
     }
 
     const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
     const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
 
-    const isLiquid = ['l', 'ml', 'litres'].includes(purchaseUnitLower);
+    const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
     const targetUnit = isLiquid ? 'ml' : 'g';
     
     const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
@@ -230,7 +204,6 @@ const NewIngredientRow = ({
                         <SelectItem value="ml">ml</SelectItem>
                         <SelectItem value="l">l</SelectItem>
                         <SelectItem value="pièce">pièce</SelectItem>
-                        <SelectItem value="botte">botte</SelectItem>
                     </SelectContent>
                 </Select>
             </TableCell>
@@ -806,7 +779,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         {ing.name}
                                     </TableCell>
                                     <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20"/></TableCell>
-                                    <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem><SelectItem value="botte">botte</SelectItem></SelectContent></Select></TableCell>
+                                    <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell>
                                     <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
                                     <TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell>
                                 </TableRow>
@@ -985,7 +958,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
-
-    
