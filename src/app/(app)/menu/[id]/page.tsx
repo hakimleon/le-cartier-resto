@@ -5,8 +5,8 @@ import RecipeDetailClient from './RecipeDetailClient';
 export default async function RecipeDetailPage({ params }: { params: { id: string } }) {
   
   return (
-    <div className="container mx-auto py-10">
-        <RecipeDetailClient recipeId={params.id} />
-    </div>
+    <RecipeDetailClient recipeId={params.id} />
   );
 }
+
+    
