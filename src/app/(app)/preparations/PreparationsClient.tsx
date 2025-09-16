@@ -248,9 +248,9 @@ export default function PreparationsClient() {
       )}
 
       <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
-        <TabsList className="h-auto justify-start">
+        <TabsList className="h-auto justify-start flex-wrap">
             {allPreparationCategories.map((category) => (
-                <TabsTrigger key={category} value={category} className="text-xs whitespace-normal sm:whitespace-nowrap data-[state=active]:shadow-lg">{category}</TabsTrigger>
+                <TabsTrigger key={category} value={category} className="text-sm whitespace-normal sm:whitespace-nowrap data-[state=active]:shadow-lg">{category}</TabsTrigger>
             ))}
         </TabsList>
         <TabsContent value={selectedCategory}>
