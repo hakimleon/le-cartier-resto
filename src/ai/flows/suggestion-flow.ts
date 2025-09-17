@@ -80,7 +80,7 @@ Si c'est une préparation, estime une quantité produite (productionQuantity) et
 Ne fournis QUE la réponse au format JSON demandé.
 `;
   const { output } = await ai.generate({
-    model: 'googleai/gemini-2.5-flash',
+    model: 'googleai/gemini-pro',
     prompt,
     output: {
       format: 'json',
@@ -146,14 +146,14 @@ Fournis uniquement la réponse au format JSON demandé. Ne crée pas de plats fi
 
 // --- Flow pour les alternatives d'ingrédients ---
 
-const IngredientAlternativeInputSchema = z.object({
+export const IngredientAlternativeInputSchema = z.object({
   ingredientName: z.string().describe("L'ingrédient à remplacer."),
   recipeContext: z.string().describe("Le nom de la recette dans laquelle l'ingrédient est utilisé."),
   constraints: z.string().optional().describe("Contraintes à respecter (ex: 'sans alcool', 'végétarien', 'moins cher').")
 });
 export type IngredientAlternativeInput = z.infer<typeof IngredientAlternativeInputSchema>;
 
-const IngredientAlternativeOutputSchema = z.object({
+export const IngredientAlternativeOutputSchema = z.object({
   suggestions: z.array(z.object({
     name: z.string().describe("Le nom de l'ingrédient de remplacement."),
     justification: z.string().describe("Brève explication du pourquoi ce substitut fonctionne (goût, texture, etc.).")
@@ -182,5 +182,3 @@ Réponds uniquement au format JSON demandé.`;
 
     return output!;
 }
-
-    
