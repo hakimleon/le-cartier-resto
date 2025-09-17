@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, Weight, BookCopy, ChevronsRight } from "lucide-react";
+import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, Weight, BookCopy, ChevronsRight, Braces } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
@@ -18,6 +18,7 @@ import { createDishFromWorkshop } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
@@ -25,6 +26,7 @@ const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
 export default function WorkshopClient() {
     const [isLoading, setIsLoading] = useState(false);
     const [generatedConcept, setGeneratedConcept] = useState<RecipeConceptOutput | null>(null);
+    const [rawGeneratedJson, setRawGeneratedJson] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
     const router = useRouter();
@@ -37,6 +39,7 @@ export default function WorkshopClient() {
     
     const handleSubmit = async (instructions: RecipeConceptInput) => {
         setIsLoading(true);
+        setRawGeneratedJson(null);
         
         if (!instructions.refinementHistory || instructions.refinementHistory.length === 0) {
             setGeneratedConcept(null);
@@ -47,6 +50,8 @@ export default function WorkshopClient() {
         try {
             const result = await generateRecipeConcept(instructions);
             setGeneratedConcept(result);
+            setRawGeneratedJson(JSON.stringify(result, null, 2));
+
             if (refinementFormRef.current) {
                 refinementFormRef.current.reset();
             }
@@ -124,6 +129,7 @@ export default function WorkshopClient() {
     
     const handleNewRecipe = () => {
         setGeneratedConcept(null);
+        setRawGeneratedJson(null);
         setContext({ type: 'Plat' });
         setRefinementHistory([]);
         if (initialFormRef.current) initialFormRef.current.reset();
@@ -216,7 +222,7 @@ export default function WorkshopClient() {
                     )}
 
                 </div>
-                <div className="lg:col-span-2">
+                <div className="lg:col-span-2 space-y-4">
                     <Card className="min-h-[500px] sticky top-4">
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
@@ -310,8 +316,33 @@ export default function WorkshopClient() {
                             )}
                         </CardContent>
                     </Card>
+
+                    {rawGeneratedJson && (
+                        <Accordion type="single" collapsible>
+                            <AccordionItem value="item-1">
+                                <AccordionTrigger>
+                                     <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+                                        <Braces className="h-4 w-4" />
+                                        Voir la structure de données (JSON)
+                                    </div>
+                                </AccordionTrigger>
+                                <AccordionContent>
+                                    <Card className="mt-2">
+                                        <CardContent className="p-4">
+                                            <pre className="text-xs whitespace-pre-wrap break-all bg-muted p-4 rounded-md overflow-x-auto">
+                                                <code>{rawGeneratedJson}</code>
+                                            </pre>
+                                        </CardContent>
+                                    </Card>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                    )}
+
                 </div>
             </div>
         </div>
     );
 }
+
+    
