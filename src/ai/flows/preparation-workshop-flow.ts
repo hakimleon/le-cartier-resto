@@ -76,22 +76,11 @@ Vous devez obligatoirement utiliser les préparations suivantes si elles corresp
 
 2.  **PAS D'AUTO-RÉFÉRENCE** : Vous ne devez JAMAIS inclure le nom de la recette en cours de création (\`{{{name}}}\`) dans la liste \`subRecipes\`. Une recette ne peut pas être son propre ingrédient. C'est une erreur logique capitale.
 
----
+3.  **MISSION PRINCIPALE - RÈGLE IMPÉRATIVE** : Pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate"), vous devez **OBLIGATOIREMENT** vérifier s'il existe dans la "LISTE DES PRÉPARATIONS EXISTANTES".
+    *   **SI OUI**, et si ce n'est pas le nom de la recette actuelle : vous DEVEZ l'ajouter à la liste \`subRecipes\` et NE PAS mettre ses ingrédients dans la liste \`ingredients\`. C'est une obligation, pas une suggestion.
+    *   **SI NON** : vous DEVEZ lister ses ingrédients bruts dans \`ingredients\`.
 
-## MISSION PRINCIPALE : UTILISER LES PRÉPARATIONS DE LA LISTE
-Pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate") :
-
-1.  **VÉRIFICATION** : Regardez si un nom dans la "LISTE DES PRÉPARATIONS EXISTANTES" correspond.
-2.  **ANALYSE**
-    *   **Si un nom correspond ET n'est pas le nom de la recette actuelle** :
-        *   Utiliser le nom exact de la liste dans \`subRecipes\`.
-        *   Ne PAS inclure ses ingrédients dans \`ingredients\`.
-        *   Ne PAS inclure ses étapes dans les procédures.
-    *   **Si AUCUN nom ne correspond OU si c'est la recette actuelle** :
-        *   Inclure les ingrédients dans la liste \`ingredients\`.
-        *   Inclure les étapes dans la procédure.
-
-⚠️ Règle stricte : NE JAMAIS INVENTER de sous-recette qui n'est pas dans la liste fournie.
+⚠️ Règle stricte : NE JAMAIS INVENTER de sous-recette qui n'est pas dans la liste fournie. NE JAMAIS lister une préparation existante comme un ingrédient simple.
 
 ---
 
@@ -125,8 +114,9 @@ CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles
 ## ÉTAPE DE CONTRÔLE AVANT LA SORTIE JSON
 Avant de produire la réponse finale, vous DEVEZ :
 1.  Vérifier que le nom de la recette actuelle (\`{{{name}}}\`) n'est PAS dans \`subRecipes\`.
-2.  Vérifier qu'aucun ingrédient listé dans \`subRecipes\` n’apparaît dans \`ingredients\`.
-3.  Vérifier qu’aucun ingrédient alcoolisé n’est présent.
+2.  Pour chaque nom dans \`subRecipes\`, vérifier qu'il est bien présent dans la "LISTE DES PRÉPARATIONS EXISTANTES" fournie au début.
+3.  Vérifier qu'aucun nom présent dans \`subRecipes\` n'a ses ingrédients listés dans \`ingredients\`. Le "fond de veau", s'il est une préparation, ne doit pas avoir "os de veau" dans la liste d'ingrédients de la recette actuelle.
+4.  Vérifier qu’aucun ingrédient alcoolisé n’est présent.
 
 ⚠️ Si une de ces conditions n’est pas respectée, la sortie est INVALIDE. Vous devez corriger et régénérer jusqu’à obtenir un JSON 100% conforme.
 
