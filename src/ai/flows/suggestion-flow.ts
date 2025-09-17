@@ -162,9 +162,9 @@ export const IngredientAlternativeOutputSchema = z.object({
 export type IngredientAlternativeOutput = z.infer<typeof IngredientAlternativeOutputSchema>;
 
 
-export const generateIngredientAlternative = ai.defineFlow(
+const generateIngredientAlternativeFlow = ai.defineFlow(
   {
-    name: 'generateIngredientAlternative',
+    name: 'generateIngredientAlternativeFlow',
     inputSchema: IngredientAlternativeInputSchema,
     outputSchema: IngredientAlternativeOutputSchema
   },
@@ -190,3 +190,7 @@ Réponds uniquement au format JSON demandé.`;
     return output!;
   }
 );
+
+export async function generateIngredientAlternative(input: IngredientAlternativeInput): Promise<IngredientAlternativeOutput> {
+  return await generateIngredientAlternativeFlow(input);
+}
