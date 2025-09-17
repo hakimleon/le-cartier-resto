@@ -8,7 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { v2 as cloudinary } from 'cloudinary';
-import { searchForMatchingPreparationsTool } from '../tools/recipe-tools';
+import { getAllPreparationNames } from '../tools/recipe-tools';
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -63,104 +63,107 @@ export type RecipeConceptOutput = z.infer<typeof RecipeConceptOutputSchema>;
 
 const RecipeTextConceptSchema = RecipeConceptOutputSchema.omit({ imageUrl: true });
 
+
 const recipeGenPrompt = ai.definePrompt({
     name: 'recipeWorkshopPrompt',
-    input: { schema: RecipeConceptInputSchema },
+    input: { schema: RecipeConceptInputSchema.extend({ allPreparationNames: z.array(z.string()) }) },
     output: { schema: RecipeTextConceptSchema },
-    tools: [searchForMatchingPreparationsTool],
-    model: 'googleai/gemini-pro',
+    model: 'googleai/gemini-1.5-flash',
     prompt: `Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
 ---
 
-## RÈGLE D'OR ABSOLUE : ZÉRO ALCOOL
-Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool.  
-Cela inclut, sans s'y limiter : vin, bière, cognac, brandy, whisky, rhum, liqueur, etc.
-
-- Si une recette classique en contient, vous DEVEZ le remplacer par une alternative sans alcool (bouillon, jus de raisin, jus de pomme, vinaigre doux, etc.) ou l’omettre.  
-- ⚠️ Si un ingrédient alcoolisé est présent dans la recette générée, la sortie est considérée comme INVALIDE.  
-Vous DEVEZ régénérer une version conforme AVANT de fournir la réponse finale.
-
-### SUBSTITUTIONS AUTOMATIQUES (obligatoires)
-- Cognac → Jus de raisin blanc réduit OU bouillon corsé  
-- Vin rouge → Jus de raisin rouge OU fond brun réduit  
-- Vin blanc → Jus de pomme OU bouillon de volaille  
-- Bière → Bouillon + vinaigre doux  
+## LISTE DES PRÉPARATIONS EXISTANTES À UTILISER
+Vous devez obligatoirement utiliser les préparations suivantes si elles correspondent à un composant de la recette :
+{{#each allPreparationNames}}
+- {{this}}
+{{/each}}
 
 ---
 
-## MISSION PRINCIPALE : UTILISER LES SOUS-RECETTES EXISTANTES
-Pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate", "purée de pois") :
+## RÈGLE D'OR ABSOLUE : ZÉRO ALCOOL
+Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool.
+Cela inclut, sans s'y limiter : vin, bière, cognac, brandy, whisky, rhum, liqueur, etc.
+- Si une recette classique en contient, vous DEVEZ le remplacer par une alternative sans alcool (bouillon, jus de raisin, jus de pomme, vinaigre doux, etc.) ou l’omettre.
+- ⚠️ Si un ingrédient alcoolisé est présent dans la recette générée, la sortie est considérée comme INVALIDE.
 
-1. **APPEL OBLIGATOIRE DE L'OUTIL**  
-   Pour CHAQUE composant, vous DEVEZ appeler l'outil \`searchForMatchingPreparations\` avec un terme de recherche pertinent.
+### SUBSTITUTIONS AUTOMATIQUES (obligatoires)
+- Cognac → Jus de raisin blanc réduit OU bouillon corsé
+- Vin rouge → Jus de raisin rouge OU fond brun réduit
+- Vin blanc → Jus de pomme OU bouillon de volaille
+- Bière → Bouillon + vinaigre doux
 
-2. **ANALYSE DU RÉSULTAT**  
-   - **Si l'outil retourne un ou plusieurs noms correspondants** (ex: "Fond brun de veau" pour "fond de veau") :  
-     * Utiliser le nom exact retourné dans \`subRecipes\`.  
-     * Ne PAS inclure ce composant dans \`ingredients\`.  
-     * Ne PAS inclure ses étapes dans les champs \`procedure_...\`.  
-     * Si la recette mentionne un terme proche, remplacez-le par le nom exact de la base.  
+---
 
-   - **Si l'outil ne retourne AUCUN résultat** :  
-     * Inclure les ingrédients dans la liste \`ingredients\`.  
-     * Inclure ses étapes dans la procédure.  
+## MISSION PRINCIPALE : UTILISER LES PRÉPARATIONS DE LA LISTE
+Pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate") :
 
-⚠️ Règle stricte : NE JAMAIS INVENTER de sous-recette.  
+1. **VÉRIFICATION** : Regardez si un nom dans la "LISTE DES PRÉPARATIONS EXISTANTES À UTILISER" correspond.
+
+2. **ANALYSE**
+   - **Si un nom correspond** (ex: "Fond brun de veau" pour "fond de veau") :
+     * Utiliser le nom exact de la liste dans \`subRecipes\`.
+     * Ne PAS inclure ce composant dans \`ingredients\`.
+     * Ne PAS inclure ses étapes dans les champs \`procedure_...\`.
+   - **Si AUCUN nom ne correspond** :
+     * Inclure les ingrédients dans la liste \`ingredients\`.
+     * Inclure les étapes dans la procédure.
+
+⚠️ Règle stricte : NE JAMAIS INVENTER de sous-recette qui n'est pas dans la liste fournie.
 
 ---
 
 ## RÈGLES POUR LES INGRÉDIENTS
-1. **Nom simple** : le nom doit être simple et générique ("Oeuf", "Farine", "Citron").  
-   - Exceptions autorisées pour précision : "Jaune d’œuf", "Blanc d’œuf", "Filet de poisson".  
-2. **Unités logiques** : "g", "kg", "ml", "l", "pièce".  
+1. **Nom simple** : le nom doit être simple et générique ("Oeuf", "Farine", "Citron").
+   - Exceptions autorisées pour précision : "Jaune d’œuf", "Blanc d’œuf", "Filet de poisson".
+2. **Unités logiques** : "g", "kg", "ml", "l", "pièce".
 
 ---
 
 {{#if rawRecipe}}
-PRIORITÉ : Reformatez la recette brute suivante en respectant TOUTES les règles.  
----  
-{{{rawRecipe}}}  
----  
+PRIORITÉ : Reformatez la recette brute suivante en respectant TOUTES les règles.
+---
+{{{rawRecipe}}}
+---
 {{else}}
-CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles.  
-- Type de Fiche: {{{type}}}  
-- Nom/Idée : {{{name}}}  
-- Description: {{{description}}}  
-- Ingrédients principaux : {{{mainIngredients}}}  
-- À exclure : {{{excludedIngredients}}}  
-- Recommandations : {{{recommendations}}}  
+CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles.
+- Type de Fiche: {{{type}}}
+- Nom/Idée : {{{name}}}
+- Description: {{{description}}}
+- Ingrédients principaux : {{{mainIngredients}}}
+- À exclure : {{{excludedIngredients}}}
+- Recommandations : {{{recommendations}}}
 {{/if}}
 
 {{#if refinementHistory}}
-- HISTORIQUE DES DEMANDES (à respecter) :  
-{{#each refinementHistory}}  
-    - "{{{this}}}"  
-{{/each}}  
+- HISTORIQUE DES DEMANDES (à respecter) :
+{{#each refinementHistory}}
+    - "{{{this}}}"
+{{/each}}
 {{/if}}
 
 {{#if currentRefinement}}
-- NOUVELLE INSTRUCTION (à appliquer par-dessus tout) : "{{{currentRefinement}}}"  
+- NOUVELLE INSTRUCTION (à appliquer par-dessus tout) : "{{{currentRefinement}}}"
 {{/if}}
 
 ---
 
 ## ÉTAPE DE CONTRÔLE AVANT LA SORTIE JSON
-Avant de produire la réponse finale, vous DEVEZ :  
-1. Vérifier qu’aucun ingrédient listé dans \`subRecipes\` n’apparaît dans \`ingredients\`.  
-2. Vérifier qu’aucun ingrédient alcoolisé n’est présent.  
-   - Si trouvé : supprimer et appliquer une substitution automatique.  
-3. Vérifier que la liste des ingrédients respecte les règles (noms simples, unités logiques, exceptions autorisées).  
+Avant de produire la réponse finale, vous DEVEZ :
+1. Vérifier qu’aucun ingrédient listé dans \`subRecipes\` n’apparaît dans \`ingredients\`.
+2. Vérifier qu’aucun ingrédient alcoolisé n’est présent.
+   - Si trouvé : supprimer et appliquer une substitution automatique.
+3. Vérifier que la liste des ingrédients respecte les règles (noms simples, unités logiques, exceptions autorisées).
 
-⚠️ Si une de ces conditions n’est pas respectée, la sortie est INVALIDE.  
+⚠️ Si une de ces conditions n’est pas respectée, la sortie est INVALIDE.
 Vous devez corriger et régénérer jusqu’à obtenir un JSON 100% conforme.
 
 ---
 
 ## INSTRUCTIONS DE FORMATAGE
-- **Pour un Plat :** remplir \`portions\`, \`category\`, \`commercialArgument\`.  
-- **Pour une Préparation :** remplir \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.  
-- **Sortie :** fournir une réponse au format JSON strict.  
+- **Pour un Plat :** remplir \`portions\`, \`category\`, \`commercialArgument\`.
+- **Pour une Préparation :** remplir \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.
+- **Sortie :** fournir une réponse au format JSON strict.
 - Ne laissez aucun champ vide : utilisez \`[]\` ou \`""\` si nécessaire.
 `,
 });
@@ -172,18 +175,25 @@ export const generateRecipeConceptFlow = ai.defineFlow(
         outputSchema: RecipeConceptOutputSchema,
     },
     async (input) => {
-        const inputWithCacheBuster = { ...input, cacheBuster: Math.random() };
-        
-        // 1. Générer le concept textuel de la recette
-        const { output: recipeConcept } = await recipeGenPrompt(inputWithCacheBuster);
+        // 1. Get all existing preparation names to inject them into the prompt
+        const allPreparationNames = await getAllPreparationNames();
+
+        const inputWithContext = {
+            ...input,
+            allPreparationNames,
+            cacheBuster: Math.random() // Add cache buster here
+        };
+
+        // 2. Generate the textual concept of the recipe
+        const { output: recipeConcept } = await recipeGenPrompt(inputWithContext);
 
         if (!recipeConcept) {
             throw new Error("La génération du concept de la recette a échoué.");
         }
-        
+
         let finalOutput: RecipeConceptOutput = { ...recipeConcept, imageUrl: undefined };
 
-        // 2. Si c'est un plat, générer une image
+        // 3. If it's a dish, generate an image
         if (input.type === 'Plat') {
             let imageUrl = `https://placehold.co/1024x768/fafafa/7d7d7d.png?text=${encodeURIComponent(recipeConcept.name)}`;
 
@@ -194,7 +204,7 @@ export const generateRecipeConceptFlow = ai.defineFlow(
                     model: 'googleai/imagen-4.0-fast-generate-001',
                     prompt: imagePrompt,
                 });
-                
+
                 if (media?.url) {
                     const uploadResult = await cloudinary.uploader.upload(media.url, {
                         folder: "le-singulier-ai-generated",
@@ -212,7 +222,7 @@ export const generateRecipeConceptFlow = ai.defineFlow(
     }
 );
 
-// Fonction exportée principale
+// Main exported function
 export async function generateRecipeConcept(input: RecipeConceptInput): Promise<RecipeConceptOutput> {
     return generateRecipeConceptFlow(input);
 }
