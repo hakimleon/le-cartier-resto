@@ -8,7 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { v2 as cloudinary } from 'cloudinary';
-import { getAvailablePreparationsTool } from '../tools/recipe-tools';
+import { searchForMatchingPreparationsTool } from '../tools/recipe-tools';
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -70,19 +70,17 @@ const recipeGenPrompt = ai.definePrompt({
     name: 'recipeWorkshopPrompt',
     input: { schema: RecipeConceptInputSchema },
     output: { schema: RecipeTextConceptSchema },
-    tools: [getAvailablePreparationsTool],
+    tools: [searchForMatchingPreparationsTool],
     model: 'googleai/gemini-2.5-flash',
     prompt: `
         Vous êtes un chef expert créant une fiche technique pour un restaurant. Le type de fiche est : {{{type}}}.
 
         **LOGIQUE DE FONCTIONNEMENT CRUCIALE :**
-        1.  **Vérifiez les préparations existantes :** Appelez OBLIGATOIREMENT l'outil \`getAvailablePreparations\` pour obtenir la liste des sous-recettes disponibles.
-        2.  **Utilisez les préparations existantes (CORRESPONDANCE INTELLIGENTE) :**
-            - Si un composant de la recette ressemble fortement à une préparation existante (ex: "fond de veau" vs "Fond brun de veau", "béchamel" vs "Sauce Béchamel"), vous DEVEZ l'inclure dans le champ \`subRecipes\` en utilisant le nom exact de la préparation retournée par l'outil.
-            - Ne mettez JAMAIS les ingrédients d'une préparation existante dans la liste \`ingredients\`.
-        3.  **Intégrez tout le reste :** Pour tout ce qui N'EST PAS une préparation existante (ex: une sauce minute, une marinade, une purée simple, une garniture spécifique), vous DEVEZ inclure ses ingrédients directement dans la liste \`ingredients\` principale et ses étapes dans les champs \`procedure_...\`.
+        1.  **Vérification systématique :** Pour chaque composant qui pourrait être une préparation (ex: 'fond de veau', 'béchamel', 'purée de carottes'), vous DEVEZ appeler l'outil \`searchForMatchingPreparations\` avec ce terme.
+        2.  **Utilisation obligatoire :** Si l'outil retourne un ou plusieurs noms de préparations existantes, vous DEVEZ utiliser la correspondance la plus pertinente dans le champ \`subRecipes\`. Utilisez le nom exact retourné par l'outil. Ne mettez JAMAIS les ingrédients d'une préparation existante dans la liste \`ingredients\`.
+        3.  **Intégration du reste :** Pour tout ce qui N'A PAS de correspondance via l'outil, vous DEVEZ inclure ses ingrédients directement dans la liste \`ingredients\` principale et ses étapes dans les champs \`procedure_...\`.
         
-        **NE JAMAIS INVENTER DE NOUVELLES SOUS-RECETTES.** Tout ce qui n'est pas dans la liste de l'outil est considéré comme faisant partie intégrante de la recette principale.
+        **NE JAMAIS INVENTER DE NOUVELLES SOUS-RECETTES.** Si un composant n'est pas trouvé par l'outil, il fait partie intégrante de la recette principale.
 
         **RÈGLES STRICTES POUR LES INGRÉDIENTS (champ \`ingredients\`) :**
         1.  **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron"). N'ajoutez JAMAIS de qualificatifs (pas de "Jaunes d'oeufs", juste "Oeuf").

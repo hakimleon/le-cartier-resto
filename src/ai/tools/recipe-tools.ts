@@ -2,7 +2,7 @@
 /**
  * @fileOverview Outils Genkit pour interagir avec les données de recettes.
  *
- * - getAvailablePreparationsTool: Un outil qui récupère et retourne les noms de toutes les fiches de préparation disponibles dans Firestore.
+ * - searchForMatchingPreparations: Un outil qui recherche des préparations correspondants à un terme de recherche.
  */
 
 import { ai } from '@/ai/genkit';
@@ -12,20 +12,30 @@ import { db } from '@/lib/firebase';
 import type { Preparation } from '@/lib/types';
 
 
-export const getAvailablePreparationsTool = ai.defineTool(
+export const searchForMatchingPreparationsTool = ai.defineTool(
     {
-        name: 'getAvailablePreparations',
-        description: 'Récupère la liste de toutes les fiches de préparation (sous-recettes) disponibles pour être utilisées dans la création de plats plus complexes. Doit être appelé pour savoir quelles préparations peuvent être utilisées.',
-        outputSchema: z.array(z.string()),
+        name: 'searchForMatchingPreparations',
+        description: 'Recherche des fiches de préparation (sous-recettes) existantes par mot-clé pour voir si un composant de recette peut être remplacé par une préparation standardisée. Doit être appelé pour chaque composant majeur (fond, sauce, purée, etc.).',
+        inputSchema: z.object({
+            query: z.string().describe("Terme de recherche pour la préparation (ex: 'fond de veau', 'béchamel')."),
+        }),
+        outputSchema: z.array(z.string()).describe("Liste des noms de préparations existantes qui correspondent."),
     },
-    async () => {
+    async ({ query }) => {
         try {
             const preparationsSnapshot = await getDocs(collection(db, 'preparations'));
             const preparations = preparationsSnapshot.docs.map(doc => (doc.data() as Preparation).name);
-            return preparations;
+            
+            if (!query) {
+                return preparations; // Retourne tout si aucune query
+            }
+
+            const lowercasedQuery = query.toLowerCase();
+            const filtered = preparations.filter(name => name.toLowerCase().includes(lowercasedQuery));
+            
+            return filtered;
         } catch (error) {
-            console.error("Error fetching preparations from Firestore:", error);
-            // En cas d'erreur, retourner une liste vide pour ne pas bloquer le flow.
+            console.error("Error searching for preparations:", error);
             return [];
         }
     }
