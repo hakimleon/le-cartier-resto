@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -32,7 +33,7 @@ import {
 import { generateDerivedPreparations, generateIngredientAlternative, IngredientAlternativeOutput } from "@/ai/flows/suggestion-flow";
 import { generateRecipeConcept } from "@/ai/flows/recipe-workshop-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
-import { PreparationModal } from "../preparations/PreparationModal";
+import { PreparationModal } from "../../preparations/PreparationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Separator } from "@/components/ui/separator";
@@ -212,7 +213,7 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                             </Command>
                         </PopoverContent>
                     </Popover>
-                    {!newIng.ingredientId && newIng.name && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={'Créer l\\'ingrédient "' + newIng.name + '"'}> <PlusCircle className="h-4 w-4 text-primary" /> </Button>)}
+                    {!newIng.ingredientId && newIng.name && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={'Créer l\'ingrédient "' + newIng.name + '"'}> <PlusCircle className="h-4 w-4 text-primary" /> </Button>)}
                 </div>
             </TableCell>
             <TableCell>
@@ -1189,4 +1190,6 @@ function RecipeDetailSkeleton() {
     );
 }
 
-    
+
+
+  
