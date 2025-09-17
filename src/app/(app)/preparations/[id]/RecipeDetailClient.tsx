@@ -194,7 +194,7 @@ const NewIngredientRow = ({
                         </PopoverContent>
                     </Popover>
 
-                    {!newIng.ingredientId && (
+                    {!newIng.ingredientId && newIng.name && (
                         <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={`Créer l'ingrédient "${newIng.name}"`}>
                             <PlusCircle className="h-4 w-4 text-primary" />
                         </Button>
@@ -1061,5 +1061,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
