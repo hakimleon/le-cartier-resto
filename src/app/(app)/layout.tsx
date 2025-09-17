@@ -107,11 +107,23 @@ export default function AppLayout({
                 <SidebarMenuButton
                   asChild
                   isActive={pathname.startsWith('/workshop')}
-                  tooltip="Atelier des Recettes"
+                  tooltip="Atelier Plats"
                 >
                   <Link href="/workshop">
                     <FlaskConical />
-                    <span>Atelier</span>
+                    <span>Atelier Plats</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/preparations/workshop')}
+                  tooltip="Atelier Préparations"
+                >
+                  <Link href="/preparations/workshop">
+                    <FlaskConical />
+                    <span>Atelier Préparations</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
