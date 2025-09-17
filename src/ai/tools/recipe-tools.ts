@@ -40,3 +40,18 @@ export const searchForMatchingPreparationsTool = ai.defineTool(
         }
     }
 );
+
+/**
+ * Récupère les noms de toutes les préparations disponibles.
+ * @returns Une promesse qui se résout en un tableau de noms de préparations.
+ */
+export async function getAllPreparationNames(): Promise<string[]> {
+    try {
+        const preparationsSnapshot = await getDocs(collection(db, 'preparations'));
+        const preparationNames = preparationsSnapshot.docs.map(doc => (doc.data() as Preparation).name);
+        return preparationNames;
+    } catch (error) {
+        console.error("Error fetching all preparation names:", error);
+        return [];
+    }
+}

@@ -8,7 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { v2 as cloudinary } from 'cloudinary';
-import { searchForMatchingPreparationsTool } from '../tools/recipe-tools';
+import { getAllPreparationNames } from '../tools/recipe-tools';
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -26,6 +26,8 @@ const RecipeConceptInputSchema = z.object({
     rawRecipe: z.string().optional().describe("Une recette complète en texte brut à reformater. Si ce champ est fourni, l'IA doit l'utiliser comme source principale."),
     refinementHistory: z.array(z.string()).optional().describe("L'historique des instructions d'affinage précédentes."),
     currentRefinement: z.string().optional().describe("La nouvelle instruction d'affinage à appliquer."),
+    // Champ interne pour passer les préparations existantes
+    existingPreparations: z.array(z.string()).optional(),
 });
 export type RecipeConceptInput = z.infer<typeof RecipeConceptInputSchema>;
 
@@ -70,35 +72,44 @@ const recipeGenPrompt = ai.definePrompt({
     name: 'recipeWorkshopPrompt',
     input: { schema: RecipeConceptInputSchema },
     output: { schema: RecipeTextConceptSchema },
-    tools: [searchForMatchingPreparationsTool],
-    model: 'googleai/gemini-2.5-flash',
-    prompt: `"Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
+    model: 'googleai/gemini-pro',
+    prompt: `Vous êtes un chef expert créant une fiche technique pour un restaurant.
 
 **RÈGLE D'OR ABSOLUE : ZÉRO ALCOOL**
 Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool. Cela inclut, sans s'y limiter : vin, bière, cognac, brandy, whisky, rhum, liqueur, etc.  
 → Si une recette classique en contient, vous devez le remplacer par une alternative sans alcool (bouillon, jus de raisin, vinaigre doux, etc.) ou l’omettre.  
 Ceci est une règle non négociable.
 
-**MISSION PRINCIPALE : DÉTECTER ET UTILISER LES SOUS-RECETTES EXISTANTES**
+---
+
+**MISSION PRINCIPALE : UTILISER LES PRÉPARATIONS EXISTANTES**
+
+Voici la liste de TOUTES les préparations de base (sous-recettes) disponibles dans le restaurant :
+{{#if existingPreparations}}
+LISTE DES PRÉPARATIONS EXISTANTES À UTILISER :
+{{#each existingPreparations}}
+- {{{this}}}
+{{/each}}
+{{else}}
+(Aucune préparation de base n'est actuellement disponible)
+{{/if}}
 
 Votre logique doit IMPÉRATIVEMENT suivre ces étapes pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate", "purée de pois") :
 
-1. **APPEL OBLIGATOIRE DE L'OUTIL**  
-   Pour CHAQUE composant qui pourrait être une préparation, vous DEVEZ appeler l'outil \`searchForMatchingPreparations\` avec un terme de recherche pertinent (ex: pour "fond de veau maison", chercher "fond de veau").
+1. **VÉRIFICATION** : Comparez le nom du composant aux noms dans la "LISTE DES PRÉPARATIONS EXISTANTES À UTILISER".
 
-2. **ANALYSE DU RÉSULTAT**  
-   - **Si l'outil retourne un ou plusieurs noms correspondants** (ex: l'outil retourne "Fond brun de veau" pour la recherche "fond de veau") :  
-     * Vous DEVEZ utiliser le nom exact retourné par l'outil dans le champ \`subRecipes\`.  
+2. **ANALYSE**  
+   - **Si le composant correspond à un nom dans la liste** (ex: la recette demande "un fond de veau" et la liste contient "Fond brun de veau") :
+     * Vous DEVEZ utiliser le nom exact de la liste dans le champ \`subRecipes\`.
      * Vous NE DEVEZ JAMAIS inclure les ingrédients de cette préparation dans la liste \`ingredients\` principale.  
-     * Vous NE DEVEZ JAMAIS inclure les étapes de cette préparation dans les champs \`procedure_...\`.  
-     * Si la recette mentionne un terme proche ("fond de veau" vs "fond brun de veau"), vous devez toujours uniformiser avec le nom exact de la base.  
+     * Vous NE DEVEZ JAMAIS inclure les étapes de cette préparation dans les champs \`procedure_...\`.
 
-   - **Si l'outil ne retourne AUCUN résultat** :  
-     * Ce composant n'est PAS une sous-recette existante.  
+   - **Si le composant ne correspond à AUCUN nom de la liste** :
+     * Ce composant doit être fait "minute".
      * Vous DEVEZ alors inclure ses ingrédients dans la liste \`ingredients\` principale.  
-     * Vous DEVEZ inclure ses étapes dans les champs de procédure appropriés.  
+     * Vous DEVEZ inclure ses étapes dans les champs de procédure appropriés.
 
-**NE JAMAIS INVENTER DE SOUS-RECETTE.** Si l'outil ne trouve rien, le composant fait partie de la recette principale.
+**NE JAMAIS INVENTER DE SOUS-RECETTE.** Si ce n'est pas dans la liste fournie, le composant fait partie de la recette principale.
 
 ---
 
@@ -160,8 +171,12 @@ export const generateRecipeConceptFlow = ai.defineFlow(
         outputSchema: RecipeConceptOutputSchema,
     },
     async (input) => {
-        // 1. Générer le concept textuel de la recette
-        const { output: recipeConcept } = await recipeGenPrompt(input);
+        // 1. Récupérer toutes les préparations existantes
+        const existingPreparations = await getAllPreparationNames();
+        const inputWithContext = { ...input, existingPreparations };
+
+        // 2. Générer le concept textuel de la recette
+        const { output: recipeConcept } = await recipeGenPrompt(inputWithContext);
 
         if (!recipeConcept) {
             throw new Error("La génération du concept de la recette a échoué.");
@@ -169,7 +184,7 @@ export const generateRecipeConceptFlow = ai.defineFlow(
         
         let finalOutput: RecipeConceptOutput = { ...recipeConcept, imageUrl: undefined };
 
-        // 2. Si c'est un plat, générer une image
+        // 3. Si c'est un plat, générer une image
         if (input.type === 'Plat') {
             let imageUrl = `https://placehold.co/1024x768/fafafa/7d7d7d.png?text=${encodeURIComponent(recipeConcept.name)}`;
 
