@@ -29,7 +29,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { generateDerivedPreparations, DerivedPreparationsOutput, generateRecipe, generateIngredientAlternative, IngredientAlternativeOutput } from "@/ai/flows/suggestion-flow";
+import { generateDerivedPreparations, generateIngredientAlternative, IngredientAlternativeOutput } from "@/ai/flows/suggestion-flow";
+import { generateRecipeConcept } from "@/ai/flows/recipe-workshop-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
 import { PreparationModal } from "../PreparationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -198,7 +199,7 @@ const NewIngredientRow = ({
                     </Popover>
 
                     {!newIng.ingredientId && newIng.name && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={`Créer l'ingrédient "${newIng.name}"`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={'Créer l\'ingrédient "'+newIng.name+'"'}>
                             <PlusCircle className="h-4 w-4 text-primary" />
                         </Button>
                     )}
@@ -287,7 +288,7 @@ const NewPreparationRow = ({
                 </PopoverContent>
             </Popover>
              {!prep.childPreparationId && prep.name && (
-                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewPreparationModal(prep.tempId)} title={`Créer la préparation "${prep.name}"`}>
+                <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewPreparationModal(prep.tempId)} title={'Créer la préparation "'+prep.name+'"'}>
                     <PlusCircle className="h-4 w-4 text-primary" />
                 </Button>
             )}
@@ -342,7 +343,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [preparationsCosts, setPreparationsCosts] = useState<Record<string, number>>({});
   
   const [derivedSuggestions, setDerivedSuggestions] = useState<DerivedPreparationsOutput['suggestions'] | null>(null);
-  const [generatedConcept, setGeneratedConcept] = useState<Awaited<ReturnType<typeof generateRecipe>> | null>(null);
+  const [generatedConcept, setGeneratedConcept] = useState<RecipeConceptOutput | null>(null);
 
 
   const [isNewIngredientModalOpen, setIsNewIngredientModalOpen] = useState(false);
@@ -409,7 +410,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 const childPrep = preparationsList.find(p => p.id === depId);
                 const childCostPerProductionUnit = costs[depId];
                 if (childPrep && childCostPerProductionUnit !== undefined) {
-                     const conversionFactor = getConversionFactor(childPrep.productionUnit, linkData.unitUse);
+                     const conversionFactor = getConversionFactor(childPrep.productionUnit!, linkData.unitUse);
                      const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
                      totalCost += (linkData.quantity || 0) * costPerUseUnit;
                 }
@@ -478,9 +479,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
             if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                 const costPerProductionUnit = costs[linkData.childPreparationId];
-                const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse);
+                const conversionFactor = getConversionFactor(childRecipeData.productionUnit!, linkData.unitUse);
                 const costPerUseUnit = costPerProductionUnit / conversionFactor;
-                return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit };
+                return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit! };
             }
             return null;
         }).filter(Boolean) as FullRecipePreparation[];
@@ -558,7 +559,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const childPrep = allPreparations.find(p => p.id === prep.childPreparationId);
             const costPerUnit = preparationsCosts[prep.childPreparationId];
             if(childPrep && costPerUnit !== undefined) {
-                 const conversionFactor = getConversionFactor(childPrep.productionUnit, prep.unit);
+                 const conversionFactor = getConversionFactor(childPrep.productionUnit!, prep.unit);
                  const costPerUseUnit = costPerUnit / conversionFactor;
                  prep.totalCost = (prep.quantity || 0) * costPerUseUnit;
             }
@@ -756,7 +757,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setIsGenerating(true);
         setGeneratedConcept(null);
         try {
-            const result = await generateRecipe({ name: recipe.name, description: recipe.description, type: 'Préparation' });
+            const result = await generateRecipeConcept({
+              type: 'Préparation',
+              name: recipe.name,
+              description: recipe.description,
+            });
 
             setGeneratedConcept(result);
             setEditableRecipe(current => ({...current!, ...result}));
@@ -768,11 +773,17 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 return { tempId: `new-gen-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
             });
 
+            const allPrepsList = await fetchAllPreparations();
+            const newPreps = (result.subRecipes || []).map(prep => {
+                    const existing = allPrepsList.find(dbPrep => dbPrep.name.toLowerCase() === prep.name.toLowerCase());
+                return { tempId: `new-ws-prep-${Date.now()}-${Math.random()}`, childPreparationId: existing?.id, name: existing?.name || prep.name, quantity: prep.quantity, unit: prep.unit, totalCost: 0, _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0, _productionUnit: existing?.productionUnit || '' };
+            });
+
             setIsEditing(true);
             setEditableIngredients([]); // Clear existing ones
             setNewIngredients(newIngs); // Add newly generated ones
             setEditablePreparations([]); // Clear sub-recipes for a base preparation
-            setNewPreparations([]);
+            setNewPreparations(newPreps);
 
             toast({ title: "Recette générée !", description: "Vérifiez les détails et sauvegardez pour appliquer les changements." });
         } catch (e) {
@@ -827,7 +838,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         if (!existingIngredient) {
             toast({
                 title: "Nouvel ingrédient",
-                description: `"${suggestionName}" a été ajouté à la recette. N'oubliez pas de créer sa fiche ingrédient.`,
+                description: `'${suggestionName}' a été ajouté à la recette. N'oubliez pas de créer sa fiche ingrédient.`,
             });
         }
         
@@ -1216,7 +1227,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         </div>
       </div>
 
-      {isEditing && (<div className="fixed bottom-6 right-6 z-50"><Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm shadow-lg"><Button onClick={handleSave} disabled={isSaving}><Save className="mr-2 h-4 w-4" />{isSaving ? "Sauvegarde..." : `Sauvegarder les modifications`}</Button></Card></div>)}
+      {isEditing && (<div className="fixed bottom-6 right-6 z-50"><Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm shadow-lg"><Button onClick={handleSave} disabled={isSaving}><Save className="mr-2 h-4 w-4" />{isSaving ? "Sauvegarde..." : 'Sauvegarder les modifications'}</Button></Card></div>)}
     </div>
   );
 }
@@ -1232,5 +1243,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
