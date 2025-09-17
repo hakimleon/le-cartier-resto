@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Package, BookCopy, ChevronsRight, Braces } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { generateRecipeConcept, RecipeConceptOutput, RecipeConceptInput } from "@/ai/flows/recipe-workshop-flow";
+import { generatePreparationConcept, PreparationConceptOutput, PreparationConceptInput } from "@/ai/flows/preparation-workshop-flow";
 
 import { useRouter } from "next/navigation";
 import { createDishFromWorkshop } from "../../workshop/actions";
@@ -23,7 +23,7 @@ const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
 
 export default function WorkshopClient() {
     const [isLoading, setIsLoading] = useState(false);
-    const [generatedConcept, setGeneratedConcept] = useState<RecipeConceptOutput | null>(null);
+    const [generatedConcept, setGeneratedConcept] = useState<PreparationConceptOutput | null>(null);
     const [rawGeneratedJson, setRawGeneratedJson] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
     const { toast } = useToast();
@@ -32,10 +32,10 @@ export default function WorkshopClient() {
     const initialFormRef = useRef<HTMLFormElement>(null);
     const refinementFormRef = useRef<HTMLFormElement>(null);
     
-    const [context, setContext] = useState<RecipeConceptInput>({ type: 'Préparation' });
+    const [context, setContext] = useState<PreparationConceptInput>({});
     const [refinementHistory, setRefinementHistory] = useState<string[]>([]);
     
-    const handleSubmit = async (instructions: RecipeConceptInput) => {
+    const handleSubmit = async (instructions: PreparationConceptInput) => {
         setIsLoading(true);
         setRawGeneratedJson(null);
         
@@ -46,9 +46,7 @@ export default function WorkshopClient() {
         }
 
         try {
-            // Ensure the type is always 'Préparation' for this workshop
-            const finalInstructions = { ...instructions, type: 'Préparation' as const };
-            const result = await generateRecipeConcept(finalInstructions);
+            const result = await generatePreparationConcept(instructions);
             setGeneratedConcept(result);
             setRawGeneratedJson(JSON.stringify(result, null, 2));
 
@@ -70,8 +68,7 @@ export default function WorkshopClient() {
     const handleInitialSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
-        const instructions: RecipeConceptInput = {
-            type: 'Préparation',
+        const instructions: PreparationConceptInput = {
             name: formData.get("prepName") as string,
             mainIngredients: formData.get("mainIngredients") as string || undefined,
             excludedIngredients: formData.get("excludedIngredients") as string || undefined,
@@ -99,15 +96,19 @@ export default function WorkshopClient() {
 
         setIsSaving(true);
         try {
-            // Ensure the concept type is Préparation before creating doc
-            const conceptToSave = { ...generatedConcept, type: 'Préparation' as const };
-            const newDocId = await createDishFromWorkshop(conceptToSave);
+            // Re-shaping the PreparationConceptOutput to fit RecipeConceptOutput for the generic action
+             const conceptForAction = {
+                ...generatedConcept,
+                type: 'Préparation' as const,
+            };
+
+            const newDocId = await createDishFromWorkshop(conceptForAction);
             
             if (newDocId) {
-                sessionStorage.setItem(PREPARATION_WORKSHOP_CONCEPT_KEY, JSON.stringify(conceptToSave));
+                sessionStorage.setItem(PREPARATION_WORKSHOP_CONCEPT_KEY, JSON.stringify(conceptForAction));
                 toast({
                     title: "Préparation enregistrée !",
-                    description: `"${conceptToSave.name}" a été ajoutée. Redirection...`,
+                    description: `"${conceptForAction.name}" a été ajoutée. Redirection...`,
                 });
                 router.push(`/preparations/${newDocId}`);
             } else {
@@ -124,7 +125,7 @@ export default function WorkshopClient() {
     const handleNewRecipe = () => {
         setGeneratedConcept(null);
         setRawGeneratedJson(null);
-        setContext({ type: 'Préparation' });
+        setContext({});
         setRefinementHistory([]);
         if (initialFormRef.current) initialFormRef.current.reset();
         if (refinementFormRef.current) refinementFormRef.current.reset();
