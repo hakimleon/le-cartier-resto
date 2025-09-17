@@ -16,7 +16,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical } from 'lucide-react';
+import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical, TestTube } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FloatingAssistant from '@/app/(app)/assistant/FloatingAssistant';
 
@@ -112,6 +112,18 @@ export default function AppLayout({
                   <Link href="/workshop">
                     <FlaskConical />
                     <span>Atelier</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+               <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/test-generation')}
+                  tooltip="Test IA"
+                >
+                  <Link href="/test-generation">
+                    <TestTube />
+                    <span>Test IA</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
