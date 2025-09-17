@@ -26,8 +26,8 @@ const RecipeConceptInputSchema = z.object({
     rawRecipe: z.string().optional().describe("Une recette complète en texte brut à reformater. Si ce champ est fourni, l'IA doit l'utiliser comme source principale."),
     refinementHistory: z.array(z.string()).optional().describe("L'historique des instructions d'affinage précédentes."),
     currentRefinement: z.string().optional().describe("La nouvelle instruction d'affinage à appliquer."),
-    // Champ interne pour passer les préparations existantes
     existingPreparations: z.array(z.string()).optional(),
+    cacheBuster: z.number().optional().describe("Valeur aléatoire pour éviter la mise en cache."),
 });
 export type RecipeConceptInput = z.infer<typeof RecipeConceptInputSchema>;
 
@@ -35,7 +35,6 @@ const RecipeConceptOutputSchema = z.object({
     name: z.string().describe("Le nom final et marketing de la recette."),
     description: z.string().describe("Une description alléchante et créative."),
     
-    // Champs pour les deux types
     ingredients: z.array(z.object({
         name: z.string().describe("Nom de l'ingrédient."),
         quantity: z.number().describe("Quantité."),
@@ -52,20 +51,17 @@ const RecipeConceptOutputSchema = z.object({
     duration: z.number().int().describe("Durée totale en minutes."),
     difficulty: z.enum(['Facile', 'Moyen', 'Difficile']).describe("Niveau de difficulté."),
     
-    // Champs spécifiques au Plat
     category: z.enum(['Entrées froides et chaudes', 'Plats et Grillades', 'Les mets de chez nous', 'Symphonie de pâtes', 'Nos Burgers Bistronomiques', 'Dessert', 'Élixirs & Rafraîchissements']).optional().describe("Catégorie du plat, si applicable."),
     portions: z.number().int().optional().describe("Nombre de portions, si c'est un plat."),
     commercialArgument: z.string().optional().describe("Argumentaire commercial, si c'est un plat."),
     imageUrl: z.string().url().optional().describe("URL de l'image générée, si c'est un plat."),
 
-    // Champs spécifiques à la Préparation
     productionQuantity: z.number().optional().describe("Quantité totale produite, si c'est une préparation."),
     productionUnit: z.string().optional().describe("Unité de production (kg, l, pièces), si c'est une préparation."),
     usageUnit: z.string().optional().describe("Unité d'utilisation suggérée (g, ml, pièce), si c'est une préparation."),
 });
 export type RecipeConceptOutput = z.infer<typeof RecipeConceptOutputSchema>;
 
-// Schéma interne sans imageUrl pour le prompt de génération de texte
 const RecipeTextConceptSchema = RecipeConceptOutputSchema.omit({ imageUrl: true });
 
 const recipeGenPrompt = ai.definePrompt({
@@ -94,23 +90,23 @@ Vous DEVEZ régénérer une version conforme AVANT de fournir la réponse finale
 ---
 
 ## MISSION PRINCIPALE : UTILISER LES SOUS-RECETTES EXISTANTES
+Voici la liste des préparations de base disponibles : {{{existingPreparations}}}.
 Pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate", "purée de pois") :
 
-1. **APPEL OBLIGATOIRE DE L'OUTIL**  
-   Pour CHAQUE composant, vous DEVEZ appeler \`searchForMatchingPreparations\` avec un terme pertinent.  
+1. **VÉRIFICATION OBLIGATOIRE** : Cherchez dans la liste ci-dessus si un nom correspond.
 
 2. **ANALYSE DU RÉSULTAT**  
-   - **Si l'outil retourne un ou plusieurs noms correspondants** (ex: "Fond brun de veau" pour "fond de veau") :  
-     * Utiliser le nom exact retourné dans \`subRecipes\`.  
+   - **Si une correspondance est trouvée** (ex: la liste contient "Fond brun de veau" et la recette demande "fond de veau") :  
+     * Utiliser le nom exact de la liste dans \`subRecipes\`.  
      * Ne PAS inclure ce composant dans \`ingredients\`.  
      * Ne PAS inclure ses étapes dans les champs \`procedure_...\`.  
      * Si la recette mentionne un terme proche, remplacez-le par le nom exact de la base.  
 
-   - **Si l'outil ne retourne AUCUN résultat** :  
+   - **Si AUCUNE correspondance n'est trouvée** :  
      * Inclure les ingrédients dans la liste \`ingredients\`.  
      * Inclure ses étapes dans la procédure.  
 
-⚠️ Règle stricte : NE JAMAIS INVENTER de sous-recette.  
+⚠️ Règle stricte : NE JAMAIS INVENTER de sous-recette. Si elle n'est pas dans la liste fournie, elle n'existe pas.
 
 ---
 
@@ -178,7 +174,7 @@ export const generateRecipeConceptFlow = ai.defineFlow(
     async (input) => {
         // 1. Récupérer toutes les préparations existantes
         const existingPreparations = await getAllPreparationNames();
-        const inputWithContext = { ...input, existingPreparations };
+        const inputWithContext = { ...input, existingPreparations, cacheBuster: Math.random() };
 
         // 2. Générer le concept textuel de la recette
         const { output: recipeConcept } = await recipeGenPrompt(inputWithContext);
