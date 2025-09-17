@@ -73,55 +73,56 @@ const recipeGenPrompt = ai.definePrompt({
     input: { schema: RecipeConceptInputSchema },
     output: { schema: RecipeTextConceptSchema },
     model: 'googleai/gemini-pro',
-    prompt: `Vous êtes un chef expert créant une fiche technique pour un restaurant.
-
-**RÈGLE D'OR ABSOLUE : ZÉRO ALCOOL**
-Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool. Cela inclut, sans s'y limiter : vin, bière, cognac, brandy, whisky, rhum, liqueur, etc.  
-→ Si une recette classique en contient, vous devez le remplacer par une alternative sans alcool (bouillon, jus de raisin, vinaigre doux, etc.) ou l’omettre.  
-Ceci est une règle non négociable.
+    prompt: `Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
 ---
 
-**MISSION PRINCIPALE : UTILISER LES PRÉPARATIONS EXISTANTES**
+## RÈGLE D'OR ABSOLUE : ZÉRO ALCOOL
+Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool.  
+Cela inclut, sans s'y limiter : vin, bière, cognac, brandy, whisky, rhum, liqueur, etc.
 
-Voici la liste de TOUTES les préparations de base (sous-recettes) disponibles dans le restaurant :
-{{#if existingPreparations}}
-LISTE DES PRÉPARATIONS EXISTANTES À UTILISER :
-{{#each existingPreparations}}
-- {{{this}}}
-{{/each}}
-{{else}}
-(Aucune préparation de base n'est actuellement disponible)
-{{/if}}
+- Si une recette classique en contient, vous DEVEZ le remplacer par une alternative sans alcool (bouillon, jus de raisin, jus de pomme, vinaigre doux, etc.) ou l’omettre.  
+- ⚠️ Si un ingrédient alcoolisé est présent dans la recette générée, la sortie est considérée comme INVALIDE.  
+Vous DEVEZ régénérer une version conforme AVANT de fournir la réponse finale.
 
-Votre logique doit IMPÉRATIVEMENT suivre ces étapes pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate", "purée de pois") :
-
-1. **VÉRIFICATION** : Comparez le nom du composant aux noms dans la "LISTE DES PRÉPARATIONS EXISTANTES À UTILISER".
-
-2. **ANALYSE**  
-   - **Si le composant correspond à un nom dans la liste** (ex: la recette demande "un fond de veau" et la liste contient "Fond brun de veau") :
-     * Vous DEVEZ utiliser le nom exact de la liste dans le champ \`subRecipes\`.
-     * Vous NE DEVEZ JAMAIS inclure les ingrédients de cette préparation dans la liste \`ingredients\` principale.  
-     * Vous NE DEVEZ JAMAIS inclure les étapes de cette préparation dans les champs \`procedure_...\`.
-
-   - **Si le composant ne correspond à AUCUN nom de la liste** :
-     * Ce composant doit être fait "minute".
-     * Vous DEVEZ alors inclure ses ingrédients dans la liste \`ingredients\` principale.  
-     * Vous DEVEZ inclure ses étapes dans les champs de procédure appropriés.
-
-**NE JAMAIS INVENTER DE SOUS-RECETTE.** Si ce n'est pas dans la liste fournie, le composant fait partie de la recette principale.
+### SUBSTITUTIONS AUTOMATIQUES (obligatoires)
+- Cognac → Jus de raisin blanc réduit OU bouillon corsé  
+- Vin rouge → Jus de raisin rouge OU fond brun réduit  
+- Vin blanc → Jus de pomme OU bouillon de volaille  
+- Bière → Bouillon + vinaigre doux  
 
 ---
 
-**RÈGLES STRICTES POUR LES INGRÉDIENTS (champ \`ingredients\`) :**
-1. **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron").  
-   - Exceptions autorisées si nécessaire pour la précision culinaire : "Jaune d’œuf", "Blanc d’œuf", "Filet de poisson".  
-2. **UNITÉS INTELLIGENTES :** Utilisez "g", "kg", "ml", "l", ou "pièce" de manière logique.  
+## MISSION PRINCIPALE : UTILISER LES SOUS-RECETTES EXISTANTES
+Pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate", "purée de pois") :
+
+1. **APPEL OBLIGATOIRE DE L'OUTIL**  
+   Pour CHAQUE composant, vous DEVEZ appeler \`searchForMatchingPreparations\` avec un terme pertinent.  
+
+2. **ANALYSE DU RÉSULTAT**  
+   - **Si l'outil retourne un ou plusieurs noms correspondants** (ex: "Fond brun de veau" pour "fond de veau") :  
+     * Utiliser le nom exact retourné dans \`subRecipes\`.  
+     * Ne PAS inclure ce composant dans \`ingredients\`.  
+     * Ne PAS inclure ses étapes dans les champs \`procedure_...\`.  
+     * Si la recette mentionne un terme proche, remplacez-le par le nom exact de la base.  
+
+   - **Si l'outil ne retourne AUCUN résultat** :  
+     * Inclure les ingrédients dans la liste \`ingredients\`.  
+     * Inclure ses étapes dans la procédure.  
+
+⚠️ Règle stricte : NE JAMAIS INVENTER de sous-recette.  
+
+---
+
+## RÈGLES POUR LES INGRÉDIENTS
+1. **Nom simple** : le nom doit être simple et générique ("Oeuf", "Farine", "Citron").  
+   - Exceptions autorisées pour précision : "Jaune d’œuf", "Blanc d’œuf", "Filet de poisson".  
+2. **Unités logiques** : "g", "kg", "ml", "l", "pièce".  
 
 ---
 
 {{#if rawRecipe}}
-PRIORITÉ : Reformatez la recette brute suivante en respectant la structure et TOUTES les règles ci-dessus.  
+PRIORITÉ : Reformatez la recette brute suivante en respectant TOUTES les règles.  
 ---  
 {{{rawRecipe}}}  
 ---  
@@ -148,20 +149,24 @@ CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles
 
 ---
 
-**ÉTAPE DE CONTRÔLE AVANT LA SORTIE JSON**  
-Avant de générer la réponse finale, vous DEVEZ impérativement vérifier :  
-1. Qu’aucun ingrédient lié à une sous-recette listée dans \`subRecipes\` n’apparaît dans \`ingredients\`.  
-2. Qu’aucun ingrédient contenant de l’alcool (vin, bière, cognac, rhum, whisky, etc.) n’apparaît dans \`ingredients\`.  
-   - Si trouvé : supprimer l’ingrédient et proposer automatiquement un substitut sans alcool.  
-3. Que la liste \`ingredients\` respecte les règles (noms simples, unités logiques, exceptions autorisées).  
+## ÉTAPE DE CONTRÔLE AVANT LA SORTIE JSON
+Avant de produire la réponse finale, vous DEVEZ :  
+1. Vérifier qu’aucun ingrédient listé dans \`subRecipes\` n’apparaît dans \`ingredients\`.  
+2. Vérifier qu’aucun ingrédient alcoolisé n’est présent.  
+   - Si trouvé : supprimer et appliquer une substitution automatique.  
+3. Vérifier que la liste des ingrédients respecte les règles (noms simples, unités logiques, exceptions autorisées).  
+
+⚠️ Si une de ces conditions n’est pas respectée, la sortie est INVALIDE.  
+Vous devez corriger et régénérer jusqu’à obtenir un JSON 100% conforme.
 
 ---
 
-**INSTRUCTIONS DE FORMATAGE**  
-- **Pour un Plat :** Remplir les champs \`portions\`, \`category\`, \`commercialArgument\`.  
-- **Pour une Préparation :** Remplir les champs \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.  
-- **Sortie :** Fournissez une réponse structurée au format JSON. Ne laissez aucun champ vide, utilisez des tableaux vides \`[]\` ou des chaînes vides \`""\` si nécessaire.
-"`,
+## INSTRUCTIONS DE FORMATAGE
+- **Pour un Plat :** remplir \`portions\`, \`category\`, \`commercialArgument\`.  
+- **Pour une Préparation :** remplir \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.  
+- **Sortie :** fournir une réponse au format JSON strict.  
+- Ne laissez aucun champ vide : utilisez \`[]\` ou \`""\` si nécessaire.
+`,
 });
 
 export const generateRecipeConceptFlow = ai.defineFlow(
