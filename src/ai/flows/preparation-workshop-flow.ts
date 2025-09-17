@@ -53,7 +53,7 @@ const preparationGenPrompt = ai.definePrompt({
     name: 'preparationWorkshopPrompt',
     input: { schema: PreparationConceptInputSchema.extend({ allPreparationNames: z.array(z.string()) }) },
     output: { schema: PreparationConceptOutputSchema },
-    model: 'googleai/gemini-1.5-flash',
+    model: 'googleai/gemini-2.0-flash',
     prompt: `Vous êtes un chef expert créant une fiche technique pour une PRÉPARATION de restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
 ---
