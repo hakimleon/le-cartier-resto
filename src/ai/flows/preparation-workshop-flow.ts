@@ -8,6 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getAllPreparationNames } from '../tools/recipe-tools';
+import { googleAI } from '@genkit-ai/googleai';
 
 const PreparationConceptInputSchema = z.object({
     name: z.string().describe("Le nom ou l'idée de base de la préparation."),
@@ -53,7 +54,7 @@ const preparationGenPrompt = ai.definePrompt({
     name: 'preparationWorkshopPrompt',
     input: { schema: PreparationConceptInputSchema.extend({ allPreparationNames: z.array(z.string()) }) },
     output: { schema: PreparationConceptOutputSchema },
-    model: 'googleai/gemini-1.5-flash',
+    model: googleAI.model('gemini-1.5-flash'),
     prompt: `Vous êtes un chef expert créant une fiche technique pour une PRÉPARATION de restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
 ---
