@@ -314,5 +314,4 @@ export default function WorkshopClient() {
     );
 }
 
-
     
