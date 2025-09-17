@@ -8,7 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { v2 as cloudinary } from 'cloudinary';
-import { getAllPreparationNames } from '../tools/recipe-tools';
+import { searchForMatchingPreparationsTool } from '../tools/recipe-tools';
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -26,7 +26,6 @@ const RecipeConceptInputSchema = z.object({
     rawRecipe: z.string().optional().describe("Une recette complète en texte brut à reformater. Si ce champ est fourni, l'IA doit l'utiliser comme source principale."),
     refinementHistory: z.array(z.string()).optional().describe("L'historique des instructions d'affinage précédentes."),
     currentRefinement: z.string().optional().describe("La nouvelle instruction d'affinage à appliquer."),
-    existingPreparations: z.array(z.string()).optional(),
     cacheBuster: z.number().optional().describe("Valeur aléatoire pour éviter la mise en cache."),
 });
 export type RecipeConceptInput = z.infer<typeof RecipeConceptInputSchema>;
@@ -68,6 +67,7 @@ const recipeGenPrompt = ai.definePrompt({
     name: 'recipeWorkshopPrompt',
     input: { schema: RecipeConceptInputSchema },
     output: { schema: RecipeTextConceptSchema },
+    tools: [searchForMatchingPreparationsTool],
     model: 'googleai/gemini-pro',
     prompt: `Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
@@ -90,23 +90,23 @@ Vous DEVEZ régénérer une version conforme AVANT de fournir la réponse finale
 ---
 
 ## MISSION PRINCIPALE : UTILISER LES SOUS-RECETTES EXISTANTES
-Voici la liste des préparations de base disponibles : {{{existingPreparations}}}.
 Pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate", "purée de pois") :
 
-1. **VÉRIFICATION OBLIGATOIRE** : Cherchez dans la liste ci-dessus si un nom correspond.
+1. **APPEL OBLIGATOIRE DE L'OUTIL**  
+   Pour CHAQUE composant, vous DEVEZ appeler l'outil \`searchForMatchingPreparations\` avec un terme de recherche pertinent.
 
 2. **ANALYSE DU RÉSULTAT**  
-   - **Si une correspondance est trouvée** (ex: la liste contient "Fond brun de veau" et la recette demande "fond de veau") :  
-     * Utiliser le nom exact de la liste dans \`subRecipes\`.  
+   - **Si l'outil retourne un ou plusieurs noms correspondants** (ex: "Fond brun de veau" pour "fond de veau") :  
+     * Utiliser le nom exact retourné dans \`subRecipes\`.  
      * Ne PAS inclure ce composant dans \`ingredients\`.  
      * Ne PAS inclure ses étapes dans les champs \`procedure_...\`.  
      * Si la recette mentionne un terme proche, remplacez-le par le nom exact de la base.  
 
-   - **Si AUCUNE correspondance n'est trouvée** :  
+   - **Si l'outil ne retourne AUCUN résultat** :  
      * Inclure les ingrédients dans la liste \`ingredients\`.  
      * Inclure ses étapes dans la procédure.  
 
-⚠️ Règle stricte : NE JAMAIS INVENTER de sous-recette. Si elle n'est pas dans la liste fournie, elle n'existe pas.
+⚠️ Règle stricte : NE JAMAIS INVENTER de sous-recette.  
 
 ---
 
@@ -172,12 +172,10 @@ export const generateRecipeConceptFlow = ai.defineFlow(
         outputSchema: RecipeConceptOutputSchema,
     },
     async (input) => {
-        // 1. Récupérer toutes les préparations existantes
-        const existingPreparations = await getAllPreparationNames();
-        const inputWithContext = { ...input, existingPreparations, cacheBuster: Math.random() };
-
-        // 2. Générer le concept textuel de la recette
-        const { output: recipeConcept } = await recipeGenPrompt(inputWithContext);
+        const inputWithCacheBuster = { ...input, cacheBuster: Math.random() };
+        
+        // 1. Générer le concept textuel de la recette
+        const { output: recipeConcept } = await recipeGenPrompt(inputWithCacheBuster);
 
         if (!recipeConcept) {
             throw new Error("La génération du concept de la recette a échoué.");
@@ -185,7 +183,7 @@ export const generateRecipeConceptFlow = ai.defineFlow(
         
         let finalOutput: RecipeConceptOutput = { ...recipeConcept, imageUrl: undefined };
 
-        // 3. Si c'est un plat, générer une image
+        // 2. Si c'est un plat, générer une image
         if (input.type === 'Plat') {
             let imageUrl = `https://placehold.co/1024x768/fafafa/7d7d7d.png?text=${encodeURIComponent(recipeConcept.name)}`;
 
