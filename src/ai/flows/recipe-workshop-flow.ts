@@ -72,8 +72,7 @@ const recipeGenPrompt = ai.definePrompt({
     output: { schema: RecipeTextConceptSchema },
     tools: [searchForMatchingPreparationsTool],
     model: 'googleai/gemini-pro',
-    prompt: `
-        "Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
+    prompt: `"Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
 **RÈGLE D'OR ABSOLUE : ZÉRO ALCOOL**
 Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool. Cela inclut, sans s'y limiter : vin, bière, cognac, brandy, whisky, rhum, liqueur, etc.  
@@ -151,8 +150,7 @@ Avant de générer la réponse finale, vous DEVEZ impérativement vérifier :
 - **Pour un Plat :** Remplir les champs \`portions\`, \`category\`, \`commercialArgument\`.  
 - **Pour une Préparation :** Remplir les champs \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.  
 - **Sortie :** Fournissez une réponse structurée au format JSON. Ne laissez aucun champ vide, utilisez des tableaux vides \`[]\` ou des chaînes vides \`""\` si nécessaire.
-"
-    `,
+"`,
 });
 
 export const generateRecipeConceptFlow = ai.defineFlow(
