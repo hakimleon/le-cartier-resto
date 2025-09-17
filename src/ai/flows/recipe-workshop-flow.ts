@@ -73,6 +73,11 @@ const recipeGenPrompt = ai.definePrompt({
 
 ---
 
+## CONTEXTE : NOM DE LA RECETTE EN COURS DE CRÉATION
+Le nom de la recette que vous êtes en train de générer est : \`{{{name}}}\`
+
+---
+
 ## LISTE DES PRÉPARATIONS EXISTANTES À UTILISER
 Vous devez obligatoirement utiliser les préparations suivantes si elles correspondent à un composant de la recette :
 {{#each allPreparationNames}}
@@ -81,13 +86,12 @@ Vous devez obligatoirement utiliser les préparations suivantes si elles corresp
 
 ---
 
-## RÈGLE D'OR ABSOLUE : ZÉRO ALCOOL
-Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool.
-Cela inclut, sans s'y limiter : vin, bière, cognac, brandy, whisky, rhum, liqueur, etc.
-- Si une recette classique en contient, vous DEVEZ le remplacer par une alternative sans alcool (bouillon, jus de raisin, jus de pomme, vinaigre doux, etc.) ou l’omettre.
-- ⚠️ Si un ingrédient alcoolisé est présent dans la recette générée, la sortie est considérée comme INVALIDE.
+## RÈGLES D'OR ABSOLUES
+1.  **ZÉRO ALCOOL** : Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool (vin, bière, cognac, etc.). Si une recette classique en contient, vous DEVEZ le remplacer par une alternative sans alcool (bouillon, jus) ou l’omettre.
 
-### SUBSTITUTIONS AUTOMATIQUES (obligatoires)
+2.  **PAS D'AUTO-RÉFÉRENCE** : Vous ne devez JAMAIS inclure le nom de la recette en cours de création (\`{{{name}}}\`) dans la liste \`subRecipes\`. Une recette ne peut pas être son propre ingrédient. C'est une erreur logique capitale.
+
+### SUBSTITUTIONS D'ALCOOL AUTOMATIQUES (obligatoires)
 - Cognac → Jus de raisin blanc réduit OU bouillon corsé
 - Vin rouge → Jus de raisin rouge OU fond brun réduit
 - Vin blanc → Jus de pomme OU bouillon de volaille
@@ -98,25 +102,24 @@ Cela inclut, sans s'y limiter : vin, bière, cognac, brandy, whisky, rhum, lique
 ## MISSION PRINCIPALE : UTILISER LES PRÉPARATIONS DE LA LISTE
 Pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate") :
 
-1. **VÉRIFICATION** : Regardez si un nom dans la "LISTE DES PRÉPARATIONS EXISTANTES À UTILISER" correspond.
-
-2. **ANALYSE**
-   - **Si un nom correspond** (ex: "Fond brun de veau" pour "fond de veau") :
-     * Utiliser le nom exact de la liste dans \`subRecipes\`.
-     * Ne PAS inclure ce composant dans \`ingredients\`.
-     * Ne PAS inclure ses étapes dans les champs \`procedure_...\`.
-   - **Si AUCUN nom ne correspond** :
-     * Inclure les ingrédients dans la liste \`ingredients\`.
-     * Inclure les étapes dans la procédure.
+1.  **VÉRIFICATION** : Regardez si un nom dans la "LISTE DES PRÉPARATIONS EXISTANTES" correspond.
+2.  **ANALYSE**
+    *   **Si un nom correspond ET n'est pas le nom de la recette actuelle** :
+        *   Utiliser le nom exact de la liste dans \`subRecipes\`.
+        *   Ne PAS inclure ses ingrédients dans \`ingredients\`.
+        *   Ne PAS inclure ses étapes dans les procédures.
+    *   **Si AUCUN nom ne correspond OU si c'est la recette actuelle** :
+        *   Inclure les ingrédients dans la liste \`ingredients\`.
+        *   Inclure les étapes dans la procédure.
 
 ⚠️ Règle stricte : NE JAMAIS INVENTER de sous-recette qui n'est pas dans la liste fournie.
 
 ---
 
 ## RÈGLES POUR LES INGRÉDIENTS
-1. **Nom simple** : le nom doit être simple et générique ("Oeuf", "Farine", "Citron").
-   - Exceptions autorisées pour précision : "Jaune d’œuf", "Blanc d’œuf", "Filet de poisson".
-2. **Unités logiques** : "g", "kg", "ml", "l", "pièce".
+1.  **Nom simple** : le nom doit être simple et générique ("Oeuf", "Farine", "Citron").
+    *   Exceptions autorisées pour précision : "Jaune d’œuf", "Blanc d’œuf", "Filet de poisson".
+2.  **Unités logiques** : "g", "kg", "ml", "l", "pièce".
 
 ---
 
@@ -150,13 +153,12 @@ CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles
 
 ## ÉTAPE DE CONTRÔLE AVANT LA SORTIE JSON
 Avant de produire la réponse finale, vous DEVEZ :
-1. Vérifier qu’aucun ingrédient listé dans \`subRecipes\` n’apparaît dans \`ingredients\`.
-2. Vérifier qu’aucun ingrédient alcoolisé n’est présent.
-   - Si trouvé : supprimer et appliquer une substitution automatique.
-3. Vérifier que la liste des ingrédients respecte les règles (noms simples, unités logiques, exceptions autorisées).
+1.  Vérifier que le nom de la recette actuelle (\`{{{name}}}\`) n'est PAS dans \`subRecipes\`.
+2.  Vérifier qu'aucun ingrédient listé dans \`subRecipes\` n’apparaît dans \`ingredients\`.
+3.  Vérifier qu’aucun ingrédient alcoolisé n’est présent.
+4.  Vérifier que la liste des ingrédients respecte les règles (noms simples, unités logiques).
 
-⚠️ Si une de ces conditions n’est pas respectée, la sortie est INVALIDE.
-Vous devez corriger et régénérer jusqu’à obtenir un JSON 100% conforme.
+⚠️ Si une de ces conditions n’est pas respectée, la sortie est INVALIDE. Vous devez corriger et régénérer jusqu’à obtenir un JSON 100% conforme.
 
 ---
 

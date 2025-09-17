@@ -16,7 +16,7 @@ import type { RecipeConceptOutput } from '@/ai/flows/recipe-workshop-flow';
 export async function createDishFromWorkshop(concept: RecipeConceptOutput): Promise<string> {
     try {
         let docRef;
-        if (concept.portions) { // This indicates it's a Plat
+        if (concept.type === 'Plat') {
              const dishData: Omit<Recipe, 'id'> = {
                 type: 'Plat',
                 name: concept.name,
