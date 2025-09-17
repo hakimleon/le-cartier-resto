@@ -18,12 +18,15 @@ const CommercialArgumentInputSchema = z.object({
   description: z.string().optional().describe("La description du plat."),
   ingredients: z.array(z.string()).optional().describe("Liste des ingrédients principaux."),
 });
+export type CommercialArgumentInput = z.infer<typeof CommercialArgumentInputSchema>;
 
 const CommercialArgumentOutputSchema = z.object({
   argument: z.string().describe("L'argumentaire commercial concis et alléchant pour le menu."),
 });
+export type CommercialArgumentOutput = z.infer<typeof CommercialArgumentOutputSchema>;
 
-export async function generateCommercialArgument(input: z.infer<typeof CommercialArgumentInputSchema>): Promise<z.infer<typeof CommercialArgumentOutputSchema>> {
+
+export async function generateCommercialArgument(input: CommercialArgumentInput): Promise<CommercialArgumentOutput> {
   const prompt = `Génère un argumentaire commercial court et percutant (2 phrases maximum) pour un plat de restaurant. Sois créatif et utilise un langage qui met l'eau à la bouche.
 
 Plat : ${input.name}
@@ -50,6 +53,7 @@ const RecipeInputSchema = z.object({
     description: z.string().optional(),
     type: z.enum(['Plat', 'Préparation']),
 });
+export type RecipeInput = z.infer<typeof RecipeInputSchema>;
 
 const RecipeOutputSchema = z.object({
     ingredients: z.array(z.object({
@@ -67,8 +71,9 @@ const RecipeOutputSchema = z.object({
     productionUnit: z.string().optional(),
     usageUnit: z.string().optional(),
 });
+export type RecipeOutput = z.infer<typeof RecipeOutputSchema>;
 
-export async function generateRecipe(input: z.infer<typeof RecipeInputSchema>): Promise<z.infer<typeof RecipeOutputSchema>> {
+export async function generateRecipe(input: RecipeInput): Promise<RecipeOutput> {
   const prompt = `Tu es un chef de cuisine. Élabore une fiche technique complète pour la ${input.type.toLowerCase()} suivante.
 Nom : ${input.name}
 Description : ${input.description || 'Non fournie.'}
@@ -80,7 +85,7 @@ Si c'est une préparation, estime une quantité produite (productionQuantity) et
 Ne fournis QUE la réponse au format JSON demandé.
 `;
   const { output } = await ai.generate({
-    model: 'googleai/gemini-pro',
+    model: 'googleai/gemini-2.5-flash',
     prompt,
     output: {
       format: 'json',
@@ -96,6 +101,8 @@ const DerivedPreparationsInputSchema = z.object({
     basePreparationName: z.string().describe("Nom de la préparation de base."),
     basePreparationDescription: z.string().optional().describe("Description de la préparation de base."),
 });
+export type DerivedPreparationsInput = z.infer<typeof DerivedPreparationsInputSchema>;
+
 
 const DerivedPreparationsOutputSchema = z.object({
     suggestions: z.array(z.object({
@@ -103,10 +110,9 @@ const DerivedPreparationsOutputSchema = z.object({
         description: z.string().describe("Courte description expliquant l'application concrète (ex: 'Nappage pour côtes de bœuf', 'Dérivée avec des agrumes pour le canard')."),
     })).describe("Liste de 5 suggestions d'applications culinaires concrètes pour la préparation."),
 });
-
 export type DerivedPreparationsOutput = z.infer<typeof DerivedPreparationsOutputSchema>;
 
-export async function generateDerivedPreparations(input: z.infer<typeof DerivedPreparationsInputSchema>): Promise<z.infer<typeof DerivedPreparationsOutputSchema>> {
+export async function generateDerivedPreparations(input: DerivedPreparationsInput): Promise<DerivedPreparationsOutput> {
     const prompt = `En tant que chef exécutif, je te donne une préparation de base et tu dois me fournir un guide d'application culinaire. L'objectif est de standardiser son utilisation, de maîtriser la créativité et d'éviter le gaspillage.
 
 Préparation de base : "${input.basePreparationName}"
@@ -161,7 +167,7 @@ const IngredientAlternativeOutputSchema = z.object({
 });
 export type IngredientAlternativeOutput = z.infer<typeof IngredientAlternativeOutputSchema>;
 
-export async function generateIngredientAlternative(input: z.infer<typeof IngredientAlternativeInputSchema>): Promise<z.infer<typeof IngredientAlternativeOutputSchema>> {
+export async function generateIngredientAlternative(input: IngredientAlternativeInput): Promise<IngredientAlternativeOutput> {
   const prompt = `Tu es un chef de cuisine créatif et expérimenté. Un autre chef te demande de l'aide pour trouver un substitut.
 
 Ingrédient à remplacer: "${input.ingredientName}"
