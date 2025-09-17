@@ -71,7 +71,7 @@ const recipeGenPrompt = ai.definePrompt({
     input: { schema: RecipeConceptInputSchema },
     output: { schema: RecipeTextConceptSchema },
     tools: [searchForMatchingPreparationsTool],
-    model: 'googleai/gemini-2.5-flash',
+    model: 'googleai/gemini-pro',
     prompt: `
         Vous êtes un chef expert créant une fiche technique pour un restaurant. Le type de fiche est : {{{type}}}.
 
@@ -80,6 +80,8 @@ const recipeGenPrompt = ai.definePrompt({
         2.  **Utilisation obligatoire :** Si l'outil retourne un ou plusieurs noms de préparations existantes, vous DEVEZ utiliser la correspondance la plus pertinente dans le champ \`subRecipes\`. Utilisez le nom exact retourné par l'outil. Ne mettez JAMAIS les ingrédients d'une préparation existante dans la liste \`ingredients\`.
         3.  **Intégration du reste :** Pour tout ce qui N'A PAS de correspondance via l'outil, vous DEVEZ inclure ses ingrédients directement dans la liste \`ingredients\` principale et ses étapes dans les champs \`procedure_...\`.
         
+        **CORRESPONDANCE INTELLIGENTE :** Soyez intelligent dans la correspondance. Si un ingrédient demandé ressemble fortement à une préparation existante (ex: "fond de veau" vs "Fond brun de veau", "sauce tomate" vs "Sauce tomate maison"), vous DEVEZ utiliser la préparation existante.
+
         **NE JAMAIS INVENTER DE NOUVELLES SOUS-RECETTES.** Si un composant n'est pas trouvé par l'outil, il fait partie intégrante de la recette principale.
 
         **RÈGLES STRICTES POUR LES INGRÉDIENTS (champ \`ingredients\`) :**
