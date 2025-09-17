@@ -73,21 +73,18 @@ const recipeGenPrompt = ai.definePrompt({
     tools: [getAvailablePreparationsTool],
     model: 'googleai/gemini-2.5-flash',
     prompt: `
-        Vous êtes un chef expert créant une fiche technique pour un restaurant. La cible est une fiche de type : {{{type}}}.
+        Vous êtes un chef expert créant une fiche technique pour un restaurant. Le type de fiche est : {{{type}}}.
 
-        OBLIGATOIRE : Appelez l'outil \`getAvailablePreparations\` pour connaître les sous-recettes déjà existantes.
-
-        **RÈGLE D'OR : PRIORISER LES PRÉPARATIONS EXISTANTES.**
-        - Si un composant demandé (ex: "mayonnaise", "fond de veau") existe dans la liste de l'outil, vous devez l'utiliser dans le champ \`subRecipes\` avec une quantité et une unité estimées.
-        - **INTERDICTION** : Ne mettez JAMAIS les ingrédients d'une sous-recette existante dans la liste \`ingredients\` principale.
-
-        **LOGIQUE SIMPLIFIÉE :**
-        - Pour tout ce qui n'est pas une préparation existante (ex: une sauce minute, une marinade, une purée simple), vous devez inclure ses ingrédients directement dans la liste \`ingredients\` principale, et ses étapes dans les champs \`procedure_...\`.
-        - Ne tentez PAS de créer de "nouvelles préparations" ou d'isoler des recettes. Tout est intégré.
+        **LOGIQUE DE FONCTIONNEMENT SIMPLE :**
+        1.  **Vérifiez les préparations existantes :** Appelez OBLIGATOIREMENT l'outil \`getAvailablePreparations\` pour obtenir la liste des sous-recettes disponibles.
+        2.  **Utilisez les préparations existantes :** Si un composant de la recette (ex: "fond de veau", "sauce béchamel") est dans la liste de l'outil, vous DEVEZ l'inclure dans le champ \`subRecipes\`. Ne mettez JAMAIS les ingrédients d'une préparation existante dans la liste \`ingredients\`.
+        3.  **Intégrez tout le reste :** Pour tout ce qui N'EST PAS une préparation existante (ex: une sauce minute, une marinade, une purée simple, une garniture spécifique), vous DEVEZ inclure ses ingrédients directement dans la liste \`ingredients\` principale et ses étapes dans les champs \`procedure_...\`.
+        
+        **NE JAMAIS INVENTER DE NOUVELLES SOUS-RECETTES.** Tout ce qui n'est pas dans la liste de l'outil est considéré comme faisant partie intégrante de la recette principale.
 
         **RÈGLES STRICTES POUR LES INGRÉDIENTS (champ \`ingredients\`) :**
-        1. **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron"). N'ajoutez JAMAIS de qualificatifs. On veut "Oeuf", pas "Jaunes d'oeufs".
-        2. **UNITÉS INTELLIGENTES :** Utilisez l'unité la plus logique. Privilégiez "g", "kg", "ml", "l" pour la précision, mais utilisez "pièce" si c'est plus naturel (ex: 1 œuf).
+        1.  **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron"). N'ajoutez JAMAIS de qualificatifs (pas de "Jaunes d'oeufs", juste "Oeuf").
+        2.  **UNITÉS INTELLIGENTES :** Utilisez "g", "kg", "ml", "l", ou "pièce" de manière logique.
 
         {{#if rawRecipe}}
         PRIORITÉ : Reformatez la recette brute suivante en respectant la structure et toutes les règles ci-dessus.
