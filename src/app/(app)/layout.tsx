@@ -94,6 +94,18 @@ export default function AppLayout({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
+                  isActive={pathname.startsWith('/preparations-base')}
+                  tooltip="Préparations de Base"
+                >
+                  <Link href="/preparations-base">
+                    <NotebookText />
+                    <span>Préparations Base</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
                   isActive={pathname.startsWith('/ingredients')}
                   tooltip="Ingrédients"
                 >
