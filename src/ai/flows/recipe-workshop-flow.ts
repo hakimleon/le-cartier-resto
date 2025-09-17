@@ -71,7 +71,7 @@ const recipeGenPrompt = ai.definePrompt({
     input: { schema: RecipeConceptInputSchema },
     output: { schema: RecipeTextConceptSchema },
     tools: [searchForMatchingPreparationsTool],
-    model: 'googleai/gemini-pro',
+    model: 'googleai/gemini-2.5-flash',
     prompt: `"Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
 **RÈGLE D'OR ABSOLUE : ZÉRO ALCOOL**
