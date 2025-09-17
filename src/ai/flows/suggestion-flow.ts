@@ -146,14 +146,14 @@ Fournis uniquement la réponse au format JSON demandé. Ne crée pas de plats fi
 
 // --- Flow pour les alternatives d'ingrédients ---
 
-export const IngredientAlternativeInputSchema = z.object({
+const IngredientAlternativeInputSchema = z.object({
   ingredientName: z.string().describe("L'ingrédient à remplacer."),
   recipeContext: z.string().describe("Le nom de la recette dans laquelle l'ingrédient est utilisé."),
   constraints: z.string().optional().describe("Contraintes à respecter (ex: 'sans alcool', 'végétarien', 'moins cher').")
 });
 export type IngredientAlternativeInput = z.infer<typeof IngredientAlternativeInputSchema>;
 
-export const IngredientAlternativeOutputSchema = z.object({
+const IngredientAlternativeOutputSchema = z.object({
   suggestions: z.array(z.object({
     name: z.string().describe("Le nom de l'ingrédient de remplacement."),
     justification: z.string().describe("Brève explication du pourquoi ce substitut fonctionne (goût, texture, etc.).")
@@ -161,19 +161,12 @@ export const IngredientAlternativeOutputSchema = z.object({
 });
 export type IngredientAlternativeOutput = z.infer<typeof IngredientAlternativeOutputSchema>;
 
+export async function generateIngredientAlternative(input: IngredientAlternativeInput): Promise<IngredientAlternativeOutput> {
+  const prompt = `Tu es un chef de cuisine créatif et expérimenté. Un autre chef te demande de l'aide pour trouver un substitut.
 
-const generateIngredientAlternativeFlow = ai.defineFlow(
-  {
-    name: 'generateIngredientAlternativeFlow',
-    inputSchema: IngredientAlternativeInputSchema,
-    outputSchema: IngredientAlternativeOutputSchema
-  },
-  async ({ ingredientName, recipeContext, constraints }) => {
-    const prompt = `Tu es un chef de cuisine créatif et expérimenté. Un autre chef te demande de l'aide pour trouver un substitut.
-
-Ingrédient à remplacer: "${ingredientName}"
-Dans le contexte de la recette: "${recipeContext}"
-${constraints ? `Contrainte impérative: "${constraints}"` : ''}
+Ingrédient à remplacer: "${input.ingredientName}"
+Dans le contexte de la recette: "${input.recipeContext}"
+${input.constraints ? `Contrainte impérative: "${input.constraints}"` : ''}
 
 Propose 3 alternatives pertinentes. Pour chaque suggestion, fournis le nom du substitut et une justification concise expliquant pourquoi c'est un bon choix (profil de goût, rôle dans la recette, etc.).
 
@@ -188,9 +181,6 @@ Réponds uniquement au format JSON demandé.`;
     });
 
     return output!;
-  }
-);
-
-export async function generateIngredientAlternative(input: IngredientAlternativeInput): Promise<IngredientAlternativeOutput> {
-  return await generateIngredientAlternativeFlow(input);
 }
+
+    
