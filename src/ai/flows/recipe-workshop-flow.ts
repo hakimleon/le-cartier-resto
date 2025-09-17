@@ -73,28 +73,39 @@ const recipeGenPrompt = ai.definePrompt({
     tools: [searchForMatchingPreparationsTool],
     model: 'googleai/gemini-pro',
     prompt: `
-        Vous êtes un chef expert créant une fiche technique pour un restaurant. Le type de fiche est : {{{type}}}.
+        Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
-        **LOGIQUE DE FONCTIONNEMENT CRUCIALE :**
-        1.  **Vérification systématique :** Pour chaque composant qui pourrait être une préparation (ex: 'fond de veau', 'béchamel', 'purée de carottes'), vous DEVEZ appeler l'outil \`searchForMatchingPreparations\` avec ce terme.
-        2.  **Utilisation obligatoire :** Si l'outil retourne un ou plusieurs noms de préparations existantes, vous DEVEZ utiliser la correspondance la plus pertinente dans le champ \`subRecipes\`. Utilisez le nom exact retourné par l'outil. Ne mettez JAMAIS les ingrédients d'une préparation existante dans la liste \`ingredients\`.
-        3.  **Intégration du reste :** Pour tout ce qui N'A PAS de correspondance via l'outil, vous DEVEZ inclure ses ingrédients directement dans la liste \`ingredients\` principale et ses étapes dans les champs \`procedure_...\`.
+        **MISSION PRINCIPALE : DÉTECTER ET UTILISER LES SOUS-RECETTES EXISTANTES**
+
+        Votre logique doit IMPÉRATIVEMENT suivre ces étapes pour chaque composant d'une recette (ex: 'un fond de veau', 'une sauce tomate', 'purée de pois') :
+
+        1.  **APPEL OBLIGATOIRE DE L'OUTIL** : Pour CHAQUE composant qui pourrait être une préparation, vous DEVEZ appeler l'outil \`searchForMatchingPreparations\` avec un terme de recherche pertinent (ex: pour "fond de veau maison", chercher "fond de veau").
         
-        **CORRESPONDANCE INTELLIGENTE :** Soyez intelligent dans la correspondance. Si un ingrédient demandé ressemble fortement à une préparation existante (ex: "fond de veau" vs "Fond brun de veau", "sauce tomate" vs "Sauce tomate maison"), vous DEVEZ utiliser la préparation existante.
+        2.  **ANALYSE DU RÉSULTAT** :
+            *   **Si l'outil retourne un ou plusieurs noms correspondants** (ex: l'outil retourne "Fond brun de veau" pour la recherche "fond de veau") :
+                *   Vous DEVEZ utiliser le nom exact retourné par l'outil dans le champ \`subRecipes\`.
+                *   Vous NE DEVEZ JAMAIS inclure les ingrédients de cette préparation dans la liste \`ingredients\` principale.
+                *   Vous NE DEVEZ JAMAIS inclure les étapes de cette préparation dans les champs \`procedure_...\`
 
-        **NE JAMAIS INVENTER DE NOUVELLES SOUS-RECETTES.** Si un composant n'est pas trouvé par l'outil, il fait partie intégrante de la recette principale.
+            *   **Si l'outil ne retourne AUCUN résultat** :
+                *   Ce composant n'est PAS une sous-recette existante.
+                *   Vous DEVEZ alors inclure ses ingrédients dans la liste \`ingredients\` principale.
+                *   Vous DEVEZ inclure ses étapes dans les champs de procédure appropriés.
+
+        **NE JAMAIS INVENTER DE SOUS-RECETTE.** Si l'outil ne trouve rien, le composant fait partie de la recette principale. C'est une règle absolue.
 
         **RÈGLES STRICTES POUR LES INGRÉDIENTS (champ \`ingredients\`) :**
         1.  **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron"). N'ajoutez JAMAIS de qualificatifs (pas de "Jaunes d'oeufs", juste "Oeuf").
         2.  **UNITÉS INTELLIGENTES :** Utilisez "g", "kg", "ml", "l", ou "pièce" de manière logique.
 
         {{#if rawRecipe}}
-        PRIORITÉ : Reformatez la recette brute suivante en respectant la structure et toutes les règles ci-dessus.
+        PRIORITÉ : Reformatez la recette brute suivante en respectant la structure et TOUTES les règles ci-dessus.
         ---
         {{{rawRecipe}}}
         ---
         {{else}}
-        CRÉATION : Créez une nouvelle fiche technique en respectant les règles.
+        CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles.
+        - Type de Fiche: {{{type}}}
         - Nom/Idée : {{{name}}}
         - Description: {{{description}}}
         - Ingrédients principaux : {{{mainIngredients}}}
