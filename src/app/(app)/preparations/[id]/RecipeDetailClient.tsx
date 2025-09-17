@@ -330,6 +330,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -728,7 +729,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   
     const handleGenerateSuggestions = async () => {
         if (!recipe) return;
-        setIsGenerating(true);
+        setIsSuggesting(true);
         setDerivedSuggestions(null);
         try {
             const result = await generateDerivedPreparations({
@@ -746,7 +747,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 variant: 'destructive',
             });
         } finally {
-            setIsGenerating(false);
+            setIsSuggesting(false);
         }
     };
 
@@ -1195,9 +1196,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                     <Button onClick={handleGenerateSuggestions} disabled={isGenerating} className="w-full">
-                        <Sparkles className={cn("mr-2 h-4 w-4", isGenerating && "animate-spin")} />
-                        {isGenerating ? "Recherche d'idées..." : "Suggérer des applications"}
+                     <Button onClick={handleGenerateSuggestions} disabled={isSuggesting} className="w-full">
+                        <Sparkles className={cn("mr-2 h-4 w-4", isSuggesting && "animate-spin")} />
+                        {isSuggesting ? "Recherche d'idées..." : "Suggérer des applications"}
                     </Button>
 
                     {derivedSuggestions && (
@@ -1231,5 +1232,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
