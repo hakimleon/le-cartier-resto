@@ -76,7 +76,7 @@ const recipeGenPrompt = ai.definePrompt({
         Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
         **RÈGLE D'OR ABSOLUE : ZÉRO ALCOOL**
-        Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool. Cela inclut, sans s'y limiter : vin, bière, cognac, brandy, whisky, rhum, liqueur, etc. Si une recette classique en contient, vous devez le remplacer par une alternative sans alcool (bouillon, jus de raisin, vinaigre, etc.) ou l'omettre.
+        Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool. Cela inclut, sans s'y limiter : vin, bière, cognac, brandy, whisky, rhum, liqueur, etc. Si une recette classique en contient, vous devez le remplacer par une alternative sans alcool (bouillon, jus de raisin, vinaigre, etc.) ou l'omettre. C'est une règle non négociable.
 
         **MISSION PRINCIPALE : DÉTECTER ET UTILISER LES SOUS-RECETTES EXISTANTES**
 
