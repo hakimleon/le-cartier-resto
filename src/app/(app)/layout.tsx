@@ -82,7 +82,7 @@ export default function AppLayout({
                <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname.startsWith('/preparations')}
+                  isActive={pathname.startsWith('/preparations') && !pathname.startsWith('/preparations/workshop')}
                   tooltip="Préparations"
                 >
                   <Link href="/preparations">

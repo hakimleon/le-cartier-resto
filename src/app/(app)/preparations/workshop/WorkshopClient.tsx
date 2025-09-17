@@ -110,7 +110,7 @@ export default function WorkshopClient() {
                     title: "Préparation enregistrée !",
                     description: `"${conceptForAction.name}" a été ajoutée. Redirection...`,
                 });
-                router.push(`/preparations/${newDocId}`);
+                router.push(`/preparations-base/${newDocId}`);
             } else {
                  throw new Error("L'ID du document n'a pas été retourné après la création.");
             }
