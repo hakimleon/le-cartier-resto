@@ -72,15 +72,19 @@ Vous devez obligatoirement utiliser les préparations suivantes si elles corresp
 ---
 
 ## RÈGLES D'OR ABSOLUES
-1.  **ZÉRO ALCOOL** : Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool (vin, bière, cognac, etc.). Si une recette classique en contient, vous DEVEZ le remplacer par une alternative sans alcool (bouillon, jus) ou l’omettre.
+1. **ZÉRO ALCOOL** : Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool (vin, bière, cognac, etc.). Si une recette classique en contient, vous DEVEZ le remplacer par une alternative sans alcool (bouillon, jus) ou l’omettre.
 
-2.  **PAS D'AUTO-RÉFÉRENCE** : Vous ne devez JAMAIS inclure le nom de la recette en cours de création (\`{{{name}}}\`) dans la liste \`subRecipes\`. Une recette ne peut pas être son propre ingrédient. C'est une erreur logique capitale.
+2. **PAS D'AUTO-RÉFÉRENCE** : Vous ne devez JAMAIS inclure le nom de la recette en cours de création (\`{{{name}}}\`) dans la liste \`subRecipes\`. Une recette ne peut pas être son propre ingrédient.
 
-3.  **MISSION PRINCIPALE - RÈGLE IMPÉRATIVE** : Pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate"), vous devez **OBLIGATOIREMENT** vérifier s'il existe dans la "LISTE DES PRÉPARATIONS EXISTANTES".
-    *   **SI OUI**, et si ce n'est pas le nom de la recette actuelle : vous DEVEZ l'ajouter à la liste \`subRecipes\` et NE PAS mettre ses ingrédients dans la liste \`ingredients\`. C'est une obligation, pas une suggestion.
-    *   **SI NON** : vous DEVEZ lister ses ingrédients bruts dans \`ingredients\`.
+3. **MISSION PRINCIPALE - RÈGLE IMPÉRATIVE** : 
+   - Pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate"), vous devez **OBLIGATOIREMENT** vérifier s'il existe dans la "LISTE DES PRÉPARATIONS EXISTANTES".
+   - **SI OUI**, et si ce n'est pas le nom de la recette actuelle : vous DEVEZ l'ajouter à la liste \`subRecipes\` et NE PAS mettre ses ingrédients dans la liste \`ingredients\`.
+   - **SI NON** : vous DEVEZ lister ses ingrédients bruts dans \`ingredients\`.
 
-⚠️ Règle stricte : NE JAMAIS INVENTER de sous-recette qui n'est pas dans la liste fournie. NE JAMAIS lister une préparation existante comme un ingrédient simple.
+⚠️ Règle stricte : 
+- NE JAMAIS INVENTER de sous-recette qui n'est pas dans la liste fournie. 
+- NE JAMAIS lister une préparation existante comme un ingrédient simple.
+- NE JAMAIS placer un ingrédient brut (ex: "Crème fraîche", "Poivre noir") dans \`subRecipes\`. Ces éléments doivent obligatoirement aller dans \`ingredients\`.
 
 ---
 
@@ -113,10 +117,11 @@ CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles
 
 ## ÉTAPE DE CONTRÔLE AVANT LA SORTIE JSON
 Avant de produire la réponse finale, vous DEVEZ :
-1.  Vérifier que le nom de la recette actuelle (\`{{{name}}}\`) n'est PAS dans \`subRecipes\`.
-2.  Pour chaque nom dans \`subRecipes\`, vérifier qu'il est bien présent dans la "LISTE DES PRÉPARATIONS EXISTANTES" fournie au début.
-3.  Vérifier qu'aucun nom présent dans \`subRecipes\` n'a ses ingrédients listés dans \`ingredients\`. Le "fond de veau", s'il est une préparation, ne doit pas avoir "os de veau" dans la liste d'ingrédients de la recette actuelle.
-4.  Vérifier qu’aucun ingrédient alcoolisé n’est présent.
+1. Vérifier que le nom de la recette actuelle (\`{{{name}}}\`) n'est PAS dans \`subRecipes\`.
+2. Vérifier que chaque nom de \`subRecipes\` correspond EXACTEMENT à un nom de la "LISTE DES PRÉPARATIONS EXISTANTES".
+3. Vérifier qu'aucun ingrédient brut (comme "Crème fraîche", "Poivre noir") n'est dans \`subRecipes\`. Si c'est le cas, corriger automatiquement en les déplaçant dans \`ingredients\`.
+4. Vérifier qu'aucun nom présent dans \`subRecipes\` n'a ses ingrédients listés dans \`ingredients\`.
+5. Vérifier qu’aucun ingrédient alcoolisé n’est présent.
 
 ⚠️ Si une de ces conditions n’est pas respectée, la sortie est INVALIDE. Vous devez corriger et régénérer jusqu’à obtenir un JSON 100% conforme.
 
