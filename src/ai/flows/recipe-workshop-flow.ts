@@ -73,64 +73,85 @@ const recipeGenPrompt = ai.definePrompt({
     tools: [searchForMatchingPreparationsTool],
     model: 'googleai/gemini-pro',
     prompt: `
-        Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
+        "Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
-        **RÈGLE D'OR ABSOLUE : ZÉRO ALCOOL**
-        Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool. Cela inclut, sans s'y limiter : vin, bière, cognac, brandy, whisky, rhum, liqueur, etc. Si une recette classique en contient, vous devez le remplacer par une alternative sans alcool (bouillon, jus de raisin, vinaigre, etc.) ou l'omettre. C'est une règle non négociable.
+**RÈGLE D'OR ABSOLUE : ZÉRO ALCOOL**
+Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool. Cela inclut, sans s'y limiter : vin, bière, cognac, brandy, whisky, rhum, liqueur, etc.  
+→ Si une recette classique en contient, vous devez le remplacer par une alternative sans alcool (bouillon, jus de raisin, vinaigre doux, etc.) ou l’omettre.  
+Ceci est une règle non négociable.
 
-        **MISSION PRINCIPALE : DÉTECTER ET UTILISER LES SOUS-RECETTES EXISTANTES**
+**MISSION PRINCIPALE : DÉTECTER ET UTILISER LES SOUS-RECETTES EXISTANTES**
 
-        Votre logique doit IMPÉRATIVEMENT suivre ces étapes pour chaque composant d'une recette (ex: 'un fond de veau', 'une sauce tomate', 'purée de pois') :
+Votre logique doit IMPÉRATIVEMENT suivre ces étapes pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate", "purée de pois") :
 
-        1.  **APPEL OBLIGATOIRE DE L'OUTIL** : Pour CHAQUE composant qui pourrait être une préparation, vous DEVEZ appeler l'outil \`searchForMatchingPreparations\` avec un terme de recherche pertinent (ex: pour "fond de veau maison", chercher "fond de veau").
-        
-        2.  **ANALYSE DU RÉSULTAT** :
-            *   **Si l'outil retourne un ou plusieurs noms correspondants** (ex: l'outil retourne "Fond brun de veau" pour la recherche "fond de veau") :
-                *   Vous DEVEZ utiliser le nom exact retourné par l'outil dans le champ \`subRecipes\`.
-                *   Vous NE DEVEZ JAMAIS inclure les ingrédients de cette préparation dans la liste \`ingredients\` principale.
-                *   Vous NE DEVEZ JAMAIS inclure les étapes de cette préparation dans les champs \`procedure_...\`
+1. **APPEL OBLIGATOIRE DE L'OUTIL**  
+   Pour CHAQUE composant qui pourrait être une préparation, vous DEVEZ appeler l'outil \`searchForMatchingPreparations\` avec un terme de recherche pertinent (ex: pour "fond de veau maison", chercher "fond de veau").
 
-            *   **Si l'outil ne retourne AUCUN résultat** :
-                *   Ce composant n'est PAS une sous-recette existante.
-                *   Vous DEVEZ alors inclure ses ingrédients dans la liste \`ingredients\` principale.
-                *   Vous DEVEZ inclure ses étapes dans les champs de procédure appropriés.
+2. **ANALYSE DU RÉSULTAT**  
+   - **Si l'outil retourne un ou plusieurs noms correspondants** (ex: l'outil retourne "Fond brun de veau" pour la recherche "fond de veau") :  
+     * Vous DEVEZ utiliser le nom exact retourné par l'outil dans le champ \`subRecipes\`.  
+     * Vous NE DEVEZ JAMAIS inclure les ingrédients de cette préparation dans la liste \`ingredients\` principale.  
+     * Vous NE DEVEZ JAMAIS inclure les étapes de cette préparation dans les champs \`procedure_...\`.  
+     * Si la recette mentionne un terme proche ("fond de veau" vs "fond brun de veau"), vous devez toujours uniformiser avec le nom exact de la base.  
 
-        **NE JAMAIS INVENTER DE SOUS-RECETTE.** Si l'outil ne trouve rien, le composant fait partie de la recette principale. C'est une règle absolue.
+   - **Si l'outil ne retourne AUCUN résultat** :  
+     * Ce composant n'est PAS une sous-recette existante.  
+     * Vous DEVEZ alors inclure ses ingrédients dans la liste \`ingredients\` principale.  
+     * Vous DEVEZ inclure ses étapes dans les champs de procédure appropriés.  
 
-        **RÈGLES STRICTES POUR LES INGRÉDIENTS (champ \`ingredients\`) :**
-        1.  **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron"). N'ajoutez JAMAIS de qualificatifs (pas de "Jaunes d'oeufs", juste "Oeuf").
-        2.  **UNITÉS INTELLIGENTES :** Utilisez "g", "kg", "ml", "l", ou "pièce" de manière logique.
+**NE JAMAIS INVENTER DE SOUS-RECETTE.** Si l'outil ne trouve rien, le composant fait partie de la recette principale.
 
-        {{#if rawRecipe}}
-        PRIORITÉ : Reformatez la recette brute suivante en respectant la structure et TOUTES les règles ci-dessus.
-        ---
-        {{{rawRecipe}}}
-        ---
-        {{else}}
-        CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles.
-        - Type de Fiche: {{{type}}}
-        - Nom/Idée : {{{name}}}
-        - Description: {{{description}}}
-        - Ingrédients principaux : {{{mainIngredients}}}
-        - À exclure : {{{excludedIngredients}}}
-        - Recommandations : {{{recommendations}}}
-        {{/if}}
+---
 
-        {{#if refinementHistory}}
-        - HISTORIQUE DES DEMANDES (à respecter) :
-        {{#each refinementHistory}}
-            - "{{{this}}}"
-        {{/each}}
-        {{/if}}
+**RÈGLES STRICTES POUR LES INGRÉDIENTS (champ \`ingredients\`) :**
+1. **NOM SIMPLE :** Le nom de l'ingrédient doit être simple et générique (ex: "Oeuf", "Farine", "Citron").  
+   - Exceptions autorisées si nécessaire pour la précision culinaire : "Jaune d’œuf", "Blanc d’œuf", "Filet de poisson".  
+2. **UNITÉS INTELLIGENTES :** Utilisez "g", "kg", "ml", "l", ou "pièce" de manière logique.  
 
-        {{#if currentRefinement}}
-        - NOUVELLE INSTRUCTION (à appliquer par-dessus tout) : "{{{currentRefinement}}}"
-        {{/if}}
+---
 
-        **INSTRUCTIONS DE FORMATAGE**
-        - **Pour un Plat :** Remplir les champs \`portions\`, \`category\`, \`commercialArgument\`.
-        - **Pour une Préparation :** Remplir les champs \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.
-        - **Sortie :** Fournissez une réponse structurée au format JSON. Ne laissez aucun champ vide, utilisez des tableaux vides '[]' ou des chaînes vides '""' si nécessaire.
+{{#if rawRecipe}}
+PRIORITÉ : Reformatez la recette brute suivante en respectant la structure et TOUTES les règles ci-dessus.  
+---  
+{{{rawRecipe}}}  
+---  
+{{else}}
+CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles.  
+- Type de Fiche: {{{type}}}  
+- Nom/Idée : {{{name}}}  
+- Description: {{{description}}}  
+- Ingrédients principaux : {{{mainIngredients}}}  
+- À exclure : {{{excludedIngredients}}}  
+- Recommandations : {{{recommendations}}}  
+{{/if}}
+
+{{#if refinementHistory}}
+- HISTORIQUE DES DEMANDES (à respecter) :  
+{{#each refinementHistory}}  
+    - "{{{this}}}"  
+{{/each}}  
+{{/if}}
+
+{{#if currentRefinement}}
+- NOUVELLE INSTRUCTION (à appliquer par-dessus tout) : "{{{currentRefinement}}}"  
+{{/if}}
+
+---
+
+**ÉTAPE DE CONTRÔLE AVANT LA SORTIE JSON**  
+Avant de générer la réponse finale, vous DEVEZ impérativement vérifier :  
+1. Qu’aucun ingrédient lié à une sous-recette listée dans \`subRecipes\` n’apparaît dans \`ingredients\`.  
+2. Qu’aucun ingrédient contenant de l’alcool (vin, bière, cognac, rhum, whisky, etc.) n’apparaît dans \`ingredients\`.  
+   - Si trouvé : supprimer l’ingrédient et proposer automatiquement un substitut sans alcool.  
+3. Que la liste \`ingredients\` respecte les règles (noms simples, unités logiques, exceptions autorisées).  
+
+---
+
+**INSTRUCTIONS DE FORMATAGE**  
+- **Pour un Plat :** Remplir les champs \`portions\`, \`category\`, \`commercialArgument\`.  
+- **Pour une Préparation :** Remplir les champs \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.  
+- **Sortie :** Fournissez une réponse structurée au format JSON. Ne laissez aucun champ vide, utilisez des tableaux vides \`[]\` ou des chaînes vides \`""\` si nécessaire.
+"
     `,
 });
 
