@@ -274,7 +274,7 @@ const NewPreparationRow = ({
                     </Command>
                 </PopoverContent>
             </Popover>
-             {!prep.childPreparationId && (
+             {!prep.childPreparationId && prep.name && (
                 <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewPreparationModal(prep.tempId)} title={`Créer la préparation "${prep.name}"`}>
                     <PlusCircle className="h-4 w-4 text-primary" />
                 </Button>
@@ -864,44 +864,46 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 return (
                                 <TableRow key={ing.recipeIngredientId}>
                                     <TableCell className="font-medium">
-                                        <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                                            <PopoverTrigger asChild>
-                                                <Button
-                                                    variant="outline"
-                                                    role="combobox"
-                                                    aria-expanded={openCombobox}
-                                                    className="w-full justify-between"
-                                                >
-                                                    {ing.name || "Choisir..."}
-                                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                </Button>
-                                            </PopoverTrigger>
-                                            <PopoverContent className="w-[300px] p-0">
-                                                <Command>
-                                                    <CommandInput placeholder="Rechercher un ingrédient..." />
-                                                    <CommandList>
-                                                        <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
-                                                        <CommandGroup>
-                                                            {sortedIngredients.map((sIng) => (
-                                                                sIng.id ?
-                                                                    <CommandItem
-                                                                        key={sIng.id}
-                                                                        value={sIng.name}
-                                                                        onSelect={() => {
-                                                                            handleIngredientChange(ing.recipeIngredientId, 'id', sIng.id!);
-                                                                            setOpenCombobox(false);
-                                                                        }}
-                                                                    >
-                                                                        <Check className={cn("mr-2 h-4 w-4", ing.id === sIng.id ? "opacity-100" : "opacity-0")} />
-                                                                        {sIng.name}
-                                                                    </CommandItem>
-                                                                    : null
-                                                            ))}
-                                                        </CommandGroup>
-                                                    </CommandList>
-                                                </Command>
-                                            </PopoverContent>
-                                        </Popover>
+                                        <div className="flex items-center gap-1">
+                                            <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        variant="outline"
+                                                        role="combobox"
+                                                        aria-expanded={openCombobox}
+                                                        className="w-full justify-between"
+                                                    >
+                                                        {ing.name || "Choisir..."}
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[300px] p-0">
+                                                    <Command>
+                                                        <CommandInput placeholder="Rechercher un ingrédient..." />
+                                                        <CommandList>
+                                                            <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                                            <CommandGroup>
+                                                                {sortedIngredients.map((sIng) => (
+                                                                    sIng.id ?
+                                                                        <CommandItem
+                                                                            key={sIng.id}
+                                                                            value={sIng.name}
+                                                                            onSelect={() => {
+                                                                                handleIngredientChange(ing.recipeIngredientId, 'id', sIng.id!);
+                                                                                setOpenCombobox(false);
+                                                                            }}
+                                                                        >
+                                                                            <Check className={cn("mr-2 h-4 w-4", ing.id === sIng.id ? "opacity-100" : "opacity-0")} />
+                                                                            {sIng.name}
+                                                                        </CommandItem>
+                                                                        : null
+                                                                ))}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
                                     </TableCell>
                                     <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20"/></TableCell>
                                     <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell>
