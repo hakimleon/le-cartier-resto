@@ -7,20 +7,18 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, Weight, BookCopy, ChevronsRight, Braces } from "lucide-react";
+import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Package, BookCopy, ChevronsRight, Braces } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
 import { generateRecipeConcept, RecipeConceptOutput, RecipeConceptInput } from "@/ai/flows/recipe-workshop-flow";
 
 import { useRouter } from "next/navigation";
-import { createDishFromWorkshop } from "./actions";
+import { createDishFromWorkshop } from "../../workshop/actions";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
-const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
 
 export default function WorkshopClient() {
@@ -34,7 +32,7 @@ export default function WorkshopClient() {
     const initialFormRef = useRef<HTMLFormElement>(null);
     const refinementFormRef = useRef<HTMLFormElement>(null);
     
-    const [context, setContext] = useState<RecipeConceptInput>({ type: 'Plat' });
+    const [context, setContext] = useState<RecipeConceptInput>({ type: 'Préparation' });
     const [refinementHistory, setRefinementHistory] = useState<string[]>([]);
     
     const handleSubmit = async (instructions: RecipeConceptInput) => {
@@ -48,7 +46,9 @@ export default function WorkshopClient() {
         }
 
         try {
-            const result = await generateRecipeConcept(instructions);
+            // Ensure the type is always 'Préparation' for this workshop
+            const finalInstructions = { ...instructions, type: 'Préparation' as const };
+            const result = await generateRecipeConcept(finalInstructions);
             setGeneratedConcept(result);
             setRawGeneratedJson(JSON.stringify(result, null, 2));
 
@@ -56,7 +56,7 @@ export default function WorkshopClient() {
                 refinementFormRef.current.reset();
             }
         } catch (error) {
-            console.error("Error generating dish concept:", error);
+            console.error("Error generating preparation concept:", error);
             toast({
                 title: "Erreur de l'IA",
                 description: "La génération du concept a échoué. Veuillez réessayer.",
@@ -71,8 +71,8 @@ export default function WorkshopClient() {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
         const instructions: RecipeConceptInput = {
-            type: 'Plat',
-            name: formData.get("dishName") as string,
+            type: 'Préparation',
+            name: formData.get("prepName") as string,
             mainIngredients: formData.get("mainIngredients") as string || undefined,
             excludedIngredients: formData.get("excludedIngredients") as string || undefined,
             recommendations: formData.get("recommendations") as string || undefined,
@@ -101,13 +101,12 @@ export default function WorkshopClient() {
         try {
             const newDocId = await createDishFromWorkshop(generatedConcept);
             if (newDocId) {
-                 sessionStorage.setItem(WORKSHOP_CONCEPT_KEY, JSON.stringify(generatedConcept));
-                 toast({
-                    title: "Plat enregistré !",
-                    description: `"${generatedConcept.name}" a été ajouté au menu.`,
+                sessionStorage.setItem(PREPARATION_WORKSHOP_CONCEPT_KEY, JSON.stringify(generatedConcept));
+                toast({
+                    title: "Préparation enregistrée !",
+                    description: `"${generatedConcept.name}" a été ajoutée.`,
                 });
-                router.push(`/menu/${newDocId}`);
-                
+                router.push(`/preparations/${newDocId}`);
             } else {
                  throw new Error("L'ID du document n'a pas été retourné après la création.");
             }
@@ -122,7 +121,7 @@ export default function WorkshopClient() {
     const handleNewRecipe = () => {
         setGeneratedConcept(null);
         setRawGeneratedJson(null);
-        setContext({ type: 'Plat' });
+        setContext({ type: 'Préparation' });
         setRefinementHistory([]);
         if (initialFormRef.current) initialFormRef.current.reset();
         if (refinementFormRef.current) refinementFormRef.current.reset();
@@ -135,8 +134,8 @@ export default function WorkshopClient() {
                     <FlaskConical className="h-6 w-6" />
                 </div>
                 <div>
-                    <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Atelier des Plats</h1>
-                    <p className="text-muted-foreground">Donnez vie à vos idées de plats avec l'aide de l'IA.</p>
+                    <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Atelier des Préparations</h1>
+                    <p className="text-muted-foreground">Créez vos recettes de base avec l'aide de l'IA.</p>
                 </div>
             </header>
 
@@ -151,20 +150,20 @@ export default function WorkshopClient() {
                                 <div className="space-y-2">
                                     <h4 className="font-medium text-sm">Créer à partir d'instructions</h4>
                                     <div>
-                                        <Label htmlFor="dishName">Nom ou idée de base</Label>
-                                        <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." disabled={isLoading || !!generatedConcept} required/>
+                                        <Label htmlFor="prepName">Nom ou idée de base</Label>
+                                        <Input id="prepName" name="prepName" placeholder="Ex: Fond brun de veau" disabled={isLoading || !!generatedConcept} required/>
                                     </div>
                                     <div>
                                         <Label htmlFor="mainIngredients">Ingrédients principaux (Optionnel)</Label>
-                                        <Input id="mainIngredients" name="mainIngredients" placeholder="Ex: Bar, Orange, Fenouil" disabled={isLoading || !!generatedConcept}/>
+                                        <Input id="mainIngredients" name="mainIngredients" placeholder="Ex: Os de veau, carottes, oignons" disabled={isLoading || !!generatedConcept}/>
                                     </div>
                                     <div>
                                         <Label htmlFor="excludedIngredients">Ingrédients à exclure (Optionnel)</Label>
-                                        <Input id="excludedIngredients" name="excludedIngredients" placeholder="Ex: Vin, crème, porc" disabled={isLoading || !!generatedConcept}/>
+                                        <Input id="excludedIngredients" name="excludedIngredients" placeholder="Ex: Vin, alcool" disabled={isLoading || !!generatedConcept}/>
                                     </div>
                                     <div>
                                         <Label htmlFor="recommendations">Recommandations (Optionnel)</Label>
-                                        <Textarea id="recommendations" name="recommendations" placeholder="Ex: Un plat frais, méditerranéen..." disabled={isLoading || !!generatedConcept}/>
+                                        <Textarea id="recommendations" name="recommendations" placeholder="Ex: Très corsé, peu salé..." disabled={isLoading || !!generatedConcept}/>
                                     </div>
                                 </div>
                                 <div className="relative">
@@ -180,7 +179,7 @@ export default function WorkshopClient() {
                                 </div>
                                 <Button type="submit" className="w-full" disabled={isLoading || !!generatedConcept}>
                                     <Sparkles className="mr-2 h-4 w-4" />
-                                    {isLoading && !generatedConcept ? "Génération..." : "Générer le concept"}
+                                    {isLoading && !generatedConcept ? "Génération..." : "Générer la préparation"}
                                 </Button>
                             </form>
                         </CardContent>
@@ -212,31 +211,24 @@ export default function WorkshopClient() {
                         <CardHeader className="flex flex-row items-center justify-between">
                             <div>
                                 <CardTitle>Proposition de l'IA</CardTitle>
-                                <CardDescription>Voici la fiche technique générée par l'IA.</CardDescription>
+                                <CardDescription>Voici la fiche technique générée pour la préparation.</CardDescription>
                             </div>
                              {generatedConcept && (
                                 <Button variant="outline" onClick={handleNewRecipe}>
                                     <PlusCircle className="mr-2 h-4 w-4" />
-                                    Nouvelle Recette
+                                    Nouvelle Préparation
                                 </Button>
                             )}
                         </CardHeader>
                         <CardContent>
                             {isLoading && !generatedConcept ? (
                                 <div className="space-y-4 p-4">
-                                    <Skeleton className="w-full h-64 rounded-lg" />
-                                    <Skeleton className="h-6 w-3/4" />
+                                    <Skeleton className="h-8 w-3/4" />
                                     <div className="flex gap-4"> <Skeleton className="h-5 w-20" /> <Skeleton className="h-5 w-20" /> <Skeleton className="h-5 w-20" /> </div>
                                     <Skeleton className="h-4 w-full" /> <Skeleton className="h-4 w-full" /> <Skeleton className="h-4 w-1/2" />
                                 </div>
                             ) : generatedConcept ? (
                                 <div className="space-y-6">
-                                     {generatedConcept.imageUrl && (
-                                        <div className="relative w-full h-80 rounded-lg overflow-hidden border">
-                                            {isLoading && <div className="absolute inset-0 bg-background/80 flex items-center justify-center z-10"><Sparkles className="h-8 w-8 animate-spin text-primary"/></div>}
-                                            <Image src={generatedConcept.imageUrl} alt={generatedConcept.name} fill style={{ objectFit: 'cover' }} data-ai-hint="artistic food plating" />
-                                        </div>
-                                     )}
                                     <div>
                                         <h3 className="text-2xl font-bold">{generatedConcept.name}</h3>
                                         <p className="text-muted-foreground mt-1">{generatedConcept.description}</p>
@@ -244,12 +236,12 @@ export default function WorkshopClient() {
                                     <div className="grid grid-cols-3 gap-4 text-center p-2 rounded-lg border bg-muted/50">
                                         <div className="flex flex-col items-center gap-1"><Clock className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.duration} min</span></div>
                                         <div className="flex flex-col items-center gap-1"><Soup className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.difficulty}</span></div>
-                                        {generatedConcept.portions && <div className="flex flex-col items-center gap-1"><Users className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.portions} portion{generatedConcept.portions! > 1 ? 's' : ''}</span></div>}
+                                        <div className="flex flex-col items-center gap-1"><Package className="h-5 w-5 text-muted-foreground"/><span className="text-sm font-semibold">{generatedConcept.productionQuantity} {generatedConcept.productionUnit}</span></div>
                                     </div>
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                                         <div>
-                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients</h4>
+                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Package className="h-4 w-4"/>Ingrédients</h4>
                                             {generatedConcept.ingredients && generatedConcept.ingredients.length > 0 ? (
                                                 <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
                                                     {generatedConcept.ingredients.map((ing) => (<li key={ing.name}><span className="font-medium text-foreground">{ing.quantity} {ing.unit}</span> - {ing.name}</li>))}
@@ -279,13 +271,6 @@ export default function WorkshopClient() {
                                     </div>
                                     
                                     <Separator />
-
-                                    {generatedConcept.commercialArgument && (
-                                        <div>
-                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><MessageSquareQuote className="h-4 w-4"/>Argumentaire Commercial</h4>
-                                            <p className="text-sm text-muted-foreground italic border-l-2 pl-4">{generatedConcept.commercialArgument}</p>
-                                        </div>
-                                    )}
 
                                     <Button className="w-full" onClick={handleSave} disabled={isSaving}>
                                         <NotebookText className="mr-2 h-4 w-4" />
