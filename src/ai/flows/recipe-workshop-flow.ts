@@ -75,9 +75,11 @@ const recipeGenPrompt = ai.definePrompt({
     prompt: `
         Vous êtes un chef expert créant une fiche technique pour un restaurant. Le type de fiche est : {{{type}}}.
 
-        **LOGIQUE DE FONCTIONNEMENT SIMPLE :**
+        **LOGIQUE DE FONCTIONNEMENT CRUCIALE :**
         1.  **Vérifiez les préparations existantes :** Appelez OBLIGATOIREMENT l'outil \`getAvailablePreparations\` pour obtenir la liste des sous-recettes disponibles.
-        2.  **Utilisez les préparations existantes :** Si un composant de la recette (ex: "fond de veau", "sauce béchamel") est dans la liste de l'outil, vous DEVEZ l'inclure dans le champ \`subRecipes\`. Ne mettez JAMAIS les ingrédients d'une préparation existante dans la liste \`ingredients\`.
+        2.  **Utilisez les préparations existantes (CORRESPONDANCE INTELLIGENTE) :**
+            - Si un composant de la recette ressemble fortement à une préparation existante (ex: "fond de veau" vs "Fond brun de veau", "béchamel" vs "Sauce Béchamel"), vous DEVEZ l'inclure dans le champ \`subRecipes\` en utilisant le nom exact de la préparation retournée par l'outil.
+            - Ne mettez JAMAIS les ingrédients d'une préparation existante dans la liste \`ingredients\`.
         3.  **Intégrez tout le reste :** Pour tout ce qui N'EST PAS une préparation existante (ex: une sauce minute, une marinade, une purée simple, une garniture spécifique), vous DEVEZ inclure ses ingrédients directement dans la liste \`ingredients\` principale et ses étapes dans les champs \`procedure_...\`.
         
         **NE JAMAIS INVENTER DE NOUVELLES SOUS-RECETTES.** Tout ce qui n'est pas dans la liste de l'outil est considéré comme faisant partie intégrante de la recette principale.
