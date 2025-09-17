@@ -106,7 +106,7 @@ const DerivedPreparationsOutputSchema = z.object({
 
 export type DerivedPreparationsOutput = z.infer<typeof DerivedPreparationsOutputSchema>;
 
-export async function generateDerivedPreparations(input: z.infer<typeof DerivedPreparationsInputSchema>): Promise<DerivedPreparationsOutput> {
+export async function generateDerivedPreparations(input: z.infer<typeof DerivedPreparationsInputSchema>): Promise<z.infer<typeof DerivedPreparationsOutputSchema>> {
     const prompt = `En tant que chef exécutif, je te donne une préparation de base et tu dois me fournir un guide d'application culinaire. L'objectif est de standardiser son utilisation, de maîtriser la créativité et d'éviter le gaspillage.
 
 Préparation de base : "${input.basePreparationName}"
@@ -146,14 +146,14 @@ Fournis uniquement la réponse au format JSON demandé. Ne crée pas de plats fi
 
 // --- Flow pour les alternatives d'ingrédients ---
 
-export const IngredientAlternativeInputSchema = z.object({
+const IngredientAlternativeInputSchema = z.object({
   ingredientName: z.string().describe("L'ingrédient à remplacer."),
   recipeContext: z.string().describe("Le nom de la recette dans laquelle l'ingrédient est utilisé."),
   constraints: z.string().optional().describe("Contraintes à respecter (ex: 'sans alcool', 'végétarien', 'moins cher').")
 });
 export type IngredientAlternativeInput = z.infer<typeof IngredientAlternativeInputSchema>;
 
-export const IngredientAlternativeOutputSchema = z.object({
+const IngredientAlternativeOutputSchema = z.object({
   suggestions: z.array(z.object({
     name: z.string().describe("Le nom de l'ingrédient de remplacement."),
     justification: z.string().describe("Brève explication du pourquoi ce substitut fonctionne (goût, texture, etc.).")
@@ -161,7 +161,7 @@ export const IngredientAlternativeOutputSchema = z.object({
 });
 export type IngredientAlternativeOutput = z.infer<typeof IngredientAlternativeOutputSchema>;
 
-export async function generateIngredientAlternative(input: IngredientAlternativeInput): Promise<IngredientAlternativeOutput> {
+export async function generateIngredientAlternative(input: z.infer<typeof IngredientAlternativeInputSchema>): Promise<z.infer<typeof IngredientAlternativeOutputSchema>> {
   const prompt = `Tu es un chef de cuisine créatif et expérimenté. Un autre chef te demande de l'aide pour trouver un substitut.
 
 Ingrédient à remplacer: "${input.ingredientName}"
