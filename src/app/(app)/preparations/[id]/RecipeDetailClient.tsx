@@ -133,12 +133,14 @@ const NewIngredientRow = ({
     handleNewIngredientChange,
     openNewIngredientModal,
     handleRemoveNewIngredient,
+    handleOpenSuggestionModal,
 }: {
     newIng: NewRecipeIngredient;
     sortedIngredients: Ingredient[];
     handleNewIngredientChange: (tempId: string, field: keyof NewRecipeIngredient, value: any) => void;
     openNewIngredientModal: (tempId: string) => void;
     handleRemoveNewIngredient: (tempId: string) => void;
+    handleOpenSuggestionModal: (ingredientId: string, ingredientName: string, isNew: boolean) => void;
 }) => {
     const [openCombobox, setOpenCombobox] = useState(false);
 
@@ -218,7 +220,16 @@ const NewIngredientRow = ({
                 </Select>
             </TableCell>
             <TableCell className="text-right font-semibold">{(newIng.totalCost || 0).toFixed(2)} DZD</TableCell>
-            <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
+            <TableCell className="text-right">
+                <div className="flex items-center justify-end">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenSuggestionModal(newIng.tempId, newIng.name, true)}>
+                        <Sparkles className="h-4 w-4 text-amber-500" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveNewIngredient(newIng.tempId)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                </div>
+            </TableCell>
         </TableRow>
     );
 };
@@ -1030,6 +1041,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     handleNewIngredientChange={handleNewIngredientChange}
                                     openNewIngredientModal={openNewIngredientModal}
                                     handleRemoveNewIngredient={handleRemoveNewIngredient}
+                                    handleOpenSuggestionModal={handleOpenSuggestionModal}
                                 />
                             ))}
                             {ingredients.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
@@ -1219,3 +1231,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
