@@ -761,6 +761,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
               type: 'Préparation',
               name: recipe.name,
               description: recipe.description,
+              mainIngredients: 'Fond de veau',
             });
 
             setGeneratedConcept(result);
@@ -1243,5 +1244,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
