@@ -127,13 +127,14 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
     return quantityInBaseUnit * netCostPerGramOrMl;
 };
 
+
 const EditableIngredientRow = ({
     ing,
     sortedIngredients,
     handleIngredientChange,
     handleOpenSuggestionModal,
     handleRemoveExistingIngredient
-} : {
+}: {
     ing: FullRecipeIngredient;
     sortedIngredients: Ingredient[];
     handleIngredientChange: (recipeIngredientId: string, field: 'quantity' | 'unit' | 'id', value: any) => void;
@@ -141,6 +142,7 @@ const EditableIngredientRow = ({
     handleRemoveExistingIngredient: (recipeIngredientId: string) => void;
 }) => {
     const [openCombobox, setOpenCombobox] = useState(false);
+
     return (
         <TableRow key={ing.recipeIngredientId}>
             <TableCell className="font-medium">
@@ -185,14 +187,14 @@ const EditableIngredientRow = ({
                     </Popover>
                 </div>
             </TableCell>
-            <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20"/></TableCell>
+            <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
             <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell>
             <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
             <TableCell className="text-right">
                 <div className="flex items-center justify-end">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenSuggestionModal(ing.recipeIngredientId, ing.name, false)}><Sparkles className="h-4 w-4 text-amber-500"/></Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenSuggestionModal(ing.recipeIngredientId, ing.name, false)}><Sparkles className="h-4 w-4 text-amber-500" /></Button>
                     <AlertDialog>
-                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger>
+                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ?</AlertDialogDescription></AlertDialogHeader>
                             <AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter>
@@ -201,9 +203,8 @@ const EditableIngredientRow = ({
                 </div>
             </TableCell>
         </TableRow>
-    )
-}
-
+    );
+};
 
 const NewIngredientRow = ({
     newIng,
@@ -276,7 +277,7 @@ const NewIngredientRow = ({
                     </Popover>
 
                     {!newIng.ingredientId && newIng.name && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={'Créer l\'ingrédient "'+newIng.name+'"'}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={'Créer l\\'ingrédient "'+newIng.name+'"'}>
                             <PlusCircle className="h-4 w-4 text-primary" />
                         </Button>
                     )}
@@ -1060,7 +1061,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         <TableHeader><TableRow><TableHead className="w-[35%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[100px] text-right">Actions</TableHead>}</TableRow></TableHeader>
                         <TableBody>
                             {isEditing && editableIngredients.map(ing => (
-                                <EditableIngredientRow
+                                <EditableIngredientRow 
                                     key={ing.recipeIngredientId}
                                     ing={ing}
                                     sortedIngredients={sortedIngredients}
@@ -1093,9 +1094,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <Table>
                         <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
                         <TableBody>
-                            {isEditing && editablePreparations.map(prep => (
+                            {isEditing && editablePreparations.map(prep => {
+                                const [openCombobox, setOpenCombobox] = useState(false);
+                                return (
                                 <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{isEditing ? ( <Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /> ) : prep.quantity }</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell>{isEditing && ( <TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer la préparation ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{prep.name}" de cette recette ?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingPreparation(prep.id)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell> )}</TableRow>
-                            ))}
+                            )})}
                             {!isEditing && preparations.map(prep => (
                                 <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
                             ))}
@@ -1167,7 +1170,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         <div>
                             <h4 className="font-semibold mb-1">Procédure brute</h4>
                             <div className="text-xs text-muted-foreground p-2 border rounded-md max-h-48 overflow-y-auto">
-                                <MarkdownRenderer text={`${generatedConcept.procedure_preparation}\n${generatedConcept.procedure_cuisson}\n${generatedConcept.procedure_service}`} />
+                                <MarkdownRenderer text={`${generatedConcept.procedure_preparation}\\n${generatedConcept.procedure_cuisson}\\n${generatedConcept.procedure_service}`} />
                             </div>
                         </div>
                     </CardContent>

@@ -337,7 +337,7 @@ const NewIngredientRow = ({
                     </Popover>
 
                     {!newIng.ingredientId && newIng.name && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={`Créer l'ingrédient "${newIng.name}"`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={'Créer l\\'ingrédient "'+newIng.name+'"'}>
                             <PlusCircle className="h-4 w-4 text-primary" />
                         </Button>
                     )}
@@ -438,7 +438,7 @@ const NewPreparationRow = ({
               size="icon"
               className="h-8 w-8 shrink-0"
               onClick={() => openNewPreparationModal(prep.tempId)}
-              title={`Créer la préparation "${prep.name}"`}
+              title={'Créer la préparation "'+prep.name+'"'}
             >
               <PlusCircle className="h-4 w-4 text-primary" />
             </Button>
@@ -1237,7 +1237,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <div>
                                     <h4 className="font-semibold mb-1">Procédure brute</h4>
                                     <div className="text-xs text-muted-foreground p-2 border rounded-md max-h-48 overflow-y-auto">
-                                        <MarkdownRenderer text={[`${workshopConcept.procedure_preparation}`, `${workshopConcept.procedure_cuisson}`, `${workshopConcept.procedure_service}`].join('\n')} />
+                                        <MarkdownRenderer text={[`${workshopConcept.procedure_preparation}`, `${workshopConcept.procedure_cuisson}`, `${workshopConcept.procedure_service}`].join('\\n')} />
                                     </div>
                                 </div>
                             </CardContent>
