@@ -85,7 +85,7 @@ Si c'est une préparation, estime une quantité produite (productionQuantity) et
 Ne fournis QUE la réponse au format JSON demandé.
 `;
   const { output } = await ai.generate({
-    model: 'googleai/gemini-2.5-flash',
+    model: 'googleai/gemini-pro',
     prompt,
     output: {
       format: 'json',
@@ -188,3 +188,5 @@ Réponds uniquement au format JSON demandé.`;
 
     return output!;
 }
+
+    
