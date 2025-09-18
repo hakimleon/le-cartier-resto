@@ -163,7 +163,7 @@ const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExisti
                 </div>
             </TableCell>
             <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
-            <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell>
+            <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></SelectTableCell>
             <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
             <TableCell className="text-right">
                 <div className="flex items-center justify-end">
@@ -1107,7 +1107,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Production & Coût</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Production &amp; Coût</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     {isEditing ? (
@@ -1199,5 +1199,7 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
 
     
