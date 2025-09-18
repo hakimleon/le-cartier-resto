@@ -9,6 +9,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -27,6 +28,7 @@ type PreparationsGuideProps = {
  * @returns The normalized string.
  */
 const normalizeString = (str: string): string => {
+    if (!str) return "";
     return str
         .normalize('NFD') // Decompose accents from characters
         .replace(/[\u0300-\u036f]/g, '') // Remove accent marks
@@ -49,15 +51,23 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-[70vh] pr-6">
-          <div className="space-y-6">
+          <div className="space-y-8">
             {preparationsGuideData.map((category) => {
               const categoryProgress = category.preparations.filter(p => existingNamesNormalized.has(normalizeString(p.name))).length;
               const totalInCategory = category.preparations.length;
+              const progressPercentage = totalInCategory > 0 ? (categoryProgress / totalInCategory) * 100 : 0;
 
               return (
                 <div key={category.title}>
-                  <h3 className="text-lg font-semibold tracking-tight">{category.title}</h3>
-                  <p className="text-sm text-muted-foreground italic mb-3">{category.description}</p>
+                  <div className="mb-3">
+                      <div className="flex justify-between items-center mb-1">
+                          <h3 className="text-lg font-semibold tracking-tight">{category.title}</h3>
+                          <span className="text-sm font-medium text-muted-foreground">{categoryProgress} / {totalInCategory}</span>
+                      </div>
+                      <Progress value={progressPercentage} />
+                       <p className="text-sm text-muted-foreground italic mt-2">{category.description}</p>
+                  </div>
+                  
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
                     {category.preparations.map((prep) => {
                       const isCreated = existingNamesNormalized.has(normalizeString(prep.name));
@@ -66,7 +76,7 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
                           {isCreated ? (
                             <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
                           ) : (
-                            <Circle className="h-4 w-4 text-muted-foreground/50 shrink-0" />
+                            <Circle className="h-4 w-4 text-muted-foreground/30 shrink-0" />
                           )}
                           <span className={cn(isCreated ? "text-foreground" : "text-muted-foreground")}>
                             {prep.name}
