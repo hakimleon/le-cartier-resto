@@ -52,20 +52,20 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
         </DialogHeader>
         <ScrollArea className="h-[70vh] pr-6">
           <div className="space-y-8">
-            {preparationsGuideData.map((category) => {
+            {preparationsGuideData.map((category, catIndex) => {
               const categoryProgress = category.preparations.filter(p => existingNamesNormalized.has(normalizeString(p.name))).length;
               const totalInCategory = category.preparations.length;
               const progressPercentage = totalInCategory > 0 ? (categoryProgress / totalInCategory) * 100 : 0;
 
               return (
                 <div key={category.title}>
-                  <div className="mb-3">
+                  <div className="mb-4">
                       <div className="flex justify-between items-center mb-1">
                           <h3 className="text-lg font-semibold tracking-tight">{category.title}</h3>
                           <span className="text-sm font-medium text-muted-foreground">{categoryProgress} / {totalInCategory}</span>
                       </div>
+                      <p className="text-sm text-muted-foreground italic mb-2">{category.description}</p>
                       <Progress value={progressPercentage} />
-                       <p className="text-sm text-muted-foreground italic mt-2">{category.description}</p>
                   </div>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
@@ -85,7 +85,7 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
                       );
                     })}
                   </div>
-                   {preparationsGuideData.indexOf(category) < preparationsGuideData.length - 1 && <Separator className="mt-6"/>}
+                   {catIndex < preparationsGuideData.length - 1 && <Separator className="mt-8"/>}
                 </div>
               );
             })}
