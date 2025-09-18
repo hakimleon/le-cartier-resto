@@ -1,3 +1,4 @@
+
 'use client';
 
 import { ReactNode } from 'react';
@@ -94,7 +95,7 @@ export default function AppLayout({
               <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
-                  isActive={pathname.startsWith('/garnishes')}
+                  isActive={pathname.startsWith('/garnishes') && !pathname.includes('workshop')}
                   tooltip="Garnitures"
                 >
                   <Link href="/garnishes">
@@ -136,6 +137,18 @@ export default function AppLayout({
                   <Link href="/preparations/workshop">
                     <FlaskConical />
                     <span>Atelier Préparations</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/garnishes/workshop')}
+                  tooltip="Atelier Garnitures"
+                >
+                  <Link href="/garnishes/workshop">
+                    <FlaskConical />
+                    <span>Atelier Garnitures</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
