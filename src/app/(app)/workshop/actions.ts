@@ -67,40 +67,4 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput): Prom
     }
 }
 
-/**
- * Creates a new preparation (recipe of type 'Préparation') from the workshop.
- * @param prepData - The preparation data (name, description).
- * @returns The ID of the newly created preparation.
- */
-export async function createPreparation(prepData: Partial<Omit<Preparation, 'id'>>): Promise<string> {
-     try {
-        // We set default values for fields not provided by the initial creation step.
-        const dataToSave: Omit<Preparation, 'id'> = {
-            type: 'Préparation',
-            name: prepData.name || 'Nouvelle Préparation',
-            description: prepData.description || '',
-            category: 'Sauces chaudes', // Default category
-            difficulty: 'Moyen',
-            duration: 10,
-            portions: 1,
-            productionQuantity: 1,
-            productionUnit: 'kg',
-            usageUnit: 'g',
-            procedure_preparation: '',
-            procedure_cuisson: '',
-            procedure_service: '',
-        };
-        
-        const prepsCol = collection(db, 'preparations');
-        const prepDocRef = await addDoc(prepsCol, dataToSave);
-        
-        return prepDocRef.id;
-
-    } catch (error) {
-        console.error("Error creating preparation:", error);
-        if (error instanceof Error) {
-            throw new Error(`Failed to create preparation: ${error.message}`);
-        }
-        throw new Error("An unknown error occurred while creating the preparation.");
-    }
-}
+    
