@@ -7,16 +7,15 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-
-const DishConceptInputSchema = z.object({});
-export type DishConceptInput = z.infer<typeof DishConceptInputSchema>;
-
-const DishConceptOutputSchema = z.object({});
-export type DishConceptOutput = z.infer<typeof DishConceptOutputSchema>;
+import { generateRecipeConcept as generateRecipeConceptFromNewFlow, RecipeConceptInput, RecipeConceptOutput } from './recipe-workshop-flow';
 
 
-// This function is now deprecated and will not be used.
-export async function generateDishConcept(input: DishConceptInput): Promise<DishConceptOutput> {
+// This function is now deprecated but will temporarily forward calls to the new flow
+// to ensure the old WorkshopClient doesn't break immediately.
+// The client should be updated to call generateRecipeConcept from recipe-workshop-flow.ts directly.
+export async function generateDishConcept(input: RecipeConceptInput): Promise<RecipeConceptOutput> {
     console.warn("DEPRECATED: generateDishConcept from workshop-flow.ts is called. Use generateRecipeConcept from recipe-workshop-flow.ts instead.");
-    throw new Error("This flow is deprecated.");
+    return generateRecipeConceptFromNewFlow({ ...input, type: 'Plat' });
 }
+
+    
