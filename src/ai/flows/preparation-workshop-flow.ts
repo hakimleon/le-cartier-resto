@@ -9,47 +9,8 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getAllPreparationNames } from '../tools/recipe-tools';
 import { googleAI } from '@genkit-ai/googleai';
-
-export const PreparationConceptInputSchema = z.object({
-    name: z.string().optional().describe("Le nom ou l'idée de base de la préparation. Si non fourni, l'IA doit en générer un."),
-    description: z.string().optional().describe("La description de la préparation."),
-    mainIngredients: z.string().optional().describe("Les ingrédients principaux à intégrer."),
-    excludedIngredients: z.string().optional().describe("Les ingrédients à ne jamais utiliser."),
-    recommendations: z.string().optional().describe("Directives sur le style ou la consistance souhaitée."),
-    rawRecipe: z.string().optional().describe("Une recette complète en texte brut à reformater. Si ce champ est fourni, l'IA doit l'utiliser comme source principale."),
-    refinementHistory: z.array(z.string()).optional().describe("L'historique des instructions d'affinage précédentes."),
-    currentRefinement: z.string().optional().describe("La nouvelle instruction d'affinage à appliquer."),
-    cacheBuster: z.number().optional().describe("Valeur aléatoire pour éviter la mise en cache."),
-});
-export type PreparationConceptInput = z.infer<typeof PreparationConceptInputSchema>;
-
-export const PreparationConceptOutputSchema = z.object({
-    name: z.string().describe("Le nom final de la préparation."),
-    description: z.string().describe("Une description technique et fonctionnelle."),
-    
-    ingredients: z.array(z.object({
-        name: z.string().describe("Nom de l'ingrédient."),
-        quantity: z.number().describe("Quantité."),
-        unit: z.string().describe("Unité (g, kg, ml, l, pièce).")
-    })).describe("Liste des ingrédients nécessaires."),
-    subRecipes: z.array(z.object({
-        name: z.string().describe("Nom de la sous-recette EXISTANTE."),
-        quantity: z.number().describe("Quantité de sous-recette."),
-        unit: z.string().describe("Unité pour la sous-recette."),
-    })).describe("Liste des sous-recettes EXISTANTES utilisées."),
-    procedure_preparation: z.string().describe("Procédure de préparation (Markdown)."),
-    procedure_cuisson: z.string().describe("Procédure de cuisson (Markdown)."),
-    procedure_service: z.string().describe("Procédure de conservation/stockage (Markdown)."),
-    duration: z.number().int().describe("Durée totale de production en minutes."),
-    difficulty: z.enum(['Facile', 'Moyen', 'Difficile']).describe("Niveau de difficulté."),
-    
-    portions: z.number().int().optional().describe("Nombre de portions ou de 'parts' que la recette peut produire. Important pour les purées, sauces, etc."),
-    productionQuantity: z.number().optional().describe("Quantité totale produite."),
-    productionUnit: z.string().optional().describe("Unité de production (kg, l, pièces)."),
-    usageUnit: z.string().optional().describe("Unité d'utilisation suggérée (g, ml, pièce)."),
-});
-export type PreparationConceptOutput = z.infer<typeof PreparationConceptOutputSchema>;
-
+import { PreparationConceptInputSchema, PreparationConceptOutputSchema } from './workshop-flow';
+import type { PreparationConceptInput, PreparationConceptOutput } from './workshop-flow';
 
 const preparationGenPrompt = ai.definePrompt({
     name: 'preparationWorkshopPrompt',
@@ -142,7 +103,7 @@ Avant de produire la réponse finale, vous DEVEZ :
 `,
 });
 
-export const generatePreparationConceptFlow = ai.defineFlow(
+const generatePreparationConceptFlow = ai.defineFlow(
     {
         name: 'generatePreparationConceptFlow',
         inputSchema: PreparationConceptInputSchema,

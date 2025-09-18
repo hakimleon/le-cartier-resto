@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Package, BookCopy, ChevronsRight, Braces, CookingPot } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { PreparationConceptOutput, PreparationConceptInput } from "@/ai/flows/preparation-workshop-flow";
+import type { PreparationConceptOutput, PreparationConceptInput } from "@/ai/flows/workshop-flow";
 
 import { useRouter } from "next/navigation";
 import { createDishFromWorkshop } from "../../workshop/actions";

@@ -9,8 +9,8 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getAllPreparationNames } from '../tools/recipe-tools';
 import { googleAI } from '@genkit-ai/googleai';
-import { PreparationConceptInputSchema, PreparationConceptOutputSchema } from './preparation-workshop-flow';
-import type { PreparationConceptInput, PreparationConceptOutput } from './preparation-workshop-flow';
+import { PreparationConceptInputSchema, PreparationConceptOutputSchema } from './workshop-flow';
+import type { PreparationConceptInput, PreparationConceptOutput } from './workshop-flow';
 
 
 const garnishGenPrompt = ai.definePrompt({
@@ -93,7 +93,7 @@ CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles
 `,
 });
 
-export const generateGarnishConceptFlow = ai.defineFlow(
+const generateGarnishConceptFlow = ai.defineFlow(
     {
         name: 'generateGarnishConceptFlow',
         inputSchema: PreparationConceptInputSchema,

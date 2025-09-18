@@ -11,7 +11,8 @@ import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, M
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
-import { generateRecipeConcept, RecipeConceptOutput, RecipeConceptInput } from "@/ai/flows/recipe-workshop-flow";
+import { generateRecipeConcept } from "@/ai/flows/recipe-workshop-flow";
+import type { RecipeConceptOutput, RecipeConceptInput } from "@/ai/flows/workshop-flow";
 
 import { useRouter } from "next/navigation";
 import { createDishFromWorkshop } from "./actions";
