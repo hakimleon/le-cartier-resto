@@ -43,6 +43,7 @@ const PreparationConceptOutputSchema = z.object({
     duration: z.number().int().describe("Durée totale de production en minutes."),
     difficulty: z.enum(['Facile', 'Moyen', 'Difficile']).describe("Niveau de difficulté."),
     
+    portions: z.number().int().optional().describe("Nombre de portions ou de 'parts' que la recette peut produire. Important pour les purées, sauces, etc."),
     productionQuantity: z.number().optional().describe("Quantité totale produite."),
     productionUnit: z.string().optional().describe("Unité de production (kg, l, pièces)."),
     usageUnit: z.string().optional().describe("Unité d'utilisation suggérée (g, ml, pièce)."),
@@ -130,6 +131,7 @@ Avant de produire la réponse finale, vous DEVEZ :
 
 ## INSTRUCTIONS DE FORMATAGE
 - Remplir \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.
+- Remplir le champ \`portions\` pour indiquer combien de "parts" (portions de service pour un plat) la quantité produite représente. C'est crucial pour les purées, accompagnements, sauces, etc.
 - La procédure de service (\`procedure_service\`) doit décrire la conservation/stockage.
 - Sortie : fournir une réponse au format JSON strict.
 - Ne laissez aucun champ vide : utilisez \`[]\` ou \`""\` si nécessaire.

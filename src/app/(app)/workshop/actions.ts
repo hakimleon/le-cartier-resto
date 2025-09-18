@@ -37,7 +37,7 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput): Prom
             const recipesCol = collection(db, 'recipes');
             docRef = await addDoc(recipesCol, dishData);
         } else { // This indicates it's a Préparation
-            const prepData: Omit<Preparation, 'id'> = {
+            const prepData: Partial<Omit<Preparation, 'id'>> = {
                 type: 'Préparation',
                 name: concept.name,
                 description: concept.description,
@@ -47,6 +47,7 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput): Prom
                 procedure_preparation: concept.procedure_preparation,
                 procedure_cuisson: concept.procedure_cuisson,
                 procedure_service: concept.procedure_service,
+                portions: concept.portions,
                 productionQuantity: concept.productionQuantity || 1,
                 productionUnit: concept.productionUnit || 'kg',
                 usageUnit: concept.usageUnit || 'g',
@@ -81,6 +82,7 @@ export async function createPreparation(prepData: Partial<Omit<Preparation, 'id'
             category: 'Sauces chaudes', // Default category
             difficulty: 'Moyen',
             duration: 10,
+            portions: 1,
             productionQuantity: 1,
             productionUnit: 'kg',
             usageUnit: 'g',

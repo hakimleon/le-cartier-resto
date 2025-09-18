@@ -89,7 +89,7 @@ export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe
     if (!recipeId) {
         throw new Error("L'identifiant de la recette est requis.");
     }
-    const collectionName = type === 'Plat' ? 'recipes' : 'preparations';
+    const collectionName = data.type === 'Plat' ? 'recipes' : 'preparations';
     const recipeDoc = doc(db, collectionName, recipeId);
     await updateDoc(recipeDoc, data);
 }

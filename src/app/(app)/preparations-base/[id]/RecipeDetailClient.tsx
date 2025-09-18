@@ -12,7 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, Merge, Replace } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, Merge, Replace, Users } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -694,6 +694,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             procedure_preparation: editableRecipe.procedure_preparation,
             procedure_cuisson: editableRecipe.procedure_cuisson,
             procedure_service: editableRecipe.procedure_service,
+            portions: (editableRecipe as Preparation).portions,
             productionQuantity: (editableRecipe as Preparation).productionQuantity,
             productionUnit: (editableRecipe as Preparation).productionUnit,
             usageUnit: (editableRecipe as Preparation).usageUnit,
@@ -944,6 +945,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
                     <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {recipe.duration} min</div>
                     <div className="flex items-center gap-1.5"><Soup className="h-4 w-4" /> {recipe.difficulty}</div>
+                    {(recipe as Preparation).portions && <div className="flex items-center gap-1.5"><Users className="h-4 w-4" /> {(recipe as Preparation).portions} portions</div>}
                 </div>
             </div>
         </div>
@@ -1110,6 +1112,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardContent className="space-y-4">
                     {isEditing ? (
                         <>
+                             <div className="space-y-2">
+                                <Label htmlFor="portions">Nombre de portions</Label>
+                                <Input id="portions" type="number" value={(editableRecipe as Preparation)?.portions || ''} onChange={(e) => handleRecipeDataChange('portions', parseFloat(e.target.value) || 0)} placeholder="Ex: 10" />
+                            </div>
                             <div className="space-y-2">
                                 <Label htmlFor="productionQuantity">Cette recette produit</Label>
                                 <div className="flex items-center gap-2">
@@ -1127,6 +1133,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Production totale</span>
                                 <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+                            </div>
+                             <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Nombre de portions</span>
+                                <span className="font-semibold">{(currentRecipeData as Preparation).portions || "-"}</span>
                             </div>
                                 <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Unité d'utilisation</span>
@@ -1189,7 +1199,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-
-
-  
