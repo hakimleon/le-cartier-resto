@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
 import { collection, onSnapshot, query } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Preparation, preparationCategories } from "@/lib/types";
+import { Preparation } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +36,14 @@ import {
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2 } from "lucide-react";
+
+const garnishCategories = [
+    "Purées et Crèmes",
+    "Légumes Poêlés & Rôtis",
+    "Gratins & Tielles",
+    "Féculents",
+    "Salades & Crudités",
+];
 
 export default function GarnishesClient() {
   const [garnishes, setGarnishes] = useState<Preparation[]>([]);
@@ -213,7 +222,7 @@ export default function GarnishesClient() {
       );
   }
 
-  const allGarnishCategories = ["Tous", ...preparationCategories]; // TODO: Create specific garnish categories
+  const allGarnishCategories = ["Tous", ...garnishCategories];
 
   return (
     <div className="space-y-6">
