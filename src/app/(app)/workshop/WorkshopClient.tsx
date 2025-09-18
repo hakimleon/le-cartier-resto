@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef } from "react";
@@ -102,7 +103,7 @@ export default function WorkshopClient() {
                 sessionStorage.setItem(WORKSHOP_CONCEPT_KEY, JSON.stringify(generatedConcept));
                 toast({
                     title: "Plat enregistré !",
-                    description: `"${generatedConcept.name}" a été ajouté au menu.`,
+                    description: `"${generatedConcept.name}" a été ajouté. Redirection...`,
                 });
                 router.push(`/menu/${newDocId}`);
             } else {
@@ -325,3 +326,5 @@ export default function WorkshopClient() {
         </div>
     );
 }
+
+    
