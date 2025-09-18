@@ -41,6 +41,15 @@ import { PreparationsGuide } from "./PreparationsGuide";
 // This component is a clone of PreparationsClient, adapted for the new "base preparations" flow.
 // The main difference is the "New Preparation" button now redirects to the workshop.
 
+const normalizeStringForSearch = (str: string): string => {
+    if (!str) return "";
+    return str
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLowerCase();
+};
+
+
 export default function PreparationsBaseClient() {
   const [preparations, setPreparations] = useState<Preparation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -112,10 +121,11 @@ export default function PreparationsBaseClient() {
   };
 
   const filteredPreparations = useMemo(() => {
+    const normalizedSearchTerm = normalizeStringForSearch(searchTerm);
     return preparations.filter(p => {
-        const searchTermMatch = searchTerm === '' || p.name.toLowerCase().includes(searchTerm.toLowerCase());
+        const nameMatch = normalizeStringForSearch(p.name).includes(normalizedSearchTerm);
         const categoryMatch = selectedCategory === 'Tous' || p.category === selectedCategory;
-        return searchTermMatch && categoryMatch;
+        return nameMatch && categoryMatch;
     });
   }, [preparations, searchTerm, selectedCategory]);
 
