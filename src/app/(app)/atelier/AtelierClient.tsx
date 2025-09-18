@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef } from "react";
@@ -24,7 +25,6 @@ const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
 // Simule la sortie de l'IA pour le développement de l'UI
 const mockConcept: RecipeConceptOutput = {
-    type: 'Plat',
     name: "Bar de ligne nacré, purée de fenouil à l'orange",
     description: "Un plat élégant et raffiné où la délicatesse du bar nacré rencontre la douceur anisée du fenouil, réhaussée par une touche d'agrume.",
     imageUrl: "https://picsum.photos/seed/1/1024/768",
@@ -329,3 +329,5 @@ export default function AtelierClient() {
             </div>
         </div>
     );
+
+    
