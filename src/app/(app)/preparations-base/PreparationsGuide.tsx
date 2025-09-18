@@ -48,7 +48,7 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-3xl">
+      <DialogContent className="max-w-5xl">
         <DialogHeader>
           <DialogTitle>Guide des Préparations de Base</DialogTitle>
           <DialogDescription>
@@ -56,7 +56,7 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-[70vh] pr-6">
-          <Accordion type="single" collapsible className="w-full space-y-4">
+          <Accordion type="single" collapsible className="w-full space-y-2">
             {preparationsGuideData.map((category) => {
               const categoryProgress = category.preparations.filter(p => existingNamesNormalized.has(normalizeString(p.name))).length;
               const totalInCategory = category.preparations.length;
@@ -75,7 +75,7 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-2 pb-4">
-                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm pl-2 border-l-2 ml-1">
+                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm pl-2 border-l-2 ml-1">
                             {category.preparations.map((prep) => {
                             const isCreated = existingNamesNormalized.has(normalizeString(prep.name));
                             return (
@@ -85,7 +85,7 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
                                 ) : (
                                     <Circle className="h-4 w-4 text-muted-foreground/30 shrink-0" />
                                 )}
-                                <span className={cn(isCreated ? "text-foreground" : "text-muted-foreground")}>
+                                <span className={cn("text-sm", isCreated ? "text-foreground" : "text-muted-foreground")}>
                                     {prep.name}
                                 </span>
                                 </div>
