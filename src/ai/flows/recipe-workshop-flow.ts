@@ -17,7 +17,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-export const RecipeConceptInputSchema = z.object({
+const RecipeConceptInputSchema = z.object({
     type: z.enum(['Plat', 'Préparation']).describe('Le type de fiche technique à générer.'),
     name: z.string().describe("Le nom ou l'idée de base du plat/préparation."),
     description: z.string().optional().describe("La description du plat/préparation."),
@@ -31,7 +31,7 @@ export const RecipeConceptInputSchema = z.object({
 });
 export type RecipeConceptInput = z.infer<typeof RecipeConceptInputSchema>;
 
-export const RecipeConceptOutputSchema = z.object({
+const RecipeConceptOutputSchema = z.object({
     name: z.string().describe("Le nom final et marketing de la recette."),
     description: z.string().describe("Une description alléchante et créative."),
     
@@ -230,4 +230,5 @@ export async function generateRecipeConcept(input: RecipeConceptInput): Promise<
     return generateRecipeConceptFlow(input);
 }
 
+    
     
