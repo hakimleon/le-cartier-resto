@@ -11,11 +11,16 @@ import {
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { CheckCircle2, Circle } from "lucide-react";
 import { ReactNode, useMemo } from "react";
 import { GuideCategory, preparationsGuideData } from "./guide-data";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 
 type PreparationsGuideProps = {
   children: ReactNode;
@@ -51,45 +56,47 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="h-[70vh] pr-6">
-          <div className="space-y-8">
-            {preparationsGuideData.map((category, catIndex) => {
+          <Accordion type="single" collapsible className="w-full space-y-4">
+            {preparationsGuideData.map((category) => {
               const categoryProgress = category.preparations.filter(p => existingNamesNormalized.has(normalizeString(p.name))).length;
               const totalInCategory = category.preparations.length;
               const progressPercentage = totalInCategory > 0 ? (categoryProgress / totalInCategory) * 100 : 0;
 
               return (
-                <div key={category.title}>
-                  <div className="mb-4">
-                      <div className="flex justify-between items-center mb-1">
-                          <h3 className="text-lg font-semibold tracking-tight">{category.title}</h3>
-                          <span className="text-sm font-medium text-muted-foreground">{categoryProgress} / {totalInCategory}</span>
-                      </div>
-                      <p className="text-sm text-muted-foreground italic mb-2">{category.description}</p>
-                      <Progress value={progressPercentage} />
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
-                    {category.preparations.map((prep) => {
-                      const isCreated = existingNamesNormalized.has(normalizeString(prep.name));
-                      return (
-                        <div key={prep.name} className="flex items-center gap-2">
-                          {isCreated ? (
-                            <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
-                          ) : (
-                            <Circle className="h-4 w-4 text-muted-foreground/30 shrink-0" />
-                          )}
-                          <span className={cn(isCreated ? "text-foreground" : "text-muted-foreground")}>
-                            {prep.name}
-                          </span>
+                <AccordionItem value={category.title} key={category.title} className="border-b-0 rounded-lg bg-muted/50 px-4">
+                    <AccordionTrigger className="py-3 hover:no-underline">
+                        <div className="w-full pr-4">
+                            <div className="flex justify-between items-center mb-1">
+                                <h3 className="text-base font-semibold tracking-tight text-foreground">{category.title}</h3>
+                                <span className="text-sm font-medium text-muted-foreground">{categoryProgress} / {totalInCategory}</span>
+                            </div>
+                            <p className="text-xs text-muted-foreground italic text-left">{category.description}</p>
+                            <Progress value={progressPercentage} className="mt-2 h-1.5" />
                         </div>
-                      );
-                    })}
-                  </div>
-                   {catIndex < preparationsGuideData.length - 1 && <Separator className="mt-8"/>}
-                </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="pt-2 pb-4">
+                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm pl-2 border-l-2 ml-1">
+                            {category.preparations.map((prep) => {
+                            const isCreated = existingNamesNormalized.has(normalizeString(prep.name));
+                            return (
+                                <div key={prep.name} className="flex items-center gap-2 py-1">
+                                {isCreated ? (
+                                    <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />
+                                ) : (
+                                    <Circle className="h-4 w-4 text-muted-foreground/30 shrink-0" />
+                                )}
+                                <span className={cn(isCreated ? "text-foreground" : "text-muted-foreground")}>
+                                    {prep.name}
+                                </span>
+                                </div>
+                            );
+                            })}
+                        </div>
+                    </AccordionContent>
+                </AccordionItem>
               );
             })}
-          </div>
+          </Accordion>
         </ScrollArea>
       </DialogContent>
     </Dialog>
