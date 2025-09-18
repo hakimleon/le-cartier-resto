@@ -19,6 +19,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
@@ -159,38 +160,38 @@ export default function WorkshopClient() {
                             <CardTitle>1. Vos Instructions</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <form ref={initialFormRef} onSubmit={handleInitialSubmit} className="space-y-4">
-                                <div className="space-y-2">
-                                    <h4 className="font-medium text-sm">Créer à partir d'instructions</h4>
-                                    <div>
-                                        <Label htmlFor="dishName">Nom ou idée de base (Optionnel)</Label>
-                                        <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." disabled={isLoading || !!generatedConcept} />
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="mainIngredients">Ingrédients principaux</Label>
-                                        <Input id="mainIngredients" name="mainIngredients" placeholder="Ex: Bar, Orange, Fenouil" disabled={isLoading || !!generatedConcept}/>
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="excludedIngredients">Ingrédients à exclure (Optionnel)</Label>
-                                        <Input id="excludedIngredients" name="excludedIngredients" placeholder="Ex: Vin, crème, porc" disabled={isLoading || !!generatedConcept}/>
-                                    </div>
-                                    <div>
-                                        <Label htmlFor="recommendations">Recommandations (Optionnel)</Label>
-                                        <Textarea id="recommendations" name="recommendations" placeholder="Ex: Un plat frais, méditerranéen..." disabled={isLoading || !!generatedConcept}/>
-                                    </div>
-                                </div>
-                                <div className="relative">
-                                  <Separator />
-                                  <span className="absolute left-1/2 -translate-x-1/2 -top-2.5 bg-card px-2 text-xs text-muted-foreground">OU</span>
-                                </div>
-                                <div className="space-y-2">
-                                     <h4 className="font-medium text-sm">Importer une recette existante</h4>
-                                     <div>
-                                        <Label htmlFor="rawRecipe">Recette existante à reformater (Optionnel)</Label>
-                                        <Textarea id="rawRecipe" name="rawRecipe" placeholder="Collez ici votre recette complète (ingrédients, étapes...)" rows={5} disabled={isLoading || !!generatedConcept}/>
-                                    </div>
-                                </div>
-                                <Button type="submit" className="w-full" disabled={isLoading || !!generatedConcept}>
+                             <form ref={initialFormRef} onSubmit={handleInitialSubmit}>
+                                <Tabs defaultValue="instructions" className="w-full">
+                                    <TabsList className="grid w-full grid-cols-2">
+                                        <TabsTrigger value="instructions">Instructions</TabsTrigger>
+                                        <TabsTrigger value="import">Importer</TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent value="instructions" className="space-y-4 pt-4">
+                                        <div>
+                                            <Label htmlFor="dishName">Nom ou idée de base (Optionnel)</Label>
+                                            <Input id="dishName" name="dishName" placeholder="Ex: Bar de ligne nacré..." disabled={isLoading || !!generatedConcept} />
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="mainIngredients">Ingrédients principaux</Label>
+                                            <Input id="mainIngredients" name="mainIngredients" placeholder="Ex: Bar, Orange, Fenouil" disabled={isLoading || !!generatedConcept}/>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="excludedIngredients">Ingrédients à exclure (Optionnel)</Label>
+                                            <Input id="excludedIngredients" name="excludedIngredients" placeholder="Ex: Vin, crème, porc" disabled={isLoading || !!generatedConcept}/>
+                                        </div>
+                                        <div>
+                                            <Label htmlFor="recommendations">Recommandations (Optionnel)</Label>
+                                            <Textarea id="recommendations" name="recommendations" placeholder="Ex: Un plat frais, méditerranéen..." disabled={isLoading || !!generatedConcept}/>
+                                        </div>
+                                    </TabsContent>
+                                    <TabsContent value="import" className="space-y-4 pt-4">
+                                        <div>
+                                            <Label htmlFor="rawRecipe">Recette existante à reformater</Label>
+                                            <Textarea id="rawRecipe" name="rawRecipe" placeholder="Collez ici votre recette complète (ingrédients, étapes...)" rows={10} disabled={isLoading || !!generatedConcept}/>
+                                        </div>
+                                    </TabsContent>
+                                </Tabs>
+                                <Button type="submit" className="w-full mt-6" disabled={isLoading || !!generatedConcept}>
                                     <Sparkles className="mr-2 h-4 w-4" />
                                     {isLoading && !generatedConcept ? "Génération..." : "Générer le concept"}
                                 </Button>
