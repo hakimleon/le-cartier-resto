@@ -22,13 +22,15 @@ type PreparationsGuideProps = {
 };
 
 /**
- * Normalizes a string for comparison by converting to lowercase and handling different apostrophes.
+ * Normalizes a string for comparison by converting to lowercase, removing accents, and standardizing apostrophes.
  * @param str The string to normalize.
  * @returns The normalized string.
  */
 const normalizeString = (str: string): string => {
     return str
-        .toLowerCase()
+        .normalize('NFD') // Decompose accents from characters
+        .replace(/[\u0300-\u036f]/g, '') // Remove accent marks
+        .toLowerCase() // Convert to lowercase
         .replace(/’|'/g, "'"); // Standardize apostrophes
 };
 
