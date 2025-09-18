@@ -165,7 +165,7 @@ export default function WorkshopClient() {
                         </CardHeader>
                         <CardContent>
                              <form ref={initialFormRef} onSubmit={handleInitialSubmit} className="space-y-4">
-                                <div className="space-y-2">
+                                <div className="space-y-4">
                                     <h4 className="font-medium text-sm">Créer à partir d'instructions</h4>
                                     <div>
                                         <Label htmlFor="prepName">Nom ou idée de base (Optionnel)</Label>
@@ -190,11 +190,11 @@ export default function WorkshopClient() {
                                   <span className="absolute left-1/2 -translate-x-1/2 -top-1.5 bg-card px-2 text-xs text-muted-foreground">OU</span>
                                 </div>
 
-                                <div className="space-y-2">
-                                     <h4 className="font-medium text-sm">Importer une recette existante</h4>
+                                <div className="space-y-2 rounded-lg border bg-muted/50 p-4">
+                                     <h4 className="font-semibold text-base">Importer une recette existante</h4>
                                      <div>
-                                        <Label htmlFor="rawRecipe">Recette existante à reformater</Label>
-                                        <Textarea id="rawRecipe" name="rawRecipe" placeholder="Collez ici votre recette complète (ingrédients, étapes...)" rows={5} disabled={isLoading || !!generatedConcept}/>
+                                        <Label htmlFor="rawRecipe" className="text-sm text-muted-foreground">Recette complète à reformater</Label>
+                                        <Textarea id="rawRecipe" name="rawRecipe" placeholder="Collez ici votre recette complète (ingrédients, étapes...)" rows={5} disabled={isLoading || !!generatedConcept} className="mt-2"/>
                                     </div>
                                 </div>
 
@@ -334,5 +334,3 @@ export default function WorkshopClient() {
         </div>
     );
 }
-
-    
