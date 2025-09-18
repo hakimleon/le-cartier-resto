@@ -39,11 +39,12 @@ import { Trash2 } from "lucide-react";
 import { GarnishesGuide } from "./GarnishesGuide";
 
 const garnishCategories = [
-    "Purées et Crèmes",
-    "Légumes Poêlés & Rôtis",
-    "Gratins & Tielles",
-    "Féculents",
-    "Salades & Crudités",
+    "Purées & mousselines",
+    "Gratins & plats de légumes au four",
+    "Légumes glacés, rôtis ou vapeur",
+    "Céréales & féculents",
+    "Légumineuses & accompagnements végétariens mijotés",
+    "Accompagnements modernes & revisités",
 ];
 
 export default function GarnishesClient() {
