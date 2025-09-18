@@ -229,6 +229,3 @@ const generateRecipeConceptFlow = ai.defineFlow(
 export async function generateRecipeConcept(input: RecipeConceptInput): Promise<RecipeConceptOutput> {
     return generateRecipeConceptFlow(input);
 }
-
-    
-    
