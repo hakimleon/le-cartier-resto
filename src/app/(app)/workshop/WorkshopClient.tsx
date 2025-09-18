@@ -21,7 +21,6 @@ import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
-const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
 
 export default function WorkshopClient() {
     const [isLoading, setIsLoading] = useState(false);
@@ -101,13 +100,12 @@ export default function WorkshopClient() {
         try {
             const newDocId = await createDishFromWorkshop(generatedConcept);
             if (newDocId) {
-                 sessionStorage.setItem(WORKSHOP_CONCEPT_KEY, JSON.stringify(generatedConcept));
-                 toast({
+                sessionStorage.setItem(WORKSHOP_CONCEPT_KEY, JSON.stringify(generatedConcept));
+                toast({
                     title: "Plat enregistré !",
                     description: `"${generatedConcept.name}" a été ajouté au menu.`,
                 });
                 router.push(`/menu/${newDocId}`);
-                
             } else {
                  throw new Error("L'ID du document n'a pas été retourné après la création.");
             }
@@ -328,5 +326,3 @@ export default function WorkshopClient() {
         </div>
     );
 }
-
-    
