@@ -127,6 +127,18 @@ export default function AppLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/atelier')}
+                  tooltip="Nouvel Atelier"
+                >
+                  <Link href="/atelier">
+                    <FlaskConical />
+                    <span>Nouvel Atelier</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarContent>
           <SidebarFooter className="p-4">
