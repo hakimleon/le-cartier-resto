@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { getAllPreparationNames } from '../tools/recipe-tools';
 import { googleAI } from '@genkit-ai/googleai';
 
-const PreparationConceptInputSchema = z.object({
+export const PreparationConceptInputSchema = z.object({
     name: z.string().optional().describe("Le nom ou l'idée de base de la préparation. Si non fourni, l'IA doit en générer un."),
     description: z.string().optional().describe("La description de la préparation."),
     mainIngredients: z.string().optional().describe("Les ingrédients principaux à intégrer."),
@@ -23,7 +23,7 @@ const PreparationConceptInputSchema = z.object({
 });
 export type PreparationConceptInput = z.infer<typeof PreparationConceptInputSchema>;
 
-const PreparationConceptOutputSchema = z.object({
+export const PreparationConceptOutputSchema = z.object({
     name: z.string().describe("Le nom final de la préparation."),
     description: z.string().describe("Une description technique et fonctionnelle."),
     

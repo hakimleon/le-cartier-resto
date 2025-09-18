@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Flow pour l'atelier de création de garnitures.
@@ -8,12 +9,13 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getAllPreparationNames } from '../tools/recipe-tools';
 import { googleAI } from '@genkit-ai/googleai';
-import { PreparationConceptInput, PreparationConceptOutput, PreparationConceptOutputSchema } from './preparation-workshop-flow';
+import { PreparationConceptInputSchema, PreparationConceptOutputSchema } from './preparation-workshop-flow';
+import type { PreparationConceptInput, PreparationConceptOutput } from './preparation-workshop-flow';
 
 
 const garnishGenPrompt = ai.definePrompt({
     name: 'garnishWorkshopPrompt',
-    input: { schema: z.object({ allPreparationNames: z.array(z.string()) }).extend(PreparationConceptInput.shape) },
+    input: { schema: PreparationConceptInputSchema.extend({ allPreparationNames: z.array(z.string()) }) },
     output: { schema: PreparationConceptOutputSchema },
     model: googleAI.model('gemini-2.5-flash'),
     prompt: `Vous êtes un chef expert créant une fiche technique pour une GARNITURE ou un ACCOMPAGNEMENT de restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
@@ -94,7 +96,7 @@ CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles
 export const generateGarnishConceptFlow = ai.defineFlow(
     {
         name: 'generateGarnishConceptFlow',
-        inputSchema: PreparationConceptInput,
+        inputSchema: PreparationConceptInputSchema,
         outputSchema: PreparationConceptOutputSchema,
     },
     async (input) => {
