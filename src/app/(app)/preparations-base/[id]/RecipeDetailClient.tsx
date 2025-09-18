@@ -163,7 +163,7 @@ const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExisti
                 </div>
             </TableCell>
             <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
-            <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></SelectTableCell>
+            <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell>
             <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
             <TableCell className="text-right">
                 <div className="flex items-center justify-end">
@@ -1119,7 +1119,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     <Input id="productionUnit" type="text" value={(editableRecipe as Preparation)?.productionUnit || ''} onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)} placeholder="Unité (ex: kg, L)" className="w-1/2"/>
                                 </div>
                             </div>
-                            <div className="space-y-2">
+                             <div className="space-y-2">
                                 <Label htmlFor="portions">Nombre de portions</Label>
                                 <Input id="portions" type="number" value={(editableRecipe as Preparation)?.portions || ''} onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || undefined)} placeholder="Ex: 10" />
                             </div>
@@ -1199,6 +1199,8 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
 
     
 
