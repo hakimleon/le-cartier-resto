@@ -1112,7 +1112,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardContent className="space-y-4">
                     {isEditing ? (
                         <>
-                            
                             <div className="space-y-2">
                                 <Label htmlFor="productionQuantity">Cette recette produit</Label>
                                 <div className="flex items-center gap-2">
@@ -1122,7 +1121,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="portions">Nombre de portions</Label>
-                                <Input id="portions" type="number" value={(editableRecipe as Preparation)?.portions || ''} onChange={(e) => handleRecipeDataChange('portions', parseFloat(e.target.value) || 0)} placeholder="Ex: 10" />
+                                <Input id="portions" type="number" value={(editableRecipe as Preparation)?.portions || ''} onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || undefined)} placeholder="Ex: 10" />
                             </div>
                             <div className="space-y-2">
                                 <Label htmlFor="usageUnit">Unité d'utilisation suggérée</Label>
@@ -1201,3 +1200,4 @@ function RecipeDetailSkeleton() {
     );
 }
 
+    
