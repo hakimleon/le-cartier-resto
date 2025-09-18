@@ -25,6 +25,8 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const formatCategory = (category?: string) => {
     if (!category) return "";
@@ -205,6 +207,8 @@ export default function MenuClient() {
       </div>
     );
   };
+  
+  const currentCategories = selectedStatus === 'Actif' ? activeCategories : inactiveCategories;
 
   if (error && !isFirebaseConfigured) {
     return (
@@ -251,37 +255,37 @@ export default function MenuClient() {
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
+        
+       <div className="flex items-center space-x-6 rounded-lg border p-4">
+          <Label className="text-sm font-semibold">Afficher :</Label>
+          <RadioGroup
+            defaultValue="Actif"
+            onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')}
+            className="flex items-center space-x-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Actif" id="status-actif" />
+              <Label htmlFor="status-actif" className="font-normal">Plats Actifs</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="Inactif" id="status-inactif" />
+              <Label htmlFor="status-inactif" className="font-normal">Plats Inactifs</Label>
+            </div>
+          </RadioGroup>
+        </div>
 
-        <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')}>
-            <TabsList className="grid w-full grid-cols-2 max-w-sm">
-                <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
-                <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
+
+       <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
+            <TabsList className="h-auto justify-start flex-wrap">
+                {currentCategories.map((category) => (
+                <TabsTrigger key={category} value={category}>{formatCategory(category)}</TabsTrigger>
+                ))}
             </TabsList>
-            <TabsContent value="Actif">
-                 <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
-                    <TabsList>
-                        {activeCategories.map((category) => (
-                        <TabsTrigger key={category} value={category}>{formatCategory(category)}</TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <TabsContent value={selectedCategory} className="pt-4">
-                        {renderRecipeList(filteredRecipes)}
-                    </TabsContent>
-                </Tabs>
-            </TabsContent>
-            <TabsContent value="Inactif">
-                 <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
-                    <TabsList>
-                        {inactiveCategories.map((category) => (
-                        <TabsTrigger key={category} value={category}>{formatCategory(category)}</TabsTrigger>
-                        ))}
-                    </TabsList>
-                    <TabsContent value={selectedCategory} className="pt-4">
-                        {renderRecipeList(filteredRecipes)}
-                    </TabsContent>
-                </Tabs>
+            <TabsContent value={selectedCategory} className="pt-4">
+                {renderRecipeList(filteredRecipes)}
             </TabsContent>
         </Tabs>
     </div>
   );
 }
+
