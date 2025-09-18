@@ -21,8 +21,20 @@ type PreparationsGuideProps = {
   existingPreparations: string[];
 };
 
+/**
+ * Normalizes a string for comparison by converting to lowercase and handling different apostrophes.
+ * @param str The string to normalize.
+ * @returns The normalized string.
+ */
+const normalizeString = (str: string): string => {
+    return str
+        .toLowerCase()
+        .replace(/’|'/g, "'"); // Standardize apostrophes
+};
+
+
 export function PreparationsGuide({ children, existingPreparations }: PreparationsGuideProps) {
-  const existingNamesLower = useMemo(() => new Set(existingPreparations.map(p => p.toLowerCase())), [existingPreparations]);
+  const existingNamesNormalized = useMemo(() => new Set(existingPreparations.map(normalizeString)), [existingPreparations]);
 
   return (
     <Dialog>
@@ -37,7 +49,7 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
         <ScrollArea className="h-[70vh] pr-6">
           <div className="space-y-6">
             {preparationsGuideData.map((category) => {
-              const categoryProgress = category.preparations.filter(p => existingNamesLower.has(p.name.toLowerCase())).length;
+              const categoryProgress = category.preparations.filter(p => existingNamesNormalized.has(normalizeString(p.name))).length;
               const totalInCategory = category.preparations.length;
 
               return (
@@ -46,7 +58,7 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
                   <p className="text-sm text-muted-foreground italic mb-3">{category.description}</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-2 text-sm">
                     {category.preparations.map((prep) => {
-                      const isCreated = existingNamesLower.has(prep.name.toLowerCase());
+                      const isCreated = existingNamesNormalized.has(normalizeString(prep.name));
                       return (
                         <div key={prep.name} className="flex items-center gap-2">
                           {isCreated ? (
