@@ -232,8 +232,8 @@ export default function GarnishesClient() {
     <div className="space-y-6">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Gestion des Garnitures</h1>
-            <p className="text-muted-foreground">Gérez vos fiches techniques de garnitures et accompagnements.</p>
+            <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Garnitures & Recettes standards</h1>
+            <p className="text-muted-foreground">Recettes calibrées, portionnées, directement servies en accompagnement ou comme plat végétarien.</p>
         </div>
         <div className="flex items-center gap-2">
             <div className="relative">
