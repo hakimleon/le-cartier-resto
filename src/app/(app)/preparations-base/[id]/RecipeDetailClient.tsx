@@ -1112,10 +1112,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardContent className="space-y-4">
                     {isEditing ? (
                         <>
-                             <div className="space-y-2">
-                                <Label htmlFor="portions">Nombre de portions</Label>
-                                <Input id="portions" type="number" value={(editableRecipe as Preparation)?.portions || ''} onChange={(e) => handleRecipeDataChange('portions', parseFloat(e.target.value) || 0)} placeholder="Ex: 10" />
-                            </div>
+                            
                             <div className="space-y-2">
                                 <Label htmlFor="productionQuantity">Cette recette produit</Label>
                                 <div className="flex items-center gap-2">
@@ -1123,7 +1120,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     <Input id="productionUnit" type="text" value={(editableRecipe as Preparation)?.productionUnit || ''} onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)} placeholder="Unité (ex: kg, L)" className="w-1/2"/>
                                 </div>
                             </div>
-                                <div className="space-y-2">
+                            <div className="space-y-2">
+                                <Label htmlFor="portions">Nombre de portions</Label>
+                                <Input id="portions" type="number" value={(editableRecipe as Preparation)?.portions || ''} onChange={(e) => handleRecipeDataChange('portions', parseFloat(e.target.value) || 0)} placeholder="Ex: 10" />
+                            </div>
+                            <div className="space-y-2">
                                 <Label htmlFor="usageUnit">Unité d'utilisation suggérée</Label>
                                 <Input id="usageUnit" type="text" value={(editableRecipe as Preparation)?.usageUnit || ''} onChange={(e) => handleRecipeDataChange('usageUnit', e.target.value)} placeholder="Unité pour les recettes (ex: g, ml)" />
                             </div>
@@ -1199,3 +1200,4 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
