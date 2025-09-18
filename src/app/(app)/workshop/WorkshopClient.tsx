@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, Weight, BookCopy, ChevronsRight, Braces } from "lucide-react";
+import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, BookCopy, ChevronsRight, Braces } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
@@ -247,7 +247,7 @@ export default function WorkshopClient() {
 
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
                                         <div>
-                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><Weight className="h-4 w-4"/>Ingrédients</h4>
+                                            <h4 className="font-semibold mb-2 flex items-center gap-2">Ingrédients</h4>
                                             {generatedConcept.ingredients && generatedConcept.ingredients.length > 0 ? (
                                                 <ul className="space-y-1 text-sm text-muted-foreground list-disc pl-5">
                                                     {generatedConcept.ingredients.map((ing) => (<li key={ing.name}><span className="font-medium text-foreground">{ing.quantity} {ing.unit}</span> - {ing.name}</li>))}
@@ -299,7 +299,7 @@ export default function WorkshopClient() {
                         </CardContent>
                     </Card>
 
-                    {rawGeneratedJson && (
+                     {rawGeneratedJson && (
                         <Accordion type="single" collapsible>
                             <AccordionItem value="item-1">
                                 <AccordionTrigger>
