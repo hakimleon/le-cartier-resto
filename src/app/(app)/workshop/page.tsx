@@ -1,5 +1,4 @@
-
-import WorkshopClient from './WorkshopClient';
+import WorkshopClient from "./WorkshopClient";
 
 export default function WorkshopPage() {
   return (
