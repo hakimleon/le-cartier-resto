@@ -48,7 +48,7 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-5xl">
+      <DialogContent className="max-w-4xl">
         <DialogHeader>
           <DialogTitle>Guide des Préparations de Base</DialogTitle>
           <DialogDescription>
@@ -75,7 +75,7 @@ export function PreparationsGuide({ children, existingPreparations }: Preparatio
                         </div>
                     </AccordionTrigger>
                     <AccordionContent className="pt-2 pb-4">
-                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-sm pl-2 border-l-2 ml-1">
+                         <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-sm pl-2 border-l-2 ml-1">
                             {category.preparations.map((prep) => {
                             const isCreated = existingNamesNormalized.has(normalizeString(prep.name));
                             return (
