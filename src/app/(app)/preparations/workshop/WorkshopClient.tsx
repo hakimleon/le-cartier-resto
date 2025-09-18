@@ -68,12 +68,25 @@ export default function WorkshopClient() {
     const handleInitialSubmit = (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         const formData = new FormData(e.currentTarget);
+        const name = formData.get("prepName") as string;
+        const mainIngredients = formData.get("mainIngredients") as string;
+        const rawRecipe = formData.get("rawRecipe") as string;
+
+        if (!name && !mainIngredients && !rawRecipe) {
+            toast({
+                title: "Instructions manquantes",
+                description: "Veuillez fournir au moins un nom, des ingrédients ou une recette brute.",
+                variant: "destructive",
+            });
+            return;
+        }
+
         const instructions: PreparationConceptInput = {
-            name: formData.get("prepName") as string,
-            mainIngredients: formData.get("mainIngredients") as string || undefined,
+            name: name || undefined,
+            mainIngredients: mainIngredients || undefined,
             excludedIngredients: formData.get("excludedIngredients") as string || undefined,
             recommendations: formData.get("recommendations") as string || undefined,
-            rawRecipe: formData.get("rawRecipe") as string || undefined,
+            rawRecipe: rawRecipe || undefined,
         };
         handleSubmit(instructions);
     }
@@ -154,11 +167,11 @@ export default function WorkshopClient() {
                                 <div className="space-y-2">
                                     <h4 className="font-medium text-sm">Créer à partir d'instructions</h4>
                                     <div>
-                                        <Label htmlFor="prepName">Nom ou idée de base</Label>
-                                        <Input id="prepName" name="prepName" placeholder="Ex: Fond brun de veau" disabled={isLoading || !!generatedConcept} required/>
+                                        <Label htmlFor="prepName">Nom ou idée de base (Optionnel)</Label>
+                                        <Input id="prepName" name="prepName" placeholder="Ex: Fond brun de veau" disabled={isLoading || !!generatedConcept} />
                                     </div>
                                     <div>
-                                        <Label htmlFor="mainIngredients">Ingrédients principaux (Optionnel)</Label>
+                                        <Label htmlFor="mainIngredients">Ingrédients principaux</Label>
                                         <Input id="mainIngredients" name="mainIngredients" placeholder="Ex: Os de veau, carottes, oignons" disabled={isLoading || !!generatedConcept}/>
                                     </div>
                                     <div>
@@ -317,5 +330,3 @@ export default function WorkshopClient() {
         </div>
     );
 }
-
-    

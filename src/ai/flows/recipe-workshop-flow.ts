@@ -19,7 +19,7 @@ cloudinary.config({
 
 const RecipeConceptInputSchema = z.object({
     type: z.enum(['Plat', 'Préparation']).describe('Le type de fiche technique à générer.'),
-    name: z.string().describe("Le nom ou l'idée de base du plat/préparation."),
+    name: z.string().optional().describe("Le nom ou l'idée de base du plat/préparation. Si non fourni, l'IA doit en générer un."),
     description: z.string().optional().describe("La description du plat/préparation."),
     mainIngredients: z.string().optional().describe("Les ingrédients principaux à intégrer."),
     excludedIngredients: z.string().optional().describe("Les ingrédients à ne jamais utiliser."),
@@ -73,10 +73,13 @@ const recipeGenPrompt = ai.definePrompt({
     prompt: `Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
 ---
-
+{{#if name}}
 ## CONTEXTE : NOM DE LA RECETTE EN COURS DE CRÉATION
 Le nom de la recette que vous êtes en train de générer est : \`{{{name}}}\`
-
+{{else}}
+## CONTEXTE : CRÉATION SANS NOM INITIAL
+L'utilisateur n'a pas fourni de nom. Vous devrez en créer un basé sur les ingrédients et le style.
+{{/if}}
 ---
 
 ## LISTE DES PRÉPARATIONS EXISTANTES À UTILISER
@@ -164,6 +167,7 @@ Avant de produire la réponse finale, vous DEVEZ :
 ---
 
 ## INSTRUCTIONS DE FORMATAGE
+- **Si le nom n'est pas fourni en entrée, vous DEVEZ en générer un.** Le nom doit être créatif, marketing et refléter les ingrédients principaux.
 - **Pour un Plat :** remplir \`portions\`, \`category\`, \`commercialArgument\`.
 - **Pour une Préparation :** remplir \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.
 - **Sortie :** fournir une réponse au format JSON strict.

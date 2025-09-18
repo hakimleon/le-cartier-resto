@@ -11,7 +11,7 @@ import { getAllPreparationNames } from '../tools/recipe-tools';
 import { googleAI } from '@genkit-ai/googleai';
 
 const PreparationConceptInputSchema = z.object({
-    name: z.string().describe("Le nom ou l'idée de base de la préparation."),
+    name: z.string().optional().describe("Le nom ou l'idée de base de la préparation. Si non fourni, l'IA doit en générer un."),
     description: z.string().optional().describe("La description de la préparation."),
     mainIngredients: z.string().optional().describe("Les ingrédients principaux à intégrer."),
     excludedIngredients: z.string().optional().describe("Les ingrédients à ne jamais utiliser."),
@@ -59,10 +59,13 @@ const preparationGenPrompt = ai.definePrompt({
     prompt: `Vous êtes un chef expert créant une fiche technique pour une PRÉPARATION de restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
 ---
-
+{{#if name}}
 ## CONTEXTE : NOM DE LA PRÉPARATION EN COURS DE CRÉATION
 Le nom de la préparation que vous êtes en train de générer est : \`{{{name}}}\`
-
+{{else}}
+## CONTEXTE : CRÉATION SANS NOM INITIAL
+L'utilisateur n'a pas fourni de nom. Vous devrez en créer un basé sur les ingrédients et le style.
+{{/if}}
 ---
 
 ## LISTE DES PRÉPARATIONS EXISTANTES À UTILISER
@@ -122,7 +125,7 @@ Avant de produire la réponse finale, vous DEVEZ :
 1. Vérifier que le nom de la recette actuelle (\`{{{name}}}\`) n'est PAS dans \`subRecipes\`.
 2. Vérifier que chaque nom de \`subRecipes\` correspond EXACTEMENT à un nom de la "LISTE DES PRÉPARATIONS EXISTANTES".
 3. Vérifier qu'aucun ingrédient brut (comme "Crème fraîche", "Poivre noir") n'est dans \`subRecipes\`. Si c'est le cas, corriger automatiquement en les déplaçant dans \`ingredients\`.
-4. Vérifier qu'aucun nom présent dans \`subRecipes\` n'a ses ingrédients listés dans \`ingredients\`.
+4. Vérifier que aucun nom présent dans \`subRecipes\` n'a ses ingrédients listés dans \`ingredients\`.
 5. Vérifier qu’aucun ingrédient alcoolisé n’est présent.
 
 ⚠️ Si une de ces conditions n’est pas respectée, la sortie est INVALIDE. Vous devez corriger et régénérer jusqu’à obtenir un JSON 100% conforme.
@@ -130,6 +133,7 @@ Avant de produire la réponse finale, vous DEVEZ :
 ---
 
 ## INSTRUCTIONS DE FORMATAGE
+- **Si le nom n'est pas fourni en entrée, vous DEVEZ en générer un.** Le nom doit être technique et descriptif.
 - Remplir \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.
 - Remplir le champ \`portions\` pour indiquer combien de "parts" (portions de service pour un plat) la quantité produite représente. C'est crucial pour les purées, accompagnements, sauces, etc.
 - La procédure de service (\`procedure_service\`) doit décrire la conservation/stockage.
