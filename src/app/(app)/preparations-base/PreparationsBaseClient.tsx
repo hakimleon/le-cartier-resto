@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -7,7 +8,7 @@ import { Preparation, preparationCategories } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, PlusCircle, Search, FileText, FlaskConical } from "lucide-react";
+import { AlertTriangle, BookOpen, FlaskConical, Search, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { deletePreparation } from "../preparations/actions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,6 +36,7 @@ import {
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2 } from "lucide-react";
+import { PreparationsGuide } from "./PreparationsGuide";
 
 // This component is a clone of PreparationsClient, adapted for the new "base preparations" flow.
 // The main difference is the "New Preparation" button now redirects to the workshop.
@@ -116,6 +118,8 @@ export default function PreparationsBaseClient() {
         return searchTermMatch && categoryMatch;
     });
   }, [preparations, searchTerm, selectedCategory]);
+
+  const preparationNames = useMemo(() => preparations.map(p => p.name), [preparations]);
 
   const renderSkeleton = () => (
     <Card className="shadow-none border">
@@ -235,6 +239,12 @@ export default function PreparationsBaseClient() {
                     onChange={handleSearchChange}
                 />
             </div>
+             <PreparationsGuide existingPreparations={preparationNames}>
+                <Button variant="outline">
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Guide des Préparations
+                </Button>
+             </PreparationsGuide>
              <Button onClick={() => router.push('/preparations/workshop')}>
                 <FlaskConical className="mr-2 h-4 w-4" />
                 Aller à l'Atelier
