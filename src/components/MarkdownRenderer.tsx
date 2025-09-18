@@ -25,7 +25,7 @@ function parseMarkdown(md: string): MarkdownNode[] {
     // Nettoyage et formatage robustes du markdown brut
     let sanitizedMd = md
       .replace(/\r\n/g, "\n") // Normaliser les sauts de ligne
-      .replace(/###/g, "\n###") // Assurer un saut de ligne AVANT chaque titre
+      .replace(/(?<!\n)\s*(#+)/g, "\n$1") // Assurer un saut de ligne AVANT chaque titre, même en milieu de ligne
       .replace(/-\s/g, "\n- ") // Assurer un saut de ligne AVANT chaque item de liste
       .replace(/\n\n/g, "\n"); // Supprimer les doubles sauts de ligne accidentels
 
@@ -107,3 +107,4 @@ export default function MarkdownRenderer({ text }: { text: string | undefined })
     </div>
   );
 }
+
