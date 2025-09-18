@@ -24,15 +24,23 @@ export type GeneratedIngredient = {
 };
 
 export const preparationCategories = [
-    "Fonds, fumets et bouillons",
-    "Sauces chaudes",
-    "Sauces froides & vinaigrettes",
-    "Coulis, purées & huiles colorées",
-    "Préparations de légumes et garnitures",
-    "Bases céréalières et pâtes",
-    "Préparations pâtissières de base",
-    "Préparations modernes & signatures"
+    "Fonds, fumets & bouillons",
+    "Sauces mères & dérivées",
+    "Purées & coulis de légumes colorés (version décor)",
+    "Huiles parfumées & aromatisées",
+    "Beurres composés",
+    "Pâtes fraîches & farces",
+    "Bases boulangères simples",
+    "Légumes glacés standardisés",
+    "Pickles & condiments",
+    "Gelées & gélifications",
+    "Mousses légères & espumas",
+    "Poudres & croustillants",
+    "Réductions & jus corsés",
+    "Fermentations légères",
+    "Bases pâtissières essentielles",
 ] as const;
+
 
 export type PreparationCategory = typeof preparationCategories[number];
 
