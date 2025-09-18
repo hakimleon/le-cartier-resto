@@ -8,7 +8,7 @@ import { Preparation } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, PlusCircle, Search, FileText, FlaskConical } from "lucide-react";
+import { AlertTriangle, PlusCircle, Search, FileText, FlaskConical, BookOpen } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { deleteGarnish } from "./actions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +36,7 @@ import {
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2 } from "lucide-react";
+import { GarnishesGuide } from "./GarnishesGuide";
 
 const garnishCategories = [
     "Purées et Crèmes",
@@ -122,6 +123,8 @@ export default function GarnishesClient() {
         return searchTermMatch && categoryMatch;
     });
   }, [garnishes, searchTerm, selectedCategory]);
+  
+  const garnishNames = useMemo(() => garnishes.map(p => p.name), [garnishes]);
 
   const renderSkeleton = () => (
     <Card className="shadow-none border">
@@ -241,6 +244,12 @@ export default function GarnishesClient() {
                     onChange={handleSearchChange}
                 />
             </div>
+             <GarnishesGuide existingGarnishes={garnishNames}>
+                <Button variant="outline">
+                    <BookOpen className="mr-2 h-4 w-4" />
+                    Guide des Garnitures
+                </Button>
+             </GarnishesGuide>
              <Button onClick={() => router.push('/garnishes/workshop')}>
                 <FlaskConical className="mr-2 h-4 w-4" />
                 Atelier des Garnitures
