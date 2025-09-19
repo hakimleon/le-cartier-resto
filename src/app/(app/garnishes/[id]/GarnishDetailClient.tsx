@@ -99,6 +99,11 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
         const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
 
+        if ((fromType === 'weight' && toType === 'volume') || (fromType === 'volume' && toType === 'weight')) {
+             // Basic assumption: 1ml = 1g for water-like density. This is a simplification.
+             return fromFactor / toFactor;
+        }
+
         if (fromType === toType) {
             return fromFactor / toFactor;
         }
@@ -120,9 +125,100 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
     
     const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
     
-    return quantityInBaseUnit * netCostPerGramOrMl;
+    const finalCost = quantityInBaseUnit * netCostPerGramOrMl;
+    return isNaN(finalCost) ? 0 : finalCost;
 };
 
+
+const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExistingIngredient, sortedIngredients }: { ing: FullRecipeIngredient, handleIngredientChange: any, handleRemoveExistingIngredient: any, sortedIngredients: Ingredient[] }) => {
+    const [openCombobox, setOpenCombobox] = useState(false);
+    return (
+        <TableRow key={ing.recipeIngredientId}>
+            <TableCell className="font-medium">
+                 <div className="flex items-center gap-1">
+                    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" aria-expanded={openCombobox} className="w-full justify-between">
+                                {ing.name || "Choisir..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0">
+                            <Command>
+                                <CommandInput placeholder="Rechercher un ingrédient..." />
+                                <CommandList>
+                                    <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                    <CommandGroup>
+                                        {sortedIngredients.map((sIng) => (
+                                            sIng.id ?
+                                                <CommandItem key={sIng.id} value={sIng.name} onSelect={() => { handleIngredientChange(ing.recipeIngredientId, 'id', sIng.id!); setOpenCombobox(false); }}>
+                                                    <Check className={cn("mr-2 h-4 w-4", ing.id === sIng.id ? "opacity-100" : "opacity-0")} />
+                                                    {sIng.name}
+                                                </CommandItem>
+                                                : null
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+                </div>
+            </TableCell>
+            <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
+            <TableCell>{ing.unit}</TableCell>
+            <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
+            <TableCell>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger>
+                    <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                </AlertDialog>
+            </TableCell>
+        </TableRow>
+    )
+}
+
+const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredientModal, handleRemoveNewIngredient, sortedIngredients }: { newIng: NewRecipeIngredient, handleNewIngredientChange: any, openNewIngredientModal: any, handleRemoveNewIngredient: any, sortedIngredients: Ingredient[] }) => {
+    const [openCombobox, setOpenCombobox] = useState(false);
+    return (
+        <TableRow key={newIng.tempId}>
+            <TableCell>
+                <div className="flex items-center gap-1">
+                    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" aria-expanded={openCombobox} className="w-full justify-between" >
+                                {newIng.ingredientId ? sortedIngredients.find((ing) => ing.id === newIng.ingredientId)?.name : newIng.name || "Choisir..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0">
+                            <Command>
+                                <CommandInput placeholder="Rechercher un ingrédient..." />
+                                <CommandList>
+                                    <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                    <CommandGroup>
+                                        {sortedIngredients.map((ing) => (
+                                            ing.id ?
+                                                <CommandItem key={ing.id} value={ing.name} onSelect={(currentValue) => { const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase()); if (selected) { handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!); } setOpenCombobox(false); }}>
+                                                    <Check className={cn("mr-2 h-4 w-4", newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0")} />
+                                                    {ing.name}
+                                                </CommandItem>
+                                                : null
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+                    {!newIng.ingredientId && newIng.name && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={'Créer l\'ingrédient "' + newIng.name + '"'}> <PlusCircle className="h-4 w-4 text-primary" /> </Button>)}
+                </div>
+            </TableCell>
+            <TableCell><Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell>
+            <TableCell>{newIng.unit}</TableCell>
+            <TableCell className="text-right font-semibold">{(newIng.totalCost || 0).toFixed(2)} DZD</TableCell>
+            <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
+        </TableRow>
+    )
+}
 
 export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProps) {
   const [recipe, setRecipe] = useState<Preparation | null>(null);
@@ -153,43 +249,24 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
   const [newPreparationDefaults, setNewPreparationDefaults] = useState<Partial<Preparation> | null>(null);
   const [currentTempId, setCurrentTempId] = useState<string | null>(null);
   const [currentPrepTempId, setCurrentPrepTempId] = useState<string | null>(null);
-
   
-  const calculatePreparationsCosts = useCallback(async (prepsList: Preparation[], ingList: Ingredient[]): Promise<Record<string, number>> => {
-      // This is a complex calculation involving fetching dependencies for each prep.
-      // For this implementation, we will mock or simplify it.
-      const costs: Record<string, number> = {};
-      for (const prep of prepsList) {
-          if (prep.id) {
-              // In a real scenario: fetch ingredients for prep, calculate cost.
-              costs[prep.id] = Math.random() * 50; // Mock cost
-          }
-      }
-      return costs;
-  }, []);
-
-  const fetchAllIngredients = useCallback(async () => {
-    const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
-    const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
-    setAllIngredients(ingredientsList);
-    return ingredientsList;
-  }, []);
-
-   const fetchAllPreparations = useCallback(async () => {
-        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
-        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
-        setAllPreparations(prepsList);
-        return prepsList;
-    }, []);
-
     const fullDataRefresh = useCallback(async () => {
         setIsLoading(true);
         try {
+            // Fetch all supporting data first
             const ingredientsList = await fetchAllIngredients();
             const allPrepsData = await fetchAllPreparations();
-            const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
+            
+            // Mocked costs, to be replaced by real calculation
+            const costs: Record<string, number> = {};
+            for (const prep of allPrepsData) {
+                if (prep.id) {
+                    costs[prep.id] = Math.random() * 50; 
+                }
+            }
             setPreparationsCosts(costs);
 
+            // Fetch the main garnish data
             const recipeDocRef = doc(db, "garnishes", recipeId);
             const recipeSnap = await getDoc(recipeDocRef);
 
@@ -203,7 +280,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             setRecipe(fetchedRecipe);
             setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
 
-            // Fetch ingredients for this garnish
+            // Fetch and process ingredients for this garnish
             const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
             const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
             const ingredientsData = recipeIngredientsSnap.docs.map(docSnap => {
@@ -218,7 +295,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             setIngredients(ingredientsData);
             setEditableIngredients(JSON.parse(JSON.stringify(ingredientsData)));
 
-            // Fetch sub-preparations for this garnish
+            // Fetch and process sub-preparations for this garnish
             const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
             const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
             const preparationsData = recipePreparationsSnap.docs.map(linkDoc => {
@@ -240,8 +317,21 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         } finally {
             setIsLoading(false);
         }
-    }, [recipeId, calculatePreparationsCosts, fetchAllIngredients, fetchAllPreparations]);
+    }, [recipeId]); // Only recipeId should be a stable dependency here
 
+  const fetchAllIngredients = useCallback(async () => {
+    const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
+    const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+    setAllIngredients(ingredientsList);
+    return ingredientsList;
+    }, []);
+
+    const fetchAllPreparations = useCallback(async () => {
+        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
+        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+        setAllPreparations(prepsList);
+        return prepsList;
+    }, []);
 
     useEffect(() => {
         if (!recipeId || !isFirebaseConfigured) {
@@ -249,7 +339,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             setError(recipeId ? "Configuration Firebase manquante." : "ID de garniture manquant.");
             return;
         }
-        
+
         let isMounted = true;
         
         const initialLoad = async () => {
@@ -322,26 +412,47 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         }));
     };
   
-  const handleNewIngredientChange = (tempId: string, field: keyof NewRecipeIngredient, value: any) => {
-    setNewIngredients(current => current.map(ing => {
-        if (ing.tempId === tempId) {
-          const updatedIng = { ...ing, [field]: value };
-          const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
-          if (selectedIngredient) {
-            if (field === 'ingredientId') {
-              updatedIng.name = selectedIngredient.name;
-              updatedIng.category = selectedIngredient.category;
+    const handleNewIngredientChange = (tempId: string, field: keyof NewRecipeIngredient, value: any) => {
+        setNewIngredients(current => current.map(ing => {
+            if (ing.tempId === tempId) {
+            const updatedIng = { ...ing, [field]: value };
+            const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
+            if (selectedIngredient) {
+                if (field === 'ingredientId') {
+                updatedIng.name = selectedIngredient.name;
+                updatedIng.category = selectedIngredient.category;
+                }
+                updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
+            } else if(field === 'ingredientId') {
+                updatedIng.ingredientId = undefined; // Unlink if not found
             }
-            updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
-          } else if(field === 'ingredientId') {
-            updatedIng.ingredientId = undefined; // Unlink if not found
-          }
-          return updatedIng;
+            return updatedIng;
+            }
+            return ing;
+        })
+        );
+    };
+
+    const handleRemoveExistingIngredient = (recipeIngredientId: string) => { setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId)); };
+    const handleRemoveNewIngredient = (tempId: string) => { setNewIngredients(current => current.filter(ing => ing.tempId !== tempId)); };
+    
+    const openNewIngredientModal = (tempId: string) => {
+        const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId);
+        if (ingredientToCreate) {
+            setCurrentTempId(tempId);
+            setNewIngredientDefaults({ name: ingredientToCreate.name });
+            setIsNewIngredientModalOpen(true);
         }
-        return ing;
-      })
-    );
-  };
+    }
+
+    const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
+        fetchAllIngredients().then(updatedList => {
+            const newlyAdded = updatedList.find(i => i.id === newIngredient.id);
+            if (newlyAdded) {
+                handleNewIngredientChange(tempId, 'ingredientId', newlyAdded.id!);
+            }
+        });
+    };
     
     const handleSave = async () => {
         if (!editableRecipe) return;
@@ -402,6 +513,10 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         
         return { totalRecipeCost: totalCost, costPerPortion: costPerPortionValue };
     }, [isEditing, currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations]);
+    
+    const sortedIngredients = useMemo(() => {
+        return [...allIngredients].sort((a, b) => a.name.localeCompare(b.name));
+    }, [allIngredients]);
 
     if (isLoading) return <RecipeDetailSkeleton />;
     if (error) return ( <div className="container mx-auto py-10"><Alert variant="destructive" className="max-w-2xl mx-auto my-10"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erreur</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></div> );
@@ -411,6 +526,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
 
     return (
         <div className="space-y-4">
+            <IngredientModal open={isNewIngredientModalOpen} onOpenChange={setIsNewIngredientModalOpen} ingredient={newIngredientDefaults} onSuccess={(newDbIngredient) => { if (newDbIngredient && currentTempId) { handleCreateAndLinkIngredient(currentTempId, newDbIngredient); } }} ><div /></IngredientModal>
             <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex items-start gap-4 flex-grow">
                     <div className="bg-primary/10 text-primary rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
@@ -457,22 +573,23 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                                     {isEditing ? (
                                         <>
                                             {editableIngredients.map(ing => (
-                                                <TableRow key={ing.recipeIngredientId}>
-                                                    <TableCell>{ing.name}</TableCell>
-                                                    <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20"/></TableCell>
-                                                    <TableCell>{ing.unit}</TableCell>
-                                                    <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
-                                                    <TableCell><Button variant="ghost" size="icon" onClick={() => {}}><Trash2 className="h-4 w-4"/></Button></TableCell>
-                                                </TableRow>
+                                                <EditableIngredientRow
+                                                    key={ing.recipeIngredientId}
+                                                    ing={ing}
+                                                    handleIngredientChange={handleIngredientChange}
+                                                    handleRemoveExistingIngredient={handleRemoveExistingIngredient}
+                                                    sortedIngredients={sortedIngredients}
+                                                />
                                             ))}
                                             {newIngredients.map(ing => (
-                                                <TableRow key={ing.tempId}>
-                                                     <TableCell>{ing.name || 'Nouveau...'}</TableCell>
-                                                     <TableCell><Input type="number" value={ing.quantity} onChange={(e) => {}} className="w-20"/></TableCell>
-                                                     <TableCell>{ing.unit}</TableCell>
-                                                     <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
-                                                     <TableCell><Button variant="ghost" size="icon" onClick={() => {}}><Trash2 className="h-4 w-4"/></Button></TableCell>
-                                                </TableRow>
+                                                 <NewIngredientRow
+                                                    key={ing.tempId}
+                                                    newIng={ing}
+                                                    handleNewIngredientChange={handleNewIngredientChange}
+                                                    openNewIngredientModal={openNewIngredientModal}
+                                                    handleRemoveNewIngredient={handleRemoveNewIngredient}
+                                                    sortedIngredients={sortedIngredients}
+                                                />
                                             ))}
                                         </>
                                     ) : (
@@ -584,3 +701,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
