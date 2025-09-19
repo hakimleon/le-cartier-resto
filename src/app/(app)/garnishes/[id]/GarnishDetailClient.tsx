@@ -130,6 +130,96 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
 };
 
 
+const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExistingIngredient, sortedIngredients }: { ing: FullRecipeIngredient, handleIngredientChange: any, handleRemoveExistingIngredient: any, sortedIngredients: Ingredient[] }) => {
+    const [openCombobox, setOpenCombobox] = useState(false);
+    return (
+        <TableRow key={ing.recipeIngredientId}>
+            <TableCell className="font-medium">
+                 <div className="flex items-center gap-1">
+                    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" aria-expanded={openCombobox} className="w-full justify-between">
+                                {ing.name || "Choisir..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0">
+                            <Command>
+                                <CommandInput placeholder="Rechercher un ingrédient..." />
+                                <CommandList>
+                                    <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                    <CommandGroup>
+                                        {sortedIngredients.map((sIng) => (
+                                            sIng.id ?
+                                                <CommandItem key={sIng.id} value={sIng.name} onSelect={() => { handleIngredientChange(ing.recipeIngredientId, 'id', sIng.id!); setOpenCombobox(false); }}>
+                                                    <Check className={cn("mr-2 h-4 w-4", ing.id === sIng.id ? "opacity-100" : "opacity-0")} />
+                                                    {sIng.name}
+                                                </CommandItem>
+                                                : null
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+                </div>
+            </TableCell>
+            <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
+            <TableCell>{ing.unit}</TableCell>
+            <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
+            <TableCell>
+                <AlertDialog>
+                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger>
+                    <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
+                </AlertDialog>
+            </TableCell>
+        </TableRow>
+    )
+}
+
+const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredientModal, handleRemoveNewIngredient, sortedIngredients }: { newIng: NewRecipeIngredient, handleNewIngredientChange: any, openNewIngredientModal: any, handleRemoveNewIngredient: any, sortedIngredients: Ingredient[] }) => {
+    const [openCombobox, setOpenCombobox] = useState(false);
+    return (
+        <TableRow key={newIng.tempId}>
+            <TableCell>
+                <div className="flex items-center gap-1">
+                    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" role="combobox" aria-expanded={openCombobox} className="w-full justify-between" >
+                                {newIng.ingredientId ? sortedIngredients.find((ing) => ing.id === newIng.ingredientId)?.name : newIng.name || "Choisir..."}
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[300px] p-0">
+                            <Command>
+                                <CommandInput placeholder="Rechercher un ingrédient..." />
+                                <CommandList>
+                                    <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                    <CommandGroup>
+                                        {sortedIngredients.map((ing) => (
+                                            ing.id ?
+                                                <CommandItem key={ing.id} value={ing.name} onSelect={(currentValue) => { const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase()); if (selected) { handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!); } setOpenCombobox(false); }}>
+                                                    <Check className={cn("mr-2 h-4 w-4", newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0")} />
+                                                    {ing.name}
+                                                </CommandItem>
+                                                : null
+                                        ))}
+                                    </CommandGroup>
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
+                    {!newIng.ingredientId && newIng.name && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={'Créer l\'ingrédient "' + newIng.name + '"'}> <PlusCircle className="h-4 w-4 text-primary" /> </Button>)}
+                </div>
+            </TableCell>
+            <TableCell><Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell>
+            <TableCell>{newIng.unit}</TableCell>
+            <TableCell className="text-right font-semibold">{(newIng.totalCost || 0).toFixed(2)} DZD</TableCell>
+            <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
+        </TableRow>
+    )
+}
+
 export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProps) {
   const [recipe, setRecipe] = useState<Preparation | null>(null);
   const [editableRecipe, setEditableRecipe] = useState<Preparation | null>(null);
@@ -159,78 +249,90 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
   const [newPreparationDefaults, setNewPreparationDefaults] = useState<Partial<Preparation> | null>(null);
   const [currentTempId, setCurrentTempId] = useState<string | null>(null);
   const [currentPrepTempId, setCurrentPrepTempId] = useState<string | null>(null);
-
   
-    const fullDataRefresh = useCallback(async () => {
-        setIsLoading(true);
-        try {
-            const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
-            const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
-            setAllIngredients(ingredientsList);
+  const fullDataRefresh = useCallback(async () => {
+    setIsLoading(true);
+    try {
+        const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
+        const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+        setAllIngredients(ingredientsList);
 
-            const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
-            const allPrepsData = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
-            setAllPreparations(allPrepsData);
-            
-            // Mocked costs for now
-            const costs: Record<string, number> = {};
-            for (const prep of allPrepsData) {
-                if (prep.id) {
-                    costs[prep.id] = Math.random() * 50; 
-                }
+        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
+        const allPrepsData = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+        setAllPreparations(allPrepsData);
+        
+        // Mocked costs for now
+        const costs: Record<string, number> = {};
+        for (const prep of allPrepsData) {
+            if (prep.id) {
+                costs[prep.id] = Math.random() * 50; 
             }
-            setPreparationsCosts(costs);
-
-            const recipeDocRef = doc(db, "garnishes", recipeId);
-            const recipeSnap = await getDoc(recipeDocRef);
-
-            if (!recipeSnap.exists()) {
-                setError("Fiche de garniture non trouvée.");
-                setRecipe(null);
-                return;
-            }
-
-            const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Preparation;
-            setRecipe(fetchedRecipe);
-            setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
-
-            const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
-            const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
-            const ingredientsData = recipeIngredientsSnap.docs.map(docSnap => {
-                const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
-                const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
-                if (ingredientData) {
-                    const totalCost = recomputeIngredientCost(recipeIngredientData, ingredientData);
-                    return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, category: ingredientData.category, totalCost };
-                }
-                return null;
-            }).filter(Boolean) as FullRecipeIngredient[];
-            setIngredients(ingredientsData);
-            setEditableIngredients(JSON.parse(JSON.stringify(ingredientsData)));
-
-            const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
-            const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
-            const preparationsData = recipePreparationsSnap.docs.map(linkDoc => {
-                const linkData = linkDoc.data() as RecipePreparationLink;
-                const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
-                if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
-                    const costPerProductionUnit = costs[linkData.childPreparationId];
-                    const conversionFactor = getConversionFactor(childRecipeData.productionUnit!, linkData.unitUse);
-                    const costPerUseUnit = costPerProductionUnit / conversionFactor;
-                    return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit! };
-                }
-                return null;
-            }).filter(Boolean) as FullRecipePreparation[];
-            setPreparations(preparationsData);
-            setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
-        } catch (e: any) {
-            console.error("Error on full data refresh:", e);
-            setError("Impossible de charger les données: " + e.message);
-        } finally {
-            setIsLoading(false);
         }
-    }, [recipeId]);
+        setPreparationsCosts(costs);
 
+        const recipeDocRef = doc(db, "garnishes", recipeId);
+        const recipeSnap = await getDoc(recipeDocRef);
+
+        if (!recipeSnap.exists()) {
+            setError("Fiche de garniture non trouvée.");
+            setRecipe(null);
+            return;
+        }
+
+        const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Preparation;
+        setRecipe(fetchedRecipe);
+        setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
+
+        const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
+        const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
+        const ingredientsData = recipeIngredientsSnap.docs.map(docSnap => {
+            const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
+            const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
+            if (ingredientData) {
+                const totalCost = recomputeIngredientCost(recipeIngredientData, ingredientData);
+                return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, category: ingredientData.category, totalCost };
+            }
+            return null;
+        }).filter(Boolean) as FullRecipeIngredient[];
+        setIngredients(ingredientsData);
+        setEditableIngredients(JSON.parse(JSON.stringify(ingredientsData)));
+
+        const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
+        const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
+        const preparationsData = recipePreparationsSnap.docs.map(linkDoc => {
+            const linkData = linkDoc.data() as RecipePreparationLink;
+            const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
+            if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
+                const costPerProductionUnit = costs[linkData.childPreparationId];
+                const conversionFactor = getConversionFactor(childRecipeData.productionUnit!, linkData.unitUse);
+                const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit! };
+            }
+            return null;
+        }).filter(Boolean) as FullRecipePreparation[];
+        setPreparations(preparationsData);
+        setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
+    } catch (e: any) {
+        console.error("Error on full data refresh:", e);
+        setError("Impossible de charger les données: " + e.message);
+    } finally {
+        setIsLoading(false);
+    }
+  }, [recipeId]);
+
+  const fetchAllIngredients = useCallback(async () => {
+    const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
+    const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+    setAllIngredients(ingredientsList);
+    return ingredientsList;
+    }, []);
+
+    const fetchAllPreparations = useCallback(async () => {
+        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
+        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+        setAllPreparations(prepsList);
+        return prepsList;
+    }, []);
 
     useEffect(() => {
         if (!recipeId || !isFirebaseConfigured) {
@@ -238,39 +340,42 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             setError(recipeId ? "Configuration Firebase manquante." : "ID de garniture manquant.");
             return;
         }
+
+        let isMounted = true;
         
-        fullDataRefresh().then(() => {
+        const initialLoad = async () => {
+            await fullDataRefresh();
+            if (!isMounted) return;
+
             const conceptJSON = sessionStorage.getItem(GARNISH_WORKSHOP_CONCEPT_KEY);
             if (conceptJSON) {
-                 setIsEditing(true);
+                setIsEditing(true);
                 const concept: PreparationConceptOutput = JSON.parse(conceptJSON);
                 
                 setEditableRecipe(current => ({ ...current!, ...concept }));
                 
-                setAllIngredients(currentAllIngredients => {
-                    const newIngs: NewRecipeIngredient[] = (concept.ingredients || []).map(sugIng => {
-                        const existing = currentAllIngredients.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
-                        let totalCost = existing ? recomputeIngredientCost({ quantity: sugIng.quantity, unit: sugIng.unit }, existing) : 0;
-                        return { tempId: `new-ws-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
-                    });
-                    setNewIngredients(newIngs);
-                    return currentAllIngredients;
+                const ingredientsList = await fetchAllIngredients();
+                const newIngs: NewRecipeIngredient[] = (concept.ingredients || []).map(sugIng => {
+                    const existing = ingredientsList.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
+                    let totalCost = existing ? recomputeIngredientCost({ quantity: sugIng.quantity, unit: sugIng.unit }, existing) : 0;
+                    return { tempId: `new-ws-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
                 });
+                setNewIngredients(newIngs);
                 
-                setAllPreparations(currentAllPreps => {
-                    const newPreps: NewRecipePreparation[] = (concept.subRecipes || []).map(prep => {
-                        const existing = currentAllPreps.find(dbPrep => dbPrep.name.toLowerCase() === prep.name.toLowerCase());
-                        return { tempId: `new-ws-prep-${Date.now()}-${Math.random()}`, childPreparationId: existing?.id, name: existing?.name || prep.name, quantity: prep.quantity, unit: prep.unit, totalCost: 0, _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0, _productionUnit: existing?.productionUnit || '' };
-                    });
-                    setNewPreparations(newPreps);
-                    return currentAllPreps;
+                const allPrepsList = await fetchAllPreparations();
+                const newPreps: NewRecipePreparation[] = (concept.subRecipes || []).map(prep => {
+                    const existing = allPrepsList.find(dbPrep => dbPrep.name.toLowerCase() === prep.name.toLowerCase());
+                    return { tempId: `new-ws-prep-${Date.now()}-${Math.random()}`, childPreparationId: existing?.id, name: existing?.name || prep.name, quantity: prep.quantity, unit: prep.unit, totalCost: 0, _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0, _productionUnit: existing?.productionUnit || '' };
                 });
+                setNewPreparations(newPreps);
 
                 toast({ title: "Fiche importée de l'Atelier !", description: "Vérifiez et sauvegardez les informations." });
                 sessionStorage.removeItem(GARNISH_WORKSHOP_CONCEPT_KEY);
             }
-        });
+        }
 
+        initialLoad();
+        return () => { isMounted = false; };
     }, [recipeId]);
 
 
@@ -308,26 +413,47 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         }));
     };
   
-  const handleNewIngredientChange = (tempId: string, field: keyof NewRecipeIngredient, value: any) => {
-    setNewIngredients(current => current.map(ing => {
-        if (ing.tempId === tempId) {
-          const updatedIng = { ...ing, [field]: value };
-          const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
-          if (selectedIngredient) {
-            if (field === 'ingredientId') {
-              updatedIng.name = selectedIngredient.name;
-              updatedIng.category = selectedIngredient.category;
+    const handleNewIngredientChange = (tempId: string, field: keyof NewRecipeIngredient, value: any) => {
+        setNewIngredients(current => current.map(ing => {
+            if (ing.tempId === tempId) {
+            const updatedIng = { ...ing, [field]: value };
+            const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
+            if (selectedIngredient) {
+                if (field === 'ingredientId') {
+                updatedIng.name = selectedIngredient.name;
+                updatedIng.category = selectedIngredient.category;
+                }
+                updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
+            } else if(field === 'ingredientId') {
+                updatedIng.ingredientId = undefined; // Unlink if not found
             }
-            updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
-          } else if(field === 'ingredientId') {
-            updatedIng.ingredientId = undefined; // Unlink if not found
-          }
-          return updatedIng;
+            return updatedIng;
+            }
+            return ing;
+        })
+        );
+    };
+
+    const handleRemoveExistingIngredient = (recipeIngredientId: string) => { setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId)); };
+    const handleRemoveNewIngredient = (tempId: string) => { setNewIngredients(current => current.filter(ing => ing.tempId !== tempId)); };
+    
+    const openNewIngredientModal = (tempId: string) => {
+        const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId);
+        if (ingredientToCreate) {
+            setCurrentTempId(tempId);
+            setNewIngredientDefaults({ name: ingredientToCreate.name });
+            setIsNewIngredientModalOpen(true);
         }
-        return ing;
-      })
-    );
-  };
+    }
+
+    const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
+        fetchAllIngredients().then(updatedList => {
+            const newlyAdded = updatedList.find(i => i.id === newIngredient.id);
+            if (newlyAdded) {
+                handleNewIngredientChange(tempId, 'ingredientId', newlyAdded.id!);
+            }
+        });
+    };
     
     const handleSave = async () => {
         if (!editableRecipe) return;
@@ -388,6 +514,10 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         
         return { totalRecipeCost: totalCost, costPerPortion: costPerPortionValue };
     }, [isEditing, currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations]);
+    
+    const sortedIngredients = useMemo(() => {
+        return [...allIngredients].sort((a, b) => a.name.localeCompare(b.name));
+    }, [allIngredients]);
 
     if (isLoading) return <RecipeDetailSkeleton />;
     if (error) return ( <div className="container mx-auto py-10"><Alert variant="destructive" className="max-w-2xl mx-auto my-10"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erreur</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></div> );
@@ -397,6 +527,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
 
     return (
         <div className="space-y-4">
+            <IngredientModal open={isNewIngredientModalOpen} onOpenChange={setIsNewIngredientModalOpen} ingredient={newIngredientDefaults} onSuccess={(newDbIngredient) => { if (newDbIngredient && currentTempId) { handleCreateAndLinkIngredient(currentTempId, newDbIngredient); } }} ><div /></IngredientModal>
             <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex items-start gap-4 flex-grow">
                     <div className="bg-primary/10 text-primary rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
@@ -443,22 +574,23 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                                     {isEditing ? (
                                         <>
                                             {editableIngredients.map(ing => (
-                                                <TableRow key={ing.recipeIngredientId}>
-                                                    <TableCell>{ing.name}</TableCell>
-                                                    <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20"/></TableCell>
-                                                    <TableCell>{ing.unit}</TableCell>
-                                                    <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
-                                                    <TableCell><Button variant="ghost" size="icon" onClick={() => {}}><Trash2 className="h-4 w-4"/></Button></TableCell>
-                                                </TableRow>
+                                                <EditableIngredientRow
+                                                    key={ing.recipeIngredientId}
+                                                    ing={ing}
+                                                    handleIngredientChange={handleIngredientChange}
+                                                    handleRemoveExistingIngredient={handleRemoveExistingIngredient}
+                                                    sortedIngredients={sortedIngredients}
+                                                />
                                             ))}
                                             {newIngredients.map(ing => (
-                                                <TableRow key={ing.tempId}>
-                                                     <TableCell>{ing.name || 'Nouveau...'}</TableCell>
-                                                     <TableCell><Input type="number" value={ing.quantity} onChange={(e) => {}} className="w-20"/></TableCell>
-                                                     <TableCell>{ing.unit}</TableCell>
-                                                     <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
-                                                     <TableCell><Button variant="ghost" size="icon" onClick={() => {}}><Trash2 className="h-4 w-4"/></Button></TableCell>
-                                                </TableRow>
+                                                 <NewIngredientRow
+                                                    key={ing.tempId}
+                                                    newIng={ing}
+                                                    handleNewIngredientChange={handleNewIngredientChange}
+                                                    openNewIngredientModal={openNewIngredientModal}
+                                                    handleRemoveNewIngredient={handleRemoveNewIngredient}
+                                                    sortedIngredients={sortedIngredients}
+                                                />
                                             ))}
                                         </>
                                     ) : (
