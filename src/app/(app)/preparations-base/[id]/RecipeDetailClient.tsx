@@ -104,6 +104,11 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
         const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
 
+        if ((fromType === 'weight' && toType === 'volume') || (fromType === 'volume' && toType === 'weight')) {
+             // Basic assumption: 1ml = 1g for water-like density. This is a simplification.
+             return fromFactor / toFactor;
+        }
+
         if (fromType === toType) {
             return fromFactor / toFactor;
         }
@@ -125,7 +130,8 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
     
     const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
     
-    return quantityInBaseUnit * netCostPerGramOrMl;
+    const finalCost = quantityInBaseUnit * netCostPerGramOrMl;
+    return isNaN(finalCost) ? 0 : finalCost;
 };
 
 const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExistingIngredient, sortedIngredients, handleOpenSuggestionModal }: { ing: FullRecipeIngredient, handleIngredientChange: any, handleRemoveExistingIngredient: any, sortedIngredients: Ingredient[], handleOpenSuggestionModal: any }) => {
@@ -1199,11 +1205,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
-
-    
-
-    
-
-    
