@@ -256,8 +256,19 @@ const EditablePreparationRow = ({ prep, handlePreparationChange, handleRemoveExi
     return (
         <TableRow key={prep.id}>
             <TableCell className="font-medium">{prep.name}</TableCell>
-            <TableCell>{<Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" />}</TableCell>
-            <TableCell>{prep.unit}</TableCell>
+            <TableCell><Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
+            <TableCell>
+                <Select value={prep.unit} onValueChange={(value) => handlePreparationChange(prep.id, 'unit', value)}>
+                    <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="g">g</SelectItem>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="ml">ml</SelectItem>
+                        <SelectItem value="l">l</SelectItem>
+                        <SelectItem value="pièce">pièce</SelectItem>
+                    </SelectContent>
+                </Select>
+            </TableCell>
             <TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell>
             <TableCell>
                 <AlertDialog>
@@ -308,7 +319,18 @@ const NewPreparationRow = ({ prep, handleNewPreparationChange, openNewPreparatio
                 </div>
             </TableCell>
             <TableCell><Input type="number" placeholder="Qté" className="w-20" value={prep.quantity === 0 ? '' : prep.quantity} onChange={(e) => handleNewPreparationChange(prep.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell>
-            <TableCell>{prep.unit || '-'}</TableCell>
+            <TableCell>
+                 <Select value={prep.unit} onValueChange={(value) => handleNewPreparationChange(prep.tempId, 'unit', value)}>
+                    <SelectTrigger className="w-24"><SelectValue placeholder="Unité"/></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="g">g</SelectItem>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="ml">ml</SelectItem>
+                        <SelectItem value="l">l</SelectItem>
+                        <SelectItem value="pièce">pièce</SelectItem>
+                    </SelectContent>
+                </Select>
+            </TableCell>
             <TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell>
             <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewPreparation(prep.tempId)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
         </TableRow>
@@ -631,7 +653,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   const handleAddNewPreparation = () => { setNewPreparations([ ...newPreparations, { tempId: `new-prep-${Date.now()}`, childPreparationId: '', name: '', quantity: 0, unit: '', totalCost: 0, _productionUnit: '', }, ]); };
   const handleRemoveNewPreparation = (tempId: string) => { setNewPreparations(current => current.filter(p => p.tempId !== tempId)); };
-  const handlePreparationChange = (linkId: string, field: 'quantity', value: any) => {
+  
+  const handlePreparationChange = (linkId: string, field: 'quantity' | 'unit', value: any) => {
       setEditablePreparations(current => current.map(prep => {
           if (prep.id === linkId) {
               const updatedPrep = { ...prep, [field]: value };
@@ -644,15 +667,21 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
           return prep;
       }));
   };
+
   const handleNewPreparationChange = (tempId: string, field: keyof NewRecipePreparation, value: any) => {
       setNewPreparations(current => current.map(p => {
               if (p.tempId === tempId) {
                   const updatedPrep = { ...p, [field]: value };
                   if (field === 'childPreparationId') {
                       const selectedPrep = allPreparations.find(prep => prep.id === value);
-                      if (selectedPrep) { updatedPrep.name = selectedPrep.name; updatedPrep.unit = selectedPrep.usageUnit || selectedPrep.productionUnit || 'g'; updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0; updatedPrep._productionUnit = selectedPrep.productionUnit || ''; }
+                      if (selectedPrep) { 
+                        updatedPrep.name = selectedPrep.name; 
+                        updatedPrep.unit = selectedPrep.usageUnit || selectedPrep.productionUnit || 'g'; 
+                        updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0; 
+                        updatedPrep._productionUnit = selectedPrep.productionUnit || ''; 
+                      }
                   }
-                  if (field === 'quantity' || field === 'childPreparationId') {
+                  if (field === 'quantity' || field === 'childPreparationId' || field === 'unit') {
                       const costPerProductionUnit = updatedPrep._costPerUnit || 0;
                       const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
                       const costPerUseUnit = costPerProductionUnit / conversionFactor;
@@ -1205,5 +1234,9 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
+
+    
 
     
