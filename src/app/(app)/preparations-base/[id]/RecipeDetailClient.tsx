@@ -1205,3 +1205,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
