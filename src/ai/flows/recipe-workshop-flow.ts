@@ -6,6 +6,7 @@
  */
 
 import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 import { v2 as cloudinary } from 'cloudinary';
 import { getAllPreparationNames } from '../tools/recipe-tools';
 import { googleAI } from '@genkit-ai/googleai';
