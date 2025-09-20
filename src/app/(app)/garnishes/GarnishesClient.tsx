@@ -235,7 +235,7 @@ export default function GarnishesClient() {
         <p className="text-muted-foreground">Recettes calibrées, portionnées, directement servies en accompagnement ou comme plat végétarien.</p>
       </header>
       
-      <div className="flex items-center justify-between gap-4">
+      <div className="flex items-center justify-between gap-4 pt-4">
           <div className="relative w-full max-w-sm">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
