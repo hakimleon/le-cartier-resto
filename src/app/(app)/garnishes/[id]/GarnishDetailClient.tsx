@@ -214,7 +214,7 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                                     <CommandGroup>
                                         {sortedIngredients.map((ing) => (
                                             ing.id ?
-                                                <CommandItem key={ing.id} value={sIng.name} onSelect={(currentValue) => { const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase()); if (selected) { handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!); } setOpenCombobox(false); }}>
+                                                <CommandItem key={ing.id} value={ing.name} onSelect={(currentValue) => { const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase()); if (selected) { handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!); } setOpenCombobox(false); }}>
                                                     <Check className={cn("mr-2 h-4 w-4", newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0")} />
                                                     {ing.name}
                                                 </CommandItem>
@@ -423,27 +423,18 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         return costs;
     }, []);
 
-    const fetchAllIngredients = useCallback(async () => {
-        const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
-        const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
-        setAllIngredients(ingredientsList);
-        return ingredientsList;
-    }, []);
+    const fetchAllSupportingData = useCallback(async () => {
+        const ingredientsList = await fetchAllIngredients();
+        const allPrepsData = await fetchAllPreparations();
+        const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
+        setPreparationsCosts(costs);
+        return { ingredientsList, allPrepsData, costs };
+    }, [fetchAllIngredients, fetchAllPreparations, calculatePreparationsCosts]);
 
-    const fetchAllPreparations = useCallback(async () => {
-        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
-        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
-        setAllPreparations(prepsList);
-        return prepsList;
-    }, []);
-
-    const fullDataRefresh = useCallback(async () => {
+    const fullDataRefresh = useCallback(async (supportingData?: { ingredientsList: Ingredient[], allPrepsData: Preparation[], costs: Record<string, number> }) => {
         setIsLoading(true);
         try {
-            const ingredientsList = await fetchAllIngredients();
-            const allPrepsData = await fetchAllPreparations();
-            const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
-            setPreparationsCosts(costs);
+            const { ingredientsList, allPrepsData, costs } = supportingData || await fetchAllSupportingData();
 
             const recipeDocRef = doc(db, "garnishes", recipeId);
             const recipeSnap = await getDoc(recipeDocRef);
@@ -487,17 +478,27 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             }).filter(Boolean) as FullRecipePreparation[];
             setPreparations(preparationsData);
             setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
-            
-            return { ingredientsList, allPrepsData, costs };
         } catch (e: any) {
             console.error("Error on full data refresh:", e);
             setError("Impossible de charger les données: " + e.message);
-            return { ingredientsList: [], allPrepsData: [], costs: {} };
         } finally {
             setIsLoading(false);
         }
-    }, [recipeId, calculatePreparationsCosts, fetchAllIngredients, fetchAllPreparations]);
+    }, [recipeId, fetchAllSupportingData]);
 
+    const fetchAllIngredients = useCallback(async () => {
+        const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
+        const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+        setAllIngredients(ingredientsList);
+        return ingredientsList;
+    }, []);
+
+    const fetchAllPreparations = useCallback(async () => {
+        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
+        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+        setAllPreparations(prepsList);
+        return prepsList;
+    }, []);
 
     useEffect(() => {
         if (!recipeId || !isFirebaseConfigured) {
@@ -509,11 +510,14 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         let isMounted = true;
         
         const initialLoad = async () => {
-            const { ingredientsList, allPrepsData, costs } = await fullDataRefresh();
+            await fullDataRefresh();
             if (!isMounted) return;
 
             const conceptJSON = sessionStorage.getItem(GARNISH_WORKSHOP_CONCEPT_KEY);
             if (conceptJSON) {
+                const { ingredientsList, allPrepsData, costs } = await fetchAllSupportingData();
+                if (!isMounted) return;
+
                 setIsEditing(true);
                 const concept: PreparationConceptOutput = JSON.parse(conceptJSON);
                 
@@ -555,7 +559,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
 
         initialLoad();
         return () => { isMounted = false; };
-    }, [recipeId, fullDataRefresh]);
+    }, [recipeId, fullDataRefresh, fetchAllSupportingData]);
 
 
     const handleToggleEditMode = () => {
@@ -986,6 +990,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
 
     
