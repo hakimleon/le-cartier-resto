@@ -194,7 +194,12 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                             <Command>
                                 <CommandInput placeholder="Rechercher un ingrédient..." />
                                 <CommandList>
-                                    <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                    <CommandEmpty>
+                                         <Button variant="ghost" className="w-full justify-start" onClick={() => openNewIngredientModal(newIng.tempId)}>
+                                            <PlusCircle className="mr-2 h-4 w-4" />
+                                            Créer "{newIng.name}"
+                                        </Button>
+                                    </CommandEmpty>
                                     <CommandGroup>
                                         {sortedIngredients.map((ing) => (
                                             ing.id ?
@@ -891,7 +896,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
 
     
