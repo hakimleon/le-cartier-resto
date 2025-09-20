@@ -96,7 +96,7 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         const volumeUnits = ['l', 'ml', 'litre', 'litres'];
         const unitUnits = ['pièce', 'piece', 'botte'];
 
-        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
+        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
         const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
 
         if ((fromType === 'weight' && toType === 'volume') || (fromType === 'volume' && toType === 'weight')) {
@@ -423,6 +423,20 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         return costs;
     }, []);
 
+    const fetchAllIngredients = useCallback(async () => {
+        const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
+        const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+        setAllIngredients(ingredientsList);
+        return ingredientsList;
+    }, []);
+
+    const fetchAllPreparations = useCallback(async () => {
+        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
+        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+        setAllPreparations(prepsList);
+        return prepsList;
+    }, []);
+
     const fetchAllSupportingData = useCallback(async () => {
         const ingredientsList = await fetchAllIngredients();
         const allPrepsData = await fetchAllPreparations();
@@ -485,20 +499,6 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             setIsLoading(false);
         }
     }, [recipeId, fetchAllSupportingData]);
-
-    const fetchAllIngredients = useCallback(async () => {
-        const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
-        const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
-        setAllIngredients(ingredientsList);
-        return ingredientsList;
-    }, []);
-
-    const fetchAllPreparations = useCallback(async () => {
-        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
-        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
-        setAllPreparations(prepsList);
-        return prepsList;
-    }, []);
 
     useEffect(() => {
         if (!recipeId || !isFirebaseConfigured) {
@@ -990,5 +990,6 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
 
     
