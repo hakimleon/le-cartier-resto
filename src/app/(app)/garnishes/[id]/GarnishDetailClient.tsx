@@ -362,6 +362,20 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
   const [currentTempId, setCurrentTempId] = useState<string | null>(null);
   const [currentPrepTempId, setCurrentPrepTempId] = useState<string | null>(null);
   
+    const fetchAllIngredients = useCallback(async () => {
+        const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
+        const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+        setAllIngredients(ingredientsList);
+        return ingredientsList;
+    }, []);
+
+    const fetchAllPreparations = useCallback(async () => {
+        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
+        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+        setAllPreparations(prepsList);
+        return prepsList;
+    }, []);
+  
     const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
         const costs: Record<string, number> = {};
         const prepDependencies: Record<string, string[]> = {};
@@ -421,20 +435,6 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         }
 
         return costs;
-    }, []);
-
-    const fetchAllIngredients = useCallback(async () => {
-        const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
-        const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
-        setAllIngredients(ingredientsList);
-        return ingredientsList;
-    }, []);
-
-    const fetchAllPreparations = useCallback(async () => {
-        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
-        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
-        setAllPreparations(prepsList);
-        return prepsList;
     }, []);
 
     const fetchAllSupportingData = useCallback(async () => {
@@ -990,6 +990,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-
-    
