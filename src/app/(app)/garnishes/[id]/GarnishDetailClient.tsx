@@ -453,8 +453,24 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 
                 const allPrepsList = await fetchAllPreparations();
                 const newPreps: NewRecipePreparation[] = (concept.subRecipes || []).map(prep => {
-                    const existing = allPrepsList.find(dbPrep => dbPrep.name.toLowerCase() === prep.name.toLowerCase());
-                    return { tempId: `new-ws-prep-${Date.now()}-${Math.random()}`, childPreparationId: existing?.id, name: existing?.name || prep.name, quantity: prep.quantity, unit: prep.unit, totalCost: 0, _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0, _productionUnit: existing?.productionUnit || '' };
+                    const existingPrep = allPrepsList.find(dbPrep => dbPrep.name.toLowerCase() === prep.name.toLowerCase());
+                    let totalCost = 0;
+                    if (existingPrep) {
+                        const costPerProductionUnit = preparationsCosts[existingPrep.id!] || 0;
+                        const conversionFactor = getConversionFactor(existingPrep.productionUnit!, prep.unit);
+                        const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                        totalCost = costPerUseUnit * (prep.quantity || 0);
+                    }
+                    return { 
+                        tempId: `new-ws-prep-${Date.now()}-${Math.random()}`, 
+                        childPreparationId: existingPrep?.id, 
+                        name: existingPrep?.name || prep.name, 
+                        quantity: prep.quantity, 
+                        unit: prep.unit, 
+                        totalCost,
+                        _costPerUnit: existingPrep ? preparationsCosts[existingPrep.id!] || 0 : 0, 
+                        _productionUnit: existingPrep?.productionUnit || '' 
+                    };
                 });
                 setNewPreparations(newPreps);
 
@@ -896,5 +912,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
