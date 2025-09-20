@@ -253,30 +253,30 @@ export default function GarnishesClient() {
           </div>
           <div className="flex items-center gap-2">
             <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <GarnishesGuide existingGarnishes={garnishNames}>
-                    <Button variant="outline">
-                      <BookOpen className="mr-2 h-4 w-4" />
-                      Guide
+                <GarnishesGuide existingGarnishes={garnishNames}>
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Button variant="outline">
+                                <BookOpen className="mr-2 h-4 w-4" />
+                                Guide
+                            </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            <p>Ouvrir le guide des garnitures pour suivre votre progression.</p>
+                        </TooltipContent>
+                    </Tooltip>
+                </GarnishesGuide>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                    <Button onClick={() => router.push('/garnishes/workshop')}>
+                        <FlaskConical className="mr-2 h-4 w-4" />
+                        Atelier
                     </Button>
-                  </GarnishesGuide>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Ouvrir le guide des garnitures pour suivre votre progression.</p>
-                </TooltipContent>
-              </Tooltip>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button onClick={() => router.push('/garnishes/workshop')}>
-                    <FlaskConical className="mr-2 h-4 w-4" />
-                    Atelier
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Créer une nouvelle garniture avec l'aide de l'IA.</p>
-                </TooltipContent>
-              </Tooltip>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                    <p>Créer une nouvelle garniture avec l'aide de l'IA.</p>
+                    </TooltipContent>
+                </Tooltip>
             </TooltipProvider>
           </div>
       </div>
