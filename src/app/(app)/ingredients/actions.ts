@@ -31,6 +31,19 @@ export async function deleteIngredient(id: string) {
   if (!id) {
     throw new Error("L'identifiant est requis pour la suppression.");
   }
+
+  const batch = writeBatch(db);
+
+  // 1. Find all variants that reference this generic ingredient and unlink them
+  const variantsQuery = query(collection(db, "ingredients"), where("genericIngredientId", "==", id));
+  const variantsSnapshot = await getDocs(variantsQuery);
+  variantsSnapshot.forEach(doc => {
+      batch.update(doc.ref, { genericIngredientId: "" }); // Or set to null/delete the field
+  });
+
+  // 2. Delete the ingredient itself
   const ingredientDoc = doc(db, 'ingredients', id);
-  await deleteDoc(ingredientDoc);
+  batch.delete(ingredientDoc);
+
+  await batch.commit();
 }

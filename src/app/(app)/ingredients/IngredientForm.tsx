@@ -60,7 +60,10 @@ const formSchema = z.object({
   yieldPercentage: z.coerce.number().min(0, "Le rendement doit être entre 0 et 100.").max(100, "Le rendement doit être entre 0 et 100."),
   isGeneric: z.boolean(),
   genericIngredientId: z.string().optional(),
-}).refine(data => data.isGeneric || (!data.isGeneric && data.genericIngredientId), {
+}).refine(data => {
+    // If it's a specific variant (not generic), it MUST be linked to a generic parent.
+    return data.isGeneric || (!data.isGeneric && !!data.genericIngredientId);
+}, {
     message: "Un ingrédient non-générique doit être rattaché à un ingrédient générique.",
     path: ["genericIngredientId"],
 });
@@ -98,10 +101,11 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
         const q = query(collection(db, "ingredients"), where("isGeneric", "==", true));
         const querySnapshot = await getDocs(q);
         const generics = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Ingredient));
-        setGenericIngredients(generics);
+        // Exclude the current ingredient from the list of possible parents
+        setGenericIngredients(generics.filter(g => g.id !== ingredient?.id));
     };
     fetchGenericIngredients();
-  }, []);
+  }, [ingredient?.id]);
 
 
   const selectedCategory = form.watch("category");
@@ -392,7 +396,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                                         value={g.name}
                                         key={g.id}
                                         onSelect={() => {
-                                            form.setValue("genericIngredientId", g.id);
+                                            form.setValue("genericIngredientId", g.id!, { shouldValidate: true });
                                         }}
                                     >
                                     <Check
