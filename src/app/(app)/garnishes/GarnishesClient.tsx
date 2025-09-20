@@ -37,6 +37,12 @@ import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2 } from "lucide-react";
 import { GarnishesGuide } from "./GarnishesGuide";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const garnishCategories = [
     "Purées & mousselines",
@@ -246,16 +252,32 @@ export default function GarnishesClient() {
               />
           </div>
           <div className="flex items-center gap-2">
-               <GarnishesGuide existingGarnishes={garnishNames}>
-                  <Button variant="outline">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <GarnishesGuide existingGarnishes={garnishNames}>
+                    <Button variant="outline">
                       <BookOpen className="mr-2 h-4 w-4" />
                       Guide
+                    </Button>
+                  </GarnishesGuide>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Ouvrir le guide des garnitures pour suivre votre progression.</p>
+                </TooltipContent>
+              </Tooltip>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button onClick={() => router.push('/garnishes/workshop')}>
+                    <FlaskConical className="mr-2 h-4 w-4" />
+                    Atelier
                   </Button>
-               </GarnishesGuide>
-               <Button onClick={() => router.push('/garnishes/workshop')}>
-                  <FlaskConical className="mr-2 h-4 w-4" />
-                  Atelier
-              </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Créer une nouvelle garniture avec l'aide de l'IA.</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
       </div>
 
