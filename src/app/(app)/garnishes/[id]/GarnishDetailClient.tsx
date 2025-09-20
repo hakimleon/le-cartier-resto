@@ -214,7 +214,7 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                                     <CommandGroup>
                                         {sortedIngredients.map((ing) => (
                                             ing.id ?
-                                                <CommandItem key={ing.id} value={ing.name} onSelect={(currentValue) => { const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase()); if (selected) { handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!); } setOpenCombobox(false); }}>
+                                                <CommandItem key={ing.id} value={sIng.name} onSelect={(currentValue) => { const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase()); if (selected) { handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!); } setOpenCombobox(false); }}>
                                                     <Check className={cn("mr-2 h-4 w-4", newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0")} />
                                                     {ing.name}
                                                 </CommandItem>
@@ -362,23 +362,89 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
   const [currentTempId, setCurrentTempId] = useState<string | null>(null);
   const [currentPrepTempId, setCurrentPrepTempId] = useState<string | null>(null);
   
+    const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
+        const costs: Record<string, number> = {};
+        const prepDependencies: Record<string, string[]> = {};
+        const prepOrder: string[] = [];
+        const visited: Record<string, 'visiting' | 'visited'> = {};
+
+        for (const prep of preparationsList) {
+            if (!prep.id) continue;
+            const linksQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", prep.id));
+            const linksSnap = await getDocs(linksQuery);
+            prepDependencies[prep.id] = linksSnap.docs.map(d => (d.data() as RecipePreparationLink).childPreparationId);
+        }
+        
+        function visit(prepId: string) {
+            if (!prepId || !preparationsList.find(p => p.id === prepId)) { return; }
+            if (visited[prepId] === 'visited') return;
+            if (visited[prepId] === 'visiting') { console.error("Circular dependency detected involving preparation ID:", prepId); return; }
+            visited[prepId] = 'visiting';
+            for (const depId of prepDependencies[prepId] || []) { visit(depId); }
+            visited[prepId] = 'visited';
+            prepOrder.push(prepId);
+        }
+
+        for (const prep of preparationsList) { if (prep.id) visit(prep.id); }
+
+        for (const prepId of prepOrder) {
+            const prep = preparationsList.find(p => p.id === prepId);
+            if (!prep) continue;
+
+            let totalCost = 0;
+            const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
+            const ingredientsSnap = await getDocs(ingredientsQuery);
+            for (const ingDoc of ingredientsSnap.docs) {
+                const ingLink = ingDoc.data() as RecipeIngredientLink;
+                const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
+                if (ingData) {
+                    totalCost += recomputeIngredientCost(ingLink, ingData);
+                }
+            }
+
+            for (const depId of prepDependencies[prepId] || []) {
+                const depLinkQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", prepId), where("childPreparationId", "==", depId));
+                const depLinkSnap = await getDocs(depLinkQuery);
+                if (!depLinkSnap.empty) {
+                    const linkData = depLinkSnap.docs[0].data() as RecipePreparationLink;
+                    const childPrep = preparationsList.find(p => p.id === depId);
+                    const childCostPerProductionUnit = costs[depId];
+                    if (childPrep && childCostPerProductionUnit !== undefined) {
+                        const conversionFactor = getConversionFactor(childPrep.productionUnit!, linkData.unitUse);
+                        const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
+                        totalCost += (linkData.quantity || 0) * costPerUseUnit;
+                    }
+                }
+            }
+            
+            costs[prepId] = (totalCost / (prep.productionQuantity || 1)) || 0;
+        }
+
+        return costs;
+    }, []);
+
+    const fetchAllIngredients = useCallback(async () => {
+        const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
+        const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+        setAllIngredients(ingredientsList);
+        return ingredientsList;
+    }, []);
+
+    const fetchAllPreparations = useCallback(async () => {
+        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
+        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+        setAllPreparations(prepsList);
+        return prepsList;
+    }, []);
+
     const fullDataRefresh = useCallback(async () => {
         setIsLoading(true);
         try {
-            // Fetch all supporting data first
             const ingredientsList = await fetchAllIngredients();
             const allPrepsData = await fetchAllPreparations();
-            
-            // Mocked costs, to be replaced by real calculation
-            const costs: Record<string, number> = {};
-            for (const prep of allPrepsData) {
-                if (prep.id) {
-                    costs[prep.id] = Math.random() * 50; 
-                }
-            }
+            const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
             setPreparationsCosts(costs);
 
-            // Fetch the main garnish data
             const recipeDocRef = doc(db, "garnishes", recipeId);
             const recipeSnap = await getDoc(recipeDocRef);
 
@@ -392,7 +458,6 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             setRecipe(fetchedRecipe);
             setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
 
-            // Fetch and process ingredients for this garnish
             const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
             const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
             const ingredientsData = recipeIngredientsSnap.docs.map(docSnap => {
@@ -407,7 +472,6 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             setIngredients(ingredientsData);
             setEditableIngredients(JSON.parse(JSON.stringify(ingredientsData)));
 
-            // Fetch and process sub-preparations for this garnish
             const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
             const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
             const preparationsData = recipePreparationsSnap.docs.map(linkDoc => {
@@ -423,27 +487,17 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             }).filter(Boolean) as FullRecipePreparation[];
             setPreparations(preparationsData);
             setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
+            
+            return { ingredientsList, allPrepsData, costs };
         } catch (e: any) {
             console.error("Error on full data refresh:", e);
             setError("Impossible de charger les données: " + e.message);
+            return { ingredientsList: [], allPrepsData: [], costs: {} };
         } finally {
             setIsLoading(false);
         }
-    }, [recipeId]); // Only recipeId should be a stable dependency here
+    }, [recipeId, calculatePreparationsCosts, fetchAllIngredients, fetchAllPreparations]);
 
-  const fetchAllIngredients = useCallback(async () => {
-    const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
-    const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
-    setAllIngredients(ingredientsList);
-    return ingredientsList;
-    }, []);
-
-    const fetchAllPreparations = useCallback(async () => {
-        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
-        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
-        setAllPreparations(prepsList);
-        return prepsList;
-    }, []);
 
     useEffect(() => {
         if (!recipeId || !isFirebaseConfigured) {
@@ -455,12 +509,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         let isMounted = true;
         
         const initialLoad = async () => {
-            // First, load all base data
-            const allPrepsList = await fetchAllPreparations();
-            const allIngredientsList = await fetchAllIngredients();
-            
-            // Then, load the main recipe data
-            await fullDataRefresh();
+            const { ingredientsList, allPrepsData, costs } = await fullDataRefresh();
             if (!isMounted) return;
 
             const conceptJSON = sessionStorage.getItem(GARNISH_WORKSHOP_CONCEPT_KEY);
@@ -471,17 +520,17 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 setEditableRecipe(current => ({ ...current!, ...concept }));
                 
                 const newIngs: NewRecipeIngredient[] = (concept.ingredients || []).map(sugIng => {
-                    const existing = allIngredientsList.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
+                    const existing = ingredientsList.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
                     let totalCost = existing ? recomputeIngredientCost({ quantity: sugIng.quantity, unit: sugIng.unit }, existing) : 0;
                     return { tempId: `new-ws-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
                 });
                 setNewIngredients(newIngs);
                 
                 const newPreps: NewRecipePreparation[] = (concept.subRecipes || []).map(prep => {
-                    const existingPrep = allPrepsList.find(dbPrep => dbPrep.name.toLowerCase() === prep.name.toLowerCase());
+                    const existingPrep = allPrepsData.find(dbPrep => dbPrep.name.toLowerCase() === prep.name.toLowerCase());
                     let totalCost = 0;
                     if (existingPrep) {
-                        const costPerProductionUnit = preparationsCosts[existingPrep.id!] || 0;
+                        const costPerProductionUnit = costs[existingPrep.id!] || 0;
                         const conversionFactor = getConversionFactor(existingPrep.productionUnit!, prep.unit);
                         const costPerUseUnit = costPerProductionUnit / conversionFactor;
                         totalCost = costPerUseUnit * (prep.quantity || 0);
@@ -493,7 +542,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                         quantity: prep.quantity, 
                         unit: prep.unit, 
                         totalCost,
-                        _costPerUnit: existingPrep ? preparationsCosts[existingPrep.id!] || 0 : 0, 
+                        _costPerUnit: existingPrep ? costs[existingPrep.id!] || 0 : 0, 
                         _productionUnit: existingPrep?.productionUnit || '' 
                     };
                 });
@@ -506,7 +555,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
 
         initialLoad();
         return () => { isMounted = false; };
-    }, [recipeId]);
+    }, [recipeId, fullDataRefresh]);
 
 
     const handleToggleEditMode = () => {
