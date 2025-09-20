@@ -230,33 +230,34 @@ export default function GarnishesClient() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-            <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Garnitures & Recettes standards</h1>
-            <p className="text-muted-foreground">Recettes calibrées, portionnées, directement servies en accompagnement ou comme plat végétarien.</p>
-        </div>
-        <div className="flex items-center gap-2">
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Rechercher..." 
-                    className="pl-9 w-48"
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                />
-            </div>
-             <GarnishesGuide existingGarnishes={garnishNames}>
-                <Button variant="outline">
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Guide
-                </Button>
-             </GarnishesGuide>
-             <Button onClick={() => router.push('/garnishes/workshop')}>
-                <FlaskConical className="mr-2 h-4 w-4" />
-                Atelier
-            </Button>
-        </div>
+      <header>
+        <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Garnitures & Recettes standards</h1>
+        <p className="text-muted-foreground">Recettes calibrées, portionnées, directement servies en accompagnement ou comme plat végétarien.</p>
       </header>
+      
+      <div className="flex items-center justify-between gap-4">
+          <div className="relative w-full max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input 
+                  placeholder="Rechercher une garniture..." 
+                  className="pl-9"
+                  value={searchTerm}
+                  onChange={handleSearchChange}
+              />
+          </div>
+          <div className="flex items-center gap-2">
+               <GarnishesGuide existingGarnishes={garnishNames}>
+                  <Button variant="outline">
+                      <BookOpen className="mr-2 h-4 w-4" />
+                      Guide
+                  </Button>
+               </GarnishesGuide>
+               <Button onClick={() => router.push('/garnishes/workshop')}>
+                  <FlaskConical className="mr-2 h-4 w-4" />
+                  Atelier
+              </Button>
+          </div>
+      </div>
 
       {error && (
         <Alert variant="destructive">
@@ -266,7 +267,7 @@ export default function GarnishesClient() {
         </Alert>
       )}
 
-      <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
+      <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-2">
         <TabsList className="h-auto justify-start flex-wrap">
             {allGarnishCategories.map((category) => (
                 <TabsTrigger key={category} value={category} className="text-sm whitespace-normal sm:whitespace-nowrap data-[state=active]:shadow-lg">{category}</TabsTrigger>
