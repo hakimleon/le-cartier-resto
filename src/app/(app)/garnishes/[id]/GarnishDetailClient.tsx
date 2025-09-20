@@ -165,7 +165,18 @@ const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExisti
                 </div>
             </TableCell>
             <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
-            <TableCell>{ing.unit}</TableCell>
+            <TableCell>
+                <Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} >
+                    <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="g">g</SelectItem>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="ml">ml</SelectItem>
+                        <SelectItem value="l">l</SelectItem>
+                        <SelectItem value="pièce">pièce</SelectItem>
+                    </SelectContent>
+                </Select>
+            </TableCell>
             <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
             <TableCell>
                 <AlertDialog>
@@ -218,7 +229,18 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                 </div>
             </TableCell>
             <TableCell><Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell>
-            <TableCell>{newIng.unit}</TableCell>
+            <TableCell>
+                 <Select value={newIng.unit} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'unit', value)} >
+                    <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="g">g</SelectItem>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="ml">ml</SelectItem>
+                        <SelectItem value="l">l</SelectItem>
+                        <SelectItem value="pièce">pièce</SelectItem>
+                    </SelectContent>
+                </Select>
+            </TableCell>
             <TableCell className="text-right font-semibold">{(newIng.totalCost || 0).toFixed(2)} DZD</TableCell>
             <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
         </TableRow>
@@ -433,6 +455,11 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         let isMounted = true;
         
         const initialLoad = async () => {
+            // First, load all base data
+            const allPrepsList = await fetchAllPreparations();
+            const allIngredientsList = await fetchAllIngredients();
+            
+            // Then, load the main recipe data
             await fullDataRefresh();
             if (!isMounted) return;
 
@@ -443,15 +470,13 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 
                 setEditableRecipe(current => ({ ...current!, ...concept }));
                 
-                const ingredientsList = await fetchAllIngredients();
                 const newIngs: NewRecipeIngredient[] = (concept.ingredients || []).map(sugIng => {
-                    const existing = ingredientsList.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
+                    const existing = allIngredientsList.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
                     let totalCost = existing ? recomputeIngredientCost({ quantity: sugIng.quantity, unit: sugIng.unit }, existing) : 0;
                     return { tempId: `new-ws-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
                 });
                 setNewIngredients(newIngs);
                 
-                const allPrepsList = await fetchAllPreparations();
                 const newPreps: NewRecipePreparation[] = (concept.subRecipes || []).map(prep => {
                     const existingPrep = allPrepsList.find(dbPrep => dbPrep.name.toLowerCase() === prep.name.toLowerCase());
                     let totalCost = 0;
@@ -912,3 +937,6 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+
+    
