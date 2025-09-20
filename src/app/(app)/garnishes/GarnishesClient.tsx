@@ -239,8 +239,8 @@ export default function GarnishesClient() {
             <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input 
-                    placeholder="Rechercher une garniture..." 
-                    className="pl-9"
+                    placeholder="Rechercher..." 
+                    className="pl-9 w-48"
                     value={searchTerm}
                     onChange={handleSearchChange}
                 />
@@ -248,12 +248,12 @@ export default function GarnishesClient() {
              <GarnishesGuide existingGarnishes={garnishNames}>
                 <Button variant="outline">
                     <BookOpen className="mr-2 h-4 w-4" />
-                    Guide des Garnitures
+                    Guide
                 </Button>
              </GarnishesGuide>
              <Button onClick={() => router.push('/garnishes/workshop')}>
                 <FlaskConical className="mr-2 h-4 w-4" />
-                Atelier des Garnitures
+                Atelier
             </Button>
         </div>
       </header>
