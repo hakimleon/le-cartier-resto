@@ -262,7 +262,7 @@ export default function GarnishesClient() {
                             </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                            <p>Ouvrir le guide des garnitures pour suivre votre progression.</p>
+                            <p>Visualiser la liste des garnitures standards et leur état de création.</p>
                         </TooltipContent>
                     </Tooltip>
                 </GarnishesGuide>
