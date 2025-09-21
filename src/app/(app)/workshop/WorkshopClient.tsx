@@ -15,13 +15,12 @@ import { generateRecipeConcept } from "@/ai/flows/recipe-workshop-flow";
 import type { RecipeConceptOutput, RecipeConceptInput } from "@/ai/flows/workshop-flow";
 
 import { useRouter } from "next/navigation";
-import { createDishFromWorkshop } from "./actions";
+import { createDishFromWorkshop, createPreparation } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Checkbox } from "@/components/ui/checkbox";
-import { createPreparation } from "../preparations/actions";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
