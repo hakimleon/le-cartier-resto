@@ -19,13 +19,6 @@ export const SubRecipeSchema = z.object({
     unit: z.string().describe("Unité pour la sous-recette."),
 });
 
-// Schéma pour les NOUVELLES sous-recettes inventées par l'IA
-export const NewSubRecipeSchema = z.object({
-    name: z.string().describe("Nom de la NOUVELLE sous-recette INVENTÉE par l'IA."),
-    description: z.string().describe("Courte description du rôle de cette nouvelle sous-recette."),
-});
-
-
 // Schéma de base pour les entrées de l'atelier de préparation/garniture
 export const PreparationConceptInputSchema = z.object({
     name: z.string().optional().describe("Le nom ou l'idée de base de la préparation. Si non fourni, l'IA doit en générer un."),
@@ -85,7 +78,6 @@ export const RecipeConceptOutputSchema = z.object({
     
     ingredients: z.array(GeneratedIngredientSchema).describe("Liste des ingrédients nécessaires."),
     subRecipes: z.array(SubRecipeSchema).describe("Liste des sous-recettes EXISTANTES utilisées."),
-    newSubRecipes: z.array(NewSubRecipeSchema).describe("Liste des sous-recettes INVENTÉES par l'IA.").optional(),
 
     procedure_preparation: z.string().describe("Procédure de préparation (Markdown)."),
     procedure_cuisson: z.string().describe("Procédure de cuisson (Markdown)."),

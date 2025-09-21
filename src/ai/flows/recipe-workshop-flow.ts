@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { v2 as cloudinary } from 'cloudinary';
 import { getAllPreparationNames } from '../tools/recipe-tools';
 import { googleAI } from '@genkit-ai/googleai';
-import { RecipeConceptInputSchema, RecipeConceptOutputSchema, NewSubRecipeSchema } from './workshop-flow';
+import { RecipeConceptInputSchema, RecipeConceptOutputSchema } from './workshop-flow';
 import type { RecipeConceptInput, RecipeConceptOutput } from './workshop-flow';
 
 cloudinary.config({
@@ -27,53 +27,41 @@ const recipeGenPrompt = ai.definePrompt({
     input: { schema: RecipeConceptInputSchema.extend({ allPreparationNames: z.array(z.string()) }) },
     output: { schema: RecipeTextConceptSchema },
     model: googleAI.model('gemini-1.5-flash-latest'),
-    prompt: `Vous êtes un chef exécutif créant une fiche technique pour un restaurant gastronomique. Votre mission est de décomposer une recette en blocs logiques : ingrédients bruts, sous-recettes existantes, et sous-recettes à créer.
+    prompt: `Vous êtes un chef exécutif créant une fiche technique pour un restaurant gastronomique. Votre mission est de décomposer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
+
+Ceci est un plat complet, pas une simple préparation. Il sera servi à un client.
 
 ---
-## CONTEXTE
-{{#if name}}Nom de la recette: \`{{{name}}}\`{{else}}Création d'une nouvelle recette.{{/if}}
-
+{{#if name}}
+## CONTEXTE : NOM DU PLAT EN COURS DE CRÉATION
+Le nom du plat que vous êtes en train de générer est : \`{{{name}}}\`
+{{else}}
+## CONTEXTE : CRÉATION SANS NOM INITIAL
+L'utilisateur n'a pas fourni de nom. Vous devrez en créer un basé sur les ingrédients et le style, qui soit créatif et marketing.
+{{/if}}
 ---
-## MISSION PRINCIPALE : GESTION STRUCTURÉE DES SOUS-RECETTES
 
-Pour chaque composant identifiable de la recette (ex: une sauce, une purée, un jus, une vinaigrette, une pâte), vous devez suivre IMPÉRATIVEMENT ce processus de décision :
-
-**ÉTAPE 1 : Le composant est-il dans la "LISTE DES PRÉPARATIONS EXISTANTES" ci-dessous ?**
-
-*   **OUI :**
-    1.  Ajoutez son nom et sa quantité/unité dans la liste \`subRecipes\`.
-    2.  NE PAS lister ses ingrédients ni ses étapes dans la recette principale.
-    3.  Passez au composant suivant.
-
-*   **NON, PASSEZ À L'ÉTAPE 2.**
-
-**ÉTAPE 2 : Le composant est-il une "vraie" sous-recette qui pourrait être standardisée et réutilisée ?**
-(Ex: "Sauce aux morilles", "Vinaigrette balsamique", "Purée de panais", "Pâte brisée")
-
-*   **OUI :**
-    1.  Donnez-lui un nom technique clair.
-    2.  Ajoutez-le à la liste \`newSubRecipes\` avec son nom et une brève description de son rôle.
-    3.  NE PAS lister ses ingrédients ni ses étapes. L'IA se contente de le signaler comme "à créer".
-    4.  Passez au composant suivant.
-
-*   **NON (c'est un assemblage simple ou un ingrédient brut), PASSEZ À L'ÉTAPE 3.**
-    (Ex: "beurre fondu", "salade assaisonnée", "suprême de volaille juste poêlé")
-
-**ÉTAPE 3 : Traiter comme ingrédient brut ou étape simple.**
-1.  Listez les ingrédients bruts nécessaires (ex: "beurre", "sel", "huile") dans la liste \`ingredients\`.
-2.  Décrivez l'action (ex: "Faire fondre le beurre") dans la procédure principale (\`procedure_preparation\`, \`procedure_cuisson\` ou \`procedure_service\`).
-
----
-## LISTE DES PRÉPARATIONS EXISTANTES (À UTILISER OBLIGATOIREMENT)
+## LISTE DES PRÉPARATIONS EXISTANTES À UTILISER OBLIGATOIREMENT
+Vous devez obligatoirement utiliser les préparations suivantes si elles correspondent à un composant de la recette :
 {{#each allPreparationNames}}
 - {{this}}
 {{/each}}
-(Si cette liste est vide, vous devrez tout traiter comme des "newSubRecipes" ou des ingrédients bruts.)
+(Si cette liste est vide, vous ne pouvez pas utiliser de sous-recettes).
 
 ---
-## RÈGLES ABSOLUES
-1.  **ZÉRO ALCOOL** : Interdiction formelle d'utiliser de l'alcool. Remplacez par des alternatives (bouillon, jus, verjus).
-2.  **PAS D'AUTO-RÉFÉRENCE** : Ne jamais inclure le nom de la recette principale (\`{{{name}}}\`) dans \`subRecipes\` ou \`newSubRecipes\`.
+
+## RÈGLES D'OR ABSOLUES
+1.  **ZÉRO ALCOOL** : Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool (vin, bière, cognac, etc.). Si une recette classique en contient, vous DEVEZ le remplacer par une alternative sans alcool (bouillon, jus de raisin, verjus) ou l’omettre.
+
+2.  **MISSION PRINCIPALE - RÈGLE IMPÉRATIVE** :
+    - Pour chaque composant identifiable d'une recette (ex: "fond de veau", "sauce tomate", "purée de carottes"), vous devez **OBLIGATOIREMENT** vérifier s'il existe dans la "LISTE DES PRÉPARATIONS EXISTANTES".
+    - **SI OUI** : vous DEVEZ l'ajouter à la liste \`subRecipes\` avec son nom, une quantité et une unité. NE PAS mettre ses ingrédients dans la liste \`ingredients\`.
+    - **SI NON** : vous DEVEZ lister ses ingrédients bruts et ses étapes dans la recette principale (listes \`ingredients\` et procédures).
+
+⚠️ **Règle stricte :**
+-   NE JAMAIS INVENTER de sous-recette qui n'est pas dans la liste fournie.
+-   NE JAMAIS lister une préparation existante comme un ingrédient simple.
+-   NE JAMAIS placer un ingrédient brut (ex: "Crème fraîche", "Poivre noir", "Filet de boeuf") dans \`subRecipes\`. Ces éléments doivent obligatoirement aller dans \`ingredients\`.
 
 ---
 ## DEMANDE UTILISATEUR
@@ -108,6 +96,7 @@ Pour chaque composant identifiable de la recette (ex: une sauce, une purée, un 
 ## INSTRUCTIONS DE FORMATAGE DE SORTIE
 - Remplissez tous les champs demandés (\`name\`, \`description\`, \`portions\`, \`category\`, \`commercialArgument\`, etc.).
 - Si le nom n'est pas fourni, générez-en un qui soit créatif et marketing.
+- Les procédures doivent être claires, concises et utiliser le format Markdown.
 - Ne laissez aucun champ vide : utilisez \`[]\` ou \`""\` si nécessaire.
 - La sortie doit être un JSON strict et valide, sans aucun commentaire.
 `,

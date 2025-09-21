@@ -41,7 +41,7 @@ import {
 import { ImageUploadDialog } from "./ImageUploadDialog";
 import { generateCommercialArgument } from "@/ai/flows/suggestion-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
-import { RecipeConceptOutput } from "@/ai/flows/recipe-workshop-flow";
+import { RecipeConceptOutput } from "@/ai/flows/workshop-flow";
 import { PreparationModal } from "../../preparations/PreparationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -561,7 +561,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
                     const allPrepsData = await fetchAllPreparations();
                     processSuggestedPreparations(concept.subRecipes, allPrepsData);
-                    processNewPreparations(concept.newSubRecipes || [], allPrepsData);
 
                     toast({ title: "Fiche technique importée !", description: "Vérifiez les informations et les liaisons suggérées." });
                     sessionStorage.removeItem(WORKSHOP_CONCEPT_KEY);
@@ -611,24 +610,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setNewPreparations(prev => [...prev, ...newPreps]);
     }
     
-    const processNewPreparations = (suggested: { name: string, description: string }[], currentAllPreps: Preparation[]) => {
-        const newPreps: NewRecipePreparation[] = suggested.map(prep => {
-             const existing = currentAllPreps.find(p => p.name.toLowerCase() === prep.name.toLowerCase());
-             const tempId = `new-prep-ws-${Date.now()}-${Math.random()}`;
-             return {
-                tempId,
-                childPreparationId: existing?.id,
-                name: existing?.name || prep.name,
-                quantity: 1, 
-                unit: 'portion',
-                totalCost: 0, 
-                _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0,
-                _productionUnit: existing?.productionUnit || '',
-             }
-        });
-        setNewPreparations(prev => [...prev, ...newPreps]);
-    }
-
     const handleToggleEditMode = () => {
         if (isEditing) {
             // Cancel edits
@@ -1162,14 +1143,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                     <h4 className="font-semibold mb-1">Sous-recettes existantes</h4>
                                     <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
                                         {workshopConcept.subRecipes.map(prep => <li key={prep.name}>{prep.name}</li>)}
-                                    </ul>
-                                </div>
-                                )}
-                                {workshopConcept.newSubRecipes && workshopConcept.newSubRecipes.length > 0 && (
-                                <div>
-                                    <h4 className="font-semibold mb-1">Sous-recettes inventées</h4>
-                                    <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
-                                        {workshopConcept.newSubRecipes.map(prep => <li key={prep.name}>{prep.name}</li>)}
                                     </ul>
                                 </div>
                                 )}
