@@ -28,7 +28,7 @@ export const garnishesGuideData: GuideCategory[] = [
     },
     {
         title: "Gratins & plats de légumes au four",
-        description: "Préparations crémeuses/gratinées, portionnables.",
+        description: "Préparations crémeuses/gratinées, portionnables en cubes, rectangles, cercles.",
         preparations: [
             { name: "Gratin dauphinois" },
             { name: "Gratin de courgettes au parmesan" },
@@ -86,7 +86,7 @@ export const garnishesGuideData: GuideCategory[] = [
     },
     {
         title: "Accompagnements modernes & revisités",
-        description: "Préparations plus gastronomiques ou contemporaines.",
+        description: "Préparations plus gastronomiques ou contemporaines, idéales pour varier la carte.",
         preparations: [
             { name: "Gnocchis de pomme de terre poêlés au beurre noisette" },
             { name: "Gnocchis de semoule (à la romaine)" },
