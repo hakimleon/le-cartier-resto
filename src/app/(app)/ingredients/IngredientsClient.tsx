@@ -186,7 +186,10 @@ export default function IngredientsClient() {
                       
                       return (
                       <TableRow key={ingredient.id}>
-                        <TableCell className="font-medium">{ingredient.name}</TableCell>
+                        <TableCell className="font-medium flex items-center gap-2">
+                            <span>{ingredient.name}</span>
+                            {ingredient.isGeneric && <Badge variant="secondary">Générique</Badge>}
+                        </TableCell>
                         <TableCell>
                           <Badge variant="outline">{ingredient.category}</Badge>
                         </TableCell>
