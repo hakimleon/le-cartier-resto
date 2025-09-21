@@ -37,6 +37,7 @@ import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Trash2 } from "lucide-react";
 import { PreparationsGuide } from "./PreparationsGuide";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 // This component is a clone of PreparationsClient, adapted for the new "base preparations" flow.
 // The main difference is the "New Preparation" button now redirects to the workshop.
@@ -249,16 +250,32 @@ export default function PreparationsBaseClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <PreparationsGuide existingPreparations={preparationNames}>
-                <Button variant="outline">
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Guide des Préparations
-                </Button>
-             </PreparationsGuide>
-             <Button onClick={() => router.push('/preparations/workshop')}>
-                <FlaskConical className="mr-2 h-4 w-4" />
-                Aller à l'Atelier
-            </Button>
+             <TooltipProvider>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                         <PreparationsGuide existingPreparations={preparationNames}>
+                            <Button variant="outline">
+                                <BookOpen className="mr-2 h-4 w-4" />
+                                Guide
+                            </Button>
+                        </PreparationsGuide>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Visualiser la liste des préparations standards et leur état de création.</p>
+                    </TooltipContent>
+                </Tooltip>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <Button onClick={() => router.push('/preparations/workshop')}>
+                            <FlaskConical className="mr-2 h-4 w-4" />
+                            Atelier
+                        </Button>
+                    </TooltipTrigger>
+                     <TooltipContent>
+                        <p>Créer une nouvelle préparation avec l'aide de l'IA.</p>
+                    </TooltipContent>
+                </Tooltip>
+             </TooltipProvider>
         </div>
       </header>
 

@@ -253,19 +253,19 @@ export default function GarnishesClient() {
           </div>
           <div className="flex items-center gap-2">
             <TooltipProvider>
-                <GarnishesGuide existingGarnishes={garnishNames}>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
+                <Tooltip>
+                    <TooltipTrigger asChild>
+                        <GarnishesGuide existingGarnishes={garnishNames}>
                             <Button variant="outline">
                                 <BookOpen className="mr-2 h-4 w-4" />
                                 Guide
                             </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                            <p>Visualiser la liste des garnitures standards et leur état de création.</p>
-                        </TooltipContent>
-                    </Tooltip>
-                </GarnishesGuide>
+                        </GarnishesGuide>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                        <p>Visualiser la liste des garnitures standards et leur état de création.</p>
+                    </TooltipContent>
+                </Tooltip>
                 <Tooltip>
                     <TooltipTrigger asChild>
                     <Button onClick={() => router.push('/garnishes/workshop')}>
