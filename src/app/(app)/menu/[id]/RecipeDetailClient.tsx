@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -208,7 +207,6 @@ const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExisti
 
 const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredientModal, handleRemoveNewIngredient, sortedIngredients }: { newIng: NewRecipeIngredient, handleNewIngredientChange: any, openNewIngredientModal: any, handleRemoveNewIngredient: any, sortedIngredients: Ingredient[] }) => {
     const [openCombobox, setOpenCombobox] = useState(false);
-    const [searchValue, setSearchValue] = useState(newIng.name || "");
 
     return (
         <TableRow key={newIng.tempId}>
@@ -225,21 +223,24 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                             <Command>
                                 <CommandInput
                                     placeholder="Rechercher ou taper un nom..."
-                                    value={searchValue}
+                                    value={newIng.name}
                                     onValueChange={(search) => {
-                                        setSearchValue(search);
                                         handleNewIngredientChange(newIng.tempId, 'name', search);
                                         handleNewIngredientChange(newIng.tempId, 'ingredientId', undefined);
                                     }}
                                 />
                                 <CommandList>
-                                    <CommandEmpty>
-                                        <div className="p-4 text-sm">
-                                            <p>Aucun ingrédient trouvé pour "{searchValue}".</p>
-                                        </div>
+                                     <CommandEmpty>
+                                        <Button variant="ghost" className="w-full justify-start" onClick={() => {
+                                            setOpenCombobox(false);
+                                            openNewIngredientModal(newIng.tempId);
+                                        }}>
+                                            <PlusCircle className="mr-2 h-4 w-4" />
+                                            Créer l'ingrédient "{newIng.name}"
+                                        </Button>
                                     </CommandEmpty>
                                     <CommandGroup>
-                                        {sortedIngredients.filter(ing => ing.name.toLowerCase().includes(searchValue.toLowerCase())).map((ing) => (
+                                        {sortedIngredients.map((ing) => (
                                             ing.id ?
                                                 <CommandItem
                                                     key={ing.id}
@@ -248,7 +249,6 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                                                         const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
                                                         if (selected) {
                                                             handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!);
-                                                            setSearchValue(selected.name);
                                                         }
                                                         setOpenCombobox(false);
                                                     }}
@@ -263,12 +263,6 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                             </Command>
                         </PopoverContent>
                     </Popover>
-
-                    {!newIng.ingredientId && newIng.name && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={'Créer l\'ingrédient "' + newIng.name + '"'}>
-                            <PlusCircle className="h-4 w-4 text-primary" />
-                        </Button>
-                    )}
                 </div>
             </TableCell>
             <TableCell><Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell>

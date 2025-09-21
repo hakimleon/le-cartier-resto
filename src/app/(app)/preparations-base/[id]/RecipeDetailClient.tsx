@@ -202,9 +202,24 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                         </PopoverTrigger>
                         <PopoverContent className="w-[300px] p-0">
                             <Command>
-                                <CommandInput placeholder="Rechercher un ingrédient..." />
+                                <CommandInput 
+                                    placeholder="Rechercher un ingrédient..."
+                                    value={newIng.name}
+                                    onValueChange={(search) => {
+                                        handleNewIngredientChange(newIng.tempId, 'name', search);
+                                        handleNewIngredientChange(newIng.tempId, 'ingredientId', undefined);
+                                    }}
+                                />
                                 <CommandList>
-                                    <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                     <CommandEmpty>
+                                        <Button variant="ghost" className="w-full justify-start" onClick={() => {
+                                            setOpenCombobox(false);
+                                            openNewIngredientModal(newIng.tempId);
+                                        }}>
+                                            <PlusCircle className="mr-2 h-4 w-4" />
+                                            Créer l'ingrédient "{newIng.name}"
+                                        </Button>
+                                    </CommandEmpty>
                                     <CommandGroup>
                                         {sortedIngredients.map((ing) => (
                                             ing.id ?
@@ -219,7 +234,6 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                             </Command>
                         </PopoverContent>
                     </Popover>
-                    {!newIng.ingredientId && newIng.name && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={'Créer l\'ingrédient "' + newIng.name + '"'}> <PlusCircle className="h-4 w-4 text-primary" /> </Button>)}
                 </div>
             </TableCell>
             <TableCell>
@@ -256,8 +270,8 @@ const EditablePreparationRow = ({ prep, handlePreparationChange, handleRemoveExi
     return (
         <TableRow key={prep.id}>
             <TableCell className="font-medium">{prep.name}</TableCell>
-            <TableCell><Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
-            <TableCell>
+            <TableCell>{<Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" />}</TableCell>
+             <TableCell>
                 <Select value={prep.unit} onValueChange={(value) => handlePreparationChange(prep.id, 'unit', value)}>
                     <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -319,7 +333,7 @@ const NewPreparationRow = ({ prep, handleNewPreparationChange, openNewPreparatio
                 </div>
             </TableCell>
             <TableCell><Input type="number" placeholder="Qté" className="w-20" value={prep.quantity === 0 ? '' : prep.quantity} onChange={(e) => handleNewPreparationChange(prep.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell>
-            <TableCell>
+             <TableCell>
                  <Select value={prep.unit} onValueChange={(value) => handleNewPreparationChange(prep.tempId, 'unit', value)}>
                     <SelectTrigger className="w-24"><SelectValue placeholder="Unité"/></SelectTrigger>
                     <SelectContent>

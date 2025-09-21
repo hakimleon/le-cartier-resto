@@ -96,7 +96,7 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         const volumeUnits = ['l', 'ml', 'litre', 'litres'];
         const unitUnits = ['pièce', 'piece', 'botte'];
 
-        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
+        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
         const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
 
         if ((fromType === 'weight' && toType === 'volume') || (fromType === 'volume' && toType === 'weight')) {
@@ -203,12 +203,22 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                         </PopoverTrigger>
                         <PopoverContent className="w-[300px] p-0">
                             <Command>
-                                <CommandInput placeholder="Rechercher un ingrédient..." />
+                                <CommandInput 
+                                    placeholder="Rechercher ou taper un nom..."
+                                    value={newIng.name}
+                                    onValueChange={(search) => {
+                                        handleNewIngredientChange(newIng.tempId, 'name', search);
+                                        handleNewIngredientChange(newIng.tempId, 'ingredientId', undefined);
+                                    }}
+                                />
                                 <CommandList>
-                                    <CommandEmpty>
-                                         <Button variant="ghost" className="w-full justify-start" onClick={() => openNewIngredientModal(newIng.tempId)}>
+                                     <CommandEmpty>
+                                        <Button variant="ghost" className="w-full justify-start" onClick={() => {
+                                            setOpenCombobox(false);
+                                            openNewIngredientModal(newIng.tempId);
+                                        }}>
                                             <PlusCircle className="mr-2 h-4 w-4" />
-                                            Créer "{newIng.name}"
+                                            Créer l'ingrédient "{newIng.name}"
                                         </Button>
                                     </CommandEmpty>
                                     <CommandGroup>
@@ -225,7 +235,6 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                             </Command>
                         </PopoverContent>
                     </Popover>
-                    {!newIng.ingredientId && newIng.name && (<Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={'Créer l\'ingrédient "' + newIng.name + '"'}> <PlusCircle className="h-4 w-4 text-primary" /> </Button>)}
                 </div>
             </TableCell>
             <TableCell><Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell>
@@ -990,3 +999,4 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
