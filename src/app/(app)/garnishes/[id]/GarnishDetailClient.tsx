@@ -15,7 +15,7 @@ import { AlertTriangle, Clock, FilePen, FileText, Info, Lightbulb, NotebookText,
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { replaceRecipeIngredients, replaceRecipePreparations } from "@/app/(app)/menu/actions";
+import { replaceRecipeIngredients, replaceRecipePreparations, updateRecipeDetails } from "@/app/(app)/menu/actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -742,7 +742,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 productionUnit: editableRecipe.productionUnit,
                 usageUnit: editableRecipe.usageUnit,
             };
-            await updateDoc(doc(db, "garnishes", recipeId), recipeDataToSave);
+            await updateRecipeDetails(recipeId, recipeDataToSave, 'garnishes');
             
             const allCurrentIngredients = [ ...editableIngredients.map(ing => ({ ingredientId: ing.id, quantity: ing.quantity, unitUse: ing.unit })), ...newIngredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: ing.quantity, unitUse: ing.unit }))].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'id' | 'recipeId'>[];
             await replaceRecipeIngredients(recipeId, allCurrentIngredients);
@@ -806,7 +806,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                     <div className="w-full space-y-2">
                         {isEditing ? (
                              <Input
-                                value={editableRecipe?.name}
+                                value={editableRecipe?.name || ''}
                                 onChange={(e) => handleRecipeDataChange('name', e.target.value)}
                                 className="text-2xl font-bold tracking-tight h-12 w-full"
                             />
@@ -928,9 +928,9 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                              {isEditing ? (
                                 <Tabs defaultValue="preparation">
                                     <TabsList><TabsTrigger value="preparation">Préparation</TabsTrigger><TabsTrigger value="cuisson">Cuisson</TabsTrigger><TabsTrigger value="service">Service</TabsTrigger></TabsList>
-                                    <TabsContent value="preparation" className="pt-4"><Textarea value={editableRecipe?.procedure_preparation} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={8}/></TabsContent>
-                                    <TabsContent value="cuisson" className="pt-4"><Textarea value={editableRecipe?.procedure_cuisson} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={8} /></TabsContent>
-                                    <TabsContent value="service" className="pt-4"><Textarea value={editableRecipe?.procedure_service} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={8} /></TabsContent>
+                                    <TabsContent value="preparation" className="pt-4"><Textarea value={editableRecipe?.procedure_preparation || ''} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={8}/></TabsContent>
+                                    <TabsContent value="cuisson" className="pt-4"><Textarea value={editableRecipe?.procedure_cuisson || ''} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={8} /></TabsContent>
+                                    <TabsContent value="service" className="pt-4"><Textarea value={editableRecipe?.procedure_service || ''} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={8} /></TabsContent>
                                 </Tabs>
                            ) : (
                                 <Tabs defaultValue="preparation">

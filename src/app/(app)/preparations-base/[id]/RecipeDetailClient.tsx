@@ -477,8 +477,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
         setPreparationsCosts(costs);
 
-        const collectionName = "preparations";
-        const recipeDocRef = doc(db, collectionName, recipeId);
+        const recipeDocRef = doc(db, "preparations", recipeId);
         const recipeSnap = await getDoc(recipeDocRef);
 
         if (!recipeSnap.exists()) {
@@ -765,7 +764,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             productionUnit: (editableRecipe as Preparation).productionUnit,
             usageUnit: (editableRecipe as Preparation).usageUnit,
         };
-        await updateRecipeDetails(recipeId, recipeDataToSave, 'Préparation');
+        await updateRecipeDetails(recipeId, recipeDataToSave, 'preparations');
         
         const allCurrentIngredients = [ ...editableIngredients.map(ing => ({ ingredientId: ing.id, quantity: ing.quantity, unitUse: ing.unit })), ...newIngredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: ing.quantity, unitUse: ing.unit }))].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'id' | 'recipeId'>[];
         await replaceRecipeIngredients(recipeId, allCurrentIngredients);
@@ -989,11 +988,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                  {isEditing ? (
                     <div className="space-y-2">
                         <Input
-                            value={editableRecipe?.name}
+                            value={editableRecipe?.name || ''}
                             onChange={(e) => handleRecipeDataChange('name', e.target.value)}
                             className="text-2xl font-bold tracking-tight h-12 w-full"
                         />
-                        <Select value={editableRecipe?.category} onValueChange={(value) => handleRecipeDataChange('category', value)}>
+                        <Select value={editableRecipe?.category || ''} onValueChange={(value) => handleRecipeDataChange('category', value)}>
                             <SelectTrigger className="w-[280px]">
                                 <SelectValue placeholder="Choisir une catégorie..." />
                             </SelectTrigger>
@@ -1111,9 +1110,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                    {isEditing ? (
                         <Tabs defaultValue="preparation">
                             <TabsList><TabsTrigger value="preparation">Préparation</TabsTrigger><TabsTrigger value="cuisson">Cuisson</TabsTrigger><TabsTrigger value="service">Service</TabsTrigger></TabsList>
-                            <TabsContent value="preparation" className="pt-4"><Textarea value={editableRecipe?.procedure_preparation} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={8}/></TabsContent>
-                            <TabsContent value="cuisson" className="pt-4"><Textarea value={editableRecipe?.procedure_cuisson} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={8} /></TabsContent>
-                            <TabsContent value="service" className="pt-4"><Textarea value={editableRecipe?.procedure_service} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={8} /></TabsContent>
+                            <TabsContent value="preparation" className="pt-4"><Textarea value={editableRecipe?.procedure_preparation || ''} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={8}/></TabsContent>
+                            <TabsContent value="cuisson" className="pt-4"><Textarea value={editableRecipe?.procedure_cuisson || ''} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={8} /></TabsContent>
+                            <TabsContent value="service" className="pt-4"><Textarea value={editableRecipe?.procedure_service || ''} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={8} /></TabsContent>
                         </Tabs>
                    ) : (
                         <Tabs defaultValue="preparation">

@@ -474,9 +474,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
         setPreparationsCosts(costs);
 
-        const isLikelyPreparation = window.location.pathname.includes('/preparations/');
-        const collectionName = isLikelyPreparation ? "preparations" : "recipes";
-        const recipeDocRef = doc(db, collectionName, recipeId);
+        const recipeDocRef = doc(db, "recipes", recipeId);
         const recipeSnap = await getDoc(recipeDocRef);
 
         if (!recipeSnap.exists()) {
@@ -486,7 +484,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             return;
         }
 
-        const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe | Preparation;
+        const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Recipe;
         setRecipe(fetchedRecipe);
         setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
 
@@ -768,10 +766,17 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setIsSaving(true);
         try {
             const recipeDataToSave = {
-                name: editableRecipe.name, description: editableRecipe.description, difficulty: editableRecipe.difficulty, duration: editableRecipe.duration, procedure_preparation: editableRecipe.procedure_preparation, procedure_cuisson: editableRecipe.procedure_cuisson, procedure_service: editableRecipe.procedure_service, imageUrl: editableRecipe.imageUrl,
+                name: editableRecipe.name,
+                description: editableRecipe.description,
+                difficulty: editableRecipe.difficulty,
+                duration: editableRecipe.duration,
+                procedure_preparation: editableRecipe.procedure_preparation,
+                procedure_cuisson: editableRecipe.procedure_cuisson,
+                procedure_service: editableRecipe.procedure_service,
+                imageUrl: editableRecipe.imageUrl,
                 ...(editableRecipe.type === 'Plat' ? { portions: editableRecipe.portions, tvaRate: editableRecipe.tvaRate, price: editableRecipe.price, commercialArgument: editableRecipe.commercialArgument, status: editableRecipe.status, category: editableRecipe.category, } : { productionQuantity: (editableRecipe as Preparation).productionQuantity, productionUnit: (editableRecipe as Preparation).productionUnit, usageUnit: (editableRecipe as Preparation).usageUnit, })
             };
-            await updateRecipeDetails(recipeId, recipeDataToSave, editableRecipe.type);
+            await updateRecipeDetails(recipeId, recipeDataToSave, 'recipes');
 
             const allCurrentIngredients = [...editableIngredients.map(ing => ({ ingredientId: ing.id, quantity: ing.quantity, unitUse: ing.unit })), ...newIngredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: ing.quantity, unitUse: ing.unit }))].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'id' | 'recipeId'>[];
             await replaceRecipeIngredients(recipeId, allCurrentIngredients);
@@ -913,7 +918,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <div className="w-full">
                         {isEditing ? (
                             <Input
-                                value={editableRecipe?.name}
+                                value={editableRecipe?.name || ''}
                                 onChange={(e) => handleRecipeDataChange('name', e.target.value)}
                                 className="text-2xl font-bold tracking-tight h-12 w-full"
                             />
@@ -979,7 +984,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted/50 rounded-lg">
                                     <div><p className="text-sm text-muted-foreground">Vente TTC</p>{isEditing ? <Input type="number" value={(editableRecipe as Recipe)?.price || 0} onChange={(e) => handleRecipeDataChange('price', parseFloat(e.target.value) || 0)} className="font-bold text-lg text-center" /> : <p className="font-bold text-lg">{currentRecipeData.price ? currentRecipeData.price.toFixed(2) : 'N/A'} DZD</p>}</div>
                                     <div><p className="text-sm text-muted-foreground">Vente HT</p><p className="font-bold text-lg">{priceHT.toFixed(2)} DZD</p></div>
-                                    <div><p className="text-sm text-muted-foreground">Portions</p>{isEditing ? <Input type="number" value={(editableRecipe as Recipe)?.portions} onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || 1)} className="font-bold text-lg text-center" /> : <p className="font-bold text-lg">{currentRecipeData.portions}</p>}</div>
+                                    <div><p className="text-sm text-muted-foreground">Portions</p>{isEditing ? <Input type="number" value={(editableRecipe as Recipe)?.portions || ''} onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || 1)} className="font-bold text-lg text-center" /> : <p className="font-bold text-lg">{currentRecipeData.portions}</p>}</div>
                                 </div>
                                 <div className="space-y-2 text-sm border-t pt-4">
                                     <div className="flex justify-between items-center"><span className="text-muted-foreground">Coût Matière / Portion</span><span className="font-semibold">{costPerPortion.toFixed(2)} DZD</span></div>
@@ -1096,9 +1101,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             {isEditing ? (
                                 <Tabs defaultValue="preparation">
                                     <TabsList><TabsTrigger value="preparation">Préparation</TabsTrigger><TabsTrigger value="cuisson">Cuisson</TabsTrigger><TabsTrigger value="service">Service</TabsTrigger></TabsList>
-                                    <TabsContent value="preparation" className="pt-4"><Textarea value={editableRecipe?.procedure_preparation} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={8} /></TabsContent>
-                                    <TabsContent value="cuisson" className="pt-4"><Textarea value={editableRecipe?.procedure_cuisson} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={8} /></TabsContent>
-                                    <TabsContent value="service" className="pt-4"><Textarea value={editableRecipe?.procedure_service} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={8} /></TabsContent>
+                                    <TabsContent value="preparation" className="pt-4"><Textarea value={editableRecipe?.procedure_preparation || ''} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={8} /></TabsContent>
+                                    <TabsContent value="cuisson" className="pt-4"><Textarea value={editableRecipe?.procedure_cuisson || ''} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={8} /></TabsContent>
+                                    <TabsContent value="service" className="pt-4"><Textarea value={editableRecipe?.procedure_service || ''} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={8} /></TabsContent>
                                 </Tabs>
                             ) : (
                                 <Tabs defaultValue="preparation">

@@ -85,11 +85,10 @@ export async function deleteRecipePreparationLink(linkId: string) {
     await deleteDoc(recipePreparationLinkDoc);
 }
 
-export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe | Preparation>, type: 'Plat' | 'Préparation') {
+export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe | Preparation>, collectionName: 'recipes' | 'preparations' | 'garnishes') {
     if (!recipeId) {
         throw new Error("L'identifiant de la recette est requis.");
     }
-    const collectionName = data.type === 'Plat' ? 'recipes' : 'preparations';
     const recipeDoc = doc(db, collectionName, recipeId);
     await updateDoc(recipeDoc, data);
 }
