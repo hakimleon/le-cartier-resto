@@ -10,7 +10,7 @@ import { z } from 'zod';
 import { v2 as cloudinary } from 'cloudinary';
 import { getAllPreparationNames } from '../tools/recipe-tools';
 import { googleAI } from '@genkit-ai/googleai';
-import { RecipeConceptInputSchema, RecipeConceptOutputSchema } from './workshop-flow';
+import { RecipeConceptInputSchema, RecipeConceptOutputSchema, NewSubRecipeSchema } from './workshop-flow';
 import type { RecipeConceptInput, RecipeConceptOutput } from './workshop-flow';
 
 cloudinary.config({
@@ -27,7 +27,7 @@ const recipeGenPrompt = ai.definePrompt({
     input: { schema: RecipeConceptInputSchema.extend({ allPreparationNames: z.array(z.string()) }) },
     output: { schema: RecipeTextConceptSchema },
     model: googleAI.model('gemini-1.5-flash-latest'),
-    prompt: `Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
+    prompt: `Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes et en identifiant clairement les nouvelles préparations que vous inventez.
 
 ---
 {{#if name}}
@@ -48,39 +48,26 @@ Vous devez obligatoirement utiliser les préparations suivantes si elles corresp
 ---
 
 ## RÈGLES D'OR ABSOLUES
-1.  **ZÉRO ALCOOL** : Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool (vin, bière, cognac, etc.). Si une recette classique en contient, vous DEVEZ le remplacer par une alternative sans alcool (bouillon, jus) ou l’omettre.
+1.  **ZÉRO ALCOOL** : Vous ne devez JAMAIS inclure un ingrédient contenant de l'alcool. Remplacez-le systématiquement (ex: Cognac → jus de raisin blanc réduit, Vin rouge → fond brun réduit).
+2.  **PAS D'AUTO-RÉFÉRENCE** : Vous ne devez JAMAIS inclure le nom de la recette en cours de création (\`{{{name}}}\`) dans les listes \`subRecipes\` ou \`newSubRecipes\`.
 
-2.  **PAS D'AUTO-RÉFÉRENCE** : Vous ne devez JAMAIS inclure le nom de la recette en cours de création (\`{{{name}}}\`) dans la liste \`subRecipes\`. Une recette ne peut pas être son propre ingrédient. C'est une erreur logique capitale.
+### MISSION PRINCIPALE : GESTION DES SOUS-RECETTES
+Pour chaque composant d'une recette (ex: "fond de veau", "sauce vierge", "vinaigrette"), suivez ce processus :
 
-### SUBSTITUTIONS D'ALCOOL AUTOMATIQUES (obligatoires)
-- Cognac → Jus de raisin blanc réduit OU bouillon corsé
-- Vin rouge → Jus de raisin rouge OU fond brun réduit
-- Vin blanc → Jus de pomme OU bouillon de volaille
-- Bière → Bouillon + vinaigre doux
+1.  **VÉRIFICATION** : Le composant existe-t-il dans la "LISTE DES PRÉPARATIONS EXISTANTES" ?
+2.  **ANALYSE & TRI**
+    *   **CAS 1 : La préparation EXISTE**
+        *   Ajoutez son nom exact à la liste \`subRecipes\`.
+        *   NE PAS inclure ses ingrédients ou ses étapes.
+    *   **CAS 2 : La préparation est INVENTÉE par vous** (elle n'est PAS dans la liste)
+        *   Ajoutez-la à la liste \`newSubRecipes\` avec un nom technique clair et une courte description de son rôle.
+        *   NE PAS inclure ses ingrédients ou ses étapes dans la recette principale. Vous devez seulement lister le nom de la nouvelle préparation.
+    *   **CAS 3 : C'est un ingrédient brut ou un assemblage trop simple** (ex: "salade verte assaisonnée", "beurre fondu")
+        *   Listez les ingrédients bruts dans \`ingredients\`.
+        *   Décrivez les étapes dans la procédure principale.
+        *   NE PAS l'ajouter dans \`subRecipes\` ou \`newSubRecipes\`.
 
----
-
-## MISSION PRINCIPALE : UTILISER LES PRÉPARATIONS DE LA LISTE
-Pour chaque composant d'une recette (ex: "fond de veau", "sauce tomate") :
-
-1.  **VÉRIFICATION** : Regardez si un nom dans la "LISTE DES PRÉPARATIONS EXISTANTES" correspond.
-2.  **ANALYSE**
-    *   **Si un nom correspond ET n'est pas le nom de la recette actuelle** :
-        *   Utiliser le nom exact de la liste dans \`subRecipes\`.
-        *   Ne PAS inclure ses ingrédients dans \`ingredients\`.
-        *   Ne PAS inclure ses étapes dans les procédures.
-    *   **Si AUCUN nom ne correspond OU si c'est la recette actuelle** :
-        *   Inclure les ingrédients dans la liste \`ingredients\`.
-        *   Inclure les étapes dans la procédure.
-
-⚠️ Règle stricte : NE JAMAIS INVENTER de sous-recette qui n'est pas dans la liste fournie.
-
----
-
-## RÈGLES POUR LES INGRÉDIENTS
-1.  **Nom simple** : le nom doit être simple et générique ("Oeuf", "Farine", "Citron").
-    *   Exceptions autorisées pour précision : "Jaune d’œuf", "Blanc d’œuf", "Filet de poisson".
-2.  **Unités logiques** : "g", "kg", "ml", "l", "pièce".
+⚠️ Règle stricte : Le but est de décomposer la recette en blocs. Ne mettez les ingrédients/étapes dans la procédure principale QUE s'ils ne font pas partie d'une sous-recette (existante ou nouvelle).
 
 ---
 
@@ -112,23 +99,11 @@ CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles
 
 ---
 
-## ÉTAPE DE CONTRÔLE AVANT LA SORTIE JSON
-Avant de produire la réponse finale, vous DEVEZ :
-1.  Vérifier que le nom de la recette actuelle (\`{{{name}}}\`) n'est PAS dans \`subRecipes\`.
-2.  Vérifier qu'aucun ingrédient listé dans \`subRecipes\` n’apparaît dans \`ingredients\`.
-3.  Vérifier qu’aucun ingrédient alcoolisé n’est présent.
-4.  Vérifier que la liste des ingrédients respecte les règles (noms simples, unités logiques).
-
-⚠️ Si une de ces conditions n’est pas respectée, la sortie est INVALIDE. Vous devez corriger et régénérer jusqu’à obtenir un JSON 100% conforme.
-
----
-
 ## INSTRUCTIONS DE FORMATAGE
-- **Si le nom n'est pas fourni en entrée, vous DEVEZ en générer un.** Le nom doit être créatif, marketing et refléter les ingrédients principaux.
-- **Pour un Plat :** remplir \`portions\`, \`category\`, \`commercialArgument\`.
-- **Pour une Préparation :** remplir \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.
-- **Sortie :** fournir une réponse au format JSON strict.
+- **Si le nom n'est pas fourni, générez-en un** qui soit créatif et marketing.
+- Remplissez tous les champs demandés (\`portions\`, \`category\`, \`commercialArgument\`, etc.).
 - Ne laissez aucun champ vide : utilisez \`[]\` ou \`""\` si nécessaire.
+- La sortie doit être un JSON strict et valide.
 `,
 });
 

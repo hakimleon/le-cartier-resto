@@ -7,7 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, BookCopy, ChevronsRight, Braces } from "lucide-react";
+import { FlaskConical, Sparkles, PlusCircle, NotebookText, Clock, Soup, Users, MessageSquareQuote, FileText, BookCopy, ChevronsRight, Braces, Merge } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import Image from "next/image";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +20,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Checkbox } from "@/components/ui/checkbox";
+import { createPreparation } from "../preparations/actions";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
@@ -36,10 +38,12 @@ export default function WorkshopClient() {
     
     const [context, setContext] = useState<RecipeConceptInput>({ type: 'Plat' });
     const [refinementHistory, setRefinementHistory] = useState<string[]>([]);
+    const [prepsToIntegrate, setPrepsToIntegrate] = useState<string[]>([]);
     
     const handleSubmit = async (instructions: RecipeConceptInput) => {
         setIsLoading(true);
         setRawGeneratedJson(null);
+        setPrepsToIntegrate([]);
         
         if (!instructions.refinementHistory || instructions.refinementHistory.length === 0) {
             setGeneratedConcept(null);
@@ -107,6 +111,18 @@ export default function WorkshopClient() {
         setRefinementHistory(newHistory);
         handleSubmit(instructions);
     }
+
+    const handleIntegration = (prepNames: string[]) => {
+        if (prepNames.length === 0) return;
+        const namesString = prepNames.map(name => `'${name}'`).join(' et ');
+        const instruction = `Intègre la ou les préparations ${namesString} directement dans la recette principale au lieu de la traiter comme une ou des sous-recettes. Ajoute leurs ingrédients à la liste principale et leurs étapes à la procédure.`;
+        const newHistory = [...refinementHistory, instruction];
+
+        const instructions: RecipeConceptInput = { ...context, refinementHistory: newHistory, currentRefinement: instruction };
+        
+        setRefinementHistory(newHistory);
+        handleSubmit(instructions);
+    }
     
     const handleSave = async () => {
         if (!generatedConcept) return;
@@ -137,9 +153,29 @@ export default function WorkshopClient() {
         setRawGeneratedJson(null);
         setContext({ type: 'Plat' });
         setRefinementHistory([]);
+        setPrepsToIntegrate([]);
         if (initialFormRef.current) initialFormRef.current.reset();
         if (refinementFormRef.current) refinementFormRef.current.reset();
     };
+
+    const handleCreatePreparation = async (prepName: string, prepDescription: string) => {
+        try {
+            await createPreparation({ name: prepName, description: prepDescription }, null);
+            toast({ title: "Préparation créée", description: `La fiche pour "${prepName}" est prête à être complétée.` });
+            
+            const instruction = `La préparation '${prepName}' a été créée et est maintenant disponible. Elle doit désormais apparaître dans la liste 'subRecipes'.`;
+            const newHistory = [...refinementHistory, instruction];
+            const instructions: RecipeConceptInput = { ...context, refinementHistory: newHistory, currentRefinement: instruction };
+
+            setRefinementHistory(newHistory);
+            handleSubmit(instructions);
+
+        } catch (error) {
+            console.error("Error creating preparation:", error);
+            toast({ title: "Erreur", description: "Impossible de créer la fiche de préparation.", variant: "destructive" });
+        }
+    }
+
 
     return (
         <div className="space-y-8">
@@ -274,14 +310,36 @@ export default function WorkshopClient() {
                                         </div>
                                          
                                         <div>
-                                            {generatedConcept.subRecipes && generatedConcept.subRecipes.length > 0 && (
-                                                <div className="mb-4">
-                                                    <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Sous-Recettes Existantes</h4>
-                                                    <div className="space-y-2">
-                                                        {generatedConcept.subRecipes.map((prep) => <div key={prep.name}><Badge variant="secondary" className="text-sm">{prep.name}</Badge></div>)}
+                                            <h4 className="font-semibold mb-2 flex items-center gap-2"><BookCopy className="h-4 w-4" />Sous-Recettes</h4>
+                                            <div className="space-y-2">
+                                                {generatedConcept.subRecipes.map((prep) => <div key={prep.name}><Badge variant="secondary" className="text-sm">{prep.name}</Badge></div>)}
+                                                
+                                                {(generatedConcept.newSubRecipes && generatedConcept.newSubRecipes.length > 0) &&
+                                                    generatedConcept.newSubRecipes.map((prep) => (
+                                                    <div key={prep.name} className="flex items-center gap-2">
+                                                        <Checkbox id={`integrate-${prep.name}`} onCheckedChange={(checked) => {
+                                                            setPrepsToIntegrate(current => checked ? [...current, prep.name] : current.filter(p => p !== prep.name));
+                                                        }}/>
+                                                        <label htmlFor={`integrate-${prep.name}`} className="flex items-center gap-2 cursor-pointer">
+                                                            <Badge variant="outline" className="text-sm border-dashed">{prep.name}</Badge>
+                                                        </label>
+                                                         <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => handleCreatePreparation(prep.name, prep.description)} title={`Créer la fiche pour "${prep.name}"`}>
+                                                                <PlusCircle className="h-4 w-4 text-primary" />
+                                                            </Button>
                                                     </div>
-                                                </div>
-                                            )}
+                                                ))}
+
+                                                {prepsToIntegrate.length > 0 && (
+                                                    <Button variant="secondary" size="sm" className="mt-2" onClick={() => handleIntegration(prepsToIntegrate)} disabled={isLoading}>
+                                                        <Merge className="mr-2 h-4 w-4"/>
+                                                        Intégrer la sélection ({prepsToIntegrate.length})
+                                                    </Button>
+                                                )}
+
+                                                {generatedConcept.subRecipes.length === 0 && (!generatedConcept.newSubRecipes || generatedConcept.newSubRecipes.length === 0) && (
+                                                    <p className="text-sm text-muted-foreground">Aucune sous-recette utilisée.</p>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                     
