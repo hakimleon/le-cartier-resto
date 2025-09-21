@@ -434,7 +434,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
                         const conversionFactor = getConversionFactor(childPrep.productionUnit!, linkData.unitUse);
-                        const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                        const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
                         totalCost += (linkData.quantity || 0) * costPerUseUnit;
                     }
                 }
@@ -608,22 +608,29 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
     const handleNewIngredientChange = (tempId: string, field: keyof NewRecipeIngredient, value: any) => {
         setNewIngredients(current => current.map(ing => {
             if (ing.tempId === tempId) {
-            const updatedIng = { ...ing, [field]: value };
-            const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
-            if (selectedIngredient) {
+                let updatedIng = { ...ing, [field]: value };
+                
                 if (field === 'ingredientId') {
-                updatedIng.name = selectedIngredient.name;
-                updatedIng.category = selectedIngredient.category;
+                    const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
+                    if (selectedIngredient) {
+                        updatedIng.name = selectedIngredient.name;
+                        updatedIng.category = selectedIngredient.category;
+                        updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
+                    } else {
+                        updatedIng.ingredientId = undefined; // unlink if not found
+                        updatedIng.category = '';
+                        updatedIng.totalCost = 0;
+                    }
+                } else if (field === 'quantity' || field === 'unit') {
+                     const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
+                     if(selectedIngredient){
+                         updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
+                     }
                 }
-                updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
-            } else if(field === 'ingredientId') {
-                updatedIng.ingredientId = undefined; // Unlink if not found
-            }
-            return updatedIng;
+                return updatedIng;
             }
             return ing;
-        })
-        );
+        }));
     };
 
     const handleRemoveExistingIngredient = (recipeIngredientId: string) => { setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId)); };
@@ -642,7 +649,14 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         fetchAllIngredients().then(updatedList => {
             const newlyAdded = updatedList.find(i => i.id === newIngredient.id);
             if (newlyAdded) {
-                handleNewIngredientChange(tempId, 'ingredientId', newlyAdded.id!);
+                setNewIngredients(current => current.map(ing => {
+                    if (ing.tempId === tempId) {
+                        let updatedIng = {...ing, ingredientId: newlyAdded.id!, name: newlyAdded.name };
+                        updatedIng.totalCost = recomputeIngredientCost(updatedIng, newlyAdded);
+                        return updatedIng;
+                    }
+                    return ing;
+                }));
             }
         });
     };
@@ -999,6 +1013,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-
-    

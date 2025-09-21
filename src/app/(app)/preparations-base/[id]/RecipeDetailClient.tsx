@@ -271,7 +271,7 @@ const EditablePreparationRow = ({ prep, handlePreparationChange, handleRemoveExi
         <TableRow key={prep.id}>
             <TableCell className="font-medium">{prep.name}</TableCell>
             <TableCell>{<Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" />}</TableCell>
-             <TableCell>
+            <TableCell>
                 <Select value={prep.unit} onValueChange={(value) => handlePreparationChange(prep.id, 'unit', value)}>
                     <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
                     <SelectContent>
@@ -635,16 +635,24 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   const handleNewIngredientChange = (tempId: string, field: keyof NewRecipeIngredient, value: any) => {
     setNewIngredients(current => current.map(ing => {
         if (ing.tempId === tempId) {
-          const updatedIng = { ...ing, [field]: value };
-          const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
-          if (selectedIngredient) {
-            if (field === 'ingredientId') {
-              updatedIng.name = selectedIngredient.name;
-              updatedIng.category = selectedIngredient.category;
-            }
-            updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
-          } else if(field === 'ingredientId') {
-            updatedIng.ingredientId = undefined; // Unlink if not found
+          let updatedIng = { ...ing, [field]: value };
+          
+          if (field === 'ingredientId') {
+              const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
+              if (selectedIngredient) {
+                  updatedIng.name = selectedIngredient.name;
+                  updatedIng.category = selectedIngredient.category;
+                  updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
+              } else {
+                  updatedIng.ingredientId = undefined; // unlink if not found
+                  updatedIng.category = '';
+                  updatedIng.totalCost = 0;
+              }
+          } else if (field === 'quantity' || field === 'unit') {
+               const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
+               if(selectedIngredient){
+                   updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
+               }
           }
           return updatedIng;
         }
@@ -655,14 +663,23 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   
   const handleRemoveNewIngredient = (tempId: string) => { setNewIngredients(current => current.filter(ing => ing.tempId !== tempId)); };
   const handleRemoveExistingIngredient = (recipeIngredientId: string) => { setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId)); };
+  
   const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
       fetchAllIngredients().then(updatedList => {
           const newlyAdded = updatedList.find(i => i.id === newIngredient.id);
           if (newlyAdded) {
-              handleNewIngredientChange(tempId, 'ingredientId', newlyAdded.id!);
+               setNewIngredients(current => current.map(ing => {
+                  if (ing.tempId === tempId) {
+                      let updatedIng = {...ing, ingredientId: newlyAdded.id!, name: newlyAdded.name };
+                      updatedIng.totalCost = recomputeIngredientCost(updatedIng, newlyAdded);
+                      return updatedIng;
+                  }
+                  return ing;
+              }));
           }
       });
   }
+
   const openNewIngredientModal = (tempId: string) => { const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId); if(ingredientToCreate) { setCurrentTempId(tempId); setNewIngredientDefaults({ name: ingredientToCreate.name }); setIsNewIngredientModalOpen(true); } }
 
   const handleAddNewPreparation = () => { setNewPreparations([ ...newPreparations, { tempId: `new-prep-${Date.now()}`, childPreparationId: '', name: '', quantity: 0, unit: '', totalCost: 0, _productionUnit: '', }, ]); };
@@ -1248,9 +1265,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
-
-    
-
-    

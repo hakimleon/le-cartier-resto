@@ -653,36 +653,50 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const handleNewIngredientChange = (tempId: string, field: keyof NewRecipeIngredient, value: any) => {
         setNewIngredients(current => current.map(ing => {
             if (ing.tempId === tempId) {
-                const updatedIng = { ...ing, [field]: value };
-                const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
-                if (selectedIngredient) {
-                    if (field === 'ingredientId') {
+                let updatedIng = { ...ing, [field]: value };
+                
+                if (field === 'ingredientId') {
+                    const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
+                    if (selectedIngredient) {
                         updatedIng.name = selectedIngredient.name;
                         updatedIng.category = selectedIngredient.category;
+                        updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
+                    } else {
+                        updatedIng.ingredientId = undefined; // unlink if not found
+                        updatedIng.category = '';
+                        updatedIng.totalCost = 0;
                     }
-                    updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
-                } else if (field === 'ingredientId') {
-                  updatedIng.ingredientId = undefined; // unlink if not found
-                  updatedIng.category = '';
-                  updatedIng.totalCost = 0;
+                } else if (field === 'quantity' || field === 'unit') {
+                     const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
+                     if(selectedIngredient){
+                         updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
+                     }
                 }
                 return updatedIng;
             }
             return ing;
-        })
-        );
+        }));
     };
 
     const handleRemoveNewIngredient = (tempId: string) => { setNewIngredients(current => current.filter(ing => ing.tempId !== tempId)); };
     const handleRemoveExistingIngredient = (recipeIngredientId: string) => { setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId)); };
+    
     const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
         fetchAllIngredients().then(updatedList => {
             const newlyAdded = updatedList.find(i => i.id === newIngredient.id);
             if (newlyAdded) {
-                handleNewIngredientChange(tempId, 'ingredientId', newlyAdded.id!);
+                 setNewIngredients(current => current.map(ing => {
+                    if (ing.tempId === tempId) {
+                        let updatedIng = {...ing, ingredientId: newlyAdded.id!, name: newlyAdded.name };
+                        updatedIng.totalCost = recomputeIngredientCost(updatedIng, newlyAdded);
+                        return updatedIng;
+                    }
+                    return ing;
+                }));
             }
         });
     };
+
     const openNewIngredientModal = (tempId: string) => { const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId); if (ingredientToCreate) { setCurrentTempId(tempId); setNewIngredientDefaults({ name: ingredientToCreate.name }); setIsNewIngredientModalOpen(true); } }
 
     // --- PREPARATION HANDLERS ---
@@ -1212,7 +1226,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
-
-    
