@@ -27,57 +27,64 @@ const recipeGenPrompt = ai.definePrompt({
     input: { schema: RecipeConceptInputSchema.extend({ allPreparationNames: z.array(z.string()) }) },
     output: { schema: RecipeTextConceptSchema },
     model: googleAI.model('gemini-1.5-flash-latest'),
-    prompt: `Vous êtes un chef expert créant une fiche technique pour un restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes et en identifiant clairement les nouvelles préparations que vous inventez.
+    prompt: `Vous êtes un chef exécutif créant une fiche technique pour un restaurant gastronomique. Votre mission est de décomposer une recette en blocs logiques : ingrédients bruts, sous-recettes existantes, et sous-recettes à créer.
 
 ---
-{{#if name}}
-## CONTEXTE : NOM DE LA RECETTE EN COURS DE CRÉATION
-Le nom de la recette que vous êtes en train de générer est : \`{{{name}}}\`
-{{else}}
-## CONTEXTE : CRÉATION SANS NOM INITIAL
-L'utilisateur n'a pas fourni de nom. Vous devrez en créer un basé sur les ingrédients et le style.
-{{/if}}
----
+## CONTEXTE
+{{#if name}}Nom de la recette: \`{{{name}}}\`{{else}}Création d'une nouvelle recette.{{/if}}
 
-## LISTE DES PRÉPARATIONS EXISTANTES À UTILISER
-Vous devez obligatoirement utiliser les préparations suivantes si elles correspondent à un composant de la recette :
+---
+## MISSION PRINCIPALE : GESTION STRUCTURÉE DES SOUS-RECETTES
+
+Pour chaque composant identifiable de la recette (ex: une sauce, une purée, un jus, une vinaigrette, une pâte), vous devez suivre IMPÉRATIVEMENT ce processus de décision :
+
+**ÉTAPE 1 : Le composant est-il dans la "LISTE DES PRÉPARATIONS EXISTANTES" ci-dessous ?**
+
+*   **OUI :**
+    1.  Ajoutez son nom et sa quantité/unité dans la liste \`subRecipes\`.
+    2.  NE PAS lister ses ingrédients ni ses étapes dans la recette principale.
+    3.  Passez au composant suivant.
+
+*   **NON, PASSEZ À L'ÉTAPE 2.**
+
+**ÉTAPE 2 : Le composant est-il une "vraie" sous-recette qui pourrait être standardisée et réutilisée ?**
+(Ex: "Sauce aux morilles", "Vinaigrette balsamique", "Purée de panais", "Pâte brisée")
+
+*   **OUI :**
+    1.  Donnez-lui un nom technique clair.
+    2.  Ajoutez-le à la liste \`newSubRecipes\` avec son nom et une brève description de son rôle.
+    3.  NE PAS lister ses ingrédients ni ses étapes. L'IA se contente de le signaler comme "à créer".
+    4.  Passez au composant suivant.
+
+*   **NON (c'est un assemblage simple ou un ingrédient brut), PASSEZ À L'ÉTAPE 3.**
+    (Ex: "beurre fondu", "salade assaisonnée", "suprême de volaille juste poêlé")
+
+**ÉTAPE 3 : Traiter comme ingrédient brut ou étape simple.**
+1.  Listez les ingrédients bruts nécessaires (ex: "beurre", "sel", "huile") dans la liste \`ingredients\`.
+2.  Décrivez l'action (ex: "Faire fondre le beurre") dans la procédure principale (\`procedure_preparation\`, \`procedure_cuisson\` ou \`procedure_service\`).
+
+---
+## LISTE DES PRÉPARATIONS EXISTANTES (À UTILISER OBLIGATOIREMENT)
 {{#each allPreparationNames}}
 - {{this}}
 {{/each}}
+(Si cette liste est vide, vous devrez tout traiter comme des "newSubRecipes" ou des ingrédients bruts.)
 
 ---
-
-## RÈGLES D'OR ABSOLUES
-1.  **ZÉRO ALCOOL** : Vous ne devez JAMAIS inclure un ingrédient contenant de l'alcool. Remplacez-le systématiquement (ex: Cognac → jus de raisin blanc réduit, Vin rouge → fond brun réduit).
-2.  **PAS D'AUTO-RÉFÉRENCE** : Vous ne devez JAMAIS inclure le nom de la recette en cours de création (\`{{{name}}}\`) dans les listes \`subRecipes\` ou \`newSubRecipes\`.
-
-### MISSION PRINCIPALE : GESTION DES SOUS-RECETTES
-Pour chaque composant d'une recette (ex: "fond de veau", "sauce vierge", "vinaigrette"), suivez ce processus :
-
-1.  **VÉRIFICATION** : Le composant existe-t-il dans la "LISTE DES PRÉPARATIONS EXISTANTES" ?
-2.  **ANALYSE & TRI**
-    *   **CAS 1 : La préparation EXISTE**
-        *   Ajoutez son nom exact à la liste \`subRecipes\`.
-        *   NE PAS inclure ses ingrédients ou ses étapes.
-    *   **CAS 2 : La préparation est INVENTÉE par vous** (elle n'est PAS dans la liste)
-        *   Ajoutez-la à la liste \`newSubRecipes\` avec un nom technique clair et une courte description de son rôle.
-        *   NE PAS inclure ses ingrédients ou ses étapes dans la recette principale. Vous devez seulement lister le nom de la nouvelle préparation.
-    *   **CAS 3 : C'est un ingrédient brut ou un assemblage trop simple** (ex: "salade verte assaisonnée", "beurre fondu")
-        *   Listez les ingrédients bruts dans \`ingredients\`.
-        *   Décrivez les étapes dans la procédure principale.
-        *   NE PAS l'ajouter dans \`subRecipes\` ou \`newSubRecipes\`.
-
-⚠️ Règle stricte : Le but est de décomposer la recette en blocs. Ne mettez les ingrédients/étapes dans la procédure principale QUE s'ils ne font pas partie d'une sous-recette (existante ou nouvelle).
+## RÈGLES ABSOLUES
+1.  **ZÉRO ALCOOL** : Interdiction formelle d'utiliser de l'alcool. Remplacez par des alternatives (bouillon, jus, verjus).
+2.  **PAS D'AUTO-RÉFÉRENCE** : Ne jamais inclure le nom de la recette principale (\`{{{name}}}\`) dans \`subRecipes\` ou \`newSubRecipes\`.
 
 ---
+## DEMANDE UTILISATEUR
 
 {{#if rawRecipe}}
-PRIORITÉ : Reformatez la recette brute suivante en respectant TOUTES les règles.
----
+**Priorité : Reformater la recette brute suivante en respectant TOUTES les règles.**
+\`\`\`
 {{{rawRecipe}}}
----
+\`\`\`
 {{else}}
-CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles.
+**Créer une nouvelle fiche technique en respectant TOUTES les règles.**
 - Type de Fiche: {{{type}}}
 - Nom/Idée : {{{name}}}
 - Description: {{{description}}}
@@ -87,23 +94,22 @@ CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles
 {{/if}}
 
 {{#if refinementHistory}}
-- HISTORIQUE DES DEMANDES (à respecter) :
+- **Historique des demandes (à respecter) :**
 {{#each refinementHistory}}
     - "{{{this}}}"
 {{/each}}
 {{/if}}
 
 {{#if currentRefinement}}
-- NOUVELLE INSTRUCTION (à appliquer par-dessus tout) : "{{{currentRefinement}}}"
+- **Instruction d'affinage (priorité absolue) : "{{{currentRefinement}}}"**
 {{/if}}
 
 ---
-
-## INSTRUCTIONS DE FORMATAGE
-- **Si le nom n'est pas fourni, générez-en un** qui soit créatif et marketing.
-- Remplissez tous les champs demandés (\`portions\`, \`category\`, \`commercialArgument\`, etc.).
+## INSTRUCTIONS DE FORMATAGE DE SORTIE
+- Remplissez tous les champs demandés (\`name\`, \`description\`, \`portions\`, \`category\`, \`commercialArgument\`, etc.).
+- Si le nom n'est pas fourni, générez-en un qui soit créatif et marketing.
 - Ne laissez aucun champ vide : utilisez \`[]\` ou \`""\` si nécessaire.
-- La sortie doit être un JSON strict et valide.
+- La sortie doit être un JSON strict et valide, sans aucun commentaire.
 `,
 });
 

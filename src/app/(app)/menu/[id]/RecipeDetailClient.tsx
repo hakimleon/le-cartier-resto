@@ -561,6 +561,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
                     const allPrepsData = await fetchAllPreparations();
                     processSuggestedPreparations(concept.subRecipes, allPrepsData);
+                    processNewPreparations(concept.newSubRecipes || [], allPrepsData);
 
                     toast({ title: "Fiche technique importée !", description: "Vérifiez les informations et les liaisons suggérées." });
                     sessionStorage.removeItem(WORKSHOP_CONCEPT_KEY);
@@ -607,7 +608,25 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 _productionUnit: existing?.productionUnit || '',
             };
         });
-        setNewPreparations(newPreps);
+        setNewPreparations(prev => [...prev, ...newPreps]);
+    }
+    
+    const processNewPreparations = (suggested: { name: string, description: string }[], currentAllPreps: Preparation[]) => {
+        const newPreps: NewRecipePreparation[] = suggested.map(prep => {
+             const existing = currentAllPreps.find(p => p.name.toLowerCase() === prep.name.toLowerCase());
+             const tempId = `new-prep-ws-${Date.now()}-${Math.random()}`;
+             return {
+                tempId,
+                childPreparationId: existing?.id,
+                name: existing?.name || prep.name,
+                quantity: 1, 
+                unit: 'portion',
+                totalCost: 0, 
+                _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0,
+                _productionUnit: existing?.productionUnit || '',
+             }
+        });
+        setNewPreparations(prev => [...prev, ...newPreps]);
     }
 
     const handleToggleEditMode = () => {
@@ -1133,23 +1152,27 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </CardHeader>
                             <CardContent className="space-y-4 text-sm">
                                 <div>
-                                    <h4 className="font-semibold mb-1">Ingrédients bruts suggérés</h4>
+                                    <h4 className="font-semibold mb-1">Ingrédients suggérés</h4>
                                     <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
                                         {workshopConcept.ingredients.map(ing => <li key={ing.name}>{ing.quantity} {ing.unit} {ing.name}</li>)}
                                     </ul>
                                 </div>
+                                {workshopConcept.subRecipes && workshopConcept.subRecipes.length > 0 && (
                                 <div>
-                                    <h4 className="font-semibold mb-1">Sous-recettes suggérées</h4>
+                                    <h4 className="font-semibold mb-1">Sous-recettes existantes</h4>
                                     <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
                                         {workshopConcept.subRecipes.map(prep => <li key={prep.name}>{prep.name}</li>)}
                                     </ul>
                                 </div>
+                                )}
+                                {workshopConcept.newSubRecipes && workshopConcept.newSubRecipes.length > 0 && (
                                 <div>
-                                    <h4 className="font-semibold mb-1">Procédure brute</h4>
-                                    <div className="text-xs text-muted-foreground p-2 border rounded-md max-h-48 overflow-y-auto">
-                                        <MarkdownRenderer text={[`${workshopConcept.procedure_preparation}`, `${workshopConcept.procedure_cuisson}`, `${workshopConcept.procedure_service}`].join('\\n')} />
-                                    </div>
+                                    <h4 className="font-semibold mb-1">Sous-recettes inventées</h4>
+                                    <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
+                                        {workshopConcept.newSubRecipes.map(prep => <li key={prep.name}>{prep.name}</li>)}
+                                    </ul>
                                 </div>
+                                )}
                             </CardContent>
                         </Card>
                     )}
