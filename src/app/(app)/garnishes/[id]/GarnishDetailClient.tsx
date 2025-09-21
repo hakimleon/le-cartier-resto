@@ -203,7 +203,7 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                         </PopoverTrigger>
                         <PopoverContent className="w-[300px] p-0">
                             <Command>
-                                <CommandInput 
+                                <CommandInput
                                     placeholder="Rechercher ou taper un nom..."
                                     value={newIng.name}
                                     onValueChange={(search) => {
@@ -434,7 +434,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
                         const conversionFactor = getConversionFactor(childPrep.productionUnit!, linkData.unitUse);
-                        const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
+                        const costPerUseUnit = costPerProductionUnit / conversionFactor;
                         totalCost += (linkData.quantity || 0) * costPerUseUnit;
                     }
                 }
@@ -1000,3 +1000,5 @@ function RecipeDetailSkeleton() {
     );
 }
 
+
+    
