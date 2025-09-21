@@ -3,7 +3,6 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Ingredient, Recipe, Preparation } from '@/lib/types';
 import DashboardClient from './DashboardClient';
-import { BookCopy, ChefHat, Package, AlertTriangle } from 'lucide-react';
 
 type CategoryDistribution = {
     name: string;
