@@ -40,7 +40,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { RecipeConceptOutput } from "@/ai/flows/recipe-workshop-flow";
+import { RecipeConceptOutput } from "@/ai/flows/workshop-flow";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent } from "@/components/ui/dialog";
 
 
