@@ -10,8 +10,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'Le Singulier AI',
-  description: "Application de gestion pour le restaurant Le Singulier",
+  title: 'Le Cartier AI',
+  description: "Application de gestion pour le restaurant Le Cartier",
 };
 
 export default function RootLayout({

@@ -51,7 +51,7 @@ export default function AppLayout({
                     <Logo />
                 </Button>
                 <div className="flex flex-col">
-                    <h2 className="text-lg font-semibold tracking-tight text-foreground">Le Singulier</h2>
+                    <h2 className="text-lg font-semibold tracking-tight text-foreground">Le Cartier</h2>
                 </div>
             </Link>
           </SidebarHeader>

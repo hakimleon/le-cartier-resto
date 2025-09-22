@@ -63,7 +63,7 @@ export default function AssistantClient() {
         <CardHeader className="border-b">
           <CardTitle className="flex items-center gap-2">
             <Bot className="h-6 w-6" />
-            <span>Assistant Le Singulier</span>
+            <span>Assistant Le Cartier</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 overflow-hidden p-0">

@@ -46,7 +46,7 @@ async function getApplicationContext(): Promise<string> {
 
         const ingredientsMap = new Map(allIngredients.map(ing => [ing.id, ing.name]));
 
-        let context = "Tu es un assistant pour le restaurant 'Le Singulier'. Réponds aux questions en te basant sur le contexte suivant. Sois concis et direct.\n\n";
+        let context = "Tu es un assistant pour le restaurant 'Le Cartier'. Réponds aux questions en te basant sur le contexte suivant. Sois concis et direct.\n\n";
 
         context += "=== PLATS AU MENU ===\n";
         if (allDishes.length > 0) {
