@@ -71,9 +71,8 @@ export default function GarnishesClient() {
     
     setIsLoading(true);
     const prepsCol = collection(db, "garnishes");
-    const q = query(prepsCol);
     
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onSnapshot(prepsCol, (querySnapshot) => {
         try {
             const prepsData = querySnapshot.docs.map(
                 (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
@@ -86,9 +85,9 @@ export default function GarnishesClient() {
         } finally {
             setIsLoading(false);
         }
-    }, (e: any) => {
-        console.error("Error fetching garnishes with onSnapshot: ", e);
-        setError("Impossible de charger les garnitures en temps réel. " + e.message);
+    }, (err: any) => {
+        console.error("Error fetching garnishes with onSnapshot: ", err);
+        setError("Erreur de chargement des garnitures: " + err.message);
         setIsLoading(false);
     });
 
@@ -219,18 +218,6 @@ export default function GarnishesClient() {
         </CardContent>
       </Card>
   );
-
-  if (error && !isFirebaseConfigured) {
-    return (
-        <Alert variant="destructive" className="max-w-2xl mx-auto">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Erreur de configuration Firebase</AlertTitle>
-          <AlertDescription>
-            {error}
-          </AlertDescription>
-        </Alert>
-      );
-  }
 
   const allGarnishCategories = ["Tous", ...garnishCategories];
 

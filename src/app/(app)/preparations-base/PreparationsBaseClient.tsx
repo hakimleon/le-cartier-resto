@@ -39,9 +39,6 @@ import { Trash2 } from "lucide-react";
 import { PreparationsGuide } from "./PreparationsGuide";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// This component is a clone of PreparationsClient, adapted for the new "base preparations" flow.
-// The main difference is the "New Preparation" button now redirects to the workshop.
-
 const normalizeStringForSearch = (str: string): string => {
     if (!str) return "";
     return str
@@ -69,9 +66,8 @@ export default function PreparationsBaseClient() {
     
     setIsLoading(true);
     const prepsCol = collection(db, "preparations");
-    const q = query(prepsCol);
     
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const unsubscribe = onSnapshot(prepsCol, (querySnapshot) => {
         try {
             const prepsData = querySnapshot.docs.map(
                 (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
@@ -84,9 +80,9 @@ export default function PreparationsBaseClient() {
         } finally {
             setIsLoading(false);
         }
-    }, (e: any) => {
-        console.error("Error fetching preparations with onSnapshot: ", e);
-        setError("Impossible de charger les préparations en temps réel. " + e.message);
+    }, (err: any) => {
+        console.error("Error fetching preparations with onSnapshot: ", err);
+        setError("Erreur de chargement des préparations: " + err.message);
         setIsLoading(false);
     });
 
@@ -219,18 +215,6 @@ export default function PreparationsBaseClient() {
       </Card>
   );
 
-  if (error && !isFirebaseConfigured) {
-    return (
-        <Alert variant="destructive" className="max-w-2xl mx-auto">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Erreur de configuration Firebase</AlertTitle>
-          <AlertDescription>
-            {error}
-          </AlertDescription>
-        </Alert>
-      );
-  }
-
   const allPreparationCategories = ["Tous", ...preparationCategories];
 
   return (
@@ -282,7 +266,7 @@ export default function PreparationsBaseClient() {
       {error && (
         <Alert variant="destructive">
           <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Erreur</AlertTitle>
+          <AlertTitle>Erreur de chargement</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       )}
