@@ -435,7 +435,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
                         const conversionFactor = getConversionFactor(childPrep.productionUnit!, linkData.unitUse);
-                        const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                        const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
                         totalCost += (linkData.quantity || 0) * costPerUseUnit;
                     }
                 }
@@ -1015,6 +1015,8 @@ function RecipeDetailSkeleton() {
     );
 }
 
+
+    
 
     
 
