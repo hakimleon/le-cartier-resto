@@ -1,4 +1,3 @@
-
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
@@ -10,7 +9,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyCuO62Uf-dGglqlrC1yFjICQkYYbvvv3us",
   authDomain: "le-singulier-d4513.firebaseapp.com",
   projectId: "le-singulier-d4513",
-  storageBucket: "le-singulier-d4513.firebasestorage.app",
+  storageBucket: "le-singulier-d4513.appspot.com",
   messagingSenderId: "606165341069",
   appId: "1:606165341069:web:1d70d57e873261645963c4",
   measurementId: "G-RQM9MZCR5X"
