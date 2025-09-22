@@ -1015,7 +1015,7 @@ function RecipeDetailSkeleton() {
     );
 }
 
-    
 
+    
 
     
