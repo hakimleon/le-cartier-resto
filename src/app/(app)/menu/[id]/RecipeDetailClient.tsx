@@ -913,7 +913,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex items-start gap-4 flex-grow">
                     <div className="bg-primary/10 text-primary rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
-                        {isPlat ? <ChefHat className="h-7 w-7" /> : <NotebookText className="h-7 w-7" />}
+                        <ChefHat className="h-7 w-7" />
                     </div>
                     <div className="w-full">
                         {isEditing ? (
@@ -1227,3 +1227,4 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+

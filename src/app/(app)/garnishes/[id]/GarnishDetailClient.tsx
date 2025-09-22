@@ -434,7 +434,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
                         const conversionFactor = getConversionFactor(childPrep.productionUnit!, linkData.unitUse);
-                        const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
+                        const costPerUseUnit = costPerProductionUnit / conversionFactor;
                         totalCost += (linkData.quantity || 0) * costPerUseUnit;
                     }
                 }
@@ -800,7 +800,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             <PreparationModal open={isNewPreparationModalOpen} onOpenChange={setIsNewPreparationModalOpen} preparation={newPreparationDefaults} onSuccess={(newDbPrep) => { if (newDbPrep && currentPrepTempId) { handleCreateAndLinkPreparation(currentPrepTempId, newDbPrep); } }}><div /></PreparationModal>
             <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex items-start gap-4 flex-grow">
-                    <div className="bg-primary/10 text-primary rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
+                    <div className="bg-green-100 text-green-700 rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
                         <CookingPot className="h-7 w-7" />
                     </div>
                     <div className="w-full space-y-2">
@@ -1015,3 +1015,4 @@ function RecipeDetailSkeleton() {
 }
 
     
+
