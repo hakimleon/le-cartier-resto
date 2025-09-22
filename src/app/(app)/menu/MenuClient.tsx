@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { collection, getDocs, query, where } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -75,7 +75,7 @@ export default function MenuClient() {
   const [selectedStatus, setSelectedStatus] = useState<'Actif' | 'Inactif'>('Actif');
   const { toast } = useToast();
 
-  useEffect(() => {
+  const fetchRecipes = useCallback(async () => {
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
       setIsLoading(false);
@@ -83,59 +83,52 @@ export default function MenuClient() {
     }
     
     setIsLoading(true);
-    const recipesCol = collection(db, "recipes");
-    const q = query(recipesCol, where("type", "==", "Plat"));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        try {
-            const recipesData = querySnapshot.docs.map(
-                (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
-            );
-            
-            setRecipes(recipesData);
-            
-            const activeCategoryMap = new Map<string, string>();
-            const inactiveCategoryMap = new Map<string, string>();
+    try {
+        const recipesCol = collection(db, "recipes");
+        const q = query(recipesCol, where("type", "==", "Plat"));
+        const querySnapshot = await getDocs(q);
 
-            recipesData.forEach(recipe => {
-                if (recipe.category) {
-                    const normalizedCategory = recipe.category.toLowerCase().trim();
-                    if(recipe.status === 'Actif') {
-                        if (!activeCategoryMap.has(normalizedCategory)) {
-                            activeCategoryMap.set(normalizedCategory, recipe.category);
-                        }
-                    } else {
-                         if (!inactiveCategoryMap.has(normalizedCategory)) {
-                            inactiveCategoryMap.set(normalizedCategory, recipe.category);
-                        }
+        const recipesData = querySnapshot.docs.map(
+            (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
+        );
+        
+        setRecipes(recipesData);
+        
+        const activeCategoryMap = new Map<string, string>();
+        const inactiveCategoryMap = new Map<string, string>();
+
+        recipesData.forEach(recipe => {
+            if (recipe.category) {
+                const normalizedCategory = recipe.category.toLowerCase().trim();
+                if(recipe.status === 'Actif') {
+                    if (!activeCategoryMap.has(normalizedCategory)) {
+                        activeCategoryMap.set(normalizedCategory, recipe.category);
+                    }
+                } else {
+                     if (!inactiveCategoryMap.has(normalizedCategory)) {
+                        inactiveCategoryMap.set(normalizedCategory, recipe.category);
                     }
                 }
-            });
-            
-            const uniqueActiveCategories = Array.from(activeCategoryMap.values());
-            const uniqueInactiveCategories = Array.from(inactiveCategoryMap.values());
-            
-            setActiveCategories(["Tous", ...sortCategories(uniqueActiveCategories)]);
-            setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
-            setError(null);
-        } catch(e: any) {
-            console.error("Error processing recipes snapshot: ", e);
-            setError("Impossible de traiter les données du menu. " + e.message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, (e: any) => {
-        console.error("Error fetching recipes with onSnapshot: ", e);
-        setError("Impossible de charger le menu en temps réel. " + e.message);
+            }
+        });
+        
+        const uniqueActiveCategories = Array.from(activeCategoryMap.values());
+        const uniqueInactiveCategories = Array.from(inactiveCategoryMap.values());
+        
+        setActiveCategories(["Tous", ...sortCategories(uniqueActiveCategories)]);
+        setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
+        setError(null);
+    } catch(e: any) {
+        console.error("Error fetching recipes: ", e);
+        setError("Impossible de charger le menu. " + e.message);
+    } finally {
         setIsLoading(false);
-    });
-
-    return () => {
-        if(unsubscribe) {
-            unsubscribe();
-        }
-    };
+    }
   }, []);
+
+  useEffect(() => {
+    fetchRecipes();
+  }, [fetchRecipes]);
   
    useEffect(() => {
     setSelectedCategory("Tous");
@@ -148,6 +141,7 @@ export default function MenuClient() {
           title: "Succès",
           description: `Le plat "${name}" a été supprimé.`,
         });
+        fetchRecipes(); // Re-fetch data after deletion
       } catch (error) {
         console.error("Error deleting dish:", error);
         toast({
@@ -239,7 +233,7 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} allCategories={activeCategories.filter(c => c !== "Tous")} onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <DishModal dish={null} allCategories={activeCategories.filter(c => c !== "Tous")} onSuccess={fetchRecipes}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat
@@ -288,4 +282,3 @@ export default function MenuClient() {
     </div>
   );
 }
-

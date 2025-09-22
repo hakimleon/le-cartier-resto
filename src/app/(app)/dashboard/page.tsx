@@ -30,6 +30,9 @@ async function getDashboardData() {
         const preparationsSnapshot = await getDocs(collection(db, "preparations"));
         const totalPreparations = preparationsSnapshot.size;
 
+        const garnishesSnapshot = await getDocs(collection(db, "garnishes"));
+        const totalGarnishes = garnishesSnapshot.size;
+
         const ingredientsSnapshot = await getDocs(collection(db, "ingredients"));
         const allIngredients = ingredientsSnapshot.docs.map(doc => doc.data() as Ingredient);
         const totalIngredients = allIngredients.length;
@@ -40,7 +43,7 @@ async function getDashboardData() {
 
         return { 
             totalDishes, 
-            totalPreparations, 
+            totalPreparations: totalPreparations + totalGarnishes, 
             totalIngredients, 
             lowStockIngredients,
             categoryDistribution,
@@ -73,10 +76,10 @@ export default async function DashboardPage() {
             description: "Nombre total de plats actifs et inactifs."
         },
         {
-            title: "Préparations",
+            title: "Fiches Techniques",
             value: totalPreparations,
             icon: "book-copy",
-            description: "Nombre de fiches techniques de base."
+            description: "Préparations de base et garnitures."
         },
         {
             title: "Ingrédients",

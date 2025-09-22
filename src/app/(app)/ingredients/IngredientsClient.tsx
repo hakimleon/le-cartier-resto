@@ -1,8 +1,8 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { collection, query, orderBy, onSnapshot } from "firebase/firestore";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Ingredient } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -36,7 +36,7 @@ export default function IngredientsClient() {
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
 
-  useEffect(() => {
+  const fetchIngredients = useCallback(async () => {
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
       setIsLoading(false);
@@ -44,34 +44,28 @@ export default function IngredientsClient() {
     }
     
     setIsLoading(true);
-    const ingredientsCol = collection(db, "ingredients");
-    const q = query(ingredientsCol, orderBy("name"));
+    try {
+        const ingredientsCol = collection(db, "ingredients");
+        const q = query(ingredientsCol, orderBy("name"));
+        const querySnapshot = await getDocs(q);
 
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        try {
-            const ingredientsData = querySnapshot.docs.map(
-                (doc) => ({ ...doc.data(), id: doc.id } as Ingredient)
-            );
-            setIngredients(ingredientsData);
-            setError(null);
-        } catch(e: any) {
-            console.error("Error processing ingredients snapshot: ", e);
-            setError("Impossible de traiter les données des ingrédients. " + e.message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, (e: any) => {
-        console.error("Error fetching ingredients with onSnapshot: ", e);
-        setError("Impossible de charger les ingrédients en temps réel. " + e.message);
+        const ingredientsData = querySnapshot.docs.map(
+            (doc) => ({ ...doc.data(), id: doc.id } as Ingredient)
+        );
+        setIngredients(ingredientsData);
+        setError(null);
+    } catch(e: any) {
+        console.error("Error fetching ingredients: ", e);
+        setError("Impossible de charger les ingrédients. " + e.message);
+    } finally {
         setIsLoading(false);
-    });
-
-    return () => {
-        if(unsubscribe) {
-            unsubscribe();
-        }
-    };
+    }
   }, []);
+
+  useEffect(() => {
+    fetchIngredients();
+  }, [fetchIngredients]);
+
 
   const handleDelete = async (id: string, name: string) => {
     try {
@@ -80,7 +74,7 @@ export default function IngredientsClient() {
         title: "Succès",
         description: `L'ingrédient "${name}" a été supprimé.`,
       });
-      // onSnapshot will handle the UI update automatically
+      fetchIngredients(); // Re-fetch
     }
     catch (error) {
       console.error("Error deleting ingredient:", error);
@@ -148,7 +142,7 @@ export default function IngredientsClient() {
                 onChange={(e) => setSearchTerm(e.target.value)}
             />
         </div>
-        <IngredientModal ingredient={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
+        <IngredientModal ingredient={null} onSuccess={fetchIngredients}>
           <Button>
             <PlusCircle className="mr-2 h-4 w-4" />
             Ajouter un ingrédient
@@ -204,7 +198,7 @@ export default function IngredientsClient() {
                         <TableCell className="text-right font-semibold">{(ingredient.purchasePrice || 0).toFixed(2)} DZD / {ingredient.purchaseUnit}</TableCell>
                         <TableCell>
                           <div className="flex items-center justify-end gap-2">
-                            <IngredientModal ingredient={ingredient} onSuccess={() => { /* onSnapshot handles updates */ }}>
+                            <IngredientModal ingredient={ingredient} onSuccess={fetchIngredients}>
                               <Button variant="ghost" size="icon">
                                 <Pencil className="h-4 w-4" />
                               </Button>

@@ -1,14 +1,14 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { collection, onSnapshot, query } from "firebase/firestore";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { collection, getDocs, query } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Preparation, preparationCategories } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, BookOpen, FlaskConical, Search, FileText } from "lucide-react";
+import { AlertTriangle, BookOpen, FlaskConical, Search, FileText, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { deletePreparation } from "../preparations/actions";
 import { Card, CardContent } from "@/components/ui/card";
@@ -35,7 +35,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trash2 } from "lucide-react";
 import { PreparationsGuide } from "./PreparationsGuide";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
@@ -57,7 +56,7 @@ export default function PreparationsBaseClient() {
   const { toast } = useToast();
   const router = useRouter();
 
-  useEffect(() => {
+  const fetchPreparations = useCallback(async () => {
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante.");
       setIsLoading(false);
@@ -65,33 +64,27 @@ export default function PreparationsBaseClient() {
     }
     
     setIsLoading(true);
-    const prepsCol = collection(db, "preparations");
-    
-    const unsubscribe = onSnapshot(prepsCol, (querySnapshot) => {
-        try {
-            const prepsData = querySnapshot.docs.map(
-                (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
-            );
-            setPreparations(prepsData);
-            setError(null);
-        } catch(e: any) {
-            console.error("Error processing preparations snapshot: ", e);
-            setError("Impossible de traiter les données des préparations. " + e.message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, (err: any) => {
-        console.error("Error fetching preparations with onSnapshot: ", err);
-        setError("Erreur de chargement des préparations: " + err.message);
-        setIsLoading(false);
-    });
+    try {
+        const prepsCol = collection(db, "preparations");
+        const q = query(prepsCol);
+        const querySnapshot = await getDocs(q);
 
-    return () => {
-        if(unsubscribe) {
-            unsubscribe();
-        }
-    };
+        const prepsData = querySnapshot.docs.map(
+            (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
+        );
+        setPreparations(prepsData);
+        setError(null);
+    } catch(e: any) {
+        console.error("Error fetching preparations: ", e);
+        setError("Impossible de charger les préparations. " + e.message);
+    } finally {
+        setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchPreparations();
+  }, [fetchPreparations]);
 
   const handleDelete = async (id: string, name: string) => {
       try {
@@ -100,6 +93,7 @@ export default function PreparationsBaseClient() {
           title: "Succès",
           description: `La préparation "${name}" a été supprimée.`,
         });
+        fetchPreparations(); // Re-fetch
       } catch (error) {
         console.error("Error deleting preparation:", error);
         toast({
