@@ -34,7 +34,7 @@ async function getDashboardData() {
         const allIngredients = ingredientsSnapshot.docs.map(doc => doc.data() as Ingredient);
         const totalIngredients = allIngredients.length;
         
-        const lowStockIngredients = allIngredients.filter(
+        const lowStockIngredients = (allIngredients || []).filter(
             ing => ing.stockQuantity <= ing.lowStockThreshold
         ).length;
 
