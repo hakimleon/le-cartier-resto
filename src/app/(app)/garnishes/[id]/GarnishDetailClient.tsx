@@ -98,7 +98,7 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         const unitUnits = ['pièce', 'piece', 'botte'];
 
         const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
-        const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'weight' : unit';
+        const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
 
         if ((fromType === 'weight' && toType === 'volume') || (fromType === 'volume' && toType === 'weight')) {
              // Basic assumption: 1ml = 1g for water-like density. This is a simplification.
@@ -1014,12 +1014,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-
-    
-
-    
-
-    
-
-    
