@@ -99,19 +99,18 @@ export default function CashRegisterClient() {
   const dishesByCategory = useMemo(() => {
     const categoriesMap = new Map<string, Recipe[]>();
     activeDishes.forEach(dish => {
-        if(dish.category) {
-            if (!categoriesMap.has(dish.category)) {
-                categoriesMap.set(dish.category, []);
-            }
-            categoriesMap.get(dish.category)!.push(dish);
+        const category = dish.category || 'Non classé';
+        if (!categoriesMap.has(category)) {
+            categoriesMap.set(category, []);
         }
+        categoriesMap.get(category)!.push(dish);
     });
-
-    const sortedCategories = sortCategories(Array.from(categoriesMap.keys()));
-
-    return sortedCategories.map(category => ({
+  
+    const sortedCategoryKeys = sortCategories(Array.from(categoriesMap.keys()));
+  
+    return sortedCategoryKeys.map(category => ({
         category,
-        dishes: categoriesMap.get(category) || []
+        dishes: categoriesMap.get(category) || [],
     })).filter(group => group.dishes.length > 0);
   }, [activeDishes]);
 
@@ -236,14 +235,14 @@ export default function CashRegisterClient() {
             <SheetContent className="sm:max-w-4xl w-full flex flex-col p-0">
                 {selectedTable && (
                     <>
-                        <SheetHeader className="p-6 border-b">
+                        <SheetHeader className="p-6 border-b shrink-0">
                             <SheetTitle>Commande - {selectedTable.name}</SheetTitle>
                             <SheetDescription>Ajoutez ou retirez des plats pour cette table.</SheetDescription>
                         </SheetHeader>
                         
-                        <div className="grid md:grid-cols-2 flex-1 overflow-hidden">
+                        <div className="grid md:grid-cols-2 flex-1 overflow-auto">
                            {/* Menu selection */}
-                           <div className="flex flex-col border-r h-full">
+                           <div className="flex flex-col border-r h-full overflow-hidden">
                                <h3 className="text-lg font-semibold px-6 py-4 border-b shrink-0">Menu</h3>
                                <ScrollArea className="flex-1">
                                    <div className="p-4 space-y-4">
@@ -253,11 +252,9 @@ export default function CashRegisterClient() {
                                                     <h4 className="text-md font-semibold text-muted-foreground mb-2">{group.category}</h4>
                                                     <div className="grid grid-cols-2 gap-2">
                                                         {group.dishes.map(dish => (
-                                                            <Button key={dish.id} variant="outline" className="h-auto justify-start p-2 leading-tight" onClick={() => handleAddToOrder(dish)}>
-                                                                <div className="flex flex-col items-start text-left">
-                                                                    <p className="font-semibold text-sm whitespace-normal">{dish.name}</p>
-                                                                    <p className="text-xs text-muted-foreground">{dish.price.toFixed(2)} DZD</p>
-                                                                </div>
+                                                            <Button key={dish.id} variant="outline" className="h-auto justify-start p-2 leading-tight flex flex-col items-start text-left whitespace-normal" onClick={() => handleAddToOrder(dish)}>
+                                                                <p className="font-semibold text-sm">{dish.name}</p>
+                                                                <p className="text-xs text-muted-foreground">{dish.price.toFixed(2)} DZD</p>
                                                             </Button>
                                                         ))}
                                                     </div>
@@ -269,7 +266,7 @@ export default function CashRegisterClient() {
                            </div>
 
                             {/* Current Order */}
-                            <div className="flex flex-col h-full">
+                            <div className="flex flex-col h-full overflow-hidden">
                                 <h3 className="text-lg font-semibold px-6 py-4 border-b shrink-0">Ticket de Caisse</h3>
                                 <ScrollArea className="flex-1">
                                     <UiTable>
@@ -299,7 +296,7 @@ export default function CashRegisterClient() {
                                 </ScrollArea>
                             </div>
                         </div>
-                        <SheetFooter className="p-6 border-t bg-muted/50">
+                        <SheetFooter className="p-6 border-t bg-muted/50 shrink-0">
                             <div className="w-full flex justify-between items-center">
                                 <div>
                                     <span className="text-muted-foreground">Total à payer</span>
@@ -322,3 +319,5 @@ export default function CashRegisterClient() {
     </div>
   );
 }
+
+    
