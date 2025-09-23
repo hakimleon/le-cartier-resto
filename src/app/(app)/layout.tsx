@@ -18,7 +18,7 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical, CookingPot, Banknote } from 'lucide-react';
+import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical, CookingPot, Banknote, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FloatingAssistant from '@/app/(app)/assistant/FloatingAssistant';
 
@@ -69,7 +69,9 @@ export default function AppLayout({
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-
+              
+              <SidebarSeparator className="my-2" />
+              
                <SidebarMenuItem>
                 <SidebarMenuButton
                   asChild
@@ -79,6 +81,18 @@ export default function AppLayout({
                   <Link href="/cash-register">
                     <Banknote />
                     <span>Caisse</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  isActive={pathname.startsWith('/sales')}
+                  tooltip="Ventes"
+                >
+                  <Link href="/sales">
+                    <Receipt />
+                    <span>Ventes</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
