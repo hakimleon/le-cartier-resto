@@ -41,8 +41,8 @@ const initialTables: Table[] = Array.from({ length: 12 }, (_, i) => ({
   total: 0,
 }));
 
-// Catégories de menu dans l'ordre souhaité
-const menuCategories = [
+// Ordre de tri des catégories de menu
+const customCategoryOrder = [
     "Entrées froides et chaudes",
     "Symphonie de pâtes",
     "Plats et Grillades",
@@ -51,6 +51,19 @@ const menuCategories = [
     "Dessert",
     "Élixirs & Rafraîchissements",
 ];
+
+const sortCategories = (categories: string[]) => {
+  return [...categories].sort((a, b) => {
+    const indexA = customCategoryOrder.indexOf(a);
+    const indexB = customCategoryOrder.indexOf(b);
+    if (indexA === -1 && indexB === -1) return a.localeCompare(b); // both not in custom order
+    if (indexA !== -1 && indexB !== -1) return indexA - indexB; // both in custom order
+    if (indexA !== -1) return -1; // only a is in custom order
+    if (indexB !== -1) return 1; // only b is in custom order
+    return a.localeCompare(b);
+  });
+};
+
 
 export default function CashRegisterClient() {
   const [tables, setTables] = useState<Table[]>(initialTables);
@@ -84,7 +97,14 @@ export default function CashRegisterClient() {
   }, []);
 
   const dishesByCategory = useMemo(() => {
-    return menuCategories.map(category => ({
+    const categories = new Set<string>();
+    activeDishes.forEach(dish => {
+        if(dish.category) categories.add(dish.category);
+    });
+    
+    const sortedCategories = sortCategories(Array.from(categories));
+
+    return sortedCategories.map(category => ({
         category,
         dishes: activeDishes.filter(dish => dish.category === category)
     })).filter(group => group.dishes.length > 0);
