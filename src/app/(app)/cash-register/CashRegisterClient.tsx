@@ -97,16 +97,21 @@ export default function CashRegisterClient() {
   }, []);
 
   const dishesByCategory = useMemo(() => {
-    const categories = new Set<string>();
+    const categoriesMap = new Map<string, Recipe[]>();
     activeDishes.forEach(dish => {
-        if(dish.category) categories.add(dish.category);
+        if(dish.category) {
+            if (!categoriesMap.has(dish.category)) {
+                categoriesMap.set(dish.category, []);
+            }
+            categoriesMap.get(dish.category)!.push(dish);
+        }
     });
-    
-    const sortedCategories = sortCategories(Array.from(categories));
+
+    const sortedCategories = sortCategories(Array.from(categoriesMap.keys()));
 
     return sortedCategories.map(category => ({
         category,
-        dishes: activeDishes.filter(dish => dish.category === category)
+        dishes: categoriesMap.get(category) || []
     })).filter(group => group.dishes.length > 0);
   }, [activeDishes]);
 
@@ -236,10 +241,10 @@ export default function CashRegisterClient() {
                             <SheetDescription>Ajoutez ou retirez des plats pour cette table.</SheetDescription>
                         </SheetHeader>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 flex-1 overflow-y-auto">
+                        <div className="grid md:grid-cols-2 flex-1 overflow-hidden">
                            {/* Menu selection */}
-                           <div className="flex flex-col border-r">
-                               <h3 className="text-lg font-semibold px-6 py-4 border-b">Menu</h3>
+                           <div className="flex flex-col border-r h-full">
+                               <h3 className="text-lg font-semibold px-6 py-4 border-b shrink-0">Menu</h3>
                                <ScrollArea className="flex-1">
                                    <div className="p-4 space-y-4">
                                        {isLoading ? <p>Chargement du menu...</p> : (
@@ -248,9 +253,9 @@ export default function CashRegisterClient() {
                                                     <h4 className="text-md font-semibold text-muted-foreground mb-2">{group.category}</h4>
                                                     <div className="grid grid-cols-2 gap-2">
                                                         {group.dishes.map(dish => (
-                                                            <Button key={dish.id} variant="outline" className="h-auto justify-start p-2" onClick={() => handleAddToOrder(dish)}>
+                                                            <Button key={dish.id} variant="outline" className="h-auto justify-start p-2 leading-tight" onClick={() => handleAddToOrder(dish)}>
                                                                 <div className="flex flex-col items-start text-left">
-                                                                    <p className="font-semibold text-sm">{dish.name}</p>
+                                                                    <p className="font-semibold text-sm whitespace-normal">{dish.name}</p>
                                                                     <p className="text-xs text-muted-foreground">{dish.price.toFixed(2)} DZD</p>
                                                                 </div>
                                                             </Button>
@@ -264,8 +269,8 @@ export default function CashRegisterClient() {
                            </div>
 
                             {/* Current Order */}
-                            <div className="flex flex-col">
-                                <h3 className="text-lg font-semibold px-6 py-4 border-b">Ticket de Caisse</h3>
+                            <div className="flex flex-col h-full">
+                                <h3 className="text-lg font-semibold px-6 py-4 border-b shrink-0">Ticket de Caisse</h3>
                                 <ScrollArea className="flex-1">
                                     <UiTable>
                                         <TableHeader>
