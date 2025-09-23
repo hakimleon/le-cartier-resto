@@ -30,6 +30,7 @@ import { AlertTriangle, Plus, Minus, X, Check, Loader2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { processOrder } from "./actions";
 
 // Données initiales des tables
 const initialTables: Table[] = Array.from({ length: 12 }, (_, i) => ({
@@ -140,8 +141,34 @@ export default function CashRegisterClient() {
   }
 
   const handleValidateOrder = async () => {
-    // Logic will be added in the next step
-    toast({ title: "Action à venir", description: "La logique de validation de commande sera implémentée prochainement." });
+    if (!selectedTable) return;
+    setIsProcessing(true);
+    try {
+        const result = await processOrder(selectedTable);
+
+        if (result.success) {
+            toast({ title: "Succès", description: result.message });
+            // Vider la table après la commande
+            setTables(currentTables => currentTables.map(t => {
+                if (t.id === selectedTable.id) {
+                    return { ...t, currentOrder: [], total: 0, status: 'Libre' };
+                }
+                return t;
+            }));
+            setSelectedTable(null); // Fermer le panneau
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (error) {
+        console.error("Failed to process order:", error);
+        toast({
+            title: "Erreur de traitement",
+            description: error instanceof Error ? error.message : "Une erreur inconnue est survenue.",
+            variant: "destructive"
+        });
+    } finally {
+        setIsProcessing(false);
+    }
   }
 
 
