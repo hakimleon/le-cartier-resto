@@ -216,7 +216,7 @@ export default function CashRegisterClient() {
                             <SheetDescription>Ajoutez ou retirez des plats pour cette table.</SheetDescription>
                         </SheetHeader>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 flex-1 overflow-hidden">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-0 flex-1 overflow-y-auto">
                            {/* Menu selection */}
                            <div className="flex flex-col border-r">
                                <h3 className="text-lg font-semibold px-6 py-4 border-b">Menu</h3>
@@ -272,24 +272,24 @@ export default function CashRegisterClient() {
                                         </TableBody>
                                     </UiTable>
                                 </ScrollArea>
-                                <SheetFooter className="p-6 border-t bg-muted/50">
-                                    <div className="w-full flex justify-between items-center">
-                                        <div>
-                                            <span className="text-muted-foreground">Total à payer</span>
-                                            <p className="text-2xl font-bold">{selectedTable.total.toFixed(2)} DZD</p>
-                                        </div>
-                                        <Button 
-                                            size="lg" 
-                                            onClick={handleValidateOrder} 
-                                            disabled={isProcessing || selectedTable.currentOrder.length === 0}
-                                        >
-                                            {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
-                                            {isProcessing ? "Traitement..." : "Valider & Envoyer"}
-                                        </Button>
-                                    </div>
-                                </SheetFooter>
                             </div>
                         </div>
+                        <SheetFooter className="p-6 border-t bg-muted/50">
+                            <div className="w-full flex justify-between items-center">
+                                <div>
+                                    <span className="text-muted-foreground">Total à payer</span>
+                                    <p className="text-2xl font-bold">{selectedTable.total.toFixed(2)} DZD</p>
+                                </div>
+                                <Button 
+                                    size="lg" 
+                                    onClick={handleValidateOrder} 
+                                    disabled={isProcessing || selectedTable.currentOrder.length === 0}
+                                >
+                                    {isProcessing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Check className="mr-2 h-4 w-4"/>}
+                                    {isProcessing ? "Traitement..." : "Valider & Envoyer"}
+                                </Button>
+                            </div>
+                        </SheetFooter>
                     </>
                 )}
             </SheetContent>
