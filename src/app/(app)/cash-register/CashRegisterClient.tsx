@@ -211,7 +211,7 @@ export default function CashRegisterClient() {
             <SheetContent className="sm:max-w-4xl w-full flex flex-col p-0">
                 {selectedTable && (
                     <>
-                        <SheetHeader className="p-6">
+                        <SheetHeader className="p-6 border-b">
                             <SheetTitle>Commande - {selectedTable.name}</SheetTitle>
                             <SheetDescription>Ajoutez ou retirez des plats pour cette table.</SheetDescription>
                         </SheetHeader>
