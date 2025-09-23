@@ -240,7 +240,7 @@ export default function CashRegisterClient() {
                             <SheetDescription>Ajoutez ou retirez des plats pour cette table.</SheetDescription>
                         </SheetHeader>
                         
-                        <div className="grid md:grid-cols-2 flex-1 overflow-auto">
+                        <div className="grid md:grid-cols-2 flex-1 overflow-hidden">
                            {/* Menu selection */}
                            <div className="flex flex-col border-r h-full overflow-hidden">
                                <h3 className="text-lg font-semibold px-6 py-4 border-b shrink-0">Menu</h3>
@@ -319,5 +319,3 @@ export default function CashRegisterClient() {
     </div>
   );
 }
-
-    
