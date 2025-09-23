@@ -219,7 +219,7 @@ export default function CashRegisterClient() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-0 flex-1 overflow-hidden">
                            {/* Menu selection */}
                            <div className="flex flex-col border-r">
-                               <h3 className="text-lg font-semibold px-6 pb-4 border-b">Menu</h3>
+                               <h3 className="text-lg font-semibold px-6 py-4 border-b">Menu</h3>
                                <ScrollArea className="flex-1">
                                    <div className="p-4 space-y-4">
                                        {isLoading ? <p>Chargement du menu...</p> : (
@@ -245,7 +245,7 @@ export default function CashRegisterClient() {
 
                             {/* Current Order */}
                             <div className="flex flex-col">
-                                <h3 className="text-lg font-semibold px-6 pb-4 border-b">Ticket de Caisse</h3>
+                                <h3 className="text-lg font-semibold px-6 py-4 border-b">Ticket de Caisse</h3>
                                 <ScrollArea className="flex-1">
                                     <UiTable>
                                         <TableHeader>
@@ -274,7 +274,10 @@ export default function CashRegisterClient() {
                                 </ScrollArea>
                                 <SheetFooter className="p-6 border-t bg-muted/50">
                                     <div className="w-full flex justify-between items-center">
-                                        <p className="text-xl font-bold">Total: {selectedTable.total.toFixed(2)} DZD</p>
+                                        <div>
+                                            <span className="text-muted-foreground">Total à payer</span>
+                                            <p className="text-2xl font-bold">{selectedTable.total.toFixed(2)} DZD</p>
+                                        </div>
                                         <Button 
                                             size="lg" 
                                             onClick={handleValidateOrder} 
