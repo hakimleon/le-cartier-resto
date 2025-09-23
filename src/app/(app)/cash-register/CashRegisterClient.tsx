@@ -5,7 +5,6 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe, Table, OrderItem } from "@/lib/types";
-import { processOrder } from "./actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -141,36 +140,8 @@ export default function CashRegisterClient() {
   }
 
   const handleValidateOrder = async () => {
-    if (!selectedTable || selectedTable.currentOrder.length === 0) return;
-    
-    setIsProcessing(true);
-    try {
-        await processOrder(selectedTable);
-
-        toast({
-            title: "Commande validée",
-            description: `La commande pour la ${selectedTable.name} a été envoyée et le stock a été mis à jour.`,
-        });
-
-        // Reset table after processing
-        setTables(currentTables => currentTables.map(t => {
-            if (t.id === selectedTable.id) {
-                return { ...t, currentOrder: [], total: 0, status: 'Libre' };
-            }
-            return t;
-        }));
-        setSelectedTable(null); // Close the sheet
-
-    } catch (e: any) {
-        console.error("Error processing order:", e);
-        toast({
-            title: "Erreur de traitement",
-            description: `Impossible de valider la commande : ${e.message}`,
-            variant: "destructive",
-        });
-    } finally {
-        setIsProcessing(false);
-    }
+    // Logic will be added in the next step
+    toast({ title: "Action à venir", description: "La logique de validation de commande sera implémentée prochainement." });
   }
 
 
