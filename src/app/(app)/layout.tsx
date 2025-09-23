@@ -24,7 +24,7 @@ import FloatingAssistant from '@/app/(app)/assistant/FloatingAssistant';
 import Image from 'next/image';
 
 const Logo = () => (
-    <Image src="https://res.cloudinary.com/dzn80h11b/image/upload/v1721833076/le-singulier-logo.png" alt="Le Cartier Logo" width={40} height={40} />
+    <Image src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDE1IDE1Ij48cGF0aCBmaWxsPSJjdXJyZW50Q29sb3IiIGQ9Ik0xMi4wMTcgMTIuNUgxNC41TDEyIDE1di0yLjQ4M2ExLjYyIDEuNjIgMCAwIDEtMS4xMzcuNDhhMS42IDEuNiAwIDAgMS0uOTkzLS4zNDVhNi43ODQgNi43ODQgMCAwIDEgLjAwOC0xMC4zMWExLjYyIDEuNjIgMCAwIDEgMi4xMjIuMTJWMGwyLjUgMi41aC0yLjQ2NGEyIDIgMCAwIDEgLjEyMy4xMjlhMS42MjQgMS42MjQgMCAwIDEtLjI4OCAyLjI4YTMuNTIgMy41MiAwIDAgMC0xLjEyMSAyLjU4NmEzLjU2IDMuNTYgMCAwIDAgMS4xNDcgMi42MTZhMS42MzUgMS42MzUgMCAwIDEgLjIzMiAyLjI3OWMtLjAzNC4wNDEtLjA3NS4wNzItLjExMi4xMU0yLjUwNCAwbC0xIDUuNWMtLjE0Ni44MDUgMS43ODEgMS4xODEgMS43NSAybC0uMjUgNi41YS45NjMuOTYzIDAgMCAwIDEgMWEuOTYzLjk2MyAwIDAgMCAxLTFsLS4yNS02LjVjLS4wMzEtLjgxOCAxLjczMy0xLjE4IDEuNzUtMmwtMS01LjVoLS41bC4yNSA0bC0uNzUuNWwtLjI1LTQuNWgtLjVsLS4yNSA0LjVsLS43NS0uNWwuMjUtNFoiLz48L3N2Zz4=" alt="Le Cartier Logo" width={40} height={40} />
 );
 
 
