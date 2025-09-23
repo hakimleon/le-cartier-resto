@@ -134,3 +134,28 @@ export type FullRecipeIngredient = {
     category: string;
     totalCost: number;
 };
+
+// -- Nouveaux types pour la caisse --
+
+export type OrderItem = {
+    dishId: string;
+    name: string;
+    quantity: number;
+    price: number;
+};
+
+export type Table = {
+    id: string;
+    name: string;
+    status: 'Libre' | 'Occupée' | 'En attente de paiement';
+    currentOrder: OrderItem[];
+    total: number;
+};
+
+export type Sale = {
+    id?: string;
+    tableId: string;
+    items: OrderItem[];
+    total: number;
+    createdAt: any; // serverTimestamp
+};
