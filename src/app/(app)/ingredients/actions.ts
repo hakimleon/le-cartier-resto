@@ -42,9 +42,13 @@ export async function deleteIngredient(id: string) {
 
   const batch = writeBatch(db);
 
-  // 1. Find all variants that reference this generic ingredient and unlink them
-  // This logic is no longer needed since we removed the generic/variant system.
-  // We keep the batch in case we need to delete other related data in the future.
+  // 1. Find all `recipeIngredients` links that use this ingredient and delete them
+  const linksQuery = query(collection(db, "recipeIngredients"), where("ingredientId", "==", id));
+  const linksSnapshot = await getDocs(linksQuery);
+  linksSnapshot.forEach(doc => {
+      console.log(`Suppression du lien d'ingrédient ${doc.id} pointant vers l'ingrédient supprimé.`);
+      batch.delete(doc.ref);
+  });
 
   // 2. Delete the ingredient itself
   const ingredientDoc = doc(db, 'ingredients', id);

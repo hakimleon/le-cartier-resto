@@ -95,7 +95,6 @@ export async function processOrder(table: Table): Promise<{success: boolean, mes
     }
     
     try {
-        // Pré-chargement de toutes les données nécessaires pour éviter les appels multiples dans la boucle
         const [prepsSnap, ingredientsSnap, recipeIngsSnap, recipePrepsSnap] = await Promise.all([
             getDocs(collection(db, "preparations")),
             getDocs(collection(db, "ingredients")),
@@ -148,7 +147,8 @@ export async function processOrder(table: Table): Promise<{success: boolean, mes
                 const ingredientSnap = ingredientRefs.get(ingredientId);
 
                 if (!ingredientSnap || !ingredientSnap.exists()) {
-                    throw new Error(`L'ingrédient avec l'ID ${ingredientId} n'a pas été trouvé.`);
+                    console.warn(`L'ingrédient avec l'ID ${ingredientId} n'a pas été trouvé. Il est probablement lié à une recette mais a été supprimé. La déduction est ignorée.`);
+                    continue; // On ignore cet ingrédient et on continue
                 }
 
                 const ingredientData = ingredientSnap.data() as Ingredient;
