@@ -45,7 +45,7 @@ export default function AppLayout({
                     <Logo />
                 </div>
                 <div className="flex flex-col">
-                    <h2 className="text-lg font-semibold tracking-tight text-foreground">Le Cartier</h2>
+                    <h2 className="text-xl font-bold tracking-tight text-foreground">Le Cartier</h2>
                 </div>
             </Link>
           </SidebarHeader>
