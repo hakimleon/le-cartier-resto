@@ -23,13 +23,9 @@ import { cn } from '@/lib/utils';
 import FloatingAssistant from '@/app/(app)/assistant/FloatingAssistant';
 
 const Logo = () => (
-    <svg role="img" viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg" fill="hsl(var(--primary-foreground))" stroke="hsl(var(--primary-foreground))" >
-      <path d="M60.6,102.5a2.5,2.5,0,0,0,5,0V50.1a2.5,2.5,0,0,0-5,0V102.5Z" stroke="none"/>
-      <path d="M54.5,44.7v-5a2.5,2.5,0,0,1,5,0v5a2.5,2.5,0,0,1-5,0Z" stroke="none"/>
-      <path d="M60.6,39.7a2.5,2.5,0,0,1,0-5h2.5a2.5,2.5,0,0,1,0,5Z" stroke="none"/>
-      <path d="M74.4,39.7a2.5,2.5,0,0,1,0-5h2.5a2.5,2.5,0,0,1,0,5Z" stroke="none"/>
-      <path d="M96.9,49.8V102.5a2.5,2.5,0,0,1-5,0V49.8a7.5,7.5,0,0,0-7.5-7.5H91A2.5,2.5,0,0,1,91,37.3h1a12.5,12.5,0,0,1,12.5,12.5v52.7a2.5,2.5,0,0,1-5,0V50.1a7.5,7.5,0,0,0-7.5-7.5H91A2.5,2.5,0,0,1,91,37.3h.9A12.5,12.5,0,0,1,96.9,49.8Z" stroke="none"/>
-      <path d="M80,22.3a42.5,42.5,0,0,0-42.5,42.5V110a5,5,0,0,0,5,5H117.5a5,5,0,0,0,5-5V64.8A42.5,42.5,0,0,0,80,22.3Zm40,87.7H40a2.5,2.5,0,0,1-2.5-2.5V64.8A40,40,0,0,1,80,24.8a40,40,0,0,1,40,40Z" strokeWidth="3" fill="none"/>
+    <svg role="img" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" fill="hsl(var(--primary-foreground))">
+        <path d="M50 10 C 40 10, 30 20, 30 30 C 30 40, 40 50, 50 50 C 60 50, 70 40, 70 30 C 70 20, 60 10, 50 10 Z M 50 15 C 57 15, 65 23, 65 30 C 65 37, 57 45, 50 45 C 43 45, 35 37, 35 30 C 35 23, 43 15, 50 15 Z" />
+        <path d="M40 55 L 40 90 L 45 90 L 45 60 C 45 57.5, 47.5 55, 50 55 C 52.5 55, 55 57.5, 55 60 L 55 90 L 60 90 L 60 55 L 40 55 Z" />
     </svg>
 );
 
