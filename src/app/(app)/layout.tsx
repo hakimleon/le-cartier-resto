@@ -21,12 +21,10 @@ import { Button } from '@/components/ui/button';
 import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical, CookingPot, Banknote, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FloatingAssistant from '@/app/(app)/assistant/FloatingAssistant';
+import Image from 'next/image';
 
 const Logo = () => (
-    <svg role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12.75 1.012c-4.22 0-7.258 2.37-7.258 5.488 0 2.457 2.016 4.364 4.88 5.14-.85.343-1.635.85-2.28 1.493C6.438 14.787 6 16.797 6 18.5v.5h12v-.5c0-1.703-.438-3.713-2.092-5.36-.645-.643-1.43-1.15-2.28-1.493 2.864-.776 4.88-2.683 4.88-5.14C18.508 3.382 15.47 1.012 11.25 1.012h1.5zm-1.5 1.5c3.21 0 5.758 2.015 5.758 3.988 0 2.223-2.016 3.864-4.88 4.41-.09 0-.17-.01-.26-.01s-.17.01-.26.01c-2.864-.546-4.88-2.187-4.88-4.41C6.242 4.527 8.78 2.512 12 2.512z" fill="#DC2626"/>
-        <path d="M9 14h6c1.657 0 3 1.343 3 3v4H6v-4c0-1.657 1.343-3 3-3z" fill="#18181B"/>
-    </svg>
+    <Image src="https://res.cloudinary.com/dzn80h11b/image/upload/v1721833076/le-singulier-logo.png" alt="Le Cartier Logo" width={40} height={40} />
 );
 
 
@@ -43,9 +41,9 @@ export default function AppLayout({
         <Sidebar variant="sidebar" collapsible="icon">
           <SidebarHeader className="p-4">
             <Link href="/" className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="h-10 w-10 shrink-0 rounded-lg bg-primary">
+                <div className="h-10 w-10 shrink-0">
                     <Logo />
-                </Button>
+                </div>
                 <div className="flex flex-col">
                     <h2 className="text-lg font-semibold tracking-tight text-foreground">Le Cartier</h2>
                 </div>
