@@ -248,7 +248,7 @@ export default function MenuClient() {
 
       <div className="space-y-4 rounded-lg border p-4">
         <div className="flex items-baseline gap-4">
-            <Label className="text-sm font-semibold">Statut :</Label>
+            <Label className="text-sm font-semibold shrink-0">Statut :</Label>
             <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')} className="w-full">
                 <TabsList>
                     <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
@@ -256,6 +256,21 @@ export default function MenuClient() {
                 </TabsList>
             </Tabs>
         </div>
+        {currentCategories.length > 1 && (
+            <>
+                <Separator />
+                <div className="flex items-baseline gap-4">
+                    <Label className="text-sm font-semibold shrink-0">Catégorie :</Label>
+                     <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
+                        <TabsList className="h-auto justify-start flex-wrap">
+                            {currentCategories.map((category) => (
+                                <TabsTrigger key={category} value={category} className="text-sm whitespace-normal sm:whitespace-nowrap data-[state=active]:shadow-lg">{category}</TabsTrigger>
+                            ))}
+                        </TabsList>
+                    </Tabs>
+                </div>
+            </>
+        )}
       </div>
 
 
