@@ -7,7 +7,7 @@ import { Recipe, Preparation } from "@/lib/types";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, FileText, Pencil, Soup, Tag, Trash2 } from "lucide-react";
+import { Clock, FileText, Pencil, Soup, Tag, Trash2, Eye, EyeOff } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   AlertDialog,
@@ -22,6 +22,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import { DishModal } from "@/app/(app)/menu/DishModal";
 import { PreparationModal } from "@/app/(app)/preparations/PreparationModal";
+import { updateDishStatus } from "@/app/(app)/menu/actions";
+import { useToast } from "@/hooks/use-toast";
+import { useState, useTransition } from "react";
 
 type RecipeCardProps = {
     recipe: Recipe | Preparation;
@@ -30,6 +33,9 @@ type RecipeCardProps = {
 };
 
 export function RecipeCard({ recipe, onDelete, allCategories = [] }: RecipeCardProps) {
+    const { toast } = useToast();
+    const [isPending, startTransition] = useTransition();
+
     const placeholderImage = "https://placehold.co/600x400.png";
     
     const isPreparation = recipe.type === 'Préparation';
@@ -39,6 +45,26 @@ export function RecipeCard({ recipe, onDelete, allCategories = [] }: RecipeCardP
     const difficulty = recipe.difficulty || 'Moyen';
     const tags = recipe.tags || []; 
     const detailUrl = isPreparation ? `/preparations/${recipe.id}` : `/menu/${recipe.id}`;
+
+    const handleStatusToggle = () => {
+        if (isPreparation || !recipe.id) return;
+        const newStatus = status === 'Actif' ? 'Inactif' : 'Actif';
+        startTransition(async () => {
+            try {
+                await updateDishStatus(recipe.id!, newStatus);
+                toast({
+                    title: "Statut mis à jour",
+                    description: `Le plat "${recipe.name}" est maintenant ${newStatus.toLowerCase()}.`,
+                });
+            } catch (error) {
+                toast({
+                    title: "Erreur",
+                    description: "Impossible de mettre à jour le statut.",
+                    variant: "destructive"
+                });
+            }
+        });
+    };
 
     const EditModal = () => {
         if (recipe.type === 'Plat') {
@@ -133,6 +159,12 @@ export function RecipeCard({ recipe, onDelete, allCategories = [] }: RecipeCardP
                         </Button>
                     </Link>
                     
+                    {!isPreparation && (
+                         <Button variant="ghost" size="icon" className="h-8 w-8" title={status === 'Actif' ? 'Rendre inactif' : 'Rendre actif'} onClick={handleStatusToggle} disabled={isPending}>
+                            {status === 'Actif' ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        </Button>
+                    )}
+
                     <EditModal />
 
                     <AlertDialog>

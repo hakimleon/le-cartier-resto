@@ -16,6 +16,14 @@ export async function saveDish(recipe: Partial<Omit<Recipe, 'id'>> & { type: 'Pl
   }
 }
 
+export async function updateDishStatus(id: string, status: 'Actif' | 'Inactif') {
+  if (!id) {
+    throw new Error("L'identifiant du plat est requis.");
+  }
+  const recipeDoc = doc(db, 'recipes', id);
+  await updateDoc(recipeDoc, { status });
+}
+
 export async function deleteDish(id: string) {
     if (!id) {
       throw new Error("L'identifiant est requis pour la suppression.");
@@ -116,5 +124,3 @@ export async function updateRecipePreparationLink(linkId: string, data: { quanti
 export async function addRecipePreparationLink(link: Omit<RecipePreparationLink, 'id'>) {
     await addDoc(collection(db, "recipePreparationLinks"), link);
 }
-
-    
