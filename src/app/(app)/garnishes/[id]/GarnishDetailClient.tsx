@@ -37,7 +37,12 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { PreparationConceptOutput } from "@/ai/flows/workshop-flow";
-import { PrintLink } from "@/components/pdf/PrintLink";
+import dynamic from 'next/dynamic';
+
+const PrintLink = dynamic(() => import('@/components/pdf/PrintLink').then(m => m.PrintLink), {
+    ssr: false,
+    loading: () => <Button variant="outline" disabled><Printer className="mr-2 h-4 w-4" /> Imprimer</Button>
+});
 
 
 const GARNISH_WORKSHOP_CONCEPT_KEY = 'garnishWorkshopGeneratedConcept';
@@ -372,11 +377,6 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
   const [currentTempId, setCurrentTempId] = useState<string | null>(null);
   const [currentPrepTempId, setCurrentPrepTempId] = useState<string | null>(null);
   
-  const [isClient, setIsClient] = useState(false);
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
     const fetchAllIngredients = useCallback(async () => {
         const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
         const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
@@ -830,7 +830,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                    {isClient && currentRecipeData && <PrintLink recipe={currentRecipeData} ingredients={isEditing ? editableIngredients : ingredients} preparations={isEditing ? editablePreparations : preparations} totalCost={totalRecipeCost} />}
+                    <PrintLink recipe={currentRecipeData} ingredients={isEditing ? [...editableIngredients, ...newIngredients] : ingredients} preparations={isEditing ? [...editablePreparations, ...newPreparations] : preparations} totalCost={totalRecipeCost} />
                     <Button variant="outline" onClick={handleToggleEditMode}>{isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}</Button>
                 </div>
             </header>

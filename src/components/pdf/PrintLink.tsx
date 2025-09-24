@@ -17,23 +17,8 @@ interface PrintLinkProps {
 }
 
 export const PrintLink: React.FC<PrintLinkProps> = ({ recipe, ingredients, preparations, totalCost, className }) => {
-    const [isClient, setIsClient] = useState(false);
-
-    React.useEffect(() => {
-        setIsClient(true);
-    }, []);
-
     const doc = <RecipePDFDocument recipe={recipe} ingredients={ingredients} preparations={preparations} totalCost={totalCost} />;
     const fileName = `${recipe.name.replace(/ /g, '_')}.pdf`;
-
-    if (!isClient) {
-        return (
-            <Button variant="outline" className={className} disabled>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Chargement...
-            </Button>
-        );
-    }
     
     return (
          <PDFDownloadLink document={doc} fileName={fileName}>
