@@ -51,12 +51,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Tooltip, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-import dynamic from 'next/dynamic';
-
-const PrintLink = dynamic(() => import('@/components/pdf/PrintLink').then(m => m.PrintLink), {
-    ssr: false,
-    loading: () => <Button variant="outline" disabled><Printer className="mr-2 h-4 w-4" /> Imprimer</Button>
-});
+import { PrintLink } from '@/components/pdf/PrintLink';
 
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
@@ -398,11 +393,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const [newIngredientDefaults, setNewIngredientDefaults] = useState<Partial<Ingredient> | null>(null);
     const [currentTempId, setCurrentTempId] = useState<string | null>(null);
     const [workshopConcept, setWorkshopConcept] = useState<RecipeConceptOutput | null>(null);
-
-    const [isClient, setIsClient] = useState(false);
-    useEffect(() => {
-        setIsClient(true);
-    }, []);
 
     const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
         const costs: Record<string, number> = {};
@@ -944,7 +934,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                    {isClient && <PrintLink recipe={currentRecipeData} ingredients={isEditing ? [...editableIngredients, ...newIngredients] : ingredients} preparations={isEditing ? [...editablePreparations, ...newPreparations] : preparations} totalCost={totalRecipeCost} />}
+                    <PrintLink recipe={currentRecipeData} ingredients={isEditing ? [...editableIngredients, ...newIngredients] : ingredients} preparations={isEditing ? [...editablePreparations, ...newPreparations] : preparations} totalCost={totalRecipeCost} />
                     <Button variant="outline" onClick={handleToggleEditMode}>
                         {isEditing ? <><X className="mr-2 h-4 w-4" />Annuler</> : <><FilePen className="mr-2 h-4 w-4" />Modifier</>}
                     </Button>
