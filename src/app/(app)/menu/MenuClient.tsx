@@ -88,14 +88,16 @@ export default function MenuClient() {
 
             recipesData.forEach(recipe => {
                 if (recipe.category) {
-                    const normalizedCategory = recipe.category.toLowerCase().trim();
+                    const formattedCategory = formatCategory(recipe.category);
+                    const categoryKey = formattedCategory.toLowerCase().trim();
+
                     if(recipe.status === 'Actif') {
-                        if (!activeCategoryMap.has(normalizedCategory)) {
-                            activeCategoryMap.set(normalizedCategory, recipe.category);
+                        if (!activeCategoryMap.has(categoryKey)) {
+                            activeCategoryMap.set(categoryKey, formattedCategory);
                         }
                     } else {
-                         if (!inactiveCategoryMap.has(normalizedCategory)) {
-                            inactiveCategoryMap.set(normalizedCategory, recipe.category);
+                         if (!inactiveCategoryMap.has(categoryKey)) {
+                            inactiveCategoryMap.set(categoryKey, formattedCategory);
                         }
                     }
                 }
@@ -158,7 +160,7 @@ export default function MenuClient() {
     return recipes.filter(recipe => {
         const statusMatch = recipe.status === selectedStatus;
         const searchTermMatch = searchTerm === '' || recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const categoryMatch = selectedCategory === 'Tous' || recipe.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim();
+        const categoryMatch = selectedCategory === 'Tous' || formatCategory(recipe.category) === selectedCategory;
         return statusMatch && searchTermMatch && categoryMatch;
     });
   }, [recipes, searchTerm, selectedCategory, selectedStatus]);
