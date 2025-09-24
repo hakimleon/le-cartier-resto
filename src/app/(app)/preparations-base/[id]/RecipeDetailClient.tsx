@@ -109,11 +109,6 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
         const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
 
-        if ((fromType === 'weight' && toType === 'volume') || (fromType === 'volume' && toType === 'weight')) {
-             // Basic assumption: 1ml = 1g for water-like density. This is a simplification.
-             return fromFactor / toFactor;
-        }
-
         if (fromType === toType) {
             return fromFactor / toFactor;
         }
@@ -400,6 +395,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       isNew: boolean;
       suggestions: IngredientAlternativeOutput['suggestions'] | null;
   }>({ isLoading: false, ingredientName: '', ingredientId: '', isNew: false, suggestions: null });
+
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
   const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
     const costs: Record<string, number> = {};
@@ -1020,7 +1020,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-            <PrintLink recipe={currentRecipeData} ingredients={isEditing ? [...editableIngredients, ...newIngredients] : ingredients} preparations={isEditing ? [...editablePreparations, ...newPreparations] : preparations} totalCost={totalRecipeCost} />
+            {isClient && <PrintLink recipe={currentRecipeData} ingredients={isEditing ? [...editableIngredients, ...newIngredients] : ingredients} preparations={isEditing ? [...editablePreparations, ...newPreparations] : preparations} totalCost={totalRecipeCost} />}
             <Button variant="outline" onClick={handleToggleEditMode}>{isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}</Button>
         </div>
       </header>
@@ -1270,4 +1270,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-

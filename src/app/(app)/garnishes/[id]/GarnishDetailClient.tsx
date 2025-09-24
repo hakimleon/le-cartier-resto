@@ -376,6 +376,10 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
   const [newPreparationDefaults, setNewPreparationDefaults] = useState<Partial<Preparation> | null>(null);
   const [currentTempId, setCurrentTempId] = useState<string | null>(null);
   const [currentPrepTempId, setCurrentPrepTempId] = useState<string | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
   
     const fetchAllIngredients = useCallback(async () => {
         const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
@@ -830,7 +834,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                    <PrintLink recipe={currentRecipeData} ingredients={isEditing ? [...editableIngredients, ...newIngredients] : ingredients} preparations={isEditing ? [...editablePreparations, ...newPreparations] : preparations} totalCost={totalRecipeCost} />
+                    {isClient && <PrintLink recipe={currentRecipeData} ingredients={isEditing ? [...editableIngredients, ...newIngredients] : ingredients} preparations={isEditing ? [...editablePreparations, ...newPreparations] : preparations} totalCost={totalRecipeCost} />}
                     <Button variant="outline" onClick={handleToggleEditMode}>{isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}</Button>
                 </div>
             </header>
@@ -1020,4 +1024,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-

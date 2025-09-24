@@ -399,6 +399,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const [currentTempId, setCurrentTempId] = useState<string | null>(null);
     const [workshopConcept, setWorkshopConcept] = useState<RecipeConceptOutput | null>(null);
 
+    const [isClient, setIsClient] = useState(false);
+    useEffect(() => {
+        setIsClient(true);
+    }, []);
+
     const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
         const costs: Record<string, number> = {};
         const prepDependencies: Record<string, string[]> = {};
@@ -939,7 +944,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                    <PrintLink recipe={currentRecipeData} ingredients={isEditing ? [...editableIngredients, ...newIngredients] : ingredients} preparations={isEditing ? [...editablePreparations, ...newPreparations] : preparations} totalCost={totalRecipeCost} />
+                    {isClient && <PrintLink recipe={currentRecipeData} ingredients={isEditing ? [...editableIngredients, ...newIngredients] : ingredients} preparations={isEditing ? [...editablePreparations, ...newPreparations] : preparations} totalCost={totalRecipeCost} />}
                     <Button variant="outline" onClick={handleToggleEditMode}>
                         {isEditing ? <><X className="mr-2 h-4 w-4" />Annuler</> : <><FilePen className="mr-2 h-4 w-4" />Modifier</>}
                     </Button>
