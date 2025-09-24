@@ -4,7 +4,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Recipe } from "@/lib/types";
+import { Recipe, dishCategories } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +24,8 @@ const formatCategory = (category?: string) => {
 
 const sortCategories = (categories: string[]) => {
   const customOrder = [
-    "Entrées froides et chaudes",
+    "Entrées froides",
+    "Entrées chaudes",
     "Plats et Grillades",
     "Les mets de chez nous",
     "Symphonie de pâtes",
@@ -191,7 +192,7 @@ export default function MenuClient() {
           <RecipeCard 
             key={recipe.id} 
             recipe={recipe} 
-            allCategories={selectedStatus === 'Actif' ? activeCategories.filter(c => c !== "Tous") : inactiveCategories.filter(c => c !== "Tous")}
+            allCategories={dishCategories.slice()}
             onDelete={() => handleDelete(recipe.id!, recipe.name)}
           />
         ))}
@@ -231,7 +232,7 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} allCategories={activeCategories.filter(c => c !== "Tous")} onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <DishModal dish={null} allCategories={dishCategories.slice()} onSuccess={() => { /* onSnapshot handles updates */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat

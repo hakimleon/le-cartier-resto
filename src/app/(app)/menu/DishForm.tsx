@@ -5,13 +5,12 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Recipe } from "@/lib/types";
+import { Recipe, dishCategories } from "@/lib/types";
 import { saveDish } from "./actions";
 import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -46,11 +45,10 @@ const formSchema = z.object({
 
 type DishFormProps = {
   dish: Recipe | null;
-  allCategories: string[];
   onSuccess: () => void;
 };
 
-export function DishForm({ dish, allCategories, onSuccess }: DishFormProps) {
+export function DishForm({ dish, onSuccess }: DishFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
 
@@ -160,7 +158,7 @@ export function DishForm({ dish, allCategories, onSuccess }: DishFormProps) {
                     </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                    {allCategories.map(cat => (
+                    {dishCategories.map(cat => (
                         <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                     ))}
                 </SelectContent>

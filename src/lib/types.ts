@@ -1,6 +1,5 @@
 
 
-
 // Le type pour un ingrédient de base
 export type Ingredient = {
     id?: string;
@@ -74,7 +73,8 @@ export type Preparation = {
 };
 
 export const dishCategories = [
-    'Entrées froides et chaudes',
+    'Entrées froides',
+    'Entrées chaudes',
     'Plats et Grillades',
     'Les mets de chez nous',
     'Symphonie de pâtes',
@@ -142,6 +142,17 @@ export type FullRecipeIngredient = {
     totalCost: number;
 };
 
+export type FullRecipePreparation = {
+    id: string; // The link document ID
+    childPreparationId: string;
+    name: string;
+    quantity: number;
+    unit: string;
+    totalCost: number;
+    _costPerUnit?: number;
+    _productionUnit: string;
+}
+
 // -- Nouveaux types pour la caisse --
 
 export type OrderItem = {
@@ -166,4 +177,3 @@ export type Sale = {
     total: number;
     createdAt: any; // serverTimestamp
 };
-

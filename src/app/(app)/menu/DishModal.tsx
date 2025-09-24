@@ -16,11 +16,10 @@ import { ReactNode, useState } from "react";
 type DishModalProps = {
   children: ReactNode;
   dish: Recipe | null;
-  allCategories: string[];
   onSuccess: () => void;
 };
 
-export function DishModal({ children, dish, allCategories, onSuccess }: DishModalProps) {
+export function DishModal({ children, dish, onSuccess }: DishModalProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const handleSuccess = () => {
@@ -40,7 +39,7 @@ export function DishModal({ children, dish, allCategories, onSuccess }: DishModa
               : "Ajoutez un nouveau plat à votre menu."}
           </DialogDescription>
         </DialogHeader>
-        <DishForm dish={dish} allCategories={allCategories} onSuccess={handleSuccess} />
+        <DishForm dish={dish} onSuccess={handleSuccess} />
       </DialogContent>
     </Dialog>
   );
