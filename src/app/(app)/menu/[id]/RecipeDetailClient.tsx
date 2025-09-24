@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
-import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation, GeneratedIngredient, FullRecipeIngredient } from "@/lib/types";
+import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation, GeneratedIngredient, FullRecipeIngredient, dishCategories } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -915,15 +916,29 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     </div>
                     <div className="w-full">
                         {isEditing ? (
-                            <Input
-                                value={editableRecipe?.name || ''}
-                                onChange={(e) => handleRecipeDataChange('name', e.target.value)}
-                                className="text-2xl font-bold tracking-tight h-12 w-full"
-                            />
+                            <div className="space-y-2">
+                                <Input
+                                    value={editableRecipe?.name || ''}
+                                    onChange={(e) => handleRecipeDataChange('name', e.target.value)}
+                                    className="text-2xl font-bold tracking-tight h-12 w-full"
+                                />
+                                <Select value={(editableRecipe as Recipe)?.category || ''} onValueChange={(value) => handleRecipeDataChange('category', value)}>
+                                    <SelectTrigger className="w-[300px]">
+                                        <SelectValue placeholder="Choisir une catégorie..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {dishCategories.map(cat => (
+                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         ) : (
-                            <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
+                             <div>
+                                <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
+                                <p className="text-muted-foreground">{isPlat ? (recipe as Recipe).category : 'Préparation'}</p>
+                            </div>
                         )}
-                        <p className="text-muted-foreground">{isPlat ? (recipe as Recipe).category : 'Préparation'}</p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                             {isPlat && <Badge variant={(recipe as Recipe).status === 'Actif' ? 'default' : 'secondary'} className={cn((recipe as Recipe).status === 'Actif' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>{(recipe as Recipe).status}</Badge>}
                             <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {recipe.duration} min</div>
@@ -1225,3 +1240,4 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+

@@ -1,5 +1,6 @@
 
 
+
 // Le type pour un ingrédient de base
 export type Ingredient = {
     id?: string;
@@ -72,6 +73,18 @@ export type Preparation = {
   usageUnit?: string; // Unité d'utilisation suggérée (g, ml, pièce)
 };
 
+export const dishCategories = [
+    'Entrées froides et chaudes',
+    'Plats et Grillades',
+    'Les mets de chez nous',
+    'Symphonie de pâtes',
+    'Nos Burgers Bistronomiques',
+    'Dessert',
+    'Élixirs & Rafraîchissements'
+] as const;
+
+export type DishCategory = typeof dishCategories[number];
+
 // Le type pour un plat final (fiche technique complète)
 export type Recipe = {
   id?: string;
@@ -95,13 +108,7 @@ export type Recipe = {
 
   // Champs spécifiques au Plat
   price: number; // Prix de vente
-  category: | 'Entrées froides et chaudes'
-  | 'Plats et Grillades'
-  | 'Les mets de chez nous'
-  | 'Symphonie de pâtes'
-  | 'Nos Burgers Bistronomiques'
-  | 'Dessert'
-  | 'Élixirs & Rafraîchissements';
+  category: DishCategory;
   status: 'Actif' | 'Inactif';
   tvaRate?: number; // en pourcentage (ex: 10 pour 10%)
 };
@@ -159,3 +166,4 @@ export type Sale = {
     total: number;
     createdAt: any; // serverTimestamp
 };
+

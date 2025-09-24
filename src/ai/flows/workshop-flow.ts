@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import { dishCategories } from '@/lib/types';
 
 // Schéma pour les ingrédients générés par l'IA
 export const GeneratedIngredientSchema = z.object({
@@ -86,7 +87,7 @@ export const RecipeConceptOutputSchema = z.object({
     duration: z.number().int().describe("Durée totale en minutes."),
     difficulty: z.enum(['Facile', 'Moyen', 'Difficile']).describe("Niveau de difficulté."),
     
-    category: z.enum(['Entrées froides et chaudes', 'Plats et Grillades', 'Les mets de chez nous', 'Symphonie de pâtes', 'Nos Burgers Bistronomiques', 'Dessert', 'Élixirs & Rafraîchissements']).optional().describe("Catégorie du plat, si applicable."),
+    category: z.enum(dishCategories).optional().describe("Catégorie du plat, si applicable."),
     portions: z.number().int().optional().describe("Nombre de portions, si c'est un plat."),
     commercialArgument: z.string().optional().describe("Argumentaire commercial, si c'est un plat."),
     imageUrl: z.string().url().optional().describe("URL de l'image générée, si c'est un plat."),

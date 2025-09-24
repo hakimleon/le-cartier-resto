@@ -12,6 +12,7 @@ import { getAllPreparationNames } from '../tools/recipe-tools';
 import { googleAI } from '@genkit-ai/googleai';
 import { RecipeConceptInputSchema, RecipeConceptOutputSchema } from './workshop-flow';
 import type { RecipeConceptInput, RecipeConceptOutput } from './workshop-flow';
+import { dishCategories } from '@/lib/types';
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -47,6 +48,12 @@ Vous devez obligatoirement utiliser les préparations suivantes si elles corresp
 - {{this}}
 {{/each}}
 (Si cette liste est vide, vous ne pouvez pas utiliser de sous-recettes).
+
+---
+
+## CATÉGORIES DE PLAT POSSIBLES
+Le champ \`category\` doit obligatoirement être l'une des valeurs suivantes :
+${dishCategories.map(c => `- ${c}`).join('\n')}
 
 ---
 
@@ -95,6 +102,7 @@ Vous devez obligatoirement utiliser les préparations suivantes si elles corresp
 ---
 ## INSTRUCTIONS DE FORMATAGE DE SORTIE
 - Remplissez tous les champs demandés (\`name\`, \`description\`, \`portions\`, \`category\`, \`commercialArgument\`, etc.).
+- Le champ \`category\` DOIT correspondre à une des catégories de la liste fournie.
 - Si le nom n'est pas fourni, générez-en un qui soit créatif et marketing.
 - Les procédures doivent être claires, concises et utiliser le format Markdown.
 - Ne laissez aucun champ vide : utilisez \`[]\` ou \`""\` si nécessaire.
