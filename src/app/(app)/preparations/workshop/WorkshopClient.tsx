@@ -117,7 +117,7 @@ export default function WorkshopClient() {
                 type: 'Préparation' as const,
             };
 
-            const newDocId = await createDishFromWorkshop(conceptForAction);
+            const newDocId = await createDishFromWorkshop(conceptForAction, 'preparations');
             
             if (newDocId) {
                 sessionStorage.setItem(PREPARATION_WORKSHOP_CONCEPT_KEY, JSON.stringify(conceptForAction));
