@@ -24,7 +24,7 @@ import FloatingAssistant from '@/app/(app)/assistant/FloatingAssistant';
 import Image from 'next/image';
 
 const Logo = () => (
-    <Image src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDE1IDE1Ij48cGF0aCBmaWxsPSJncmF5IiBkPSJNMTIuMDE3IDEyLjVIMTQuNUwxMiAxNXYtMi40ODNhMS42MiAxLjYyIDAgMCAxLTEuMTM3LjQ4YTEuNjAgMS42IDAgMCAxLS45OTMtLjM0NWE2Ljc4NCA2Ljc4NCAwIDAgMSAuMDA4LTEwLjMxYTEuNjIgMS42MiAwIDAgMSAyLjEyMi4xMlYwTDE0LjUgMi41aC0yLjQ2NGEyIDIgMCAwIDEgLjEyMy4xMjlhMS42MjQgMS42MjQgMCAwIDEtLjI4OCAyLjI4YTMuNTIgMy41MiAwIDAgMC0xLjEyMSAyLjU4NmEzLjU2IDMuNTYgMCAwIDAgMS4xNDcgMi42MTZhMS42MzUgMS42MzUgMCAwIDEgLjIzMiAyLjI3OWMtLjAzNC4wNDEtLjA3NS4wNzItLjExMi4xMU0yLjUwNCAwbC0xIDUuNWMtLjE0Ni44MDUgMS43ODEgMS4xODEgMS43NSAyTC43NSA2LjVjLS4wMzEtLjgxOCAxLjczMy0xLjE4IDEuNzUtMmwtMSA1LjVoLS41bC4yNSA0bC0uNzUuNWwtLjI1LTQuNWgtLjVsLS4yNSA0LjVsLS43NS0uNWwuMjUtLTRaIi8+PC9zdmc+" alt="Le Cartier Logo" width={40} height={40} />
+    <Image src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDE1IDE1Ij48cGF0aCBmaWxsPSJncmF5IiBkPSJNMTIuMDE3IDEyLjVIMTQuNUwxMiAxNXYtMi40ODNhMS42MiAxLjYyIDAgMCAxLTEuMTM3LjQ4YTEuNjAgMS42IDAgMCAxLS45OTMtLjM0NWE2Ljc4NCA2Ljc4NCAwIDAgMSAuMDA4LTEwLjMxYTEuNjIgMS42MiAwIDAgMSAyLjEyMi4xMlYwTDE0LjUgMi41aC0yLjQ2NGEyIDIgMCAwIDEgLjEyMy4xMjlhMS42MjQgMS42MjQgMCAwIDEtLjI4OCAyLjI4YTMuNTIgMy41MiAwIDAgMC0xLjEyMSAyLjU4NmEzLjU2IDMuNTYgMCAwIDAgMS4xNDcgMi42MTZhMS4zNSAxLjYzNSAwIDAgMSAuMjMyIDIuMjc5Yy0uMDM0LjA0MS0uMDc1LjA3Mi0uMTEyLjExTTIuNTA0IDBsLTEgNS41Yy0uMTQ2LjgwNSAxLjc4MSAxLjE4MSAxLjc1IDJMLjc1IDYuNWMtLjAzMS0uODE4IDEuNzMzLTEuMTggMS43NS0ybC0xIDUuNWgtLjVsLjI1IDRsLS43NS41bC0uMjUtNC41aC0uNWwtLjI1IDQuNWwtLjc1LS41bC4yNS00WiIvPjwvc3ZnPg==" alt="Le Cartier Logo" width={40} height={40} />
 );
 
 
@@ -126,7 +126,7 @@ export default function AppLayout({
                 <SidebarMenuButton asChild isActive={pathname.startsWith('/preparations-base')} tooltip="Préparations de Base">
                   <Link href="/preparations-base">
                     <NotebookText />
-                    <span>Préparations de Base</span>
+                    <span>Préparations</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -195,3 +195,5 @@ export default function AppLayout({
     </SidebarProvider>
   );
 }
+
+    

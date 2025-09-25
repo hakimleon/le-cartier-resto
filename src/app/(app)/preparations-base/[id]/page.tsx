@@ -22,3 +22,5 @@ export default function PreparationBaseDetailPage() {
       <RecipeDetailClient recipeId={recipeId} collectionName="preparations" />
   );
 }
+
+    

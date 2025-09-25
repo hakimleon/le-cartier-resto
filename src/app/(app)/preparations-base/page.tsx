@@ -1,8 +1,10 @@
 
-import PreparationsBaseClient from './PreparationsBaseClient';
+import PreparationsClient from '../preparations/PreparationsClient';
 
 export default function PreparationsBasePage() {
   return (
-      <PreparationsBaseClient />
+      <PreparationsClient />
   );
 }
+
+    

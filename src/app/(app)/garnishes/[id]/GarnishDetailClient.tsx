@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -36,6 +37,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { PreparationConceptOutput } from "@/ai/flows/workshop-flow";
+import { PrintLink } from "@/components/pdf/PrintLink";
 
 
 const GARNISH_WORKSHOP_CONCEPT_KEY = 'garnishWorkshopGeneratedConcept';
@@ -823,6 +825,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                     <PrintLink recipe={recipe} ingredients={ingredients} preparations={preparations} totalCost={totalRecipeCost} />
                     <Button variant="outline" onClick={handleToggleEditMode}>{isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}</Button>
                 </div>
             </header>
@@ -1012,3 +1015,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
