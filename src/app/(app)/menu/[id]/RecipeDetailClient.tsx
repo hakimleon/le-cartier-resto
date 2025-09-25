@@ -1119,12 +1119,26 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Procédure</CardTitle></CardHeader>
                         <CardContent>
                             {isEditing ? (
-                                <Tabs defaultValue="preparation">
-                                    <TabsList><TabsTrigger value="preparation">Préparation</TabsTrigger><TabsTrigger value="cuisson">Cuisson</TabsTrigger><TabsTrigger value="service">Service</TabsTrigger></TabsList>
-                                    <TabsContent value="preparation" className="pt-4"><Textarea value={editableRecipe?.procedure_preparation || ''} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={8} /></TabsContent>
-                                    <TabsContent value="cuisson" className="pt-4"><Textarea value={editableRecipe?.procedure_cuisson || ''} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={8} /></TabsContent>
-                                    <TabsContent value="service" className="pt-4"><Textarea value={editableRecipe?.procedure_service || ''} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={8} /></TabsContent>
-                                </Tabs>
+                                <Accordion type="multiple" defaultValue={['item-1']} className="w-full">
+                                    <AccordionItem value="item-1">
+                                        <AccordionTrigger>Préparation</AccordionTrigger>
+                                        <AccordionContent>
+                                            <Textarea value={editableRecipe?.procedure_preparation || ''} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={10} placeholder="Décrivez les étapes de préparation..."/>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                    <AccordionItem value="item-2">
+                                        <AccordionTrigger>Cuisson</AccordionTrigger>
+                                        <AccordionContent>
+                                            <Textarea value={editableRecipe?.procedure_cuisson || ''} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={10} placeholder="Décrivez les étapes de cuisson..."/>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                    <AccordionItem value="item-3">
+                                        <AccordionTrigger>Service / Dressage</AccordionTrigger>
+                                        <AccordionContent>
+                                            <Textarea value={editableRecipe?.procedure_service || ''} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={10} placeholder="Décrivez les étapes de service..."/>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
                             ) : (
                                 <Tabs defaultValue="preparation">
                                     <TabsList>

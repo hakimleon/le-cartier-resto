@@ -19,6 +19,12 @@ import { updateRecipeDetails, addRecipePreparationLink, deleteRecipePreparationL
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -48,13 +54,12 @@ const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
 
 type RecipeDetailClientProps = {
   recipeId: string;
-  collectionName: 'preparations' | 'garnishes';
 };
 
 type NewRecipeIngredient = {
-    tempId: string;
-    ingredientId?: string;
-    name: string;
+    tempId: string; // Temporary client-side ID
+    ingredientId?: string; // Linked ingredient ID from DB
+    name: string; // Name suggested by AI or entered by user
     quantity: number;
     unit: string;
     category: string;
@@ -62,7 +67,7 @@ type NewRecipeIngredient = {
 };
 
 type FullRecipePreparation = {
-    id: string;
+    id: string; // The link document ID
     childPreparationId: string;
     name: string;
     quantity: number;
@@ -73,13 +78,13 @@ type FullRecipePreparation = {
 }
 
 type NewRecipePreparation = {
-    tempId: string;
+    tempId: string; // Temporary client-side ID
     childPreparationId?: string;
     name: string;
     quantity: number;
     unit: string;
     totalCost: number;
-    _costPerUnit?: number;
+    _costPerUnit?: number; // Internal: to recalculate cost
     _productionUnit: string;
 };
 
@@ -130,9 +135,9 @@ const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string
 };
 
 
-export default function RecipeDetailClient({ recipeId, collectionName }: RecipeDetailClientProps) {
-  const [recipe, setRecipe] = useState<Preparation | null>(null);
-  const [editableRecipe, setEditableRecipe] = useState<Preparation | null>(null);
+export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
+  const [recipe, setRecipe] = useState<Recipe | Preparation | null>(null);
+  const [editableRecipe, setEditableRecipe] = useState<Recipe | Preparation | null>(null);
   
   const [ingredients, setIngredients] = useState<FullRecipeIngredient[]>([]);
   const [editableIngredients, setEditableIngredients] = useState<FullRecipeIngredient[]>([]);
@@ -143,6 +148,8 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
 
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [isSuggesting, setIsSuggesting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
 
@@ -153,44 +160,203 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
   const [allPreparations, setAllPreparations] = useState<Preparation[]>([]);
   const [preparationsCosts, setPreparationsCosts] = useState<Record<string, number>>({});
   
+  const [derivedSuggestions, setDerivedSuggestions] = useState<DerivedPreparationsOutput['suggestions'] | null>(null);
+  const [generatedConcept, setGeneratedConcept] = useState<RecipeConceptOutput | null>(null);
+
+
   const [isNewIngredientModalOpen, setIsNewIngredientModalOpen] = useState(false);
   const [isNewPreparationModalOpen, setIsNewPreparationModalOpen] = useState(false);
   const [newIngredientDefaults, setNewIngredientDefaults] = useState<Partial<Ingredient> | null>(null);
   const [newPreparationDefaults, setNewPreparationDefaults] = useState<Partial<Preparation> | null>(null);
   const [currentTempId, setCurrentTempId] = useState<string | null>(null);
   const [currentPrepTempId, setCurrentPrepTempId] = useState<string | null>(null);
+
+  const [isSuggestionModalOpen, setIsSuggestionModalOpen] = useState(false);
+  const [suggestionState, setSuggestionState] = useState<{
+      isLoading: boolean;
+      ingredientName: string;
+      ingredientId: string; // This can be a tempId for new ingredients or recipeIngredientId for existing
+      isNew: boolean;
+      suggestions: IngredientAlternativeOutput['suggestions'] | null;
+  }>({ isLoading: false, ingredientName: '', ingredientId: '', isNew: false, suggestions: null });
   
-    const fullDataRefresh = useCallback(async () => {
-        setIsLoading(true);
-        // Implement data fetching logic here, using `collectionName`
-        // For brevity, this part is simplified
-        try {
-            const recipeDocRef = doc(db, collectionName, recipeId);
-            const recipeSnap = await getDoc(recipeDocRef);
+  const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
+    const costs: Record<string, number> = {};
+    const prepDependencies: Record<string, string[]> = {};
+    const prepOrder: string[] = [];
+    const visited: Record<string, 'visiting' | 'visited'> = {};
 
-            if (!recipeSnap.exists()) {
-                setError("Fiche technique non trouvée.");
-                setRecipe(null);
-                return;
+    for (const prep of preparationsList) {
+        if (!prep.id) continue;
+        const linksQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", prep.id));
+        const linksSnap = await getDocs(linksQuery);
+        prepDependencies[prep.id] = linksSnap.docs.map(d => (d.data() as RecipePreparationLink).childPreparationId);
+    }
+    
+    function visit(prepId: string) {
+        if (!prepId || !preparationsList.find(p => p.id === prepId)) { return; }
+        if (visited[prepId] === 'visited') return;
+        if (visited[prepId] === 'visiting') { console.error("Circular dependency detected involving preparation ID:", prepId); return; }
+        visited[prepId] = 'visiting';
+        for (const depId of prepDependencies[prepId] || []) { visit(depId); }
+        visited[prepId] = 'visited';
+        prepOrder.push(prepId);
+    }
+
+    for (const prep of preparationsList) { if (prep.id) visit(prep.id); }
+
+    for (const prepId of prepOrder) {
+        const prep = preparationsList.find(p => p.id === prepId);
+        if (!prep) continue;
+
+        let totalCost = 0;
+        const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
+        const ingredientsSnap = await getDocs(ingredientsQuery);
+        for (const ingDoc of ingredientsSnap.docs) {
+            const ingLink = ingDoc.data() as RecipeIngredientLink;
+            const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
+            if (ingData) {
+                totalCost += recomputeIngredientCost(ingLink, ingData);
             }
-
-            const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Preparation;
-            setRecipe(fetchedRecipe);
-            setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
-
-            // Fetch ingredients and preparations
-            // ... (rest of the data fetching logic)
-
-        } catch (e: any) {
-            setError("Erreur de chargement: " + e.message);
-        } finally {
-            setIsLoading(false);
         }
-    }, [recipeId, collectionName]);
+
+        for (const depId of prepDependencies[prepId] || []) {
+            const depLinkQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", prepId), where("childPreparationId", "==", depId));
+            const depLinkSnap = await getDocs(depLinkQuery);
+            if (!depLinkSnap.empty) {
+                const linkData = depLinkSnap.docs[0].data() as RecipePreparationLink;
+                const childPrep = preparationsList.find(p => p.id === depId);
+                const childCostPerProductionUnit = costs[depId];
+                if (childPrep && childCostPerProductionUnit !== undefined) {
+                     const conversionFactor = getConversionFactor(childPrep.productionUnit!, linkData.unitUse);
+                     const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
+                     totalCost += (linkData.quantity || 0) * costPerUseUnit;
+                }
+            }
+        }
+        
+        costs[prepId] = (totalCost / (prep.productionQuantity || 1)) || 0;
+    }
+
+    return costs;
+  }, []);
+
+  const fetchAllIngredients = useCallback(async () => {
+    const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
+    const ingredientsList = allIngredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+    setAllIngredients(ingredientsList);
+    return ingredientsList;
+  }, []);
+
+   const fetchAllPreparations = useCallback(async () => {
+        const allPrepsSnap = await getDocs(query(collection(db, "preparations")));
+        const prepsList = allPrepsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+        setAllPreparations(prepsList);
+        return prepsList;
+    }, []);
+
+    const fullDataRefresh = useCallback(async () => {
+        const ingredientsList = await fetchAllIngredients();
+        const allPrepsData = await fetchAllPreparations();
+        const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
+        setPreparationsCosts(costs);
+
+        const collectionName = "preparations";
+        const recipeDocRef = doc(db, collectionName, recipeId);
+        const recipeSnap = await getDoc(recipeDocRef);
+
+        if (!recipeSnap.exists()) {
+            setError("Fiche technique non trouvée.");
+            setRecipe(null);
+            setIsLoading(false);
+            return;
+        }
+
+        const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Preparation;
+        setRecipe(fetchedRecipe);
+        setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
+
+        const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
+        const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
+        const ingredientsData = recipeIngredientsSnap.docs.map(docSnap => {
+            const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
+            const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
+            if (ingredientData) {
+                const totalCost = recomputeIngredientCost(recipeIngredientData, ingredientData);
+                return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, category: ingredientData.category, totalCost };
+            }
+            return null;
+        }).filter(Boolean) as FullRecipeIngredient[];
+        setIngredients(ingredientsData);
+        setEditableIngredients(JSON.parse(JSON.stringify(ingredientsData)));
+
+        const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
+        const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
+        const preparationsData = recipePreparationsSnap.docs.map(linkDoc => {
+            const linkData = linkDoc.data() as RecipePreparationLink;
+            const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
+            if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
+                const costPerProductionUnit = costs[linkData.childPreparationId];
+                const conversionFactor = getConversionFactor(childRecipeData.productionUnit!, linkData.unitUse);
+                const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit! };
+            }
+            return null;
+        }).filter(Boolean) as FullRecipePreparation[];
+        setPreparations(preparationsData);
+        setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
+
+    }, [recipeId, calculatePreparationsCosts, fetchAllIngredients, fetchAllPreparations]);
+
 
     useEffect(() => {
-        fullDataRefresh();
-    }, [fullDataRefresh]);
+        if (!recipeId) { setIsLoading(false); setError("L'identifiant de la recette est manquante."); return; }
+        if (!isFirebaseConfigured) { setError("La configuration de Firebase est manquante."); setIsLoading(false); return; }
+        
+        let isMounted = true;
+        
+        const initialLoad = async () => {
+            try {
+                setIsLoading(true);
+                await fullDataRefresh();
+                 const conceptJSON = sessionStorage.getItem(PREPARATION_WORKSHOP_CONCEPT_KEY);
+                if (conceptJSON && isMounted) {
+                    setIsEditing(true);
+                    const concept: RecipeConceptOutput = JSON.parse(conceptJSON);
+
+                    setEditableRecipe(current => ({ ...current!, ...concept }));
+                    
+                    const ingredientsList = await fetchAllIngredients();
+                    const newIngs: NewRecipeIngredient[] = (concept.ingredients || []).map(sugIng => {
+                        const existing = ingredientsList.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
+                        let totalCost = existing ? recomputeIngredientCost({ quantity: sugIng.quantity, unit: sugIng.unit }, existing) : 0;
+                        return { tempId: `new-ws-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
+                    });
+                    setNewIngredients(newIngs);
+                    
+                    const allPrepsList = await fetchAllPreparations();
+                    const newPreps: NewRecipePreparation[] = (concept.subRecipes || []).map(prep => {
+                         const existing = allPrepsList.find(dbPrep => dbPrep.name.toLowerCase() === prep.name.toLowerCase());
+                        return { tempId: `new-ws-prep-${Date.now()}-${Math.random()}`, childPreparationId: existing?.id, name: existing?.name || prep.name, quantity: prep.quantity, unit: prep.unit, totalCost: 0, _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0, _productionUnit: existing?.productionUnit || '' };
+                    });
+                    setNewPreparations(newPreps);
+
+                    toast({ title: "Fiche importée de l'Atelier !", description: "Vérifiez et sauvegardez les informations." });
+                    sessionStorage.removeItem(PREPARATION_WORKSHOP_CONCEPT_KEY);
+                }
+            } catch(e: any) {
+                 console.error("Error during initial load: ", e);
+                if (isMounted) { setError("Impossible de charger les données de support. " + e.message); }
+            } finally {
+                if(isMounted) setIsLoading(false);
+            }
+        }
+
+        initialLoad();
+
+        return () => { isMounted = false; };
+    }, [recipeId, fullDataRefresh, fetchAllIngredients, fetchAllPreparations]);
+
 
   const handleToggleEditMode = () => {
     if (isEditing) {
@@ -199,55 +365,335 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         if(preparations) setEditablePreparations(JSON.parse(JSON.stringify(preparations)));
         setNewIngredients([]);
         setNewPreparations([]);
+        setGeneratedConcept(null);
+    } else {
+        // Recalculate costs for existing items when entering edit mode
+        const recalculatedIngredients = ingredients.map(ing => {
+            const ingData = allIngredients.find(i => i.id === ing.id);
+            if(ingData) ing.totalCost = recomputeIngredientCost(ing, ingData);
+            return ing;
+        });
+        const recalculatedPreps = preparations.map(prep => {
+            const childPrep = allPreparations.find(p => p.id === prep.childPreparationId);
+            const costPerUnit = preparationsCosts[prep.childPreparationId];
+            if(childPrep && costPerUnit !== undefined) {
+                 const conversionFactor = getConversionFactor(childPrep.productionUnit!, prep.unit);
+                 const costPerUseUnit = costPerUnit / conversionFactor;
+                 prep.totalCost = (prep.quantity || 0) * costPerUseUnit;
+            }
+            return prep;
+        });
+
+        setEditableRecipe(JSON.parse(JSON.stringify(recipe)));
+        setEditableIngredients(recalculatedIngredients);
+        setEditablePreparations(recalculatedPreps);
     }
     setIsEditing(!isEditing);
   };
+
+  const handleRecipeDataChange = (field: keyof Preparation, value: any) => {
+    if (editableRecipe) { setEditableRecipe({ ...editableRecipe, [field]: value }); }
+  };
   
-    const handleRecipeDataChange = (field: keyof Preparation, value: any) => {
-        setEditableRecipe(current => current ? { ...current, [field]: value } : null);
+  const handleIngredientChange = (recipeIngredientId: string, field: 'quantity' | 'unit' | 'id', value: any) => {
+      setEditableIngredients(current => current.map(ing => {
+          if (ing.recipeIngredientId === recipeIngredientId) {
+              const updatedIng = { ...ing, [field]: value };
+              if(field === 'id') {
+                const newIngData = allIngredients.find(i => i.id === value);
+                if(newIngData) {
+                    updatedIng.name = newIngData.name;
+                    updatedIng.category = newIngData.category;
+                }
+              }
+              const ingData = allIngredients.find(i => i.id === updatedIng.id);
+              if (ingData) {
+                  updatedIng.totalCost = recomputeIngredientCost(updatedIng, ingData);
+              }
+              return updatedIng;
+          }
+          return ing;
+      }));
+  };
+  
+  const handleNewIngredientChange = (tempId: string, field: keyof NewRecipeIngredient, value: any) => {
+    setNewIngredients(current => current.map(ing => {
+        if (ing.tempId === tempId) {
+          let updatedIng = { ...ing, [field]: value };
+          
+          if (field === 'ingredientId') {
+              const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
+              if (selectedIngredient) {
+                  updatedIng.name = selectedIngredient.name;
+                  updatedIng.category = selectedIngredient.category;
+                  updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
+              } else {
+                  updatedIng.ingredientId = undefined; // unlink if not found
+                  updatedIng.category = '';
+                  updatedIng.totalCost = 0;
+              }
+          } else if (field === 'quantity' || field === 'unit') {
+               const selectedIngredient = allIngredients.find(i => i.id === updatedIng.ingredientId);
+               if(selectedIngredient){
+                   updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
+               }
+          }
+          return updatedIng;
+        }
+        return ing;
+      })
+    );
+  };
+  
+  const handleRemoveNewIngredient = (tempId: string) => { setNewIngredients(current => current.filter(ing => ing.tempId !== tempId)); };
+  const handleRemoveExistingIngredient = (recipeIngredientId: string) => { setEditableIngredients(current => current.filter(ing => ing.recipeIngredientId !== recipeIngredientId)); };
+  
+  const handleCreateAndLinkIngredient = (tempId: string, newIngredient: Ingredient) => {
+      fetchAllIngredients().then(updatedList => {
+          const newlyAdded = updatedList.find(i => i.id === newIngredient.id);
+          if (newlyAdded) {
+               setNewIngredients(current => current.map(ing => {
+                  if (ing.tempId === tempId) {
+                      let updatedIng = {...ing, ingredientId: newlyAdded.id!, name: newlyAdded.name };
+                      updatedIng.totalCost = recomputeIngredientCost(updatedIng, newlyAdded);
+                      return updatedIng;
+                  }
+                  return ing;
+              }));
+          }
+      });
+  }
+
+  const openNewIngredientModal = (tempId: string) => { const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId); if(ingredientToCreate) { setCurrentTempId(tempId); setNewIngredientDefaults({ name: ingredientToCreate.name }); setIsNewIngredientModalOpen(true); } }
+
+  const handleAddNewPreparation = () => { setNewPreparations([ ...newPreparations, { tempId: `new-prep-${Date.now()}`, childPreparationId: '', name: '', quantity: 0, unit: '', totalCost: 0, _productionUnit: '', }, ]); };
+  const handleRemoveNewPreparation = (tempId: string) => { setNewPreparations(current => current.filter(p => p.tempId !== tempId)); };
+  
+  const handlePreparationChange = (linkId: string, field: 'quantity' | 'unit', value: any) => {
+      setEditablePreparations(current => current.map(prep => {
+          if (prep.id === linkId) {
+              const updatedPrep = { ...prep, [field]: value };
+              const costPerProductionUnit = prep._costPerUnit || 0;
+              const conversionFactor = getConversionFactor(prep._productionUnit, updatedPrep.unit);
+              const costPerUseUnit = costPerProductionUnit / conversionFactor;
+              updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
+              return updatedPrep;
+          }
+          return prep;
+      }));
+  };
+
+  const handleNewPreparationChange = (tempId: string, field: keyof NewRecipePreparation, value: any) => {
+      setNewPreparations(current => current.map(p => {
+              if (p.tempId === tempId) {
+                  const updatedPrep = { ...p, [field]: value };
+                  if (field === 'childPreparationId') {
+                      const selectedPrep = allPreparations.find(prep => prep.id === value);
+                      if (selectedPrep) { 
+                        updatedPrep.name = selectedPrep.name; 
+                        updatedPrep.unit = selectedPrep.usageUnit || selectedPrep.productionUnit || 'g'; 
+                        updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0; 
+                        updatedPrep._productionUnit = selectedPrep.productionUnit || ''; 
+                      }
+                  }
+                  if (field === 'quantity' || field === 'childPreparationId' || field === 'unit') {
+                      const costPerProductionUnit = updatedPrep._costPerUnit || 0;
+                      const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
+                      const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                      updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
+                  }
+                  return updatedPrep;
+              }
+              return p;
+          })
+      );
+  };
+  const handleRemoveExistingPreparation = (preparationLinkId: string) => { 
+    setEditablePreparations(current => current.filter(p => p.id !== preparationLinkId));
+    toast({ title: "Sous-recette retirée", description: "La modification sera appliquée à la sauvegarde.", }); 
+  };
+  
+  const openNewPreparationModal = (tempId: string) => {
+        const prepToCreate = newPreparations.find(p => p.tempId === tempId);
+        if (prepToCreate) {
+            setCurrentPrepTempId(tempId);
+            setNewPreparationDefaults({ name: prepToCreate.name, description: `Préparation pour "${recipe?.name}"` });
+            setIsNewPreparationModalOpen(true);
+        }
     };
 
-    const handleSave = async () => {
-        if (!editableRecipe) return;
-        setIsSaving(true);
+    const handleCreateAndLinkPreparation = (tempId: string, newPreparation: Preparation) => {
+        fetchAllPreparations().then(updatedList => {
+            const newlyAdded = updatedList.find(p => p.id === newPreparation.id);
+            if (newlyAdded) {
+                handleNewPreparationChange(tempId, 'childPreparationId', newlyAdded.id!);
+            }
+        })
+    }
+  
+  const handleSave = async () => {
+    if (!editableRecipe) return;
+    setIsSaving(true);
+    try {
+        const recipeDataToSave: Partial<Preparation> = {
+            name: editableRecipe.name,
+            description: editableRecipe.description,
+            category: editableRecipe.category,
+            difficulty: editableRecipe.difficulty,
+            duration: editableRecipe.duration,
+            procedure_preparation: editableRecipe.procedure_preparation,
+            procedure_cuisson: editableRecipe.procedure_cuisson,
+            procedure_service: editableRecipe.procedure_service,
+            portions: (editableRecipe as Preparation).portions,
+            productionQuantity: (editableRecipe as Preparation).productionQuantity,
+            productionUnit: (editableRecipe as Preparation).productionUnit,
+            usageUnit: (editableRecipe as Preparation).usageUnit,
+        };
+        await updateRecipeDetails(recipeId, recipeDataToSave, 'preparations');
+        
+        const allCurrentIngredients = [ ...editableIngredients.map(ing => ({ ingredientId: ing.id, quantity: ing.quantity, unitUse: ing.unit })), ...newIngredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: ing.quantity, unitUse: ing.unit }))].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'id' | 'recipeId'>[];
+        await replaceRecipeIngredients(recipeId, allCurrentIngredients);
+        
+        const existingPrepLinks = editablePreparations.map(p => ({ parentRecipeId: recipeId, childPreparationId: p.childPreparationId, quantity: p.quantity, unitUse: p.unit }));
+        const newPrepLinks = newPreparations.map(p => ({ parentRecipeId: recipeId, childPreparationId: p.childPreparationId, quantity: p.quantity, unitUse: p.unit })).filter(p => !!p.childPreparationId);
+        const allPrepLinks = [...existingPrepLinks, ...newPrepLinks] as Omit<RecipePreparationLink, 'id'>[];
+        await replaceRecipePreparations(recipeId, allPrepLinks);
+        
+        await fullDataRefresh();
+        
+        toast({ title: "Succès", description: "Les modifications ont été sauvegardées." });
+        setIsEditing(false); 
+        setNewIngredients([]); 
+        setNewPreparations([]);
+        setGeneratedConcept(null);
+
+    } catch (error) { console.error("Error saving changes:", error); toast({ title: "Erreur", description: "La sauvegarde des modifications a échoué.", variant: "destructive", });
+    } finally { setIsSaving(false); }
+  };
+  
+    const handleGenerateSuggestions = async () => {
+        if (!recipe) return;
+        setIsSuggesting(true);
+        setDerivedSuggestions(null);
         try {
-            const recipeDataToSave: Partial<Preparation> = {
-                name: editableRecipe.name,
-                description: editableRecipe.description,
-                category: editableRecipe.category,
-                difficulty: editableRecipe.difficulty,
-                duration: editableRecipe.duration,
-                procedure_preparation: editableRecipe.procedure_preparation,
-                procedure_cuisson: editableRecipe.procedure_cuisson,
-                procedure_service: editableRecipe.procedure_service,
-                portions: editableRecipe.portions,
-                productionQuantity: editableRecipe.productionQuantity,
-                productionUnit: editableRecipe.productionUnit,
-                usageUnit: editableRecipe.usageUnit,
-            };
-            await updateRecipeDetails(recipeId, recipeDataToSave, collectionName);
-            
-            const allCurrentIngredients = [ ...editableIngredients.map(ing => ({ ingredientId: ing.id, quantity: ing.quantity, unitUse: ing.unit })), ...newIngredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: ing.quantity, unitUse: ing.unit }))].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'id' | 'recipeId'>[];
-            await replaceRecipeIngredients(recipeId, allCurrentIngredients);
-            
-            const existingPrepLinks = editablePreparations.map(p => ({ parentRecipeId: recipeId, childPreparationId: p.childPreparationId, quantity: p.quantity, unitUse: p.unit }));
-            const newPrepLinks = newPreparations.map(p => ({ parentRecipeId: recipeId, childPreparationId: p.childPreparationId, quantity: p.quantity, unitUse: p.unit })).filter(p => !!p.childPreparationId);
-            const allPrepLinks = [...existingPrepLinks, ...newPrepLinks] as Omit<RecipePreparationLink, 'id'>[];
-            await replaceRecipePreparations(recipeId, allPrepLinks);
-            
-            await fullDataRefresh();
-            
-            toast({ title: "Succès", description: "Les modifications ont été sauvegardées." });
-            setIsEditing(false); 
-            setNewIngredients([]); 
-            setNewPreparations([]);
-
-        } catch (error) { console.error("Error saving changes:", error); toast({ title: "Erreur", description: "La sauvegarde des modifications a échoué.", variant: "destructive", });
-        } finally { setIsSaving(false); }
+            const result = await generateDerivedPreparations({
+                basePreparationName: recipe.name,
+                basePreparationDescription: recipe.description,
+            });
+            if (result && result.suggestions) {
+                setDerivedSuggestions(result.suggestions);
+            }
+        } catch (e) {
+            console.error("Failed to generate derived preparations", e);
+            toast({
+                title: "Erreur de l'IA",
+                description: "Impossible de générer des suggestions. Veuillez réessayer.",
+                variant: 'destructive',
+            });
+        } finally {
+            setIsSuggesting(false);
+        }
     };
+
+    const handleGenerateRecipe = async () => {
+        if (!recipe) return;
+        setIsGenerating(true);
+        setGeneratedConcept(null);
+        try {
+            const result = await generateRecipeConcept({
+              type: 'Préparation',
+              name: recipe.name,
+              description: recipe.description,
+              mainIngredients: 'Fond de veau',
+            });
+
+            setGeneratedConcept(result);
+            setEditableRecipe(current => ({...current!, ...result}));
+
+            const ingredientsList = await fetchAllIngredients();
+            const newIngs = (result.ingredients || []).map(sugIng => {
+                const existing = ingredientsList.find(dbIng => dbIng.name.toLowerCase() === sugIng.name.toLowerCase());
+                let totalCost = existing ? recomputeIngredientCost({ quantity: sugIng.quantity, unit: sugIng.unit }, existing) : 0;
+                return { tempId: `new-gen-ing-${Date.now()}-${Math.random()}`, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
+            });
+
+            const allPrepsList = await fetchAllPreparations();
+            const newPreps = (result.subRecipes || []).map(prep => {
+                    const existing = allPrepsList.find(dbPrep => dbPrep.name.toLowerCase() === prep.name.toLowerCase());
+                return { tempId: `new-ws-prep-${Date.now()}-${Math.random()}`, childPreparationId: existing?.id, name: existing?.name || prep.name, quantity: prep.quantity, unit: prep.unit, totalCost: 0, _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0, _productionUnit: existing?.productionUnit || '' };
+            });
+
+            setIsEditing(true);
+            setEditableIngredients([]); // Clear existing ones
+            setNewIngredients(newIngs); // Add newly generated ones
+            setEditablePreparations([]); // Clear sub-recipes for a base preparation
+            setNewPreparations(newPreps);
+
+            toast({ title: "Recette générée !", description: "Vérifiez les détails et sauvegardez pour appliquer les changements." });
+        } catch (e) {
+            console.error("Failed to generate recipe content", e);
+            toast({ title: "Erreur de l'IA", description: "Impossible de générer le contenu de la recette.", variant: 'destructive' });
+        } finally {
+            setIsGenerating(false);
+        }
+    };
+
+    const handleOpenSuggestionModal = async (ingredientId: string, ingredientName: string, isNew: boolean) => {
+        setSuggestionState({ isLoading: true, ingredientId, ingredientName, isNew, suggestions: null });
+        setIsSuggestionModalOpen(true);
+        try {
+            const result = await generateIngredientAlternative({
+                ingredientName: ingredientName,
+                recipeContext: recipe?.name || 'une recette',
+                constraints: "sans alcool"
+            });
+            setSuggestionState(s => ({ ...s, isLoading: false, suggestions: result.suggestions }));
+        } catch (error) {
+            toast({ title: "Erreur de l'IA", description: "Impossible de charger les suggestions.", variant: "destructive" });
+            setSuggestionState(s => ({ ...s, isLoading: false }));
+        }
+    };
+
+    const handleSuggestionSelect = (suggestionName: string) => {
+        const { ingredientId, isNew } = suggestionState;
+        
+        const existingIngredient = allIngredients.find(i => i.name.toLowerCase() === suggestionName.toLowerCase());
+
+        const applyChange = (idToUpdate: string, newIngredientDbId: string | undefined, newName: string) => {
+             if (isNew) {
+                setNewIngredients(current => current.map(ing => {
+                    if (ing.tempId === idToUpdate) {
+                        return {...ing, ingredientId: newIngredientDbId, name: newName };
+                    }
+                    return ing;
+                }));
+            } else {
+                 setEditableIngredients(current => current.map(ing => {
+                    if (ing.recipeIngredientId === idToUpdate) {
+                        return {...ing, id: newIngredientDbId!, name: newName };
+                    }
+                    return ing;
+                }));
+            }
+        }
+        
+        applyChange(ingredientId, existingIngredient?.id, suggestionName);
+        
+        if (!existingIngredient) {
+            toast({
+                title: "Nouvel ingrédient",
+                description: `'${suggestionName}' a été ajouté à la recette. N'oubliez pas de créer sa fiche ingrédient.`,
+            });
+        }
+        
+        setIsSuggestionModalOpen(false);
+    };
+
+  const sortedIngredients = useMemo(() => {
+    return [...allIngredients].sort((a, b) => a.name.localeCompare(b.name));
+  }, [allIngredients]);
 
   const currentRecipeData = isEditing ? editableRecipe : recipe;
-  const isGarnish = collectionName === 'garnishes';
   
   const { totalRecipeCost, costPerPortion, } = useMemo(() => {
     if (!currentRecipeData) { return { totalRecipeCost: 0, costPerPortion: 0 }; }
@@ -260,9 +706,9 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
 
     const totalCost = ingredientsCost + preparationsCost;
     
-    const portions = currentRecipeData.portions || 1;
-    const costPerPortionValue = portions > 0 ? totalCost / portions : 0;
-    
+    let costPerPortionValue = 0;
+    if (currentRecipeData.type === 'Préparation') { const productionQuantity = (currentRecipeData as Preparation).productionQuantity || 1; costPerPortionValue = totalCost / productionQuantity;
+    } else { const portions = (currentRecipeData as Recipe).portions || 1; costPerPortionValue = totalCost / portions; }
     return { totalRecipeCost: totalCost, costPerPortion: costPerPortionValue };
   }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations, isEditing]);
 
@@ -271,15 +717,56 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
   if (error) { return ( <div className="container mx-auto py-10"><Alert variant="destructive" className="max-w-2xl mx-auto my-10"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erreur</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></div> ); }
   if (!recipe || !currentRecipeData) { return ( <div className="container mx-auto py-10 text-center"><p>Fiche technique non trouvée ou erreur de chargement.</p></div> ); }
   
+  const isPlat = currentRecipeData.type === 'Plat';
+  const isRecipeEmpty = ingredients.length === 0 && preparations.length === 0 && !recipe.procedure_preparation;
 
   return (
     <div className="space-y-4">
-      {/* Modals will be here */}
+      {isNewIngredientModalOpen && (<IngredientModal open={isNewIngredientModalOpen} onOpenChange={setIsNewIngredientModalOpen} ingredient={newIngredientDefaults} onSuccess={(newDbIngredient) => { if (newDbIngredient && currentTempId) { handleCreateAndLinkIngredient(currentTempId, newDbIngredient); } }}><div/></IngredientModal>)}
+      {isNewPreparationModalOpen && (<PreparationModal open={isNewPreparationModalOpen} onOpenChange={setIsNewPreparationModalOpen} preparation={newPreparationDefaults} onSuccess={(newDbPrep) => { if (newDbPrep && currentPrepTempId) { handleCreateAndLinkPreparation(currentPrepTempId, newDbPrep); } }}><div/></PreparationModal>)}
+        
+      <Dialog open={isSuggestionModalOpen} onOpenChange={setIsSuggestionModalOpen}>
+        <DialogContent>
+            <DialogHeader>
+                <DialogTitle>Alternatives pour "{suggestionState.ingredientName}"</DialogTitle>
+                <DialogDescription>Suggestions de l'IA pour remplacer cet ingrédient.</DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+                {suggestionState.isLoading ? (
+                     <div className="flex items-center justify-center h-24">
+                        <Sparkles className="h-6 w-6 animate-spin text-primary" />
+                     </div>
+                ) : (
+                    <div className="space-y-3">
+                        {suggestionState.suggestions?.map((sug, index) => (
+                             <Card key={index} className="hover:bg-muted/50 transition-colors">
+                                <CardContent className="p-3">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="font-semibold">{sug.name}</p>
+                                            <p className="text-sm text-muted-foreground">{sug.justification}</p>
+                                        </div>
+                                        <Button size="sm" onClick={() => handleSuggestionSelect(sug.name)}>
+                                           <Replace className="mr-2 h-4 w-4"/> Remplacer
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                         {suggestionState.suggestions?.length === 0 && (
+                            <p className="text-sm text-center text-muted-foreground">Aucune suggestion trouvée.</p>
+                         )}
+                    </div>
+                )}
+            </div>
+        </DialogContent>
+      </Dialog>
+
 
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-4 flex-grow">
-            <div className={cn("rounded-lg h-14 w-14 flex items-center justify-center shrink-0", isGarnish ? "bg-green-100 text-green-700" : "bg-blue-100 text-blue-700")}>
-                {isGarnish ? <CookingPot className="h-7 w-7" /> : <NotebookText className="h-7 w-7" />}
+            <div className="bg-blue-100 text-blue-700 rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
+                <NotebookText className="h-7 w-7" />
             </div>
             <div className="w-full space-y-2">
                  {isEditing ? (
@@ -289,39 +776,273 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                             onChange={(e) => handleRecipeDataChange('name', e.target.value)}
                             className="text-2xl font-bold tracking-tight h-12 w-full"
                         />
-                         <Input
-                            value={editableRecipe?.category || ''}
-                            onChange={(e) => handleRecipeDataChange('category', e.target.value)}
-                            className="w-[280px]"
-                        />
+                        <Select value={editableRecipe?.category || ''} onValueChange={(value) => handleRecipeDataChange('category', value)}>
+                            <SelectTrigger className="w-[280px]">
+                                <SelectValue placeholder="Choisir une catégorie..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {preparationCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
                     </div>
                 ) : (
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
-                        <p className="text-muted-foreground">{isGarnish ? 'Garniture' : 'Préparation'} • {recipe.category}</p>
+                        <p className="text-muted-foreground">Préparation • {recipe.category}</p>
                     </div>
                 )}
                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                    <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {currentRecipeData.duration || '-'} min</div>
-                    <div className="flex items-center gap-1.5"><Soup className="h-4 w-4" /> {currentRecipeData.difficulty || 'Moyen'}</div>
-                    {currentRecipeData.portions && <div className="flex items-center gap-1.5"><Users className="h-4 w-4" /> {currentRecipeData.portions} portions</div>}
+                    <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {recipe.duration} min</div>
+                    <div className="flex items-center gap-1.5"><Soup className="h-4 w-4" /> {recipe.difficulty}</div>
+                    {(recipe as Preparation).portions && <div className="flex items-center gap-1.5"><Users className="h-4 w-4" /> {(recipe as Preparation).portions} portions</div>}
                 </div>
             </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-             <PrintLink recipe={recipe} ingredients={ingredients} preparations={preparations} totalCost={totalRecipeCost} />
             <Button variant="outline" onClick={handleToggleEditMode}>{isEditing ? <><X className="mr-2 h-4 w-4"/>Annuler</> : <><FilePen className="mr-2 h-4 w-4"/>Modifier</>}</Button>
         </div>
       </header>
 
-      {/* Main content grid */}
+       {isRecipeEmpty && !isEditing && (
+            <Card className="border-dashed border-primary/50 bg-primary/5">
+                <CardHeader className="text-center">
+                    <CardTitle>Cette fiche technique est vide.</CardTitle>
+                    <CardDescription>Générez le contenu avec l'IA pour commencer.</CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                    <Button onClick={handleGenerateRecipe} disabled={isGenerating}>
+                        <Sparkles className={cn("mr-2 h-4 w-4", isGenerating && "animate-spin")} />
+                        {isGenerating ? "Génération en cours..." : "Générer la recette avec l'IA"}
+                    </Button>
+                </CardContent>
+            </Card>
+        )}
+
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-            {/* Ingredients and Sub-recipes cards here */}
+             <Card>
+                <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, category: '' }])}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Ingrédient</Button>}</CardTitle><CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription></CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader><TableRow><TableHead className="w-[35%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[100px] text-right">Actions</TableHead>}</TableRow></TableHeader>
+                        <TableBody>
+                            {isEditing && editableIngredients.map(ing => (
+                                <EditableIngredientRow
+                                    key={ing.recipeIngredientId}
+                                    ing={ing}
+                                    handleIngredientChange={handleIngredientChange}
+                                    handleRemoveExistingIngredient={handleRemoveExistingIngredient}
+                                    sortedIngredients={sortedIngredients}
+                                    handleOpenSuggestionModal={handleOpenSuggestionModal}
+                                />
+                            ))}
+                            {!isEditing && ingredients.map(ing => ( <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>))}
+                            {isEditing && newIngredients.map((newIng) => (
+                                <NewIngredientRow
+                                    key={newIng.tempId}
+                                    newIng={newIng}
+                                    handleNewIngredientChange={handleNewIngredientChange}
+                                    openNewIngredientModal={openNewIngredientModal}
+                                    handleRemoveNewIngredient={handleRemoveNewIngredient}
+                                    sortedIngredients={sortedIngredients}
+                                    handleOpenSuggestionModal={handleOpenSuggestionModal}
+                                />
+                            ))}
+                            {ingredients.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><BookCopy className="h-5 w-5"/>Sous-Recettes</div>{isEditing && <Button variant="outline" size="sm" onClick={handleAddNewPreparation}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Préparation</Button>}</CardTitle><CardDescription>Liste des préparations utilisées dans cette recette.</CardDescription></CardHeader>
+                <CardContent>
+                    <Table>
+                        <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
+                        <TableBody>
+                            {isEditing && editablePreparations.map(prep => (
+                                <EditablePreparationRow
+                                    key={prep.id}
+                                    prep={prep}
+                                    handlePreparationChange={handlePreparationChange}
+                                    handleRemoveExistingPreparation={handleRemoveExistingPreparation}
+                                />
+                            ))}
+                            {!isEditing && preparations.map(prep => (
+                                <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
+                            ))}
+                            {isEditing && newPreparations.map((prep) => (
+                                <NewPreparationRow
+                                    key={prep.tempId}
+                                    prep={prep}
+                                    handleNewPreparationChange={handleNewPreparationChange}
+                                    openNewPreparationModal={openNewPreparationModal}
+                                    handleRemoveNewPreparation={handleRemoveNewPreparation}
+                                    allPreparations={allPreparations}
+                                    recipeId={recipeId}
+                                />
+                            ))}
+                            {preparations.length === 0 && newPreparations.length === 0 && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
+                        </TableBody>
+                    </Table>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/>Procédure</CardTitle></CardHeader>
+                <CardContent>
+                   {isEditing ? (
+                        <Accordion type="multiple" defaultValue={['item-1']} className="w-full">
+                            <AccordionItem value="item-1">
+                                <AccordionTrigger>Préparation</AccordionTrigger>
+                                <AccordionContent>
+                                    <Textarea value={editableRecipe?.procedure_preparation || ''} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={10} placeholder="Décrivez les étapes de préparation..."/>
+                                </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="item-2">
+                                <AccordionTrigger>Cuisson</AccordionTrigger>
+                                <AccordionContent>
+                                    <Textarea value={editableRecipe?.procedure_cuisson || ''} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={10} placeholder="Décrivez les étapes de cuisson..."/>
+                                </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="item-3">
+                                <AccordionTrigger>Service / Stockage</AccordionTrigger>
+                                <AccordionContent>
+                                    <Textarea value={editableRecipe?.procedure_service || ''} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={10} placeholder="Décrivez les étapes de service, conservation, etc..."/>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
+                   ) : (
+                        <Tabs defaultValue="preparation">
+                            <TabsList>
+                                <TabsTrigger value="preparation">Préparation</TabsTrigger>
+                                <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
+                                <TabsTrigger value="service">Service</TabsTrigger>
+                            </TabsList>
+                             <TabsContent value="preparation" className="pt-4">
+                                <MarkdownRenderer text={recipe.procedure_preparation} />
+                            </TabsContent>
+                            <TabsContent value="cuisson" className="pt-4">
+                                <MarkdownRenderer text={recipe.procedure_cuisson} />
+                            </TabsContent>
+                            <TabsContent value="service" className="pt-4">
+                                <MarkdownRenderer text={recipe.procedure_service} />
+                            </TabsContent>
+                        </Tabs>
+                   )}
+                </CardContent>
+            </Card>
         </div>
 
         <div className="space-y-8">
-            {/* Cost and Production cards here */}
+            {generatedConcept && isEditing && (
+                <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center justify-between text-lg text-primary">
+                            <div className="flex items-center gap-2"><Lightbulb className="h-5 w-5" />Suggestion de l'IA</div>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-primary/70 hover:text-primary" onClick={() => setGeneratedConcept(null)}><X className="h-4 w-4" /></Button>
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4 text-sm">
+                        <div>
+                            <h4 className="font-semibold mb-1">Ingrédients bruts suggérés</h4>
+                            <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
+                                {generatedConcept.ingredients.map(ing => <li key={ing.name}>{ing.quantity} {ing.unit} {ing.name}</li>)}
+                            </ul>
+                        </div>
+                        <div>
+                            <h4 className="font-semibold mb-1">Procédure brute</h4>
+                            <div className="text-xs text-muted-foreground p-2 border rounded-md max-h-48 overflow-y-auto">
+                                <MarkdownRenderer text={`${generatedConcept.procedure_preparation}\\n${generatedConcept.procedure_cuisson}\\n${generatedConcept.procedure_service}`} />
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)} DZD</div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Production & Coût</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    {isEditing ? (
+                        <>
+                            <div className="space-y-2">
+                                <Label htmlFor="productionQuantity">Cette recette produit</Label>
+                                <div className="flex items-center gap-2">
+                                    <Input id="productionQuantity" type="number" value={(editableRecipe as Preparation)?.productionQuantity || 1} onChange={(e) => handleRecipeDataChange('productionQuantity', parseFloat(e.target.value) || 1)} className="w-1/2" />
+                                    <Input id="productionUnit" type="text" value={(editableRecipe as Preparation)?.productionUnit || ''} onChange={(e) => handleRecipeDataChange('productionUnit', e.target.value)} placeholder="Unité (ex: kg, L)" className="w-1/2"/>
+                                </div>
+                            </div>
+                             <div className="space-y-2">
+                                <Label htmlFor="portions">Nombre de portions</Label>
+                                <Input id="portions" type="number" value={(editableRecipe as Preparation)?.portions || ''} onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || undefined)} placeholder="Ex: 10" />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="usageUnit">Unité d'utilisation suggérée</Label>
+                                <Input id="usageUnit" type="text" value={(editableRecipe as Preparation)?.usageUnit || ''} onChange={(e) => handleRecipeDataChange('usageUnit', e.target.value)} placeholder="Unité pour les recettes (ex: g, ml)" />
+                            </div>
+                        </>
+                    ) : (
+                        <div className="space-y-3 text-sm">
+                            <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Production totale</span>
+                                <span className="font-semibold">{currentRecipeData.productionQuantity} {currentRecipeData.productionUnit}</span>
+                            </div>
+                             <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Nombre de portions</span>
+                                <span className="font-semibold">{(currentRecipeData as Preparation).portions || "-"}</span>
+                            </div>
+                                <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Unité d'utilisation</span>
+                                <span className="font-semibold">{(currentRecipeData as Preparation).usageUnit || "-"}</span>
+                            </div>
+                            <Separator />
+                                <div className="flex justify-between items-center">
+                                <span className="text-muted-foreground">Coût de revient / {currentRecipeData.productionUnit || 'unité'}</span>
+                                <span className="font-bold text-primary text-base">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)} DZD</span>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+             <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Lightbulb className="h-5 w-5 text-amber-500" />
+                        Accompagnements / Utilisations
+                    </CardTitle>
+                    <CardDescription>
+                        Découvrez comment cette préparation peut être utilisée dans d'autres plats.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                     <Button onClick={handleGenerateSuggestions} disabled={isSuggesting} className="w-full">
+                        <Sparkles className={cn("mr-2 h-4 w-4", isSuggesting && "animate-spin")} />
+                        {isSuggesting ? "Recherche d'idées..." : "Suggérer des applications"}
+                    </Button>
+
+                    {derivedSuggestions && (
+                        <div className="space-y-3 pt-4 border-t">
+                            {derivedSuggestions.map((suggestion, index) => (
+                                <div key={index} className="text-sm p-2 rounded-md bg-muted/50">
+                                    <p className="font-semibold text-foreground">{suggestion.name}</p>
+                                    <p className="text-muted-foreground">{suggestion.description}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
         </div>
       </div>
 
@@ -341,3 +1062,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
