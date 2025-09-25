@@ -59,7 +59,7 @@ export type PreparationConceptOutput = z.infer<typeof PreparationConceptOutputSc
 
 // Schéma pour les entrées de l'atelier de plat
 export const RecipeConceptInputSchema = z.object({
-    type: z.enum(['Plat', 'Préparation']).describe('Le type de fiche technique à générer.'),
+    type: z.enum(['Plat', 'Préparation', 'Garniture']).describe('Le type de fiche technique à générer.'),
     name: z.string().optional().describe("Le nom ou l'idée de base du plat/préparation. Si non fourni, l'IA doit en générer un."),
     description: z.string().optional().describe("La description du plat/préparation."),
     mainIngredients: z.string().optional().describe("Les ingrédients principaux à intégrer."),
@@ -76,7 +76,7 @@ export type RecipeConceptInput = z.infer<typeof RecipeConceptInputSchema>;
 export const RecipeConceptOutputSchema = z.object({
     name: z.string().describe("Le nom final et marketing de la recette."),
     description: z.string().describe("Une description alléchante et créative."),
-    type: z.literal('Plat').describe("Le type doit toujours être 'Plat'."),
+    type: z.string().describe("Le type doit toujours être 'Plat' pour ce schéma."),
     
     ingredients: z.array(GeneratedIngredientSchema).describe("Liste des ingrédients nécessaires."),
     subRecipes: z.array(SubRecipeSchema).describe("Liste des sous-recettes EXISTANTES utilisées."),
