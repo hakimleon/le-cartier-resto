@@ -38,7 +38,7 @@ const formSchema = z.object({
     }),
     type: z.literal('Plat'),
     price: z.coerce.number().positive("Le prix doit être un nombre positif."),
-    category: z.string().min(1, "Veuillez sélectionner une catégorie."),
+    category: z.enum(dishCategories, { required_error: "Veuillez sélectionner une catégorie."}),
     status: z.enum(["Actif", "Inactif"]),
     portions: z.coerce.number().int().positive("Le nombre de portions doit être un entier positif."),
 });

@@ -14,13 +14,7 @@ import { DishModal } from "./DishModal";
 import { useToast } from "@/hooks/use-toast";
 import { deleteDish } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
-
-const formatCategory = (category?: string) => {
-    if (!category) return "";
-    return category.split(/[-–]/)[0].trim();
-};
 
 const sortCategories = (categories: string[]) => {
   const customOrder = [
@@ -35,16 +29,12 @@ const sortCategories = (categories: string[]) => {
   ];
 
   return [...categories].sort((a, b) => {
-    const normalizedA = a.toLowerCase().trim();
-    const normalizedB = b.toLowerCase().trim();
-    
-    const indexA = customOrder.findIndex(item => item.toLowerCase().trim() === normalizedA);
-    const indexB = customOrder.findIndex(item => item.toLowerCase().trim() === normalizedB);
+    const indexA = customOrder.indexOf(a);
+    const indexB = customOrder.indexOf(b);
 
     if (indexA === -1 && indexB === -1) {
-        return a.localeCompare(b);
+      return a.localeCompare(b);
     }
-
     if (indexA !== -1 && indexB !== -1) {
       return indexA - indexB;
     }
@@ -59,9 +49,6 @@ export default function MenuClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeCategories, setActiveCategories] = useState<string[]>([]);
-  const [inactiveCategories, setInactiveCategories] = useState<string[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [selectedStatus, setSelectedStatus] = useState<'Actif' | 'Inactif'>('Actif');
   const { toast } = useToast();
 
@@ -83,32 +70,6 @@ export default function MenuClient() {
             );
             
             setRecipes(recipesData);
-            
-            const activeCategoryMap = new Map<string, string>();
-            const inactiveCategoryMap = new Map<string, string>();
-
-            recipesData.forEach(recipe => {
-                if (recipe.category) {
-                    const formattedCategory = formatCategory(recipe.category);
-                    const categoryKey = formattedCategory.toLowerCase().trim();
-
-                    if(recipe.status === 'Actif') {
-                        if (!activeCategoryMap.has(categoryKey)) {
-                            activeCategoryMap.set(categoryKey, formattedCategory);
-                        }
-                    } else {
-                         if (!inactiveCategoryMap.has(categoryKey)) {
-                            inactiveCategoryMap.set(categoryKey, formattedCategory);
-                        }
-                    }
-                }
-            });
-            
-            const uniqueActiveCategories = Array.from(activeCategoryMap.values());
-            const uniqueInactiveCategories = Array.from(inactiveCategoryMap.values());
-            
-            setActiveCategories(["Tous", ...sortCategories(uniqueActiveCategories)]);
-            setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
             setError(null);
         } catch(e: any) {
             console.error("Error processing recipes snapshot: ", e);
@@ -128,10 +89,6 @@ export default function MenuClient() {
         }
     };
   }, []);
-  
-   useEffect(() => {
-    setSelectedCategory("Tous");
-  }, [selectedStatus]);
 
   const handleDelete = async (id: string, name: string) => {
       try {
@@ -152,26 +109,37 @@ export default function MenuClient() {
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
-    if (e.target.value) {
-      setSelectedCategory("Tous");
-    }
   };
 
   const filteredRecipes = useMemo(() => {
     return recipes.filter(recipe => {
         const statusMatch = recipe.status === selectedStatus;
         const searchTermMatch = searchTerm === '' || recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const categoryMatch = selectedCategory === 'Tous' || formatCategory(recipe.category) === selectedCategory;
-        return statusMatch && searchTermMatch && categoryMatch;
+        return statusMatch && searchTermMatch;
     });
-  }, [recipes, searchTerm, selectedCategory, selectedStatus]);
+  }, [recipes, searchTerm, selectedStatus]);
+
+  const recipesByCategory = useMemo(() => {
+    const grouped = new Map<string, Recipe[]>();
+    dishCategories.forEach(cat => grouped.set(cat, []));
+
+    filteredRecipes.forEach(recipe => {
+        if (recipe.category && grouped.has(recipe.category)) {
+            grouped.get(recipe.category)!.push(recipe);
+        }
+    });
+
+    return Array.from(grouped.entries())
+        .map(([category, dishes]) => ({ category, dishes }))
+        .filter(group => group.dishes.length > 0);
+  }, [filteredRecipes]);
 
 
-  const renderRecipeList = (recipeList: Recipe[]) => {
+  const renderRecipeList = () => {
     if (isLoading) {
        return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-            {Array.from({ length: 4 }).map((_, i) => (
+            {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="flex flex-col space-y-3">
                     <div className="h-48 rounded-md bg-muted animate-pulse" />
                     <div className="space-y-2">
@@ -183,26 +151,31 @@ export default function MenuClient() {
         </div>
       );
     }
-    if (recipeList.length === 0) {
+    if (filteredRecipes.length === 0) {
       return <div className="text-center text-muted-foreground pt-12">Aucun plat ne correspond à vos critères.</div>;
     }
+
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {recipeList.map((recipe) => (
-          <RecipeCard 
-            key={recipe.id} 
-            recipe={recipe} 
-            allCategories={dishCategories.slice()}
-            onDelete={() => handleDelete(recipe.id!, recipe.name)}
-          />
-        ))}
-      </div>
+        <div className="space-y-8">
+            {recipesByCategory.map(({ category, dishes }) => (
+                <div key={category}>
+                    <h2 className="text-xl font-bold tracking-tight text-muted-foreground mb-4">{category}</h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {dishes.map((recipe) => (
+                            <RecipeCard 
+                                key={recipe.id} 
+                                recipe={recipe} 
+                                allCategories={dishCategories.slice()}
+                                onDelete={() => handleDelete(recipe.id!, recipe.name)}
+                            />
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
     );
   };
   
-  const currentCategories = selectedStatus === 'Actif' ? activeCategories : inactiveCategories;
-
-
   if (error && !isFirebaseConfigured) {
     return (
         <Alert variant="destructive" className="max-w-2xl mx-auto">
@@ -232,7 +205,7 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} allCategories={dishCategories.slice()} onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <DishModal dish={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat
@@ -259,33 +232,10 @@ export default function MenuClient() {
                 </TabsList>
             </Tabs>
         </div>
-        {currentCategories.length > 1 && (
-            <>
-                <Separator />
-                <div className="flex items-baseline gap-4">
-                    <Label className="text-sm font-semibold shrink-0">Catégorie :</Label>
-                     <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="w-full">
-                        <TabsList className="h-auto justify-start flex-wrap">
-                            {currentCategories.map((category) => (
-                                <TabsTrigger key={category} value={category} className="text-sm whitespace-normal sm:whitespace-nowrap data-[state=active]:shadow-lg">{category}</TabsTrigger>
-                            ))}
-                        </TabsList>
-                    </Tabs>
-                </div>
-            </>
-        )}
       </div>
 
-
       <div className="pt-4">
-        <Tabs value={selectedStatus}>
-            <TabsContent value="Actif" forceMount>
-                {selectedStatus === 'Actif' && renderRecipeList(filteredRecipes)}
-            </TabsContent>
-            <TabsContent value="Inactif" forceMount>
-                {selectedStatus === 'Inactif' && renderRecipeList(filteredRecipes)}
-            </TabsContent>
-        </Tabs>
+        {renderRecipeList()}
       </div>
 
     </div>
