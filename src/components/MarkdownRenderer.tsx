@@ -22,20 +22,16 @@ type MarkdownNode = {
 function parseMarkdown(md: string): MarkdownNode[] {
     if (!md) return [];
     
-    // Nettoyage et formatage robustes du markdown brut
     let sanitizedMd = md
-      .replace(/\r\n/g, "\n") // Normaliser les sauts de ligne
-      .replace(/(?<!\n)\s*(#+)/g, "\n$1") // Assurer un saut de ligne AVANT chaque titre, même en milieu de ligne
-      .replace(/-\s/g, "\n- ") // Assurer un saut de ligne AVANT chaque item de liste
-      .replace(/\n\n/g, "\n"); // Supprimer les doubles sauts de ligne accidentels
-
+      .replace(/\r\n/g, "\n")
+      .replace(/\n{2,}/g, '\n');
 
     const lines = sanitizedMd.split("\n");
     const nodes: MarkdownNode[] = [];
     let i = 0;
 
     while (i < lines.length) {
-        const line = lines[i].trim();
+        const line = lines[i]?.trim();
         if(!line) {
             i++;
             continue;
@@ -48,6 +44,24 @@ function parseMarkdown(md: string): MarkdownNode[] {
             i++;
             continue;
         }
+        
+        const olMatch = line.match(/^(\d+)\.\s+(.*)/);
+        if (olMatch) {
+            const items: string[] = [];
+            while (i < lines.length) {
+                const currentLine = lines[i]?.trim();
+                const currentMatch = currentLine?.match(/^(\d+)\.\s+(.*)/);
+                if (currentMatch) {
+                    items.push(currentMatch[2]);
+                    i++;
+                } else {
+                    break;
+                }
+            }
+            nodes.push({ type: "ol", items });
+            continue;
+        }
+
 
         if (line.startsWith("- ")) {
             const items: string[] = [];
@@ -61,7 +75,7 @@ function parseMarkdown(md: string): MarkdownNode[] {
         
         const paraLines: string[] = [];
         if(line) {
-             while (i < lines.length && lines[i]?.trim() && !lines[i].trim().match(/^(#{1,6})\s/) && !lines[i].trim().startsWith("- ")) {
+             while (i < lines.length && lines[i]?.trim() && !lines[i].trim().match(/^(#{1,6})\s/) && !lines[i].trim().match(/^(\d+)\.\s/) && !lines[i].trim().startsWith("- ")) {
                 paraLines.push(lines[i]);
                 i++;
             }
@@ -98,6 +112,15 @@ export default function MarkdownRenderer({ text }: { text: string | undefined })
             </ul>
           );
         }
+         if (n.type === "ol") {
+          return (
+            <ol key={idx} className="list-decimal list-inside mb-4 space-y-1">
+              {n.items?.map((it, i) => (
+                <li key={i} dangerouslySetInnerHTML={{ __html: inlineFormat(it) }} />
+              ))}
+            </ol>
+          );
+        }
         if (n.type === "p") {
           const contentWithBreaks = inlineFormat(n.content).replace(/\n/g, '<br />');
           return <p key={idx} className="mb-4" dangerouslySetInnerHTML={{ __html: contentWithBreaks }} />;
@@ -107,4 +130,3 @@ export default function MarkdownRenderer({ text }: { text: string | undefined })
     </div>
   );
 }
-
