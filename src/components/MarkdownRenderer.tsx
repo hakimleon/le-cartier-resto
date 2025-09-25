@@ -13,78 +13,75 @@ const inlineFormat = (text: string) => {
 };
 
 type MarkdownNode = {
-    type: string;
-    content?: any;
+    type: 'h3' | 'p' | 'ol' | 'ul';
+    content?: string;
     items?: string[];
-    level?: number;
 }
 
-function parseMarkdown(md: string): MarkdownNode[] {
+function parseMarkdown(md: string | undefined): MarkdownNode[] {
     if (!md) return [];
-    
-    // Add a newline before any number followed by a dot, if it's not already at the start of a line.
-    let sanitizedMd = md
-      .replace(/\r\n/g, "\n")
-      .replace(/(\S)(\s*)(\d+\.\s)/g, '$1\n$3') 
-      .replace(/\n{2,}/g, '\n');
 
-    const lines = sanitizedMd.split("\n");
     const nodes: MarkdownNode[] = [];
-    let i = 0;
+    const lines = md.replace(/\r\n/g, '\n').split('\n').filter(line => line.trim() !== '');
 
-    while (i < lines.length) {
-        const line = lines[i]?.trim();
-        if(!line) {
-            i++;
-            continue;
+    let currentList: { type: 'ol' | 'ul'; items: string[] } | null = null;
+
+    const flushList = () => {
+        if (currentList) {
+            nodes.push(currentList);
+            currentList = null;
         }
-        
-        const hMatch = line.match(/^(#{1,3})\s*(.*)$/);
-        if (hMatch) {
-            const level = hMatch[1].length;
-            nodes.push({ type: `h${level + 2}`, content: hMatch[2].trim() });
-            i++;
-            continue;
-        }
-        
-        if (line.match(/^(\d+)\.\s/)) {
-            const items: string[] = [];
-            while (i < lines.length) {
-                const currentLine = lines[i]?.trim();
-                const currentMatch = currentLine?.match(/^(\d+)\.\s+(.*)/);
-                if (currentMatch) {
-                    items.push(currentMatch[2]);
-                    i++;
-                } else {
-                    break;
-                }
-            }
-            nodes.push({ type: "ol", items });
+    };
+
+    for (const line of lines) {
+        // ### Titres
+        const h3Match = line.match(/^###\s+(.*)/);
+        if (h3Match) {
+            flushList();
+            nodes.push({ type: 'h3', content: h3Match[1] });
             continue;
         }
 
-        if (line.startsWith("- ")) {
-            const items: string[] = [];
-            while (i < lines.length && lines[i]?.trim().startsWith("- ")) {
-                items.push(lines[i].trim().substring(2));
-                i++;
-            }
-            nodes.push({ type: "ul", items });
-            continue;
+        // Titres comme "Preparation:" ou "Cuisson :"
+        const titleMatch = line.match(/^([a-zA-Z\s]+):(.*)/);
+        if (titleMatch && titleMatch[1].length < 30) {
+             flushList();
+             nodes.push({ type: 'h3', content: titleMatch[1] });
+             if(titleMatch[2].trim()){
+                nodes.push({ type: 'p', content: titleMatch[2].trim() });
+             }
+             continue;
         }
-        
-        const paraLines: string[] = [];
-        if(line) {
-             while (i < lines.length && lines[i]?.trim() && !lines[i].trim().match(/^(#{1,6})\s/) && !lines[i].trim().match(/^(\d+)\.\s/) && !lines[i].trim().startsWith("- ")) {
-                paraLines.push(lines[i]);
-                i++;
+
+        // Listes ordonnées
+        const olMatch = line.match(/^\d+\.\s+(.*)/);
+        if (olMatch) {
+            if (currentList?.type !== 'ol') {
+                flushList();
+                currentList = { type: 'ol', items: [] };
             }
-            nodes.push({ type: "p", content: paraLines.join("\n") }); 
+            currentList.items.push(olMatch[1]);
             continue;
         }
 
-        i++; 
+        // Listes non-ordonnées
+        const ulMatch = line.match(/^-\s+(.*)/);
+        if (ulMatch) {
+            if (currentList?.type !== 'ul') {
+                flushList();
+                currentList = { type: 'ul', items: [] };
+            }
+            currentList.items.push(ulMatch[1]);
+            continue;
+        }
+
+        // Sinon, c'est un paragraphe
+        flushList();
+        nodes.push({ type: 'p', content: line });
     }
+
+    flushList(); // S'assurer que la dernière liste est ajoutée
+
     return nodes;
 }
 
@@ -92,40 +89,38 @@ function parseMarkdown(md: string): MarkdownNode[] {
 export default function MarkdownRenderer({ text }: { text: string | undefined }) {
   if (!text) return null;
   const nodes = parseMarkdown(text);
+  
   return (
     <div className="prose prose-sm max-w-none text-muted-foreground">
-      {nodes.map((n, idx) => {
-        if (n.type && n.type.startsWith("h")) {
-          const Tag = n.type as keyof JSX.IntrinsicElements;
-          return (
-            <Tag key={idx} className="mt-4 mb-2 font-semibold text-foreground/90">
-              <span dangerouslySetInnerHTML={{ __html: inlineFormat(n.content) }} />
-            </Tag>
-          );
+      {nodes.map((node, idx) => {
+        switch (node.type) {
+          case 'h3':
+            return (
+              <h3 key={idx} className="mt-4 mb-2 font-semibold text-foreground/90 text-base" dangerouslySetInnerHTML={{ __html: inlineFormat(node.content || '') }} />
+            );
+          case 'p':
+            return (
+              <p key={idx} className="mb-2" dangerouslySetInnerHTML={{ __html: inlineFormat(node.content || '') }} />
+            );
+          case 'ol':
+            return (
+              <ol key={idx} className="list-decimal list-outside pl-6 my-2 space-y-1.5">
+                {node.items?.map((item, i) => (
+                  <li key={i} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
+                ))}
+              </ol>
+            );
+          case 'ul':
+            return (
+              <ul key={idx} className="list-disc list-outside pl-6 my-2 space-y-1">
+                {node.items?.map((item, i) => (
+                  <li key={i} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
+                ))}
+              </ul>
+            );
+          default:
+            return null;
         }
-        if (n.type === "ul") {
-          return (
-            <ul key={idx} className="list-disc list-inside mb-4 space-y-1">
-              {n.items?.map((it, i) => (
-                <li key={i} dangerouslySetInnerHTML={{ __html: inlineFormat(it) }} />
-              ))}
-            </ul>
-          );
-        }
-         if (n.type === "ol") {
-          return (
-            <ol key={idx} className="list-decimal list-inside mb-4 space-y-1.5">
-              {n.items?.map((it, i) => (
-                <li key={i} dangerouslySetInnerHTML={{ __html: inlineFormat(it) }} />
-              ))}
-            </ol>
-          );
-        }
-        if (n.type === "p") {
-          const contentWithBreaks = inlineFormat(n.content).replace(/\n/g, '<br />');
-          return <p key={idx} className="mb-4" dangerouslySetInnerHTML={{ __html: contentWithBreaks }} />;
-        }
-        return null;
       })}
     </div>
   );
