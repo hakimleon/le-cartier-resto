@@ -15,7 +15,7 @@ import { generateRecipeConcept } from "@/ai/flows/recipe-workshop-flow";
 import type { RecipeConceptOutput, RecipeConceptInput } from "@/ai/flows/workshop-flow";
 
 import { useRouter } from "next/navigation";
-import { createDishFromWorkshop, createPreparation } from "./actions";
+import { createDishFromWorkshop } from "./actions";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
@@ -49,7 +49,10 @@ export default function WorkshopClient() {
         }
 
         try {
-            const result = await generateRecipeConcept(instructions);
+            // Assurez-vous que le type est toujours 'Plat'
+            const finalInstructions: RecipeConceptInput = { ...instructions, type: 'Plat' };
+            const result = await generateRecipeConcept(finalInstructions);
+
             setGeneratedConcept(result);
             setRawGeneratedJson(JSON.stringify(result, null, 2));
 
@@ -103,7 +106,7 @@ export default function WorkshopClient() {
         if (!currentRefinement) return;
         
         const newHistory = [...refinementHistory, currentRefinement];
-        const instructions = { ...context, refinementHistory: newHistory, currentRefinement: currentRefinement };
+        const instructions = { ...context, type: 'Plat' as const, refinementHistory: newHistory, currentRefinement: currentRefinement };
         
         setRefinementHistory(newHistory);
         handleSubmit(instructions);
@@ -234,7 +237,7 @@ export default function WorkshopClient() {
                              {generatedConcept && (
                                 <Button variant="outline" onClick={handleNewRecipe}>
                                     <PlusCircle className="mr-2 h-4 w-4" />
-                                    Nouvelle Recette
+                                    Nouveau Plat
                                 </Button>
                             )}
                         </CardHeader>
@@ -344,4 +347,5 @@ export default function WorkshopClient() {
             </div>
         </div>
     );
-}
+
+    
