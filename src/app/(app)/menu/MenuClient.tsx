@@ -36,7 +36,9 @@ const sortCategories = (categories: string[]) => {
 };
 
 const formatCategoryForDisplay = (category: string) => {
-    return category.split('-')[0].trim();
+    if (!category) return "";
+    // Gère à la fois le tiret court (-) et le tiret long (–)
+    return category.split(/[-–]/)[0].trim();
 }
 
 export default function MenuClient() {
