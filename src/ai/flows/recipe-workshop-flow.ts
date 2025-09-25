@@ -28,9 +28,12 @@ const recipeGenPrompt = ai.definePrompt({
     input: { schema: RecipeConceptInputSchema.extend({ allPreparationNames: z.array(z.string()) }) },
     output: { schema: RecipeTextConceptSchema },
     model: googleAI.model('gemini-1.5-flash-latest'),
-    prompt: `Vous êtes un chef exécutif créant une fiche technique pour un restaurant gastronomique. Votre mission est de décomposer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
+    prompt: `Vous êtes un chef exécutif créant une fiche technique pour un PLAT PRINCIPAL de restaurant gastronomique. Votre mission est de concevoir un plat complet, prêt à être servi au client, en utilisant potentiellement des préparations de base existantes.
 
-Ceci est un plat complet, pas une simple préparation. Il sera servi à un client.
+---
+## MISSION : CRÉER UN PLAT FINAL
+- Vous créez un **PLAT**, pas une simple préparation. Exemples: "Filet de bœuf Rossini", "Bar de ligne et agrumes", "Risotto aux cèpes".
+- Le résultat doit être une recette complète et cohérente.
 
 ---
 {{#if name}}
@@ -38,16 +41,16 @@ Ceci est un plat complet, pas une simple préparation. Il sera servi à un clien
 Le nom du plat que vous êtes en train de générer est : \`{{{name}}}\`
 {{else}}
 ## CONTEXTE : CRÉATION SANS NOM INITIAL
-L'utilisateur n'a pas fourni de nom. Vous devrez en créer un basé sur les ingrédients et le style, qui soit créatif et marketing.
+L'utilisateur n'a pas fourni de nom. Vous devrez en créer un qui soit créatif et marketing.
 {{/if}}
 ---
 
-## LISTE DES PRÉPARATIONS EXISTANTES À UTILISER OBLIGATOIREMENT
-Vous devez obligatoirement utiliser les préparations suivantes si elles correspondent à un composant de la recette :
+## LISTE DES PRÉPARATIONS EXISTANTES À UTILISER
+Si un composant de votre recette correspond à l'une de ces préparations, vous devez l'utiliser comme sous-recette (\`subRecipes\`).
 {{#each allPreparationNames}}
 - {{this}}
 {{/each}}
-(Si cette liste est vide, vous ne pouvez pas utiliser de sous-recettes).
+(Si cette liste est vide, tous les ingrédients doivent être listés comme ingrédients bruts).
 
 ---
 
@@ -58,17 +61,17 @@ ${dishCategories.map(c => `- ${c}`).join('\n')}
 ---
 
 ## RÈGLES D'OR ABSOLUES
-1.  **ZÉRO ALCOOL** : Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool (vin, bière, cognac, etc.). Si une recette classique en contient, vous DEVEZ le remplacer par une alternative sans alcool (bouillon, jus de raisin, verjus) ou l’omettre.
+1.  **ZÉRO ALCOOL** : Vous ne devez JAMAIS inclure d'ingrédient contenant de l'alcool (vin, bière, etc.). Remplacez-le systématiquement par une alternative sans alcool (bouillon, jus, verjus) ou omettez-le.
 
-2.  **MISSION PRINCIPALE - RÈGLE IMPÉRATIVE** :
-    - Pour chaque composant identifiable d'une recette (ex: "fond de veau", "sauce tomate", "purée de carottes"), vous devez **OBLIGATOIREMENT** vérifier s'il existe dans la "LISTE DES PRÉPARATIONS EXISTANTES".
-    - **SI OUI** : vous DEVEZ l'ajouter à la liste \`subRecipes\` avec son nom, une quantité et une unité. NE PAS mettre ses ingrédients dans la liste \`ingredients\`.
-    - **SI NON** : vous DEVEZ lister ses ingrédients bruts et ses étapes dans la recette principale (listes \`ingredients\` et procédures).
+2.  **RÈGLE DE COMPOSITION IMPÉRATIVE** :
+    - Pour chaque composant identifiable de la recette (ex: "fond de veau", "purée de carottes"), vérifiez s'il existe dans la "LISTE DES PRÉPARATIONS EXISTANTES".
+    - **SI OUI** : Ajoutez-le à la liste \`subRecipes\` avec une quantité et une unité. NE listez PAS ses propres ingrédients dans la liste \`ingredients\` de la recette principale.
+    - **SI NON** : Listez ses ingrédients bruts dans la liste \`ingredients\` et ses étapes dans les procédures de la recette principale.
 
-⚠️ **Règle stricte :**
--   NE JAMAIS INVENTER de sous-recette qui n'est pas dans la liste fournie.
--   NE JAMAIS lister une préparation existante comme un ingrédient simple.
--   NE JAMAIS placer un ingrédient brut (ex: "Crème fraîche", "Poivre noir", "Filet de boeuf") dans \`subRecipes\`. Ces éléments doivent obligatoirement aller dans \`ingredients\`.
+⚠️ **Erreurs à ne pas commettre :**
+-   NE JAMAIS inventer de sous-recette qui n'est pas dans la liste fournie.
+-   NE JAMAIS lister une préparation existante comme un simple ingrédient brut.
+-   NE JAMAIS placer un ingrédient de base (ex: "Filet de boeuf", "Sel", "Huile d'olive") dans \`subRecipes\`.
 
 ---
 ## DEMANDE UTILISATEUR
@@ -80,7 +83,6 @@ ${dishCategories.map(c => `- ${c}`).join('\n')}
 \`\`\`
 {{else}}
 **Créer une nouvelle fiche technique en respectant TOUTES les règles.**
-- Type de Fiche: {{{type}}}
 - Nom/Idée : {{{name}}}
 - Description: {{{description}}}
 - Ingrédients principaux : {{{mainIngredients}}}
@@ -101,11 +103,11 @@ ${dishCategories.map(c => `- ${c}`).join('\n')}
 
 ---
 ## INSTRUCTIONS DE FORMATAGE DE SORTIE
-- Remplissez tous les champs demandés (\`name\`, \`description\`, \`portions\`, \`category\`, \`commercialArgument\`, etc.).
+- **Ceci est un PLAT.** Remplissez tous les champs demandés, en particulier \`name\`, \`description\`, \`portions\`, \`category\`, et \`commercialArgument\`.
+- Les champs \`productionQuantity\`, \`productionUnit\`, \`usageUnit\` ne doivent PAS être présents dans la sortie finale pour un plat.
 - Le champ \`category\` DOIT correspondre à une des catégories de la liste fournie.
-- Si le nom n'est pas fourni, générez-en un qui soit créatif et marketing.
-- Les procédures doivent être claires, concises et utiliser le format Markdown.
-- Ne laissez aucun champ vide : utilisez \`[]\` ou \`""\` si nécessaire.
+- Si le nom n'est pas fourni, générez-en un qui soit créatif et vendeur.
+- Les procédures (préparation, cuisson, service/dressage) doivent être claires, concises et utiliser le format Markdown.
 - La sortie doit être un JSON strict et valide, sans aucun commentaire.
 `,
 });
@@ -133,32 +135,31 @@ const generateRecipeConceptFlow = ai.defineFlow(
             throw new Error("La génération du concept de la recette a échoué.");
         }
 
-        let finalOutput: RecipeConceptOutput = { ...recipeConcept, imageUrl: undefined };
+        let finalOutput: RecipeConceptOutput = { ...recipeConcept, type: 'Plat', imageUrl: undefined };
 
-        // 3. If it's a dish, generate an image
-        if (input.type === 'Plat') {
-            let imageUrl = `https://placehold.co/1024x768/fafafa/7d7d7d.png?text=${encodeURIComponent(recipeConcept.name)}`;
+        // 3. Generate an image for the dish
+        let imageUrl = `https://placehold.co/1024x768/fafafa/7d7d7d.png?text=${encodeURIComponent(recipeConcept.name)}`;
 
-            try {
-                const imagePrompt = `Photographie culinaire professionnelle, style magazine gastronomique. Plat : "${recipeConcept.name}". Description : "${recipeConcept.description}". Dressage : "${recipeConcept.procedure_service}". Éclairage de studio, faible profondeur de champ.`;
+        try {
+            const imagePrompt = `Photographie culinaire professionnelle, style magazine gastronomique. Plat : "${recipeConcept.name}". Description : "${recipeConcept.description}". Dressage : "${recipeConcept.procedure_service}". Éclairage de studio, faible profondeur de champ, assiette élégante.`;
 
-                const { media } = await ai.generate({
-                    model: 'googleai/imagen-4.0-fast-generate-001',
-                    prompt: imagePrompt,
+            const { media } = await ai.generate({
+                model: 'googleai/imagen-4.0-fast-generate-001',
+                prompt: imagePrompt,
+            });
+
+            if (media?.url) {
+                const uploadResult = await cloudinary.uploader.upload(media.url, {
+                    folder: "le-singulier-ai-generated",
+                    resource_type: "image",
                 });
-
-                if (media?.url) {
-                    const uploadResult = await cloudinary.uploader.upload(media.url, {
-                        folder: "le-singulier-ai-generated",
-                        resource_type: "image",
-                    });
-                    imageUrl = uploadResult.secure_url;
-                }
-            } catch (error) {
-                console.error("Erreur de génération/téléversement d'image, utilisation du placeholder.", error);
+                imageUrl = uploadResult.secure_url;
             }
-            finalOutput.imageUrl = imageUrl;
+        } catch (error) {
+            console.error("Erreur de génération/téléversement d'image, utilisation du placeholder.", error);
         }
+        finalOutput.imageUrl = imageUrl;
+        
 
         return finalOutput;
     }
