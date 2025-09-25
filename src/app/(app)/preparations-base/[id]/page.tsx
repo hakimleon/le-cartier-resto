@@ -2,7 +2,7 @@
 "use client";
 
 import { useParams } from 'next/navigation';
-import RecipeDetailClient from './RecipeDetailClient';
+import RecipeDetailClient from '../../preparations/[id]/RecipeDetailClient';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PreparationBaseDetailPage() {
@@ -19,6 +19,6 @@ export default function PreparationBaseDetailPage() {
   }
 
   return (
-      <RecipeDetailClient recipeId={recipeId} />
+      <RecipeDetailClient recipeId={recipeId} collectionName="preparations" />
   );
 }

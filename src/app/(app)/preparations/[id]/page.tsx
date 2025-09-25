@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import { useParams } from 'next/navigation';
@@ -20,6 +19,6 @@ export default function PreparationDetailPage() {
   }
 
   return (
-      <RecipeDetailClient recipeId={recipeId} />
+      <RecipeDetailClient recipeId={recipeId} collectionName="preparations"/>
   );
 }
