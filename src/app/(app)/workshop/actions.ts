@@ -18,8 +18,14 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
     try {
         let docRef;
         let dataToSave: Partial<Recipe | Preparation>;
+        
+        let targetCollection = collectionName;
+        // This is the critical fix: Ensure 'Plat' type always goes to 'recipes'.
+        if (concept.type === 'Plat') {
+            targetCollection = 'recipes';
+        }
 
-        if (collectionName === 'recipes' && concept.type === 'Plat') {
+        if (targetCollection === 'recipes' && concept.type === 'Plat') {
              dataToSave = {
                 type: 'Plat',
                 name: concept.name,
@@ -55,7 +61,7 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
             };
         }
         
-        const col = collection(db, collectionName);
+        const col = collection(db, targetCollection);
         docRef = await addDoc(col, dataToSave);
         
         return docRef.id;
