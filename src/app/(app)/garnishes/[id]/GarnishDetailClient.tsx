@@ -847,7 +847,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                                         <CardDescription>Liste des matières premières nécessaires.</CardDescription>
                                     </CardHeader>
                                 </AccordionTrigger>
-                                <AccordionContent className="px-6">
+                                <AccordionContent className="px-6 pb-6">
                                     {isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients(prev => [...prev, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, category: '' }])} className="mb-4"><PlusCircle className="mr-2 h-4 w-4"/>Ajouter</Button>}
                                     <Table>
                                         <TableHeader><TableRow><TableHead className="w-[35%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
@@ -901,7 +901,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                                         <CardDescription>Liste des préparations (fiches techniques internes) utilisées dans cette garniture.</CardDescription>
                                     </CardHeader>
                                 </AccordionTrigger>
-                                <AccordionContent className="px-6">
+                                <AccordionContent className="px-6 pb-6">
                                      {isEditing && <Button variant="outline" size="sm" onClick={() => setNewPreparations([...newPreparations, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, _productionUnit: '' }])} className="mb-4"><PlusCircle className="mr-2 h-4 w-4" />Ajouter</Button>}
                                     <Table>
                                         <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
@@ -1044,6 +1044,8 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
 
     
 
