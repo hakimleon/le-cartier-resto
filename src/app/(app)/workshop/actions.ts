@@ -19,9 +19,9 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
         let docRef;
         let dataToSave: Partial<Recipe | Preparation>;
         
-        let targetCollectionName: 'recipes' | 'preparations' | 'garnishes' = collectionName;
+        // This is the collection where the document will be saved.
+        let targetCollectionName: 'recipes' | 'preparations' | 'garnishes';
 
-        // Ensure a "Plat" always goes to the "recipes" collection.
         if (concept.type === 'Plat') {
             targetCollectionName = 'recipes';
             dataToSave = {
@@ -36,13 +36,15 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
                 duration: concept.duration,
                 portions: concept.portions || 1,
                 commercialArgument: concept.commercialArgument,
-                price: 0, 
-                status: 'Inactif',
-                category: concept.category || 'Plats et Grillades',
+                price: 0, // Default price, user will set it
+                status: 'Inactif', // Always inactive by default
+                category: concept.category || 'Plats et Grillades', // Default category
                 tvaRate: 10, // Default TVA rate
+                allergens: [], // Default empty
+                tags: [], // Default empty
             };
         } else { // This handles both 'preparations' and 'garnishes' which are both of type 'Préparation'
-             targetCollectionName = collectionName; // Use the provided collection name ('preparations' or 'garnishes')
+             targetCollectionName = collectionName;
              dataToSave = {
                 type: 'Préparation',
                 name: concept.name,
