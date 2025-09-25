@@ -35,6 +35,10 @@ const sortCategories = (categories: string[]) => {
   });
 };
 
+const formatCategoryForDisplay = (category: string) => {
+    return category.split('-')[0].trim();
+}
+
 export default function MenuClient() {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -243,7 +247,7 @@ export default function MenuClient() {
        <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
             <TabsList className="h-auto justify-start flex-wrap">
               {currentCategories.map(category => (
-                <TabsTrigger key={category} value={category} className="text-sm">{category}</TabsTrigger>
+                <TabsTrigger key={category} value={category} className="text-sm">{formatCategoryForDisplay(category)}</TabsTrigger>
               ))}
             </TabsList>
             <TabsContent value={selectedCategory} className="mt-4">
