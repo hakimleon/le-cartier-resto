@@ -76,7 +76,7 @@ export default function MenuClient() {
 
             recipesData.forEach(recipe => {
                 if (recipe.category) {
-                    const normalizedCategory = recipe.category.toLowerCase().trim();
+                    const normalizedCategory = formatCategoryForDisplay(recipe.category).toLowerCase();
                     if(recipe.status === 'Actif') {
                         if (!activeCategoryMap.has(normalizedCategory)) {
                             activeCategoryMap.set(normalizedCategory, recipe.category);
@@ -146,7 +146,7 @@ export default function MenuClient() {
     return recipes.filter(recipe => {
         const statusMatch = recipe.status === selectedStatus;
         const searchTermMatch = searchTerm === '' || recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const categoryMatch = selectedCategory === 'Tous' || recipe.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim();
+        const categoryMatch = selectedCategory === 'Tous' || formatCategoryForDisplay(recipe.category) === formatCategoryForDisplay(selectedCategory);
         return statusMatch && searchTermMatch && categoryMatch;
     });
   }, [recipes, searchTerm, selectedCategory, selectedStatus]);
