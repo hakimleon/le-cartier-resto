@@ -22,8 +22,10 @@ type MarkdownNode = {
 function parseMarkdown(md: string): MarkdownNode[] {
     if (!md) return [];
     
+    // Add a newline before any number followed by a dot, if it's not already at the start of a line.
     let sanitizedMd = md
       .replace(/\r\n/g, "\n")
+      .replace(/(\S)(\s*)(\d+\.\s)/g, '$1\n$3') 
       .replace(/\n{2,}/g, '\n');
 
     const lines = sanitizedMd.split("\n");
@@ -37,16 +39,15 @@ function parseMarkdown(md: string): MarkdownNode[] {
             continue;
         }
         
-        const hMatch = line.match(/^(#{1,6})\s*(.*)$/);
+        const hMatch = line.match(/^(#{1,3})\s*(.*)$/);
         if (hMatch) {
             const level = hMatch[1].length;
-            nodes.push({ type: `h${level}`, content: hMatch[2].trim() });
+            nodes.push({ type: `h${level + 2}`, content: hMatch[2].trim() });
             i++;
             continue;
         }
         
-        const olMatch = line.match(/^(\d+)\.\s+(.*)/);
-        if (olMatch) {
+        if (line.match(/^(\d+)\.\s/)) {
             const items: string[] = [];
             while (i < lines.length) {
                 const currentLine = lines[i]?.trim();
@@ -61,7 +62,6 @@ function parseMarkdown(md: string): MarkdownNode[] {
             nodes.push({ type: "ol", items });
             continue;
         }
-
 
         if (line.startsWith("- ")) {
             const items: string[] = [];
@@ -114,7 +114,7 @@ export default function MarkdownRenderer({ text }: { text: string | undefined })
         }
          if (n.type === "ol") {
           return (
-            <ol key={idx} className="list-decimal list-inside mb-4 space-y-1">
+            <ol key={idx} className="list-decimal list-inside mb-4 space-y-1.5">
               {n.items?.map((it, i) => (
                 <li key={i} dangerouslySetInnerHTML={{ __html: inlineFormat(it) }} />
               ))}
