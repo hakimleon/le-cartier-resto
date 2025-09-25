@@ -17,20 +17,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 
 const sortCategories = (categories: string[]) => {
-  const customOrder = [
-    "Entrées froides",
-    "Entrées chaudes",
-    "Plats et Grillades",
-    "Les mets de chez nous",
-    "Symphonie de pâtes",
-    "Nos Burgers Bistronomiques",
-    "Dessert",
-    "Élixirs & Rafraîchissements",
-  ];
+  const customOrder = dishCategories;
 
   return [...categories].sort((a, b) => {
-    const indexA = customOrder.indexOf(a);
-    const indexB = customOrder.indexOf(b);
+    const indexA = customOrder.indexOf(a as any);
+    const indexB = customOrder.indexOf(b as any);
 
     if (indexA === -1 && indexB === -1) {
       return a.localeCompare(b);
@@ -49,6 +40,9 @@ export default function MenuClient() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeCategories, setActiveCategories] = useState<string[]>([]);
+  const [inactiveCategories, setInactiveCategories] = useState<string[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [selectedStatus, setSelectedStatus] = useState<'Actif' | 'Inactif'>('Actif');
   const { toast } = useToast();
 
@@ -70,6 +64,30 @@ export default function MenuClient() {
             );
             
             setRecipes(recipesData);
+            
+            const activeCategoryMap = new Map<string, string>();
+            const inactiveCategoryMap = new Map<string, string>();
+
+            recipesData.forEach(recipe => {
+                if (recipe.category) {
+                    const normalizedCategory = recipe.category.toLowerCase().trim();
+                    if(recipe.status === 'Actif') {
+                        if (!activeCategoryMap.has(normalizedCategory)) {
+                            activeCategoryMap.set(normalizedCategory, recipe.category);
+                        }
+                    } else {
+                         if (!inactiveCategoryMap.has(normalizedCategory)) {
+                            inactiveCategoryMap.set(normalizedCategory, recipe.category);
+                        }
+                    }
+                }
+            });
+            
+            const uniqueActiveCategories = Array.from(activeCategoryMap.values());
+            const uniqueInactiveCategories = Array.from(inactiveCategoryMap.values());
+            
+            setActiveCategories(["Tous", ...sortCategories(uniqueActiveCategories)]);
+            setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
             setError(null);
         } catch(e: any) {
             console.error("Error processing recipes snapshot: ", e);
@@ -89,6 +107,10 @@ export default function MenuClient() {
         }
     };
   }, []);
+  
+   useEffect(() => {
+    setSelectedCategory("Tous");
+  }, [selectedStatus]);
 
   const handleDelete = async (id: string, name: string) => {
       try {
@@ -109,37 +131,26 @@ export default function MenuClient() {
   
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
+    if (e.target.value) {
+      setSelectedCategory("Tous");
+    }
   };
 
   const filteredRecipes = useMemo(() => {
     return recipes.filter(recipe => {
         const statusMatch = recipe.status === selectedStatus;
         const searchTermMatch = searchTerm === '' || recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
-        return statusMatch && searchTermMatch;
+        const categoryMatch = selectedCategory === 'Tous' || recipe.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim();
+        return statusMatch && searchTermMatch && categoryMatch;
     });
-  }, [recipes, searchTerm, selectedStatus]);
-
-  const recipesByCategory = useMemo(() => {
-    const grouped = new Map<string, Recipe[]>();
-    dishCategories.forEach(cat => grouped.set(cat, []));
-
-    filteredRecipes.forEach(recipe => {
-        if (recipe.category && grouped.has(recipe.category)) {
-            grouped.get(recipe.category)!.push(recipe);
-        }
-    });
-
-    return Array.from(grouped.entries())
-        .map(([category, dishes]) => ({ category, dishes }))
-        .filter(group => group.dishes.length > 0);
-  }, [filteredRecipes]);
+  }, [recipes, searchTerm, selectedCategory, selectedStatus]);
 
 
-  const renderRecipeList = () => {
+  const renderRecipeList = (recipeList: Recipe[]) => {
     if (isLoading) {
        return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-            {Array.from({ length: 8 }).map((_, i) => (
+            {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex flex-col space-y-3">
                     <div className="h-48 rounded-md bg-muted animate-pulse" />
                     <div className="space-y-2">
@@ -151,31 +162,26 @@ export default function MenuClient() {
         </div>
       );
     }
-    if (filteredRecipes.length === 0) {
+    if (recipeList.length === 0) {
       return <div className="text-center text-muted-foreground pt-12">Aucun plat ne correspond à vos critères.</div>;
     }
-
     return (
-        <div className="space-y-8">
-            {recipesByCategory.map(({ category, dishes }) => (
-                <div key={category}>
-                    <h2 className="text-xl font-bold tracking-tight text-muted-foreground mb-4">{category}</h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        {dishes.map((recipe) => (
-                            <RecipeCard 
-                                key={recipe.id} 
-                                recipe={recipe} 
-                                allCategories={dishCategories.slice()}
-                                onDelete={() => handleDelete(recipe.id!, recipe.name)}
-                            />
-                        ))}
-                    </div>
-                </div>
-            ))}
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {recipeList.map((recipe) => (
+          <RecipeCard 
+            key={recipe.id} 
+            recipe={recipe} 
+            allCategories={dishCategories.slice()}
+            onDelete={() => handleDelete(recipe.id!, recipe.name)}
+          />
+        ))}
+      </div>
     );
   };
   
+  const currentCategories = selectedStatus === 'Actif' ? activeCategories : inactiveCategories;
+
+
   if (error && !isFirebaseConfigured) {
     return (
         <Alert variant="destructive" className="max-w-2xl mx-auto">
@@ -234,10 +240,16 @@ export default function MenuClient() {
         </div>
       </div>
 
-      <div className="pt-4">
-        {renderRecipeList()}
-      </div>
-
+       <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
+            <TabsList className="h-auto justify-start flex-wrap">
+              {currentCategories.map(category => (
+                <TabsTrigger key={category} value={category} className="text-sm">{category}</TabsTrigger>
+              ))}
+            </TabsList>
+            <TabsContent value={selectedCategory} className="mt-4">
+               {renderRecipeList(filteredRecipes)}
+            </TabsContent>
+        </Tabs>
     </div>
   );
 }
