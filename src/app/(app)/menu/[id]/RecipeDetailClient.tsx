@@ -207,22 +207,33 @@ const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExisti
 
 const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredientModal, handleRemoveNewIngredient, sortedIngredients }: { newIng: NewRecipeIngredient, handleNewIngredientChange: any, openNewIngredientModal: any, handleRemoveNewIngredient: any, sortedIngredients: Ingredient[] }) => {
     const [openCombobox, setOpenCombobox] = useState(false);
+    const isLinked = !!newIng.ingredientId;
 
     return (
         <TableRow key={newIng.tempId}>
             <TableCell>
-                <div className="flex items-center gap-1">
+                 <div className="flex items-center gap-1">
                     <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
                         <PopoverTrigger asChild>
-                            <Button variant="outline" role="combobox" aria-expanded={openCombobox} className="w-full justify-between">
-                                {newIng.ingredientId ? sortedIngredients.find((ing) => ing.id === newIng.ingredientId)?.name : newIng.name || "Choisir..."}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={openCombobox}
+                                className={cn("w-full justify-between", !isLinked && "border-dashed border-orange-500 text-orange-600 hover:text-orange-700")}
+                            >
+                                <span className="truncate">{newIng.name || "Choisir un ingrédient..."}</span>
+                                {!isLinked ? <PlusCircle className="h-4 w-4 shrink-0"/> : <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" /> }
                             </Button>
                         </PopoverTrigger>
                         <PopoverContent className="w-[300px] p-0">
-                            <Command>
+                            <Command
+                                filter={(value, search) => {
+                                    if (value.toLowerCase().includes(search.toLowerCase())) return 1
+                                    return 0
+                                }}
+                            >
                                 <CommandInput
-                                    placeholder="Rechercher ou taper un nom..."
+                                    placeholder="Rechercher ou créer..."
                                     value={newIng.name}
                                     onValueChange={(search) => {
                                         handleNewIngredientChange(newIng.tempId, 'name', search);
@@ -230,7 +241,7 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                                     }}
                                 />
                                 <CommandList>
-                                     <CommandEmpty>
+                                    <CommandEmpty>
                                         <Button variant="ghost" className="w-full justify-start" onClick={() => {
                                             setOpenCombobox(false);
                                             openNewIngredientModal(newIng.tempId);
@@ -272,6 +283,7 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
         </TableRow>
     )
 }
+
 
 const EditablePreparationRow = ({ prep, handlePreparationChange, handleRemoveExistingPreparation }: { prep: FullRecipePreparation, handlePreparationChange: any, handleRemoveExistingPreparation: any }) => {
     return (
@@ -1241,3 +1253,4 @@ function RecipeDetailSkeleton() {
     );
 }
 
+    
