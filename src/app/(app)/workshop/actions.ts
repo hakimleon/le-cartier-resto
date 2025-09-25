@@ -19,14 +19,12 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
         let docRef;
         let dataToSave: Partial<Recipe | Preparation>;
         
-        let targetCollection = collectionName;
-        // This is the critical fix: Ensure 'Plat' type always goes to 'recipes'.
-        if (concept.type === 'Plat') {
-            targetCollection = 'recipes';
-        }
+        let targetCollectionName: 'recipes' | 'preparations' | 'garnishes' = collectionName;
 
-        if (targetCollection === 'recipes' && concept.type === 'Plat') {
-             dataToSave = {
+        // Ensure a "Plat" always goes to the "recipes" collection.
+        if (concept.type === 'Plat') {
+            targetCollectionName = 'recipes';
+            dataToSave = {
                 type: 'Plat',
                 name: concept.name,
                 description: concept.description,
@@ -43,8 +41,9 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
                 category: concept.category || 'Plats et Grillades',
                 tvaRate: 10, // Default TVA rate
             };
-        } else { // This handles both 'preparations' and 'garnishes' collections
-            dataToSave = {
+        } else { // This handles both 'preparations' and 'garnishes' which are both of type 'Préparation'
+             targetCollectionName = collectionName; // Use the provided collection name ('preparations' or 'garnishes')
+             dataToSave = {
                 type: 'Préparation',
                 name: concept.name,
                 description: concept.description,
@@ -61,7 +60,7 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
             };
         }
         
-        const col = collection(db, targetCollection);
+        const col = collection(db, targetCollectionName);
         docRef = await addDoc(col, dataToSave);
         
         return docRef.id;
