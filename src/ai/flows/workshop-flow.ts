@@ -76,6 +76,7 @@ export type RecipeConceptInput = z.infer<typeof RecipeConceptInputSchema>;
 export const RecipeConceptOutputSchema = z.object({
     name: z.string().describe("Le nom final et marketing de la recette."),
     description: z.string().describe("Une description alléchante et créative."),
+    type: z.literal('Plat').describe("Le type doit toujours être 'Plat'."),
     
     ingredients: z.array(GeneratedIngredientSchema).describe("Liste des ingrédients nécessaires."),
     subRecipes: z.array(SubRecipeSchema).describe("Liste des sous-recettes EXISTANTES utilisées."),
@@ -87,13 +88,9 @@ export const RecipeConceptOutputSchema = z.object({
     duration: z.number().int().describe("Durée totale en minutes."),
     difficulty: z.enum(['Facile', 'Moyen', 'Difficile']).describe("Niveau de difficulté."),
     
-    category: z.enum(dishCategories).optional().describe("Catégorie du plat, si applicable."),
-    portions: z.number().int().optional().describe("Nombre de portions, si c'est un plat."),
-    commercialArgument: z.string().optional().describe("Argumentaire commercial, si c'est un plat."),
-    imageUrl: z.string().url().optional().describe("URL de l'image générée, si c'est un plat."),
-
-    productionQuantity: z.number().optional().describe("Quantité totale produite, si c'est une préparation."),
-    productionUnit: z.string().optional().describe("Unité de production (kg, l, pièces), si c'est une préparation."),
-    usageUnit: z.string().optional().describe("Unité d'utilisation suggérée (g, ml, pièce), si c'est une préparation."),
+    category: z.enum(dishCategories).describe("Catégorie du plat."),
+    portions: z.number().int().describe("Nombre de portions pour ce plat."),
+    commercialArgument: z.string().optional().describe("Argumentaire commercial pour le menu."),
+    imageUrl: z.string().url().optional().describe("URL de l'image générée."),
 });
 export type RecipeConceptOutput = z.infer<typeof RecipeConceptOutputSchema>;
