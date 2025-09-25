@@ -77,7 +77,8 @@ ${dishCategories.map(c => `- ${c}`).join('\n')}
 ## DEMANDE UTILISATEUR
 
 {{#if rawRecipe}}
-**Priorité : Reformater la recette brute suivante en respectant TOUTES les règles.**
+**Priorité absolue : Reformater la recette brute suivante en respectant TOUTES les règles.**
+**La liste d'ingrédients ci-dessous est la SEULE source pour le champ \`ingredients\` de la sortie.**
 \`\`\`
 {{{rawRecipe}}}
 \`\`\`
