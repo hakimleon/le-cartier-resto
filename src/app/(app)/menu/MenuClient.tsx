@@ -61,8 +61,7 @@ export default function MenuClient() {
     
     setIsLoading(true);
     const recipesCol = collection(db, "recipes");
-    // TEMPORAIRE: Affiche tous les types pour permettre la suppression des éléments corrompus
-    const q = query(recipesCol);
+    const q = query(recipesCol, where("type", "==", "Plat"));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         try {
