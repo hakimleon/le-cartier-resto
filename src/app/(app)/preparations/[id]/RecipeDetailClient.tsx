@@ -47,7 +47,6 @@ import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { RecipeConceptOutput } from "@/ai/flows/recipe-workshop-flow";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent } from "@/components/ui/dialog";
-import { PrintLink } from "@/components/pdf/PrintLink";
 
 
 const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
@@ -821,7 +820,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-             <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+            <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
                 <AccordionItem value="item-1">
                     <Card>
                         <AccordionTrigger className="p-6 w-full">
@@ -1084,3 +1083,4 @@ function RecipeDetailSkeleton() {
     );
 }
 
+    

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -17,6 +18,12 @@ import { useToast } from "@/hooks/use-toast";
 import { updateRecipeDetails, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, replaceRecipeIngredients, replaceRecipePreparations } from "@/app/(app)/menu/actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -1028,84 +1035,118 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-8">
-             <Card>
-                <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, category: '' }])}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Ingrédient</Button>}</CardTitle><CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription></CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader><TableRow><TableHead className="w-[35%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[100px] text-right">Actions</TableHead>}</TableRow></TableHeader>
-                        <TableBody>
-                            {isEditing && editableIngredients.map(ing => (
-                                <EditableIngredientRow
-                                    key={ing.recipeIngredientId}
-                                    ing={ing}
-                                    handleIngredientChange={handleIngredientChange}
-                                    handleRemoveExistingIngredient={handleRemoveExistingIngredient}
-                                    sortedIngredients={sortedIngredients}
-                                    handleOpenSuggestionModal={handleOpenSuggestionModal}
-                                />
-                            ))}
-                            {!isEditing && ingredients.map(ing => ( <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>))}
-                            {isEditing && newIngredients.map((newIng) => (
-                                <NewIngredientRow
-                                    key={newIng.tempId}
-                                    newIng={newIng}
-                                    handleNewIngredientChange={handleNewIngredientChange}
-                                    openNewIngredientModal={openNewIngredientModal}
-                                    handleRemoveNewIngredient={handleRemoveNewIngredient}
-                                    sortedIngredients={sortedIngredients}
-                                    handleOpenSuggestionModal={handleOpenSuggestionModal}
-                                />
-                            ))}
-                            {ingredients.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><BookCopy className="h-5 w-5"/>Sous-Recettes</div>{isEditing && <Button variant="outline" size="sm" onClick={handleAddNewPreparation}><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Préparation</Button>}</CardTitle><CardDescription>Liste des préparations utilisées dans cette recette.</CardDescription></CardHeader>
-                <CardContent>
-                    <Table>
-                        <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
-                        <TableBody>
-                            {isEditing && editablePreparations.map(prep => (
-                                <EditablePreparationRow
-                                    key={prep.id}
-                                    prep={prep}
-                                    handlePreparationChange={handlePreparationChange}
-                                    handleRemoveExistingPreparation={handleRemoveExistingPreparation}
-                                />
-                            ))}
-                            {!isEditing && preparations.map(prep => (
-                                <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
-                            ))}
-                            {isEditing && newPreparations.map((prep) => (
-                                <NewPreparationRow
-                                    key={prep.tempId}
-                                    prep={prep}
-                                    handleNewPreparationChange={handleNewPreparationChange}
-                                    openNewPreparationModal={openNewPreparationModal}
-                                    handleRemoveNewPreparation={handleRemoveNewPreparation}
-                                    allPreparations={allPreparations}
-                                    recipeId={recipeId}
-                                />
-                            ))}
-                            {preparations.length === 0 && newPreparations.length === 0 && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
-                        </TableBody>
-                    </Table>
-                </CardContent>
-            </Card>
+            <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
+                <AccordionItem value="item-1">
+                    <Card>
+                        <AccordionTrigger className="p-6 w-full">
+                            <CardHeader className="p-0 text-left">
+                                <CardTitle className="flex items-center gap-2"><Utensils className="h-5 w-5"/>Ingrédients</CardTitle>
+                                <CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription>
+                            </CardHeader>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-6">
+                            {isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, category: '' }])} className="mb-4"><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Ingrédient</Button>}
+                            <Table>
+                                <TableHeader><TableRow><TableHead className="w-[35%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[100px] text-right">Actions</TableHead>}</TableRow></TableHeader>
+                                <TableBody>
+                                    {isEditing && editableIngredients.map(ing => (
+                                        <EditableIngredientRow
+                                            key={ing.recipeIngredientId}
+                                            ing={ing}
+                                            handleIngredientChange={handleIngredientChange}
+                                            handleRemoveExistingIngredient={handleRemoveExistingIngredient}
+                                            sortedIngredients={sortedIngredients}
+                                            handleOpenSuggestionModal={handleOpenSuggestionModal}
+                                        />
+                                    ))}
+                                    {!isEditing && ingredients.map(ing => ( <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>))}
+                                    {isEditing && newIngredients.map((newIng) => (
+                                        <NewIngredientRow
+                                            key={newIng.tempId}
+                                            newIng={newIng}
+                                            handleNewIngredientChange={handleNewIngredientChange}
+                                            openNewIngredientModal={openNewIngredientModal}
+                                            handleRemoveNewIngredient={handleRemoveNewIngredient}
+                                            sortedIngredients={sortedIngredients}
+                                            handleOpenSuggestionModal={handleOpenSuggestionModal}
+                                        />
+                                    ))}
+                                    {ingredients.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
+                                </TableBody>
+                            </Table>
+                        </AccordionContent>
+                    </Card>
+                </AccordionItem>
+            </Accordion>
+            
+            <Accordion type="single" collapsible defaultValue="item-1">
+                <AccordionItem value="item-1">
+                    <Card>
+                        <AccordionTrigger className="p-6 w-full">
+                            <CardHeader className="p-0 text-left">
+                                <CardTitle className="flex items-center gap-2"><BookCopy className="h-5 w-5"/>Sous-Recettes</CardTitle>
+                                <CardDescription>Liste des préparations utilisées dans cette recette.</CardDescription>
+                            </CardHeader>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-6">
+                            {isEditing && <Button variant="outline" size="sm" onClick={handleAddNewPreparation} className="mb-4"><PlusCircle className="mr-2 h-4 w-4"/>Ajouter Préparation</Button>}
+                            <Table>
+                                <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
+                                <TableBody>
+                                    {isEditing && editablePreparations.map(prep => (
+                                        <EditablePreparationRow
+                                            key={prep.id}
+                                            prep={prep}
+                                            handlePreparationChange={handlePreparationChange}
+                                            handleRemoveExistingPreparation={handleRemoveExistingPreparation}
+                                        />
+                                    ))}
+                                    {!isEditing && preparations.map(prep => (
+                                        <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
+                                    ))}
+                                    {isEditing && newPreparations.map((prep) => (
+                                        <NewPreparationRow
+                                            key={prep.tempId}
+                                            prep={prep}
+                                            handleNewPreparationChange={handleNewPreparationChange}
+                                            openNewPreparationModal={openNewPreparationModal}
+                                            handleRemoveNewPreparation={handleRemoveNewPreparation}
+                                            allPreparations={allPreparations}
+                                            recipeId={recipeId}
+                                        />
+                                    ))}
+                                    {preparations.length === 0 && newPreparations.length === 0 && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
+                                </TableBody>
+                            </Table>
+                        </AccordionContent>
+                    </Card>
+                </AccordionItem>
+            </Accordion>
 
             <Card>
                 <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/>Procédure</CardTitle></CardHeader>
                 <CardContent>
                    {isEditing ? (
-                        <Tabs defaultValue="preparation">
-                            <TabsList><TabsTrigger value="preparation">Préparation</TabsTrigger><TabsTrigger value="cuisson">Cuisson</TabsTrigger><TabsTrigger value="service">Service</TabsTrigger></TabsList>
-                            <TabsContent value="preparation" className="pt-4"><Textarea value={editableRecipe?.procedure_preparation || ''} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={8}/></TabsContent>
-                            <TabsContent value="cuisson" className="pt-4"><Textarea value={editableRecipe?.procedure_cuisson || ''} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={8} /></TabsContent>
-                            <TabsContent value="service" className="pt-4"><Textarea value={editableRecipe?.procedure_service || ''} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={8} /></TabsContent>
-                        </Tabs>
+                        <Accordion type="multiple" defaultValue={['item-1']} className="w-full">
+                            <AccordionItem value="item-1">
+                                <AccordionTrigger>Préparation</AccordionTrigger>
+                                <AccordionContent>
+                                    <Textarea value={editableRecipe?.procedure_preparation || ''} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={10} placeholder="Décrivez les étapes de préparation..."/>
+                                </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="item-2">
+                                <AccordionTrigger>Cuisson</AccordionTrigger>
+                                <AccordionContent>
+                                    <Textarea value={editableRecipe?.procedure_cuisson || ''} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={10} placeholder="Décrivez les étapes de cuisson..."/>
+                                </AccordionContent>
+                            </AccordionItem>
+                            <AccordionItem value="item-3">
+                                <AccordionTrigger>Service / Stockage</AccordionTrigger>
+                                <AccordionContent>
+                                    <Textarea value={editableRecipe?.procedure_service || ''} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={10} placeholder="Décrivez les étapes de service, conservation, etc..."/>
+                                </AccordionContent>
+                            </AccordionItem>
+                        </Accordion>
                    ) : (
                         <Tabs defaultValue="preparation">
                             <TabsList>
@@ -1256,3 +1297,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
