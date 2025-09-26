@@ -4,26 +4,6 @@
 import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch, query, where, getDocs, serverTimestamp, FieldValue } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Recipe, RecipePreparationLink, Preparation, RecipeIngredientLink } from '@/lib/types';
-import { v2 as cloudinary } from 'cloudinary';
-
-// La configuration est implicite via les variables d'environnement
-// CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET
-
-export async function uploadImageToServer(dataUri: string): Promise<string> {
-    try {
-        const uploadResult = await cloudinary.uploader.upload(dataUri, {
-            folder: "le-singulier-ai-generated", // On réutilise le même dossier
-            resource_type: "image",
-        });
-        return uploadResult.secure_url;
-    } catch (error) {
-        console.error("Cloudinary upload failed:", error);
-        if (error instanceof Error) {
-           throw new Error(`Échec du téléversement sur Cloudinary: ${error.message}`);
-        }
-        throw new Error("Échec du téléversement sur Cloudinary en raison d'une erreur inconnue.");
-    }
-}
 
 
 export async function saveDish(recipe: Partial<Omit<Recipe, 'id'>> & { type: 'Plat', name: string }, id: string | null) {

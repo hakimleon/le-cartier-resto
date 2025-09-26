@@ -1,4 +1,3 @@
-
 "use client";
 
 import React from 'react';
@@ -202,7 +201,7 @@ export const RecipePDFDocument = ({ recipe, ingredients, preparations, totalCost
                         <View style={styles.table}>
                              <View style={styles.tableRow}>
                                 <View style={{...styles.tableColHeader, width: '55%'}}><Text style={styles.bold}>Nom</Text></View>
-                                <View style={{...styles.tableColHeader}><Text style={styles.bold}>Quantité</Text></View>
+                                <View style={styles.tableColHeader}><Text style={styles.bold}>Quantité</Text></View>
                                 <View style={styles.tableColHeader}><Text style={styles.bold}>Unité</Text></View>
                             </View>
                             {preparations.map(prep => (

@@ -46,12 +46,12 @@ import { PreparationModal } from "../../preparations/PreparationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ImagePreviewModal } from "./ImagePreviewModal";
-import { ImageUploadDialog } from "./ImageUploadDialog";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Tooltip, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { PrintLink } from "@/components/pdf/PrintLink";
 
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
@@ -394,7 +394,6 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
     const { toast } = useToast();
 
     const [isEditing, setIsEditing] = useState(false);
-    const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
     const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
 
     const [newIngredients, setNewIngredients] = useState<NewRecipeIngredient[]>([]);
@@ -944,11 +943,6 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
             <PreparationModal open={isNewPreparationModalOpen} onOpenChange={setIsNewPreparationModalOpen} preparation={newPreparationDefaults} onSuccess={(newDbPrep) => { if (newDbPrep && currentPrepTempId) { handleCreateAndLinkPreparation(currentPrepTempId, newDbPrep); } }}><div /></PreparationModal>
             {isPlat && (
                 <>
-                    <ImageUploadDialog 
-                        isOpen={isImageUploadOpen} 
-                        onClose={() => setIsImageUploadOpen(false)} 
-                        onUploadComplete={(url) => { handleRecipeDataChange('imageUrl', url); }}
-                    />
                     {currentRecipeData.imageUrl && (
                         <ImagePreviewModal
                             isOpen={isImagePreviewOpen}
@@ -994,6 +988,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                             {isPlat && <Badge variant={(recipe as Recipe).status === 'Actif' ? 'default' : 'secondary'} className={cn((recipe as Recipe).status === 'Actif' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>{(recipe as Recipe).status}</Badge>}
                             <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {recipe.duration} min</div>
                             <div className="flex items-center gap-1.5"><Soup className="h-4 w-4" /> {recipe.difficulty}</div>
+                             <PrintLink recipe={recipe} ingredients={ingredients} preparations={preparations} totalCost={totalRecipeCost} />
                         </div>
                     </div>
                 </div>
@@ -1031,11 +1026,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <p className="text-white bg-black/50 px-4 py-2 rounded-md">Agrandir</p>
                                     </div>
-                                    {isEditing && (
-                                        <div className="absolute bottom-4 right-4 z-10">
-                                            <Button variant="secondary" onClick={(e) => { e.stopPropagation(); setIsImageUploadOpen(true); }}><ImageIcon className="mr-2 h-4 w-4" />Changer la photo</Button>
-                                        </div>
-                                    )}
+                                    
                                 </div>
                             </CardContent>
                         </Card>
