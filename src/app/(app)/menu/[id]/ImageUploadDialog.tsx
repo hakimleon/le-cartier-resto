@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -7,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { CldUploadButton } from "next-cloudinary";
 import { ImagePlus, CheckCircle, Loader2, AlertTriangle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getCloudinaryImages, CloudinaryResource } from "../cloudinary-actions";
+import { CloudinaryResource } from "../cloudinary-actions";
 import Image from "next/image";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
@@ -17,40 +18,26 @@ type ImageUploadDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   onUploadComplete: (url: string) => void;
+  cloudinaryImages: CloudinaryResource[];
+  isLoadingImages: boolean;
+  imagesError: string | null;
 };
 
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
 const FOLDER_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'le-singulier-ai-generated';
 
-function GalleryTab({ onSelect }: { onSelect: (url: string) => void }) {
-    const [images, setImages] = useState<CloudinaryResource[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
+function GalleryTab({ 
+    images, 
+    isLoading, 
+    error, 
+    onSelect 
+}: { 
+    images: CloudinaryResource[]; 
+    isLoading: boolean;
+    error: string | null;
+    onSelect: (url: string) => void 
+}) {
     const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
-    const { toast } = useToast();
-
-    useEffect(() => {
-        const fetchImages = async () => {
-            try {
-                const result = await getCloudinaryImages();
-                if(result.error){
-                    throw new Error(result.error);
-                }
-                setImages(result.images);
-            } catch (err) {
-                 const errorMessage = err instanceof Error ? err.message : "Une erreur inconnue est survenue.";
-                 setError(errorMessage);
-                 toast({
-                    title: "Erreur de chargement de la galerie",
-                    description: errorMessage,
-                    variant: "destructive",
-                });
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchImages();
-    }, [toast]);
     
     const handleSelectAndConfirm = () => {
         if (selectedUrl) {
@@ -124,7 +111,7 @@ function GalleryTab({ onSelect }: { onSelect: (url: string) => void }) {
     );
 }
 
-export function ImageUploadDialog({ isOpen, onClose, onUploadComplete }: ImageUploadDialogProps) {
+export function ImageUploadDialog({ isOpen, onClose, onUploadComplete, cloudinaryImages, isLoadingImages, imagesError }: ImageUploadDialogProps) {
     const { toast } = useToast();
     
     const handleSuccess = (result: any) => {
@@ -166,7 +153,12 @@ export function ImageUploadDialog({ isOpen, onClose, onUploadComplete }: ImageUp
                 </div>
 
                 <TabsContent value="gallery" className="flex-grow mt-0 overflow-y-auto">
-                    <GalleryTab onSelect={onUploadComplete} />
+                    <GalleryTab 
+                        images={cloudinaryImages} 
+                        isLoading={isLoadingImages}
+                        error={imagesError}
+                        onSelect={onUploadComplete} 
+                    />
                 </TabsContent>
 
                 <TabsContent value="upload" className="mt-0 flex-grow">

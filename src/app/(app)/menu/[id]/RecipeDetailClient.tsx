@@ -51,6 +51,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Tooltip, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { CloudinaryResource, getCloudinaryImages } from "../cloudinary-actions";
 
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
@@ -405,6 +406,12 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
     const [newIngredientDefaults, setNewIngredientDefaults] = useState<Partial<Ingredient> | null>(null);
     const [currentTempId, setCurrentTempId] = useState<string | null>(null);
     const [workshopConcept, setWorkshopConcept] = useState<RecipeConceptOutput | null>(null);
+    
+    // State for Cloudinary Gallery
+    const [cloudinaryImages, setCloudinaryImages] = useState<CloudinaryResource[]>([]);
+    const [isLoadingImages, setIsLoadingImages] = useState(false);
+    const [imagesError, setImagesError] = useState<string | null>(null);
+
 
     const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
         const costs: Record<string, number> = {};
@@ -552,6 +559,18 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
             try {
                 setIsLoading(true);
                 await fullDataRefresh();
+
+                // Fetch Cloudinary images
+                setIsLoadingImages(true);
+                const imageResult = await getCloudinaryImages();
+                if (imageResult.error) {
+                    setImagesError(imageResult.error);
+                } else {
+                    setCloudinaryImages(imageResult.images);
+                }
+                setIsLoadingImages(false);
+
+
                 const conceptJSON = sessionStorage.getItem(WORKSHOP_CONCEPT_KEY);
                 if (conceptJSON && isMounted) {
                     setIsEditing(true);
@@ -941,7 +960,14 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
             <PreparationModal open={isNewPreparationModalOpen} onOpenChange={setIsNewPreparationModalOpen} preparation={newPreparationDefaults} onSuccess={(newDbPrep) => { if (newDbPrep && currentPrepTempId) { handleCreateAndLinkPreparation(currentPrepTempId, newDbPrep); } }}><div /></PreparationModal>
             {isPlat && currentRecipeData.imageUrl && (
                 <>
-                    <ImageUploadDialog isOpen={isImageUploadOpen} onClose={() => setIsImageUploadOpen(false)} onUploadComplete={(url) => { handleRecipeDataChange('imageUrl', url); }} />
+                    <ImageUploadDialog 
+                        isOpen={isImageUploadOpen} 
+                        onClose={() => setIsImageUploadOpen(false)} 
+                        onUploadComplete={(url) => { handleRecipeDataChange('imageUrl', url); }}
+                        cloudinaryImages={cloudinaryImages}
+                        isLoadingImages={isLoadingImages}
+                        imagesError={imagesError}
+                    />
                     <ImagePreviewModal
                         isOpen={isImagePreviewOpen}
                         onClose={() => setIsImagePreviewOpen(false)}
@@ -1302,5 +1328,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
