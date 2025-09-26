@@ -2,7 +2,7 @@
 "use client";
 
 import { useParams } from 'next/navigation';
-import GarnishDetailClient from './GarnishDetailClient';
+import RecipeDetailClient from '../../menu/[id]/RecipeDetailClient';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function GarnishDetailPage() {
@@ -19,7 +19,7 @@ export default function GarnishDetailPage() {
   }
 
   return (
-      <GarnishDetailClient recipeId={recipeId} />
+      <RecipeDetailClient recipeId={recipeId} collectionName="garnishes" />
   );
 }
 

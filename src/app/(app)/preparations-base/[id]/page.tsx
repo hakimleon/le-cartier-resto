@@ -2,7 +2,7 @@
 "use client";
 
 import { useParams } from 'next/navigation';
-import RecipeDetailClient from '../../preparations/[id]/RecipeDetailClient';
+import RecipeDetailClient from '../../menu/[id]/RecipeDetailClient';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function PreparationBaseDetailPage() {
@@ -22,3 +22,5 @@ export default function PreparationBaseDetailPage() {
       <RecipeDetailClient recipeId={recipeId} collectionName="preparations" />
   );
 }
+
+    

@@ -19,6 +19,8 @@ export default function RecipeDetailPage() {
   }
   
   return (
-    <RecipeDetailClient recipeId={recipeId} />
+    <RecipeDetailClient recipeId={recipeId} collectionName="recipes" />
   );
 }
+
+    
