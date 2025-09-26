@@ -27,7 +27,7 @@ const recipeGenPrompt = ai.definePrompt({
     name: 'recipeWorkshopPrompt',
     input: { schema: RecipeConceptInputSchema.extend({ allPreparationNames: z.array(z.string()) }) },
     output: { schema: RecipeTextConceptSchema },
-    model: googleAI.model('gemini-1.5-flash-latest'),
+    model: googleAI.model('gemini-1.5-flash'),
     prompt: `Vous êtes un chef exécutif créant une fiche technique pour un PLAT PRINCIPAL de restaurant gastronomique. Votre mission est de concevoir un plat complet, prêt à être servi au client, en utilisant potentiellement des préparations de base existantes.
 
 ---
