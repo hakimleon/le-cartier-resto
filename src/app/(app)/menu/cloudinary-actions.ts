@@ -2,13 +2,26 @@
 
 import { v2 as cloudinary } from 'cloudinary';
 
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const apiKey = process.env.CLOUDINARY_API_KEY;
+const apiSecret = process.env.CLOUDINARY_API_SECRET;
+
+if (!cloudName || !apiKey || !apiSecret) {
+    console.error("Certaines variables d'environnement Cloudinary sont manquantes. Assurez-vous que NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, et CLOUDINARY_API_SECRET sont définies.");
+} else {
+    cloudinary.config({
+        cloud_name: cloudName,
+        api_key: apiKey,
+        api_secret: apiSecret,
+    });
+}
+
 
 export async function getCloudinaryImages() {
+  if (!cloudName || !apiKey || !apiSecret) {
+    throw new Error('La configuration de Cloudinary est incomplète côté serveur.');
+  }
+
   try {
     const { resources } = await cloudinary.search
       .expression('resource_type:image')
