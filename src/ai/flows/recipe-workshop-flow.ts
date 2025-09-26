@@ -106,10 +106,10 @@ ${dishCategories.map(c => `- ${c}`).join('\n')}
 ## INSTRUCTIONS DE FORMATAGE DE SORTIE
 - **VALEUR IMPÉRATIVE POUR LE CHAMP \`type\` : La valeur du champ \`type\` doit OBLIGATOIREMENT être "Plat".**
 - **Ceci est un PLAT.** Remplissez tous les champs demandés, en particulier \`name\`, \`description\`, \`portions\`, \`category\`, et \`commercialArgument\`.
-- Les champs \`productionQuantity\`, \`productionUnit\`, \`usageUnit\` ne doivent PAS être présents dans la sortie finale pour un plat.
 - Le champ \`category\` DOIT correspondre à une des catégories de la liste fournie.
 - Si le nom n'est pas fourni, générez-en un qui soit créatif et vendeur.
-- Les procédures (fabrication, service/dressage) doivent être claires, concises et utiliser le format Markdown. Le champ \`procedure_fabrication\` doit contenir la préparation et la cuisson mélangées dans un ordre chronologique et logique.
+- La procédure de fabrication (\`procedure_fabrication\`) doit être claire, chronologique et utiliser le format Markdown.
+- La procédure de service/dressage (\`procedure_service\`) doit être claire, concise et utiliser le format Markdown.
 - La sortie doit être un JSON strict et valide, sans aucun commentaire.
 `,
 });
