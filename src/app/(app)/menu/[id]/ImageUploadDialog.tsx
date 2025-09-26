@@ -123,6 +123,7 @@ function GalleryTab({ onSelect }: { onSelect: (url: string) => void }) {
     const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
 
     useEffect(() => {
+        setIsLoading(true);
         getCloudinaryImages()
             .then(data => setImages(data))
             .catch(err => console.error("Failed to load cloudinary images"))
@@ -138,28 +139,36 @@ function GalleryTab({ onSelect }: { onSelect: (url: string) => void }) {
             <ScrollArea className="h-96 pr-4">
                  {isLoading ? (
                     <div className="grid grid-cols-3 gap-2">
-                        {Array.from({ length: 6 }).map((_, i) => (
+                        {Array.from({ length: 9 }).map((_, i) => (
                              <div key={i} className="aspect-square bg-muted rounded animate-pulse" />
                         ))}
                     </div>
                  ) : (
-                    <div className="grid grid-cols-3 gap-2">
-                        {images.map(image => (
-                            <button key={image.asset_id} onClick={() => setSelectedUrl(image.secure_url)} className="relative aspect-square rounded overflow-hidden group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
-                                <Image src={image.secure_url} alt={image.public_id} fill sizes="33vw" className="object-cover" />
-                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                {selectedUrl === image.secure_url && (
-                                     <div className="absolute inset-0 bg-primary/70 flex items-center justify-center">
-                                        <CheckCircle2 className="h-8 w-8 text-white" />
-                                    </div>
-                                )}
-                            </button>
-                        ))}
-                    </div>
+                    images.length > 0 ? (
+                        <div className="grid grid-cols-3 gap-2">
+                            {images.map(image => (
+                                <button key={image.asset_id} onClick={() => setSelectedUrl(image.secure_url)} className="relative aspect-square rounded overflow-hidden group focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2">
+                                    <Image src={image.secure_url} alt={image.public_id} fill sizes="33vw" className="object-cover" />
+                                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    {selectedUrl === image.secure_url && (
+                                        <div className="absolute inset-0 bg-primary/70 flex items-center justify-center">
+                                            <CheckCircle2 className="h-8 w-8 text-white" />
+                                        </div>
+                                    )}
+                                </button>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center justify-center h-full text-center text-muted-foreground">
+                            <ImageIcon className="h-10 w-10 mb-4" />
+                            <h3 className="font-semibold">Galerie vide</h3>
+                            <p className="text-sm">Aucune image trouvée dans le dossier Cloudinary.</p>
+                        </div>
+                    )
                  )}
             </ScrollArea>
              <DialogFooter className="mt-4">
-                <Button onClick={handleSelect} disabled={!selectedUrl}>
+                <Button onClick={handleSelect} disabled={!selectedUrl || isLoading}>
                     <ImageIcon className="mr-2 h-4 w-4"/>
                     Utiliser l'image sélectionnée
                 </Button>
@@ -207,4 +216,3 @@ export function ImageUploadDialog({ isOpen, onClose, onUploadComplete }: ImageUp
     </Dialog>
   );
 }
-
