@@ -98,8 +98,22 @@ export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe
         throw new Error("L'identifiant de la recette est requis.");
     }
     const recipeDoc = doc(db, collectionName, recipeId);
-    await updateDoc(recipeDoc, data);
+    
+    // Convert undefined to null for Firestore, but it's better to remove them
+    const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
+
+    // Handle case where a field might be removed
+    const finalData = { ...cleanData };
+    if ('procedure_preparation' in data) {
+        finalData.procedure_preparation = data.procedure_preparation || '';
+    }
+    if ('procedure_cuisson' in data) {
+        finalData.procedure_cuisson = data.procedure_cuisson || '';
+    }
+
+    await updateDoc(recipeDoc, finalData);
 }
+
 
 export async function updateRecipeIngredient(recipeIngredientId: string, data: { quantity: number; unitUse: string; }) {
     if (!recipeIngredientId) {

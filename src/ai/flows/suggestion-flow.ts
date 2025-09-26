@@ -61,8 +61,7 @@ const RecipeOutputSchema = z.object({
         quantity: z.number(),
         unit: z.string().describe("Unité de mesure comme 'g', 'kg', 'ml', 'l', 'pièce'.")
     })),
-    procedure_preparation: z.string().describe("Procédure de préparation en Markdown."),
-    procedure_cuisson: z.string().describe("Procédure de cuisson en Markdown."),
+    procedure_fabrication: z.string().describe("Procédure de fabrication (préparation et cuisson) en Markdown."),
     procedure_service: z.string().describe("Procédure de service/dressage en Markdown."),
     duration: z.number().int().describe("Durée totale en minutes."),
     difficulty: z.enum(['Facile', 'Moyen', 'Difficile']),
@@ -78,7 +77,7 @@ export async function generateRecipe(input: RecipeInput): Promise<RecipeOutput> 
 Nom : ${input.name}
 Description : ${input.description || 'Non fournie.'}
 
-Fournis une liste d'ingrédients réaliste et des étapes claires (préparation, cuisson, service). Estime la durée et la difficulté.
+Fournis une liste d'ingrédients réaliste et des étapes claires (fabrication, service). Estime la durée et la difficulté.
 Pour la liste des ingrédients, fournis IMPÉRATIVEMENT juste le nom, la quantité et l'unité. N'ajoute aucun qualificatif ou commentaire dans le nom de l'ingrédient (ex: "carottes fraîches" doit être juste "carottes").
 
 Si c'est une préparation, estime une quantité produite (productionQuantity) et une unité (productionUnit), ainsi qu'une unité d'utilisation (usageUnit).
@@ -188,9 +187,3 @@ Réponds uniquement au format JSON demandé.`;
 
     return output!;
 }
-
-    
-
-    
-
-    

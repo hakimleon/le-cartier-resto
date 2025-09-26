@@ -42,8 +42,7 @@ export const PreparationConceptOutputSchema = z.object({
     ingredients: z.array(GeneratedIngredientSchema).describe("Liste des ingrédients nécessaires."),
     subRecipes: z.array(SubRecipeSchema).describe("Liste des sous-recettes EXISTANTES utilisées."),
     
-    procedure_preparation: z.string().describe("Procédure de préparation (Markdown)."),
-    procedure_cuisson: z.string().describe("Procédure de cuisson (Markdown)."),
+    procedure_fabrication: z.string().describe("Procédure de fabrication complète (préparation + cuisson) en Markdown."),
     procedure_service: z.string().describe("Procédure de conservation/stockage (Markdown)."),
     
     duration: z.number().int().describe("Durée totale de production en minutes."),
@@ -81,8 +80,7 @@ export const RecipeConceptOutputSchema = z.object({
     ingredients: z.array(GeneratedIngredientSchema).describe("Liste des ingrédients nécessaires."),
     subRecipes: z.array(SubRecipeSchema).describe("Liste des sous-recettes EXISTANTES utilisées."),
 
-    procedure_preparation: z.string().describe("Procédure de préparation (Markdown)."),
-    procedure_cuisson: z.string().describe("Procédure de cuisson (Markdown)."),
+    procedure_fabrication: z.string().describe("Procédure de fabrication complète et chronologique (préparation et cuisson mélangées) en Markdown."),
     procedure_service: z.string().describe("Procédure de service/dressage (Markdown)."),
     
     duration: z.number().int().describe("Durée totale en minutes."),

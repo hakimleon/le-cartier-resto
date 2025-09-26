@@ -88,6 +88,7 @@ CRÉATION : Créez une nouvelle fiche technique en respectant TOUTES les règles
 - Le champ \`portions\` est crucial : il doit indiquer combien de "portions d'accompagnement" la recette produit. (Ex: un gratin de 1kg peut faire 10 portions de 100g).
 - \`productionQuantity\` et \`productionUnit\` doivent refléter la quantité totale produite (Ex: 1.2 kg).
 - \`usageUnit\` doit être l'unité utilisée DANS les plats (Ex: 'g' ou 'portion'). Si la garniture est utilisée à la portion, mettez 'portion'.
+- Le champ \`procedure_fabrication\` doit contenir la préparation ET la cuisson de manière chronologique.
 - La procédure de service (\`procedure_service\`) doit décrire la conservation, le stockage, et la remise en température/service.
 - Sortie : fournir une réponse au format JSON strict.
 `,

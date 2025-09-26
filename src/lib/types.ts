@@ -60,8 +60,7 @@ export type Preparation = {
   imageUrl?: string;
   
   // Champs Fiche Technique
-  procedure_preparation?: string;
-  procedure_cuisson?: string;
+  procedure_fabrication?: string; // Fusion de préparation et cuisson
   procedure_service?: string;
   allergens?: string[];
   
@@ -100,8 +99,7 @@ export type Recipe = {
   
   // Champs Fiche Technique
   portions: number;
-  procedure_preparation?: string;
-  procedure_cuisson?: string;
+  procedure_fabrication?: string; // Fusion de préparation et cuisson
   procedure_service?: string;
   allergens?: string[];
   commercialArgument?: string;

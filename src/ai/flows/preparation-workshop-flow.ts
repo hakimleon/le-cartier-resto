@@ -98,6 +98,7 @@ Avant de produire la réponse finale, vous DEVEZ :
 - Remplir \`productionQuantity\`, \`productionUnit\`, \`usageUnit\`.
 - Remplir le champ \`portions\` pour indiquer combien de "parts" (portions de service pour un plat) la quantité produite représente. C'est crucial pour les purées, accompagnements, sauces, etc.
 - La procédure de service (\`procedure_service\`) doit décrire la conservation/stockage.
+- Le champ \`procedure_fabrication\` doit contenir la préparation ET la cuisson dans un ordre chronologique.
 - Sortie : fournir une réponse au format JSON strict.
 - Ne laissez aucun champ vide : utilisez \`[]\` ou \`""\` si nécessaire.
 `,

@@ -202,7 +202,7 @@ export const RecipePDFDocument = ({ recipe, ingredients, preparations, totalCost
                         <View style={styles.table}>
                              <View style={styles.tableRow}>
                                 <View style={{...styles.tableColHeader, width: '55%'}}><Text style={styles.bold}>Nom</Text></View>
-                                <View style={styles.tableColHeader}><Text style={styles.bold}>Quantité</Text></View>
+                                <View style={{...styles.tableColHeader}><Text style={styles.bold}>Quantité</Text></View>
                                 <View style={styles.tableColHeader}><Text style={styles.bold}>Unité</Text></View>
                             </View>
                             {preparations.map(prep => (
@@ -221,8 +221,7 @@ export const RecipePDFDocument = ({ recipe, ingredients, preparations, totalCost
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Procédure</Text>
                     <View>
-                        {recipe.procedure_preparation && <MarkdownToPDF text={`### Préparation\n${recipe.procedure_preparation}`} />}
-                        {recipe.procedure_cuisson && <MarkdownToPDF text={`### Cuisson\n${recipe.procedure_cuisson}`} />}
+                        {recipe.procedure_fabrication && <MarkdownToPDF text={`### Fabrication\n${recipe.procedure_fabrication}`} />}
                         {recipe.procedure_service && <MarkdownToPDF text={`### Service / Dressage\n${recipe.procedure_service}`} />}
                     </View>
                 </View>

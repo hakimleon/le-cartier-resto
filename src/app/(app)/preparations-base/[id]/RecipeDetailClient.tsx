@@ -755,8 +755,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             category: editableRecipe.category,
             difficulty: editableRecipe.difficulty,
             duration: editableRecipe.duration,
-            procedure_preparation: editableRecipe.procedure_preparation,
-            procedure_cuisson: editableRecipe.procedure_cuisson,
+            procedure_fabrication: editableRecipe.procedure_fabrication,
             procedure_service: editableRecipe.procedure_service,
             portions: (editableRecipe as Preparation).portions,
             productionQuantity: (editableRecipe as Preparation).productionQuantity,
@@ -932,7 +931,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
   if (!recipe || !currentRecipeData) { return ( <div className="container mx-auto py-10 text-center"><p>Fiche technique non trouvée ou erreur de chargement.</p></div> ); }
   
   const isPlat = currentRecipeData.type === 'Plat';
-  const isRecipeEmpty = ingredients.length === 0 && preparations.length === 0 && !recipe.procedure_preparation;
+  const isRecipeEmpty = ingredients.length === 0 && preparations.length === 0 && !recipe.procedure_fabrication;
 
 
   return (
@@ -1127,20 +1126,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5"/>Procédure</CardTitle></CardHeader>
                 <CardContent>
                    {isEditing ? (
-                        <Accordion type="multiple" defaultValue={['item-1']} className="w-full">
-                            <AccordionItem value="item-1">
-                                <AccordionTrigger>Préparation</AccordionTrigger>
+                        <Accordion type="multiple" defaultValue={['fabrication']} className="w-full">
+                            <AccordionItem value="fabrication">
+                                <AccordionTrigger>Fabrication</AccordionTrigger>
                                 <AccordionContent>
-                                    <Textarea value={editableRecipe?.procedure_preparation || ''} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={10} placeholder="Décrivez les étapes de préparation..."/>
+                                    <Textarea value={editableRecipe?.procedure_fabrication || ''} onChange={(e) => handleRecipeDataChange('procedure_fabrication', e.target.value)} rows={10} placeholder="Décrivez les étapes de fabrication..."/>
                                 </AccordionContent>
                             </AccordionItem>
-                            <AccordionItem value="item-2">
-                                <AccordionTrigger>Cuisson</AccordionTrigger>
-                                <AccordionContent>
-                                    <Textarea value={editableRecipe?.procedure_cuisson || ''} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={10} placeholder="Décrivez les étapes de cuisson..."/>
-                                </AccordionContent>
-                            </AccordionItem>
-                            <AccordionItem value="item-3">
+                            <AccordionItem value="service">
                                 <AccordionTrigger>Service / Stockage</AccordionTrigger>
                                 <AccordionContent>
                                     <Textarea value={editableRecipe?.procedure_service || ''} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={10} placeholder="Décrivez les étapes de service, conservation, etc..."/>
@@ -1148,17 +1141,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                             </AccordionItem>
                         </Accordion>
                    ) : (
-                        <Tabs defaultValue="preparation">
+                        <Tabs defaultValue="fabrication">
                             <TabsList>
-                                <TabsTrigger value="preparation">Préparation</TabsTrigger>
-                                <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
+                                <TabsTrigger value="fabrication">Fabrication</TabsTrigger>
                                 <TabsTrigger value="service">Service</TabsTrigger>
                             </TabsList>
-                             <TabsContent value="preparation" className="pt-4">
-                                <MarkdownRenderer text={recipe.procedure_preparation} />
-                            </TabsContent>
-                            <TabsContent value="cuisson" className="pt-4">
-                                <MarkdownRenderer text={recipe.procedure_cuisson} />
+                             <TabsContent value="fabrication" className="pt-4">
+                                <MarkdownRenderer text={recipe.procedure_fabrication} />
                             </TabsContent>
                             <TabsContent value="service" className="pt-4">
                                 <MarkdownRenderer text={recipe.procedure_service} />
@@ -1188,7 +1177,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         <div>
                             <h4 className="font-semibold mb-1">Procédure brute</h4>
                             <div className="text-xs text-muted-foreground p-2 border rounded-md max-h-48 overflow-y-auto">
-                                <MarkdownRenderer text={`${generatedConcept.procedure_preparation}\\n${generatedConcept.procedure_cuisson}\\n${generatedConcept.procedure_service}`} />
+                                <MarkdownRenderer text={`${generatedConcept.procedure_fabrication}\n${generatedConcept.procedure_service}`} />
                             </div>
                         </div>
                     </CardContent>
@@ -1297,7 +1286,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
-
-    

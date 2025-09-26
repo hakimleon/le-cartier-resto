@@ -741,8 +741,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 category: editableRecipe.category,
                 difficulty: editableRecipe.difficulty,
                 duration: editableRecipe.duration,
-                procedure_preparation: editableRecipe.procedure_preparation,
-                procedure_cuisson: editableRecipe.procedure_cuisson,
+                procedure_fabrication: editableRecipe.procedure_fabrication,
                 procedure_service: editableRecipe.procedure_service,
                 portions: editableRecipe.portions,
                 productionQuantity: editableRecipe.productionQuantity,
@@ -799,7 +798,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
     if (error) return ( <div className="container mx-auto py-10"><Alert variant="destructive" className="max-w-2xl mx-auto my-10"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erreur</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></div> );
     if (!recipe || !currentRecipeData) return ( <div className="container mx-auto py-10 text-center"><p>Fiche de garniture non trouvée ou erreur de chargement.</p></div> );
 
-    const isRecipeEmpty = ingredients.length === 0 && preparations.length === 0 && !recipe.procedure_preparation;
+    const isRecipeEmpty = ingredients.length === 0 && preparations.length === 0 && !recipe.procedure_fabrication;
 
     return (
         <div className="space-y-4">
@@ -943,20 +942,14 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                         </CardHeader>
                         <CardContent>
                              {isEditing ? (
-                                <Accordion type="multiple" defaultValue={['item-1']} className="w-full">
-                                    <AccordionItem value="item-1">
-                                        <AccordionTrigger>Préparation</AccordionTrigger>
+                                <Accordion type="multiple" defaultValue={['fabrication']} className="w-full">
+                                    <AccordionItem value="fabrication">
+                                        <AccordionTrigger>Fabrication</AccordionTrigger>
                                         <AccordionContent>
-                                            <Textarea value={editableRecipe?.procedure_preparation || ''} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={10} placeholder="Décrivez les étapes de préparation..."/>
+                                            <Textarea value={editableRecipe?.procedure_fabrication || ''} onChange={(e) => handleRecipeDataChange('procedure_fabrication', e.target.value)} rows={10} placeholder="Décrivez les étapes de fabrication..."/>
                                         </AccordionContent>
                                     </AccordionItem>
-                                    <AccordionItem value="item-2">
-                                        <AccordionTrigger>Cuisson</AccordionTrigger>
-                                        <AccordionContent>
-                                            <Textarea value={editableRecipe?.procedure_cuisson || ''} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={10} placeholder="Décrivez les étapes de cuisson..."/>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                    <AccordionItem value="item-3">
+                                    <AccordionItem value="service">
                                         <AccordionTrigger>Service / Stockage</AccordionTrigger>
                                         <AccordionContent>
                                             <Textarea value={editableRecipe?.procedure_service || ''} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={10} placeholder="Décrivez les étapes de service, conservation, etc..."/>
@@ -964,17 +957,13 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                                     </AccordionItem>
                                 </Accordion>
                            ) : (
-                                <Tabs defaultValue="preparation">
+                                <Tabs defaultValue="fabrication">
                                     <TabsList>
-                                        <TabsTrigger value="preparation">Préparation</TabsTrigger>
-                                        <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
+                                        <TabsTrigger value="fabrication">Fabrication</TabsTrigger>
                                         <TabsTrigger value="service">Service/Stockage</TabsTrigger>
                                     </TabsList>
-                                     <TabsContent value="preparation" className="pt-4">
-                                        <MarkdownRenderer text={recipe.procedure_preparation} />
-                                    </TabsContent>
-                                    <TabsContent value="cuisson" className="pt-4">
-                                        <MarkdownRenderer text={recipe.procedure_cuisson} />
+                                     <TabsContent value="fabrication" className="pt-4">
+                                        <MarkdownRenderer text={recipe.procedure_fabrication} />
                                     </TabsContent>
                                     <TabsContent value="service" className="pt-4">
                                         <MarkdownRenderer text={recipe.procedure_service} />
@@ -1044,9 +1033,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
-
-    
-
-    
