@@ -5,8 +5,9 @@ import { useState } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { CldUploadButton } from "next-cloudinary";
-import { ImagePlus, AlertTriangle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { ImagePlus, Loader2 } from "lucide-react";
+import { uploadImageToServer } from "../actions";
 
 type ImageUploadDialogProps = {
   isOpen: boolean;
@@ -14,35 +15,65 @@ type ImageUploadDialogProps = {
   onUploadComplete: (url: string) => void;
 };
 
-const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
-const FOLDER_NAME = 'le-singulier-ai-generated';
-
 export function ImageUploadDialog({ isOpen, onClose, onUploadComplete }: ImageUploadDialogProps) {
     const { toast } = useToast();
-    
-    const handleSuccess = (result: any) => {
-        if (result.event === 'success' && result.info?.secure_url) {
-            onUploadComplete(result.info.secure_url);
-            onClose();
-            toast({
-                title: "Image téléversée !",
-                description: "La nouvelle image a bien été ajoutée.",
-            });
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    const [isUploading, setIsUploading] = useState(false);
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.files && event.target.files[0]) {
+            setSelectedFile(event.target.files[0]);
         }
     };
 
-    const handleError = (error: any) => {
-        console.error("Cloudinary upload error:", error);
-        toast({
-            title: "Erreur de téléversement",
-            description: "Impossible d'interagir avec Cloudinary. Vérifiez la configuration.",
-            variant: "destructive",
-        });
+    const handleUpload = async () => {
+        if (!selectedFile) {
+            toast({
+                title: "Aucun fichier sélectionné",
+                description: "Veuillez choisir une image à téléverser.",
+                variant: "destructive",
+            });
+            return;
+        }
+
+        setIsUploading(true);
+
+        const reader = new FileReader();
+        reader.readAsDataURL(selectedFile);
+        reader.onload = async () => {
+            const base64String = reader.result as string;
+            try {
+                const newUrl = await uploadImageToServer(base64String);
+                onUploadComplete(newUrl);
+                toast({
+                    title: "Succès !",
+                    description: "L'image a été téléversée et mise à jour.",
+                });
+                onClose();
+            } catch (error) {
+                 console.error("Upload error:", error);
+                 toast({
+                    title: "Erreur de téléversement",
+                    description: error instanceof Error ? error.message : "Une erreur inconnue est survenue.",
+                    variant: "destructive",
+                });
+            } finally {
+                 setIsUploading(false);
+            }
+        };
+        reader.onerror = (error) => {
+            console.error("FileReader error:", error);
+            toast({
+                title: "Erreur de lecture du fichier",
+                description: "Impossible de lire le fichier sélectionné.",
+                variant: "destructive",
+            });
+            setIsUploading(false);
+        };
     };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!isUploading) onClose()}}>
         <DialogContent className="sm:max-w-md">
             <DialogHeader>
                 <DialogTitle>Changer l'image du plat</DialogTitle>
@@ -51,39 +82,24 @@ export function ImageUploadDialog({ isOpen, onClose, onUploadComplete }: ImageUp
                 </DialogDescription>
             </DialogHeader>
 
-            <div className="flex flex-col items-center justify-center h-48 border-2 border-dashed rounded-lg">
-                {!CLOUD_NAME || !UPLOAD_PRESET ? (
-                    <div className="text-center text-destructive p-4 max-w-md">
-                        <AlertTriangle className="mx-auto h-8 w-8 mb-2" />
-                        <p className="font-semibold">Configuration Cloudinary incomplète</p>
-                        <p className="text-sm text-muted-foreground">
-                            Vérifiez que `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` et `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` sont définis.
-                        </p>
-                    </div>
-                ) : (
-                    <CldUploadButton
-                        uploadPreset={UPLOAD_PRESET}
-                        onSuccess={handleSuccess}
-                        onError={handleError}
-                        options={{
-                            sources: ['local', 'url'],
-                            folder: FOLDER_NAME,
-                            clientAllowedFormats: ['png', 'jpg', 'jpeg', 'webp'],
-                            multiple: false,
-                        }}
-                    >
-                        <div className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md cursor-pointer">
-                            <ImagePlus className="h-5 w-5"/>
-                            <span>Téléverser une image</span>
-                        </div>
-                    </CldUploadButton>
-                )}
-                 <p className="text-xs text-muted-foreground mt-4 text-center">
-                    Les images seront enregistrées dans le dossier "{FOLDER_NAME}".
-                </p>
+            <div className="space-y-4 py-4">
+                <Input type="file" accept="image/png, image/jpeg, image/webp" onChange={handleFileChange} disabled={isUploading}/>
+                {selectedFile && <p className="text-sm text-muted-foreground">Fichier sélectionné : {selectedFile.name}</p>}
+                 <Button onClick={handleUpload} disabled={isUploading || !selectedFile} className="w-full">
+                    {isUploading ? (
+                        <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            <span>Téléversement...</span>
+                        </>
+                    ) : (
+                         <>
+                            <ImagePlus className="mr-2 h-4 w-4" />
+                            <span>Téléverser et mettre à jour</span>
+                        </>
+                    )}
+                </Button>
             </div>
         </DialogContent>
     </Dialog>
   );
 }
-

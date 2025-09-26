@@ -46,14 +46,12 @@ import { PreparationModal } from "../../preparations/PreparationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { ImagePreviewModal } from "./ImagePreviewModal";
+import { ImageUploadDialog } from "./ImageUploadDialog";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Tooltip, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
-
-
-const ImageUploadDialog = dynamic(() => import('./ImageUploadDialog').then(mod => mod.ImageUploadDialog), { ssr: false });
 
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
@@ -1313,5 +1311,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
