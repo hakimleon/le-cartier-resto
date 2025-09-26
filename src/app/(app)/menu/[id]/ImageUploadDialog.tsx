@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { CldUploadButton } from "next-cloudinary";
+import { CldUploadButton, CldUploadWidget } from "next-cloudinary";
 import { ImagePlus, CheckCircle, Loader2, AlertTriangle } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CloudinaryResource } from "../cloudinary-actions";
@@ -24,7 +24,8 @@ type ImageUploadDialogProps = {
 };
 
 const UPLOAD_PRESET = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET;
-const FOLDER_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_FOLDER || 'le-singulier-ai-generated';
+const CLOUD_NAME = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME;
+const FOLDER_NAME = 'le-singulier-ai-generated';
 
 function GalleryTab({ 
     images, 
@@ -163,26 +164,31 @@ export function ImageUploadDialog({ isOpen, onClose, onUploadComplete, cloudinar
 
                 <TabsContent value="upload" className="mt-0 flex-grow">
                     <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-lg m-4">
-                        <CldUploadButton
-                            uploadPreset={UPLOAD_PRESET}
-                            options={{
-                                sources: ['local', 'url', 'camera'],
-                                folder: FOLDER_NAME,
-                                clientAllowedFormats: ['png', 'jpg', 'jpeg', 'webp'],
-                                multiple: false,
-                            }}
-                            onSuccess={handleSuccess}
-                            onError={handleError}
-                        >
-                            <div className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md cursor-pointer">
-                                <ImagePlus className="h-5 w-5"/>
-                                <span>Téléverser depuis mon ordinateur</span>
+                        {!CLOUD_NAME || !UPLOAD_PRESET ? (
+                            <div className="text-center text-destructive p-4">
+                                <AlertTriangle className="mx-auto h-8 w-8 mb-2" />
+                                <p className="font-semibold">Configuration Cloudinary incomplète</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Veuillez vérifier que les variables d'environnement `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` et `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` sont bien définies.
+                                </p>
                             </div>
-                        </CldUploadButton>
-                        {!UPLOAD_PRESET && (
-                            <p className="text-sm text-destructive mt-4 text-center">
-                                Erreur: La variable d'environnement `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` est manquante.
-                            </p>
+                        ) : (
+                            <CldUploadButton
+                                uploadPreset={UPLOAD_PRESET}
+                                onSuccess={handleSuccess}
+                                onError={handleError}
+                                options={{
+                                    sources: ['local', 'url', 'camera'],
+                                    folder: FOLDER_NAME,
+                                    clientAllowedFormats: ['png', 'jpg', 'jpeg', 'webp'],
+                                    multiple: false,
+                                }}
+                            >
+                                <div className="flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-md cursor-pointer">
+                                    <ImagePlus className="h-5 w-5"/>
+                                    <span>Téléverser depuis mon ordinateur</span>
+                                </div>
+                            </CldUploadButton>
                         )}
                         <p className="text-xs text-muted-foreground mt-4 text-center">
                            Les nouvelles images seront enregistrées dans le dossier "{FOLDER_NAME}".
