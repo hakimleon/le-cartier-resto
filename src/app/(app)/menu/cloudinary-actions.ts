@@ -19,7 +19,7 @@ export interface CloudinaryImage {
 export async function getCloudinaryImages(): Promise<CloudinaryImage[]> {
   try {
     const { resources } = await cloudinary.search
-      .expression('folder:le-singulier-ai-generated')
+      .expression('') // Expression vide pour rechercher dans toutes les images
       .sort_by('created_at', 'desc')
       .max_results(50)
       .execute();
