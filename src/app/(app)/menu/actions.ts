@@ -4,6 +4,13 @@
 import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch, query, where, getDocs, serverTimestamp, FieldValue } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Recipe, RecipePreparationLink, Preparation, RecipeIngredientLink } from '@/lib/types';
+import { v2 as cloudinary } from 'cloudinary';
+
+cloudinary.config({
+  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 
 export async function saveDish(recipe: Partial<Omit<Recipe, 'id'>> & { type: 'Plat', name: string }, id: string | null) {
@@ -103,13 +110,7 @@ export async function updateRecipeDetails(recipeId: string, data: Partial<Recipe
     // Convert undefined to null for Firestore, but it's better to remove them
     const cleanData = Object.fromEntries(Object.entries(data).filter(([_, v]) => v !== undefined));
 
-    // Handle case where a field might be removed
-    const finalData = { ...cleanData };
-    if ('procedure_fabrication' in data) {
-        finalData.procedure_fabrication = (data as Recipe).procedure_fabrication || '';
-    }
-
-    await updateDoc(recipeDoc, finalData);
+    await updateDoc(recipeDoc, cleanData);
 }
 
 
@@ -135,4 +136,20 @@ export async function updateRecipePreparationLink(linkId: string, data: { quanti
 
 export async function addRecipePreparationLink(link: Omit<RecipePreparationLink, 'id'>) {
     await addDoc(collection(db, "recipePreparationLinks"), link);
+}
+
+export async function uploadImage(dataUri: string): Promise<string> {
+  if (!process.env.CLOUDINARY_API_KEY || !process.env.CLOUDINARY_API_SECRET) {
+    throw new Error("La configuration Cloudinary est incomplète côté serveur.");
+  }
+  try {
+    const uploadResult = await cloudinary.uploader.upload(dataUri, {
+      folder: "le-singulier-ai-generated",
+      resource_type: "image",
+    });
+    return uploadResult.secure_url;
+  } catch (error) {
+    console.error("Cloudinary upload failed:", error);
+    throw new Error("Le téléversement de l'image a échoué.");
+  }
 }

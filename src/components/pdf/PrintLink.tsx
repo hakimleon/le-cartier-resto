@@ -1,11 +1,14 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { PDFDownloadLink } from '@react-pdf/renderer';
 import { Button } from '@/components/ui/button';
 import { Printer, Loader2 } from 'lucide-react';
-import { RecipePDFDocument } from './RecipePDFDocument';
 import type { Recipe, Preparation, FullRecipeIngredient, FullRecipePreparation } from '@/lib/types';
+
+// We'll dynamically import the PDF components only when needed.
+const RecipePDFDocumentPromise = import('@/components/pdf/RecipePDFDocument').then(module => module.RecipePDFDocument);
+const pdfPromise = import('@react-pdf/renderer').then(module => module.pdf);
 
 interface PrintLinkProps {
     recipe: Recipe | Preparation;
@@ -16,39 +19,40 @@ interface PrintLinkProps {
 }
 
 export const PrintLink: React.FC<PrintLinkProps> = ({ recipe, ingredients, preparations, totalCost, className }) => {
-    const [isClient, setIsClient] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
 
-    useEffect(() => {
-        // This effect runs only on the client side, after the component has mounted.
-        setIsClient(true);
-    }, []);
+    const handlePrint = async () => {
+        setIsGenerating(true);
+        try {
+            const RecipePDFDocument = await RecipePDFDocumentPromise;
+            const pdf = await pdfPromise;
 
-    // Render a disabled placeholder on the server and during initial client render.
-    if (!isClient) {
-        return (
-            <Button variant="outline" className={className} disabled>
-                <Printer className="mr-2 h-4 w-4" />
-                Imprimer
-            </Button>
-        );
-    }
-    
-    // Once we are on the client, render the actual PDF download link.
-    const doc = <RecipePDFDocument recipe={recipe} ingredients={ingredients} preparations={preparations} totalCost={totalCost} />;
-    const fileName = `${recipe.name.replace(/ /g, '_')}.pdf`;
-    
+            const doc = <RecipePDFDocument recipe={recipe} ingredients={ingredients} preparations={preparations} totalCost={totalCost} />;
+            const asPdf = pdf([]); // Create an empty PDF first
+            asPdf.updateContainer(doc); // Update it with our document
+            const blob = await asPdf.toBlob(); // Get the blob
+            
+            const url = URL.createObjectURL(blob);
+            window.open(url, '_blank');
+            setIsGenerating(false);
+            
+            // Clean up the object URL after a delay
+            setTimeout(() => URL.revokeObjectURL(url), 100);
+
+        } catch (error) {
+            console.error("Failed to generate PDF", error);
+            setIsGenerating(false);
+        }
+    };
+
     return (
-         <PDFDownloadLink document={doc} fileName={fileName}>
-            {({ loading }) => (
-                <Button variant="outline" className={className} disabled={loading}>
-                    {loading ? (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    ) : (
-                        <Printer className="mr-2 h-4 w-4" />
-                    )}
-                    {loading ? 'Génération...' : 'Imprimer'}
-                </Button>
+        <Button variant="outline" className={className} disabled={isGenerating} onClick={handlePrint}>
+            {isGenerating ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+                <Printer className="mr-2 h-4 w-4" />
             )}
-        </PDFDownloadLink>
+            {isGenerating ? 'Génération...' : 'Imprimer'}
+        </Button>
     );
 };

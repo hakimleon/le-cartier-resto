@@ -39,6 +39,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { ImageUploadDialog } from "./ImageUploadDialog";
 import { generateCommercialArgument } from "@/ai/flows/suggestion-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
 import { RecipeConceptOutput } from "@/ai/flows/workshop-flow";
@@ -394,6 +395,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
     const { toast } = useToast();
 
     const [isEditing, setIsEditing] = useState(false);
+    const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
     const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
 
     const [newIngredients, setNewIngredients] = useState<NewRecipeIngredient[]>([]);
@@ -941,8 +943,14 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         <div className="space-y-4">
             <IngredientModal open={isNewIngredientModalOpen} onOpenChange={setIsNewIngredientModalOpen} ingredient={newIngredientDefaults} onSuccess={(newDbIngredient) => { if (newDbIngredient && currentTempId) { handleCreateAndLinkIngredient(currentTempId, newDbIngredient); } }} ><div /></IngredientModal>
             <PreparationModal open={isNewPreparationModalOpen} onOpenChange={setIsNewPreparationModalOpen} preparation={newPreparationDefaults} onSuccess={(newDbPrep) => { if (newDbPrep && currentPrepTempId) { handleCreateAndLinkPreparation(currentPrepTempId, newDbPrep); } }}><div /></PreparationModal>
+            
             {isPlat && (
                 <>
+                    <ImageUploadDialog
+                        isOpen={isImageUploadOpen}
+                        onClose={() => setIsImageUploadOpen(false)}
+                        onUploadComplete={(url) => { handleRecipeDataChange('imageUrl', url); }}
+                    />
                     {currentRecipeData.imageUrl && (
                         <ImagePreviewModal
                             isOpen={isImagePreviewOpen}
@@ -1026,7 +1034,11 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <p className="text-white bg-black/50 px-4 py-2 rounded-md">Agrandir</p>
                                     </div>
-                                    
+                                    {isEditing && (
+                                        <div className="absolute bottom-4 right-4 z-10">
+                                            <Button variant="secondary" onClick={(e) => { e.stopPropagation(); setIsImageUploadOpen(true); }}><ImageIcon className="mr-2 h-4 w-4" />Changer la photo</Button>
+                                        </div>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

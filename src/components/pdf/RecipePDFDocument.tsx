@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -172,7 +173,7 @@ export const RecipePDFDocument = ({ recipe, ingredients, preparations, totalCost
                 <View style={styles.section}>
                     <Text style={{ fontSize: 11, fontFamily: 'Helvetica-Bold' }}>Coût matière total : {totalCost.toFixed(2)} DZD</Text>
                     {isPlat && (
-                        <Text style={{ fontSize: 10, color: '#444' }}>Coût par portion : {(totalCost / (recipe as Recipe).portions).toFixed(2)} DZD</Text>
+                        <Text style={{ fontSize: 10, color: '#444' }}>Coût par portion : {(totalCost / ((recipe as Recipe).portions || 1)).toFixed(2)} DZD</Text>
                     )}
                 </View>
 
@@ -186,7 +187,7 @@ export const RecipePDFDocument = ({ recipe, ingredients, preparations, totalCost
                             <View style={styles.tableColHeader}><Text style={styles.bold}>Unité</Text></View>
                         </View>
                         {ingredients.map(ing => (
-                            <View style={styles.tableRow} key={ing.id}>
+                            <View style={styles.tableRow} key={ing.recipeIngredientId}>
                                 <View style={{...styles.tableCol, width: '55%'}}><Text>{ing.name}</Text></View>
                                 <View style={styles.tableCol}><Text>{ing.quantity}</Text></View>
                                 <View style={styles.tableCol}><Text>{ing.unit}</Text></View>
@@ -220,8 +221,8 @@ export const RecipePDFDocument = ({ recipe, ingredients, preparations, totalCost
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Procédure</Text>
                     <View>
-                        {recipe.procedure_fabrication && <MarkdownToPDF text={`### Fabrication\n${recipe.procedure_fabrication}`} />}
-                        {recipe.procedure_service && <MarkdownToPDF text={`### Service / Dressage\n${recipe.procedure_service}`} />}
+                        {(recipe as Recipe).procedure_fabrication && <MarkdownToPDF text={`### Fabrication\n${(recipe as Recipe).procedure_fabrication}`} />}
+                        {(recipe as Recipe).procedure_service && <MarkdownToPDF text={`### Service / Dressage\n${(recipe as Recipe).procedure_service}`} />}
                     </View>
                 </View>
                 
