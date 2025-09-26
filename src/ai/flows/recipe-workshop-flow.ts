@@ -14,11 +14,8 @@ import { RecipeConceptInputSchema, RecipeConceptOutputSchema } from './workshop-
 import type { RecipeConceptInput, RecipeConceptOutput } from './workshop-flow';
 import { dishCategories } from '@/lib/types';
 
-cloudinary.config({
-  cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+// La configuration est maintenant centralisée, on peut retirer ce bloc.
+// cloudinary.config({ ... });
 
 const RecipeTextConceptSchema = RecipeConceptOutputSchema.omit({ imageUrl: true });
 
@@ -143,19 +140,23 @@ const generateRecipeConceptFlow = ai.defineFlow(
         let imageUrl = `https://placehold.co/1024x768/fafafa/7d7d7d.png?text=${encodeURIComponent(recipeConcept.name)}`;
 
         try {
-            const imagePrompt = `Photographie culinaire professionnelle, style magazine gastronomique. Plat : "${recipeConcept.name}". Description : "${recipeConcept.description}". Dressage : "${recipeConcept.procedure_service}". Éclairage de studio, faible profondeur de champ, assiette élégante.`;
+            if (process.env.CLOUDINARY_API_KEY) {
+                const imagePrompt = `Photographie culinaire professionnelle, style magazine gastronomique. Plat : "${recipeConcept.name}". Description : "${recipeConcept.description}". Dressage : "${recipeConcept.procedure_service}". Éclairage de studio, faible profondeur de champ, assiette élégante.`;
 
-            const { media } = await ai.generate({
-                model: 'googleai/imagen-4.0-fast-generate-001',
-                prompt: imagePrompt,
-            });
-
-            if (media?.url) {
-                const uploadResult = await cloudinary.uploader.upload(media.url, {
-                    folder: "le-singulier-ai-generated",
-                    resource_type: "image",
+                const { media } = await ai.generate({
+                    model: 'googleai/imagen-4.0-fast-generate-001',
+                    prompt: imagePrompt,
                 });
-                imageUrl = uploadResult.secure_url;
+
+                if (media?.url) {
+                    const uploadResult = await cloudinary.uploader.upload(media.url, {
+                        folder: "le-singulier-ai-generated",
+                        resource_type: "image",
+                    });
+                    imageUrl = uploadResult.secure_url;
+                }
+            } else {
+                console.warn("Cloudinary API Key non trouvée, utilisation d'une image placeholder.");
             }
         } catch (error) {
             console.error("Erreur de génération/téléversement d'image, utilisation du placeholder.", error);
