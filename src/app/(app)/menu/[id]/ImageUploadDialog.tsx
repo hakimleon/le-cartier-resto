@@ -1,7 +1,5 @@
-
 "use client";
 
-import { useState } from "react";
 import { CldUploadWidget } from "next-cloudinary";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -44,14 +42,15 @@ export function ImageUploadDialog({ isOpen, onClose, onUploadComplete }: ImageUp
         <DialogHeader>
           <DialogTitle>Médiathèque</DialogTitle>
           <DialogDescription>
-            La médiathèque Cloudinary va s'ouvrir. Vous pourrez y téléverser une nouvelle image ou en choisir une existante.
+            Choisissez une image depuis votre galerie ou téléversez-en une nouvelle.
           </DialogDescription>
         </DialogHeader>
 
         <CldUploadWidget
           uploadPreset={UPLOAD_PRESET}
           options={{
-            sources: ['local', 'url', 'camera'],
+            sources: ['local', 'url', 'camera', 'media_library'],
+            defaultSource: 'media_library',
             multiple: false,
             maxFiles: 1,
             folder: 'le-singulier-ai-generated',
@@ -63,10 +62,11 @@ export function ImageUploadDialog({ isOpen, onClose, onUploadComplete }: ImageUp
                     "source_local_title": "Mes fichiers",
                     "source_url_title": "Lien Web",
                     "source_camera_title": "Caméra",
+                    "source_media_library_title": "Ma Médiathèque",
                     "actions_cancel": "Annuler",
                     "actions_select": "Sélectionner",
                     "actions_upload": "Téléverser",
-                    "labels_sources": "Téléverser depuis",
+                    "labels_sources": "Source",
                 }
             }
           }}
