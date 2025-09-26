@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
+import dynamic from 'next/dynamic';
 import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation, GeneratedIngredient, FullRecipeIngredient, dishCategories, preparationCategories } from "@/lib/types";
@@ -38,7 +39,6 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { ImageUploadDialog } from "./ImageUploadDialog";
 import { generateCommercialArgument } from "@/ai/flows/suggestion-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
 import { RecipeConceptOutput } from "@/ai/flows/workshop-flow";
@@ -51,6 +51,9 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Tooltip, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+
+
+const ImageUploadDialog = dynamic(() => import('./ImageUploadDialog').then(mod => mod.ImageUploadDialog), { ssr: false });
 
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
@@ -941,19 +944,21 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         <div className="space-y-4">
             <IngredientModal open={isNewIngredientModalOpen} onOpenChange={setIsNewIngredientModalOpen} ingredient={newIngredientDefaults} onSuccess={(newDbIngredient) => { if (newDbIngredient && currentTempId) { handleCreateAndLinkIngredient(currentTempId, newDbIngredient); } }} ><div /></IngredientModal>
             <PreparationModal open={isNewPreparationModalOpen} onOpenChange={setIsNewPreparationModalOpen} preparation={newPreparationDefaults} onSuccess={(newDbPrep) => { if (newDbPrep && currentPrepTempId) { handleCreateAndLinkPreparation(currentPrepTempId, newDbPrep); } }}><div /></PreparationModal>
-            {isPlat && currentRecipeData.imageUrl && (
+            {isPlat && (
                 <>
                     <ImageUploadDialog 
                         isOpen={isImageUploadOpen} 
                         onClose={() => setIsImageUploadOpen(false)} 
                         onUploadComplete={(url) => { handleRecipeDataChange('imageUrl', url); }}
                     />
-                    <ImagePreviewModal
-                        isOpen={isImagePreviewOpen}
-                        onClose={() => setIsImagePreviewOpen(false)}
-                        imageUrl={currentRecipeData.imageUrl}
-                        imageAlt={currentRecipeData.name}
-                    />
+                    {currentRecipeData.imageUrl && (
+                        <ImagePreviewModal
+                            isOpen={isImagePreviewOpen}
+                            onClose={() => setIsImagePreviewOpen(false)}
+                            imageUrl={currentRecipeData.imageUrl}
+                            imageAlt={currentRecipeData.name}
+                        />
+                    )}
                 </>
             )}
 
@@ -1308,3 +1313,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
