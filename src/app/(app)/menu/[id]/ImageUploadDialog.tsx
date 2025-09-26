@@ -165,11 +165,12 @@ export function ImageUploadDialog({ isOpen, onClose, onUploadComplete, cloudinar
                 <TabsContent value="upload" className="mt-0 flex-grow">
                     <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-lg m-4">
                         {!CLOUD_NAME || !UPLOAD_PRESET ? (
-                            <div className="text-center text-destructive p-4">
+                            <div className="text-center text-destructive p-4 max-w-md">
                                 <AlertTriangle className="mx-auto h-8 w-8 mb-2" />
                                 <p className="font-semibold">Configuration Cloudinary incomplète</p>
                                 <p className="text-sm text-muted-foreground">
-                                    Veuillez vérifier que les variables d'environnement `NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME` et `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` sont bien définies.
+                                    Veuillez vérifier que les variables d'environnement suivantes sont bien définies dans votre fichier `.env`:
+                                    <code className="block bg-muted text-destructive-foreground p-2 rounded-md my-2 text-xs">NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME<br/>NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET</code>
                                 </p>
                             </div>
                         ) : (
@@ -200,3 +201,5 @@ export function ImageUploadDialog({ isOpen, onClose, onUploadComplete, cloudinar
     </Dialog>
   );
 }
+
+    
