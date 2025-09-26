@@ -5,6 +5,7 @@ import React from "react";
 
 const inlineFormat = (text: string) => {
   if (!text) return "";
+  // Basic formatting for bold and italics
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
   let t = esc(text);
   t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
@@ -22,8 +23,18 @@ function parseMarkdown(md: string | undefined): MarkdownNode[] {
     if (!md) return [];
 
     const nodes: MarkdownNode[] = [];
-    const lines = md.replace(/\r\n/g, '\n').split('\n').filter(line => line.trim() !== '');
+    
+    // Split text by numbered steps like "1. ", "2. ", etc.
+    const steps = md.split(/(?=\d+\.\s)/).map(s => s.trim()).filter(Boolean);
 
+    if (steps.length > 1) { // It seems to be a numbered list
+        const listItems = steps.map(step => step.replace(/^\d+\.\s/, ''));
+        nodes.push({ type: 'ol', items: listItems });
+        return nodes;
+    }
+
+    // Fallback for original parsing logic if the above fails
+    const lines = md.replace(/\r\n/g, '\n').split('\n').filter(line => line.trim() !== '');
     let currentList: { type: 'ol' | 'ul'; items: string[] } | null = null;
 
     const flushList = () => {
@@ -34,15 +45,13 @@ function parseMarkdown(md: string | undefined): MarkdownNode[] {
     };
 
     for (const line of lines) {
-        // ### Titres
-        const h3Match = line.match(/^###\s+(.*)/);
-        if (h3Match) {
+        const trimmedLine = line.trim();
+        if (trimmedLine.startsWith('### ')) {
             flushList();
-            nodes.push({ type: 'h3', content: h3Match[1] });
+            nodes.push({ type: 'h3', content: trimmedLine.substring(4) });
             continue;
         }
 
-        // Titres comme "Preparation:" ou "Cuisson :"
         const titleMatch = line.match(/^([a-zA-Z\s]+):(.*)/);
         if (titleMatch && titleMatch[1].length < 30) {
              flushList();
@@ -52,8 +61,7 @@ function parseMarkdown(md: string | undefined): MarkdownNode[] {
              }
              continue;
         }
-
-        // Listes ordonnées
+        
         const olMatch = line.match(/^\d+\.\s+(.*)/);
         if (olMatch) {
             if (currentList?.type !== 'ol') {
@@ -64,7 +72,6 @@ function parseMarkdown(md: string | undefined): MarkdownNode[] {
             continue;
         }
 
-        // Listes non-ordonnées
         const ulMatch = line.match(/^-\s+(.*)/);
         if (ulMatch) {
             if (currentList?.type !== 'ul') {
@@ -75,12 +82,11 @@ function parseMarkdown(md: string | undefined): MarkdownNode[] {
             continue;
         }
 
-        // Sinon, c'est un paragraphe
         flushList();
         nodes.push({ type: 'p', content: line });
     }
 
-    flushList(); // S'assurer que la dernière liste est ajoutée
+    flushList();
 
     return nodes;
 }
@@ -104,7 +110,7 @@ export default function MarkdownRenderer({ text }: { text: string | undefined })
             );
           case 'ol':
             return (
-              <ol key={idx} className="list-decimal list-outside pl-6 my-2 space-y-1.5">
+              <ol key={idx} className="list-decimal list-outside pl-6 my-2 space-y-2">
                 {node.items?.map((item, i) => (
                   <li key={i} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
                 ))}
