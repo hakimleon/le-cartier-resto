@@ -201,5 +201,3 @@ export function ImageUploadDialog({ isOpen, onClose, onUploadComplete, cloudinar
     </Dialog>
   );
 }
-
-    
