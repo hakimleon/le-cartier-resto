@@ -116,7 +116,9 @@ export default function WorkshopClient() {
 
         setIsSaving(true);
         try {
-            const newDocId = await createDishFromWorkshop(generatedConcept);
+            // Force saving to 'recipes' collection for clarity and robustness
+            const newDocId = await createDishFromWorkshop(generatedConcept, 'recipes');
+            
             if (newDocId) {
                 sessionStorage.setItem(WORKSHOP_CONCEPT_KEY, JSON.stringify(generatedConcept));
                 toast({
@@ -291,8 +293,7 @@ export default function WorkshopClient() {
                                      <div>
                                         <h4 className="font-semibold mb-2 flex items-center gap-2"><FileText className="h-4 w-4"/>Procédure</h4>
                                         <div className="prose prose-sm max-w-none text-muted-foreground p-4 border rounded-md mt-2">
-                                            <MarkdownRenderer text={generatedConcept.procedure_preparation} />
-                                            <MarkdownRenderer text={generatedConcept.procedure_cuisson} />
+                                            <MarkdownRenderer text={generatedConcept.procedure_fabrication} />
                                             <MarkdownRenderer text={generatedConcept.procedure_service} />
                                         </div>
                                     </div>
