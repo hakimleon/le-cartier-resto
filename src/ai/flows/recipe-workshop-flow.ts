@@ -14,8 +14,8 @@ import { RecipeConceptInputSchema, RecipeConceptOutputSchema } from './workshop-
 import type { RecipeConceptInput, RecipeConceptOutput } from './workshop-flow';
 import { dishCategories } from '@/lib/types';
 
-// La configuration est maintenant centralisée, on peut retirer ce bloc.
-// cloudinary.config({ ... });
+// La bibliothèque Cloudinary est configurée automatiquement si les variables d'environnement sont présentes.
+// Pas besoin de cloudinary.config() ici.
 
 const RecipeTextConceptSchema = RecipeConceptOutputSchema.omit({ imageUrl: true });
 
@@ -140,6 +140,7 @@ const generateRecipeConceptFlow = ai.defineFlow(
         let imageUrl = `https://placehold.co/1024x768/fafafa/7d7d7d.png?text=${encodeURIComponent(recipeConcept.name)}`;
 
         try {
+            // La config est implicite via les variables d'env, on vérifie juste qu'elles existent.
             if (process.env.CLOUDINARY_API_KEY) {
                 const imagePrompt = `Photographie culinaire professionnelle, style magazine gastronomique. Plat : "${recipeConcept.name}". Description : "${recipeConcept.description}". Dressage : "${recipeConcept.procedure_service}". Éclairage de studio, faible profondeur de champ, assiette élégante.`;
 
