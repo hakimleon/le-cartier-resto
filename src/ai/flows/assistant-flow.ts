@@ -36,7 +36,7 @@ export const chatbotFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async ({ history, prompt }) => {
-    // Le schéma valide déjà l'historique.
+    // Le schéma valide déjà l'historique. On s'assure juste que le type est correct.
     const validatedHistory = history as MessageData[];
 
     const response = await ai.generate({
