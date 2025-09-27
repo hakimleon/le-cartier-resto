@@ -113,7 +113,7 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         const volumeUnits = ['l', 'ml', 'litre', 'litres'];
         const unitUnits = ['pièce', 'piece', 'botte'];
 
-        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
+        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
         const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
         
         if ((fromType === 'weight' && toType === 'volume') || (fromType === 'volume' && toType === 'weight')) {
@@ -1245,8 +1245,30 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                     <Card><CardHeader><CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle></CardHeader><CardContent><div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)} DZD</div><p className="text-xs text-muted-foreground text-right mt-1">{isPlat ? "Coût par portion : " + costPerPortion.toFixed(2) + " DZD" : ""}</p></CardContent></Card>
                     {isPlat && (
                         <>
-                            <Card><CardHeader><CardTitle className="text-xl text-muted-foreground">Food Cost (%)</CardTitle></CardHeader><CardContent className="flex items-center justify-center p-6"><GaugeChart value={foodCostPercentage} unit="%" /></CardContent></Card>
-                            <Card><Accordion type="single" collapsible className="w-full"><AccordionItem value="item-1" className="border-b-0"><AccordionTrigger className="p-4 hover:no-underline"><div className="flex items-center gap-2 text-lg font-semibold text-muted-foreground"><ListChecks className="h-5 w-5" />Indicateurs Food Cost</div></AccordionTrigger><AccordionContent className="px-4"><ul className="space-y-3 text-sm">{foodCostIndicators.map(indicator => { const Icon = indicator.icon; return (<li key={indicator.level} className="flex items-start gap-3"><Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} /><div><span className="font-semibold">{indicator.range} - {indicator.level}</span>:<p className="text-muted-foreground text-xs">{indicator.description}</p></div></li>) })}</ul></AccordionContent></AccordionItem></Accordion></Card>
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle className="text-xl text-muted-foreground">Food Cost (%)</CardTitle>
+                                </CardHeader>
+                                <CardContent className="flex items-center justify-center p-6">
+                                    <GaugeChart value={foodCostPercentage} unit="%" />
+                                </CardContent>
+                                <CardContent>
+                                    <div className="space-y-3 text-sm p-4 border-t">
+                                        {foodCostIndicators.map(indicator => {
+                                            const Icon = indicator.icon;
+                                            return (
+                                                <div key={indicator.level} className="flex items-start gap-3">
+                                                    <Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} />
+                                                    <div>
+                                                        <span className="font-semibold">{indicator.range} - {indicator.level}</span>
+                                                        <p className="text-muted-foreground text-xs">{indicator.description}</p>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </CardContent>
+                            </Card>
                             <Card><CardHeader><CardTitle className="flex items-center justify-between text-xl text-muted-foreground"><div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600" />Allergènes</div>{isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4" /></Button>}</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">{recipe.allergens && recipe.allergens.length > 0 ? recipe.allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>) : <p className="text-sm text-muted-foreground">Aucun allergène spécifié.</p>}</CardContent></Card>
                             <Card><CardHeader><CardTitle className="flex items-center justify-between text-xl text-muted-foreground"><div className="flex items-center gap-2">Argumentaire Commercial</div>{isEditing && (<Button variant="ghost" size="icon" onClick={handleGenerateArgument} disabled={isGenerating} title="Générer avec l'IA"><Sparkles className={cn("h-4 w-4", isGenerating && "animate-spin")} /></Button>)}</CardTitle></CardHeader><CardContent className="prose prose-sm max-w-none text-muted-foreground">{isEditing ? <Textarea value={(editableRecipe as Recipe)?.commercialArgument || ''} onChange={(e) => handleRecipeDataChange('commercialArgument', e.target.value)} rows={5} placeholder="Un argumentaire de vente concis et alléchant..." /> : <p>{(recipe as Recipe).commercialArgument || 'Aucun argumentaire défini.'}</p>}</CardContent></Card>
                         </>
@@ -1314,3 +1336,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
