@@ -148,6 +148,10 @@ interface RecipePDFDocumentProps {
 export const RecipePDFDocument = ({ recipe, ingredients, preparations, totalCost }: RecipePDFDocumentProps) => {
     const isPlat = recipe.type === 'Plat';
 
+    // Fallback logic for procedure
+    const fabricationProcedure = (recipe as Recipe).procedure_fabrication || `${(recipe as any).procedure_preparation || ''}\n\n${(recipe as any).procedure_cuisson || ''}`.trim();
+    const serviceProcedure = (recipe as Recipe).procedure_service;
+
     return (
         <Document title={recipe.name} author="Le Cartier">
             <Page size="A4" style={styles.page}>
@@ -221,8 +225,8 @@ export const RecipePDFDocument = ({ recipe, ingredients, preparations, totalCost
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Procédure</Text>
                     <View>
-                        {(recipe as Recipe).procedure_fabrication && <MarkdownToPDF text={`### Fabrication\n${(recipe as Recipe).procedure_fabrication}`} />}
-                        {(recipe as Recipe).procedure_service && <MarkdownToPDF text={`### Service / Dressage\n${(recipe as Recipe).procedure_service}`} />}
+                        {fabricationProcedure && <MarkdownToPDF text={`### Fabrication\n${fabricationProcedure}`} />}
+                        {serviceProcedure && <MarkdownToPDF text={`### Service / Dressage\n${serviceProcedure}`} />}
                     </View>
                 </View>
                 
@@ -231,3 +235,5 @@ export const RecipePDFDocument = ({ recipe, ingredients, preparations, totalCost
         </Document>
     );
 };
+
+    

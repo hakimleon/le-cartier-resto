@@ -408,6 +408,21 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
     const [currentTempId, setCurrentTempId] = useState<string | null>(null);
     const [workshopConcept, setWorkshopConcept] = useState<RecipeConceptOutput | null>(null);
     
+    // Derived state for fabrication procedure fallback
+    const fabricationProcedure = useMemo(() => {
+        const currentData = isEditing ? editableRecipe : recipe;
+        if (!currentData) return '';
+        if ((currentData as Recipe).procedure_fabrication) return (currentData as Recipe).procedure_fabrication;
+        
+        // Fallback for old data structure
+        const prep = (currentData as any).procedure_preparation || '';
+        const cook = (currentData as any).procedure_cuisson || '';
+        if (prep || cook) {
+            return `${prep}\n\n${cook}`.trim();
+        }
+        return '';
+    }, [isEditing, recipe, editableRecipe]);
+
 
     const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
         const costs: Record<string, number> = {};
@@ -783,13 +798,15 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         try {
             let dataToSave: Partial<Recipe | Preparation>;
 
+            const fabricationData = fabricationProcedure;
+
             if (collectionName === 'recipes') {
                 dataToSave = {
                     name: editableRecipe.name,
                     description: editableRecipe.description,
                     difficulty: editableRecipe.difficulty,
                     duration: editableRecipe.duration,
-                    procedure_fabrication: (editableRecipe as Recipe).procedure_fabrication,
+                    procedure_fabrication: fabricationData,
                     procedure_service: (editableRecipe as Recipe).procedure_service,
                     imageUrl: editableRecipe.imageUrl,
                     portions: (editableRecipe as Recipe).portions,
@@ -806,7 +823,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                     description: editableRecipe.description,
                     difficulty: editableRecipe.difficulty,
                     duration: editableRecipe.duration,
-                    procedure_fabrication: (editableRecipe as Preparation).procedure_fabrication,
+                    procedure_fabrication: fabricationData,
                     procedure_service: (editableRecipe as Preparation).procedure_service,
                     category: (editableRecipe as Preparation).category,
                     portions: (editableRecipe as Preparation).portions,
@@ -1186,7 +1203,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                     <AccordionItem value="fabrication">
                                         <AccordionTrigger>Fabrication</AccordionTrigger>
                                         <AccordionContent>
-                                            <Textarea value={(editableRecipe as Recipe)?.procedure_fabrication || ''} onChange={(e) => handleRecipeDataChange('procedure_fabrication', e.target.value)} rows={10} placeholder="Décrivez les étapes de préparation et de cuisson..."/>
+                                            <Textarea value={fabricationProcedure || ''} onChange={(e) => handleRecipeDataChange('procedure_fabrication', e.target.value)} rows={10} placeholder="Décrivez les étapes de fabrication..."/>
                                         </AccordionContent>
                                     </AccordionItem>
                                     <AccordionItem value="service">
@@ -1203,7 +1220,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                         <TabsTrigger value="service">Service</TabsTrigger>
                                     </TabsList>
                                     <TabsContent value="fabrication" className="pt-4">
-                                        <MarkdownRenderer text={(recipe as Recipe).procedure_fabrication} />
+                                        <MarkdownRenderer text={fabricationProcedure} />
                                     </TabsContent>
                                     <TabsContent value="service" className="pt-4">
                                         <MarkdownRenderer text={(recipe as Recipe).procedure_service} />
@@ -1336,5 +1353,7 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
 
     

@@ -60,8 +60,10 @@ export type Preparation = {
   imageUrl?: string;
   
   // Champs Fiche Technique
-  procedure_fabrication?: string; // Fusion de préparation et cuisson
+  procedure_fabrication?: string;
   procedure_service?: string;
+  procedure_preparation?: string; // Ancien champ, conservé pour la migration
+  procedure_cuisson?: string;     // Ancien champ, conservé pour la migration
   allergens?: string[];
   
   // Champs spécifiques à la Préparation
@@ -99,8 +101,10 @@ export type Recipe = {
   
   // Champs Fiche Technique
   portions: number;
-  procedure_fabrication?: string; // Fusion de préparation et cuisson
+  procedure_fabrication?: string;
   procedure_service?: string;
+  procedure_preparation?: string; // Ancien champ, conservé pour la migration
+  procedure_cuisson?: string;     // Ancien champ, conservé pour la migration
   allergens?: string[];
   commercialArgument?: string;
 
@@ -175,3 +179,5 @@ export type Sale = {
     total: number;
     createdAt: any; // serverTimestamp
 };
+
+    
