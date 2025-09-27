@@ -23,18 +23,24 @@ function parseMarkdown(md: string | undefined): MarkdownNode[] {
     if (!md) return [];
 
     const nodes: MarkdownNode[] = [];
-    
-    // Split text by numbered steps like "1. ", "2. ", etc.
-    const steps = md.split(/(?=\d+\.\s)/).map(s => s.trim()).filter(Boolean);
+    const sections = md.split(/(?=###\s)/g).map(s => s.trim()).filter(Boolean);
 
-    if (steps.length > 1) { // It seems to be a numbered list
-        const listItems = steps.map(step => step.replace(/^\d+\.\s/, ''));
-        nodes.push({ type: 'ol', items: listItems });
-        return nodes;
-    }
+    sections.forEach(section => {
+        if (section.startsWith('### ')) {
+            const contentWithoutHeader = section.substring(4);
+            const [header, ...restOfContent] = contentWithoutHeader.split('\n');
+            nodes.push({ type: 'h3', content: header });
+            parseSectionContent(restOfContent.join('\n'), nodes);
+        } else {
+            parseSectionContent(section, nodes);
+        }
+    });
 
-    // Fallback for original parsing logic if the above fails
-    const lines = md.replace(/\r\n/g, '\n').split('\n').filter(line => line.trim() !== '');
+    return nodes;
+}
+
+function parseSectionContent(content: string, nodes: MarkdownNode[]) {
+    const lines = content.split('\n').filter(line => line.trim() !== '');
     let currentList: { type: 'ol' | 'ul'; items: string[] } | null = null;
 
     const flushList = () => {
@@ -46,33 +52,18 @@ function parseMarkdown(md: string | undefined): MarkdownNode[] {
 
     for (const line of lines) {
         const trimmedLine = line.trim();
-        if (trimmedLine.startsWith('### ')) {
-            flushList();
-            nodes.push({ type: 'h3', content: trimmedLine.substring(4) });
-            continue;
-        }
+        const olMatch = trimmedLine.match(/^(\d+)\.\s+(.*)/);
+        const ulMatch = trimmedLine.match(/^-\s+(.*)/);
 
-        const titleMatch = line.match(/^([a-zA-Z\s]+):(.*)/);
-        if (titleMatch && titleMatch[1].length < 30) {
-             flushList();
-             nodes.push({ type: 'h3', content: titleMatch[1] });
-             if(titleMatch[2].trim()){
-                nodes.push({ type: 'p', content: titleMatch[2].trim() });
-             }
-             continue;
-        }
-        
-        const olMatch = line.match(/^\d+\.\s+(.*)/);
         if (olMatch) {
             if (currentList?.type !== 'ol') {
                 flushList();
                 currentList = { type: 'ol', items: [] };
             }
-            currentList.items.push(olMatch[1]);
+            currentList.items.push(olMatch[2]);
             continue;
         }
 
-        const ulMatch = line.match(/^-\s+(.*)/);
         if (ulMatch) {
             if (currentList?.type !== 'ul') {
                 flushList();
@@ -83,12 +74,10 @@ function parseMarkdown(md: string | undefined): MarkdownNode[] {
         }
 
         flushList();
-        nodes.push({ type: 'p', content: line });
+        nodes.push({ type: 'p', content: trimmedLine });
     }
 
     flushList();
-
-    return nodes;
 }
 
 
@@ -131,3 +120,4 @@ export default function MarkdownRenderer({ text }: { text: string | undefined })
     </div>
   );
 }
+
