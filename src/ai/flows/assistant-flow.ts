@@ -8,6 +8,7 @@
 import { ai } from '@/ai/genkit';
 import { searchForMatchingPreparationsTool } from '../tools/recipe-tools';
 import { searchMenuTool } from '../tools/menu-tools';
+import { searchInventoryTool } from '../tools/inventory-tools';
 import { z } from 'zod';
 import { Message, MessageData } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
@@ -40,7 +41,7 @@ export const chatbotFlow = ai.defineFlow(
 
     const response = await ai.generate({
       model: googleAI.model('gemini-1.5-flash'),
-      tools: [searchMenuTool, searchForMatchingPreparationsTool],
+      tools: [searchMenuTool, searchForMatchingPreparationsTool, searchInventoryTool],
       history: validatedHistory,
       prompt: prompt,
       config: {
