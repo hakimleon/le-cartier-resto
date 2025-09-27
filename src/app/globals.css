@@ -19,7 +19,7 @@ body {
     --popover: 0 0% 100%;
     --popover-foreground: 14 25% 10%;
     --primary: 14 78% 30%; /* Deep Red */
-    --primary-foreground: 38 60% 90%; /* Beige */
+    --primary-foreground: 0 0% 100%; /* White */
     --secondary: 14 20% 95%;
     --secondary-foreground: 14 25% 10%;
     --muted: 14 20% 95%;
@@ -59,7 +59,7 @@ body {
     --popover: 14 25% 12%;
     --popover-foreground: 38 60% 90%;
     --primary: 14 78% 30%;
-    --primary-foreground: 38 60% 90%;
+    --primary-foreground: 0 0% 100%; /* White */
     --secondary: 14 25% 15%;
     --secondary-foreground: 38 60% 90%;
     --muted: 14 25% 15%;
