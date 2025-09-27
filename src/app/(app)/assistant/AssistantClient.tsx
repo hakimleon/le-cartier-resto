@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -8,7 +9,7 @@ import { Bot, Send, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import { Message } from 'genkit';
+import { Message, MessageData } from 'genkit';
 import { sendMessageToChat } from './actions';
 
 export default function AssistantClient() {
@@ -40,7 +41,7 @@ export default function AssistantClient() {
     setIsLoading(true);
 
     try {
-      const responseText = await sendMessageToChat(updatedHistory, currentInput);
+      const responseText = await sendMessageToChat(updatedHistory as MessageData[], currentInput);
       
       const modelMessage: Message = { role: 'model', content: [{ text: responseText }] };
       
@@ -100,7 +101,7 @@ export default function AssistantClient() {
                       className={cn(
                         'max-w-[80%] rounded-lg px-4 p-3 text-sm',
                         message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
+                          ? 'bg-primary text-white'
                           : 'bg-muted'
                       )}
                     >
