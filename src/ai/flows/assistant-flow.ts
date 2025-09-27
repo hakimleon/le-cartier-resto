@@ -12,13 +12,17 @@ import { z } from 'zod';
 import { Message } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 
-// Schéma pour l'historique des messages
-const HistorySchema = z.array(z.object({
-  role: z.enum(['user', 'model']),
-  content: z.array(z.object({
-    text: z.string(),
-  })),
-}));
+// Schéma pour l'historique des messages, conforme à Genkit
+const HistorySchema = z.array(
+  z.object({
+    role: z.enum(['user', 'model']),
+    content: z.array(
+      z.object({
+        text: z.string(),
+      })
+    ),
+  })
+);
 
 export const chatbotFlow = ai.defineFlow(
   {
@@ -30,11 +34,13 @@ export const chatbotFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async ({ history, prompt }) => {
-    
+    // Validation et typage corrects de l'historique
+    const validatedHistory = HistorySchema.parse(history);
+
     const response = await ai.generate({
       model: googleAI.model('gemini-1.5-flash'),
       tools: [searchMenuTool, searchForMatchingPreparationsTool],
-      history: history as Message[],
+      history: validatedHistory as Message[],
       prompt: prompt,
       config: {
         temperature: 0.3,
