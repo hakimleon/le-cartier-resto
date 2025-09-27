@@ -10,7 +10,7 @@ import { searchForMatchingPreparationsTool } from '../tools/recipe-tools';
 import { searchMenuTool } from '../tools/menu-tools';
 import { searchInventoryTool } from '../tools/inventory-tools';
 import { z } from 'zod';
-import { Message, MessageData, HistorySchema } from 'genkit/experimental/ai';
+import { Message, MessageData, HistorySchema } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 import { searchGarnishesTool } from '../tools/garnish-tools';
 
