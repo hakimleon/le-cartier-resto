@@ -41,9 +41,9 @@ export default function AssistantClient() {
     setIsLoading(true);
 
     try {
-      const responseText = await sendMessageToChat(updatedHistory, currentInput);
+      const response = await sendMessageToChat(updatedHistory, currentInput);
       
-      const modelMessage: MessageData = { role: 'model', content: [{ text: responseText }] };
+      const modelMessage: MessageData = { role: 'model', content: [{ text: response.responseText }] };
       
       setHistory(prevHistory => [...prevHistory, modelMessage]);
 
@@ -101,7 +101,7 @@ export default function AssistantClient() {
                       className={cn(
                         'max-w-[80%] rounded-lg px-4 p-3 text-sm',
                         message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
+                          ? 'bg-primary text-white'
                           : 'bg-muted'
                       )}
                     >
