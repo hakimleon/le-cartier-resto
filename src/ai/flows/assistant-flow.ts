@@ -10,7 +10,6 @@ import { searchForMatchingPreparationsTool } from '../tools/recipe-tools';
 import { searchMenuTool } from '../tools/menu-tools';
 import { z } from 'zod';
 import { Message, MessageData } from 'genkit';
-import { googleAI } from '@genkit-ai/googleai';
 
 // Schéma pour l'historique des messages, conforme à Genkit
 const HistorySchema = z.array(
