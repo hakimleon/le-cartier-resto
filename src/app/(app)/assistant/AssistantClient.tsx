@@ -13,7 +13,7 @@ import { Message, MessageData } from 'genkit';
 import { sendMessageToChat } from './actions';
 
 export default function AssistantClient() {
-  const [history, setHistory] = useState<Message[]>([]);
+  const [history, setHistory] = useState<MessageData[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -32,18 +32,18 @@ export default function AssistantClient() {
     if (!input.trim() || isLoading) return;
 
     const currentInput = input;
-    const userMessage: Message = { role: 'user', content: [{ text: currentInput }] };
+    const userMessage: MessageData = { role: 'user', content: [{ text: currentInput }] };
     
-    const updatedHistory = [...history, userMessage];
+    const updatedHistory: MessageData[] = [...history, userMessage];
     
     setHistory(updatedHistory);
     setInput('');
     setIsLoading(true);
 
     try {
-      const responseText = await sendMessageToChat(updatedHistory as MessageData[], currentInput);
+      const responseText = await sendMessageToChat(updatedHistory, currentInput);
       
-      const modelMessage: Message = { role: 'model', content: [{ text: responseText }] };
+      const modelMessage: MessageData = { role: 'model', content: [{ text: responseText }] };
       
       setHistory(prevHistory => [...prevHistory, modelMessage]);
 
@@ -51,7 +51,7 @@ export default function AssistantClient() {
       console.error('Error calling chat action:', error);
       const displayError = 'Désolé, une erreur est survenue. Veuillez réessayer.';
 
-      const errorMessage: Message = {
+      const errorMessage: MessageData = {
         role: 'model',
         content: [{ text: displayError }],
       };
@@ -101,7 +101,7 @@ export default function AssistantClient() {
                       className={cn(
                         'max-w-[80%] rounded-lg px-4 p-3 text-sm',
                         message.role === 'user'
-                          ? 'bg-primary text-primary-foreground'
+                          ? 'bg-primary text-white'
                           : 'bg-muted'
                       )}
                     >
