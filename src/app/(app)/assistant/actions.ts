@@ -9,7 +9,7 @@ import type { Message } from 'genkit';
 
 export async function sendMessageToChat(history: Message[], prompt: string): Promise<string> {
     try {
-        const response = await chatbotFlow({ history, prompt });
+        const response = await chatbotFlow({ history, prompt, cacheBuster: Math.random() });
         return response;
     } catch (error) {
         console.error("Error in sendMessageToChat calling chatbotFlow:", error);

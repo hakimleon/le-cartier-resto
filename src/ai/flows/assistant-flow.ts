@@ -30,6 +30,7 @@ export const chatbotFlow = ai.defineFlow(
     inputSchema: z.object({
       history: HistorySchema,
       prompt: z.string(),
+      cacheBuster: z.number().optional(),
     }),
     outputSchema: z.string(),
   },
