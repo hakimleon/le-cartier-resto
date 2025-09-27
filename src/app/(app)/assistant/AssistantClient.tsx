@@ -34,17 +34,21 @@ export default function AssistantClient() {
     const currentInput = input;
     const userMessage: Message = { role: 'user', content: [{ text: currentInput }] };
     
+    // Create the new history first
+    const updatedHistory = [...history, userMessage];
+    
     // Optimistically update UI
-    setHistory(prevHistory => [...prevHistory, userMessage]);
+    setHistory(updatedHistory);
     setInput('');
     setIsLoading(true);
 
     try {
-      // Send previous history and new prompt to the server action
+      // Send the UPDATED history and new prompt to the server action
       const modelResponseText = await sendMessageToChat(history, currentInput);
       const modelMessage: Message = { role: 'model', content: [{ text: modelResponseText }] };
       
       // Update history with the actual response from the model
+      // We need to use a function form of setHistory to get the absolute latest state
       setHistory(prevHistory => [...prevHistory, modelMessage]);
 
     } catch (error) {
@@ -56,11 +60,9 @@ export default function AssistantClient() {
         content: [{ text: displayError }],
       };
 
-      // Revert the optimistic user message and add the error message
-      setHistory((prevHistory) => {
-          const revertedHistory = prevHistory.slice(0, -1);
-          return [...revertedHistory, errorMessage];
-      });
+      // If an error occurs, we should revert the optimistic user message and show an error.
+      // Or, as implemented here, just add an error message to the existing history.
+      setHistory((prevHistory) => [...prevHistory, errorMessage]);
 
     } finally {
       setIsLoading(false);
