@@ -7,10 +7,10 @@
 import { chatbotFlow } from '@/ai/flows/assistant-flow';
 import type { Message } from 'genkit';
 
-export async function sendMessageToChat(history: Message[]): Promise<string> {
+export async function sendMessageToChat(history: Message[], prompt: string): Promise<string> {
     try {
-        // L'historique complet est maintenant reçu, on peut l'envoyer au flow.
-        const response = await chatbotFlow({ history });
+        // Envoie l'historique précédent et le nouveau prompt au flow.
+        const response = await chatbotFlow({ history, prompt });
         return response;
     } catch (error) {
         console.error("Error in sendMessageToChat calling chatbotFlow:", error);

@@ -31,18 +31,19 @@ export const chatbotFlow = ai.defineFlow(
     name: 'chatbotFlow',
     inputSchema: z.object({
       history: HistorySchema,
+      prompt: z.string(),
     }),
     outputSchema: z.string(),
   },
-  async ({ history }) => {
-    // Valide l'historique pour s'assurer qu'il est conforme au type Message[]
-    const validatedHistory = HistorySchema.parse(history) as MessageData[];
+  async ({ history, prompt }) => {
+    // Le schéma valide déjà l'historique.
+    const validatedHistory = history as MessageData[];
 
     const response = await ai.generate({
-      model: googleAI.model('gemini-1.5-flash'),
+      model: googleAI.model('gemini-2.5-flash'),
       tools: [searchMenuTool, searchForMatchingPreparationsTool, searchInventoryTool, searchGarnishesTool],
       history: validatedHistory,
-      prompt: validatedHistory[validatedHistory.length - 1].content[0].text,
+      prompt,
       config: {
         temperature: 0.3,
       },

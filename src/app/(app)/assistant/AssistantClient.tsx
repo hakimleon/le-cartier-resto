@@ -31,25 +31,24 @@ export default function AssistantClient() {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: [{ text: input }] };
-    const newHistory = [...history, userMessage];
-
-    setHistory(newHistory);
     const currentInput = input;
+    const userMessage: Message = { role: 'user', content: [{ text: currentInput }] };
+    
+    // Optimistically update UI
+    setHistory(prevHistory => [...prevHistory, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      // Pass the full new history to the server action
-      const modelResponseText = await sendMessageToChat(newHistory);
+      // Send previous history and new prompt to the server action
+      const modelResponseText = await sendMessageToChat(history, currentInput);
       const modelMessage: Message = { role: 'model', content: [{ text: modelResponseText }] };
-      setHistory((prevHistory) => [...prevHistory, modelMessage]);
+      
+      // Update history with the actual response from the model
+      setHistory(prevHistory => [...prevHistory, modelMessage]);
 
     } catch (error) {
       console.error('Error calling chat action:', error);
-      const errorMessageContent = error instanceof Error ? error.message : 'Erreur inconnue.';
-      
-      // We don't want to show the full technical error to the user.
       const displayError = 'Désolé, une erreur est survenue. Veuillez réessayer.';
 
       const errorMessage: Message = {
@@ -57,7 +56,7 @@ export default function AssistantClient() {
         content: [{ text: displayError }],
       };
 
-      // Revert history to remove the user message that caused the error, then add the error message
+      // Revert the optimistic user message and add the error message
       setHistory((prevHistory) => {
           const revertedHistory = prevHistory.slice(0, -1);
           return [...revertedHistory, errorMessage];
