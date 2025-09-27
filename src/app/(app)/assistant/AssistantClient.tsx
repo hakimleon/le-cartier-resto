@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef, useEffect } from 'react';
@@ -41,12 +40,8 @@ export default function AssistantClient() {
     setIsLoading(true);
 
     try {
-      const { responseText, logs } = await sendMessageToChat(history, currentInput);
+      const responseText = await sendMessageToChat(updatedHistory, currentInput);
       
-      console.log('--- LOGS DU SERVEUR ---');
-      console.log(JSON.stringify(logs, null, 2));
-      console.log('-----------------------');
-
       const modelMessage: Message = { role: 'model', content: [{ text: responseText }] };
       
       setHistory(prevHistory => [...prevHistory, modelMessage]);
