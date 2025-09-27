@@ -113,7 +113,7 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
         const volumeUnits = ['l', 'ml', 'litre', 'litres'];
         const unitUnits = ['pièce', 'piece', 'botte'];
 
-        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
+        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
         const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
         
         if ((fromType === 'weight' && toType === 'volume') || (fromType === 'volume' && toType === 'weight')) {
@@ -166,7 +166,7 @@ const foodCostIndicators = [
     { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500", icon: GAUGE_LEVELS.mauvais.icon },
 ];
 
-const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExistingIngredient, sortedIngredients }: { ing: FullRecipeIngredient, handleIngredientChange: any, handleRemoveExistingIngredient: any, sortedIngredients: Ingredient[] }) => {
+const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExistingIngredient, handleEditIngredient, sortedIngredients }: { ing: FullRecipeIngredient, handleIngredientChange: any, handleRemoveExistingIngredient: any, handleEditIngredient: (ing: FullRecipeIngredient) => void, sortedIngredients: Ingredient[] }) => {
     const [openCombobox, setOpenCombobox] = useState(false);
     return (
         <TableRow key={ing.recipeIngredientId}>
@@ -198,6 +198,14 @@ const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExisti
                             </Command>
                         </PopoverContent>
                     </Popover>
+                    <TooltipProvider>
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleEditIngredient(ing)}><FilePen className="h-4 w-4 text-muted-foreground" /></Button>
+                            </TooltipTrigger>
+                            <TooltipContent><p>Modifier l'ingrédient</p></TooltipContent>
+                        </Tooltip>
+                    </TooltipProvider>
                 </div>
             </TableCell>
             <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
@@ -406,6 +414,10 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
     const [isNewIngredientModalOpen, setIsNewIngredientModalOpen] = useState(false);
     const [newIngredientDefaults, setNewIngredientDefaults] = useState<Partial<Ingredient> | null>(null);
     const [currentTempId, setCurrentTempId] = useState<string | null>(null);
+
+    const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
+    const [isEditIngredientModalOpen, setIsEditIngredientModalOpen] = useState(false);
+
     const [workshopConcept, setWorkshopConcept] = useState<RecipeConceptOutput | null>(null);
     
     // Derived state for fabrication procedure fallback
@@ -727,6 +739,42 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
     };
 
     const openNewIngredientModal = (tempId: string) => { const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId); if (ingredientToCreate) { setCurrentTempId(tempId); setNewIngredientDefaults({ name: ingredientToCreate.name }); setIsNewIngredientModalOpen(true); } }
+    
+    const handleEditIngredient = (ing: FullRecipeIngredient) => {
+        const fullIngredientData = allIngredients.find(dbIng => dbIng.id === ing.id);
+        if (fullIngredientData) {
+            setEditingIngredient(fullIngredientData);
+            setIsEditIngredientModalOpen(true);
+        } else {
+            toast({ title: "Erreur", description: "Impossible de trouver les détails complets de l'ingrédient.", variant: "destructive" });
+        }
+    };
+
+    const handleIngredientUpdateSuccess = async (updatedIngredient?: Ingredient) => {
+        if (!updatedIngredient) return;
+        
+        // 1. Refresh all ingredients list
+        await fetchAllIngredients();
+
+        // 2. Recalculate costs for all items in the current recipe that use this ingredient
+        setEditableIngredients(current => current.map(ing => {
+            if (ing.id === updatedIngredient.id) {
+                return { ...ing, totalCost: recomputeIngredientCost(ing, updatedIngredient) };
+            }
+            return ing;
+        }));
+        setNewIngredients(current => current.map(ing => {
+             if (ing.ingredientId === updatedIngredient.id) {
+                return { ...ing, totalCost: recomputeIngredientCost(ing, updatedIngredient) };
+            }
+            return ing;
+        }));
+        
+        setIsEditIngredientModalOpen(false);
+        setEditingIngredient(null);
+        toast({ title: "Prix mis à jour", description: `Le coût de ${updatedIngredient.name} a été recalculé dans la recette.`});
+    };
+
 
     // --- PREPARATION HANDLERS ---
     const openNewPreparationModal = (tempId: string) => {
@@ -961,6 +1009,10 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
             <IngredientModal open={isNewIngredientModalOpen} onOpenChange={setIsNewIngredientModalOpen} ingredient={newIngredientDefaults} onSuccess={(newDbIngredient) => { if (newDbIngredient && currentTempId) { handleCreateAndLinkIngredient(currentTempId, newDbIngredient); } }} ><div /></IngredientModal>
             <PreparationModal open={isNewPreparationModalOpen} onOpenChange={setIsNewPreparationModalOpen} preparation={newPreparationDefaults} onSuccess={(newDbPrep) => { if (newDbPrep && currentPrepTempId) { handleCreateAndLinkPreparation(currentPrepTempId, newDbPrep); } }}><div /></PreparationModal>
             
+            <IngredientModal open={isEditIngredientModalOpen} onOpenChange={setIsEditIngredientModalOpen} ingredient={editingIngredient} onSuccess={handleIngredientUpdateSuccess}>
+                <div />
+            </IngredientModal>
+
             {isPlat && (
                 <>
                     <ImageUploadDialog
@@ -1125,6 +1177,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                                     ing={ing}
                                                     handleIngredientChange={handleIngredientChange}
                                                     handleRemoveExistingIngredient={handleRemoveExistingIngredient}
+                                                    handleEditIngredient={handleEditIngredient}
                                                     sortedIngredients={sortedIngredients}
                                                 />
                                             ))}
@@ -1353,7 +1406,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
-
-    
