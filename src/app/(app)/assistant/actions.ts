@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Server Action pour interagir avec le chatbotFlow.
@@ -8,7 +9,7 @@ import type { Message } from 'genkit';
 
 export async function sendMessageToChat(history: Message[], prompt: string): Promise<string> {
     try {
-        // Envoie l'historique précédent et le nouveau prompt au flow.
+        console.log("Données envoyées au chatbotFlow:", { history, prompt });
         const response = await chatbotFlow({ history, prompt });
         return response;
     } catch (error) {

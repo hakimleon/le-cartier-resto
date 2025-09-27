@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useTransition } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,13 +9,13 @@ import { Bot, Send, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
-import { MessageData } from 'genkit';
+import { Message } from 'genkit';
 import { sendMessageToChat } from './actions';
 
 export default function AssistantClient() {
-  const [history, setHistory] = useState<MessageData[]>([]);
+  const [history, setHistory] = useState<Message[]>([]);
   const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const scrollAreaRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -29,38 +29,36 @@ export default function AssistantClient() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isPending) return;
 
     const currentInput = input;
-    const userMessage: MessageData = { role: 'user', content: [{ text: currentInput }] };
+    const userMessage: Message = { role: 'user', content: [{ text: currentInput }] };
     
-    const updatedHistory: MessageData[] = [...history, userMessage];
+    const updatedHistory = [...history, userMessage];
     
     setHistory(updatedHistory);
     setInput('');
-    setIsLoading(true);
+    
+    startTransition(async () => {
+      try {
+        const responseText = await sendMessageToChat(updatedHistory, currentInput);
+        
+        const modelMessage: Message = { role: 'model', content: [{ text: responseText }] };
+        
+        setHistory(prevHistory => [...prevHistory, modelMessage]);
 
-    try {
-      const response = await sendMessageToChat(updatedHistory, currentInput);
-      
-      const modelMessage: MessageData = { role: 'model', content: [{ text: response.responseText }] };
-      
-      setHistory(prevHistory => [...prevHistory, modelMessage]);
+      } catch (error) {
+        console.error('Error calling chat action:', error);
+        const displayError = 'Désolé, une erreur est survenue. Veuillez réessayer.';
 
-    } catch (error) {
-      console.error('Error calling chat action:', error);
-      const displayError = 'Désolé, une erreur est survenue. Veuillez réessayer.';
+        const errorMessage: Message = {
+          role: 'model',
+          content: [{ text: displayError }],
+        };
 
-      const errorMessage: MessageData = {
-        role: 'model',
-        content: [{ text: displayError }],
-      };
-
-      setHistory((prevHistory) => [...prevHistory, errorMessage]);
-
-    } finally {
-      setIsLoading(false);
-    }
+        setHistory((prevHistory) => [...prevHistory, errorMessage]);
+      }
+    });
   };
 
 
@@ -115,7 +113,7 @@ export default function AssistantClient() {
                   </div>
                 )})
               )}
-               {isLoading && (
+               {isPending && (
                  <div className="flex items-start gap-4">
                     <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
                         <Bot className="h-5 w-5" />
@@ -135,10 +133,10 @@ export default function AssistantClient() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Posez votre question ici..."
-              disabled={isLoading}
+              disabled={isPending}
             />
-            <Button type="submit" disabled={isLoading || !input.trim()}>
-              {isLoading ? (
+            <Button type="submit" disabled={isPending || !input.trim()}>
+              {isPending ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
                 <Send className="h-4 w-4" />

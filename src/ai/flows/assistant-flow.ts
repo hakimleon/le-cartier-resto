@@ -10,21 +10,9 @@ import { searchForMatchingPreparationsTool } from '../tools/recipe-tools';
 import { searchMenuTool } from '../tools/menu-tools';
 import { searchInventoryTool } from '../tools/inventory-tools';
 import { z } from 'zod';
-import { Message, MessageData } from 'genkit';
+import { Message, MessageData, HistorySchema } from 'genkit/experimental/ai';
 import { googleAI } from '@genkit-ai/googleai';
 import { searchGarnishesTool } from '../tools/garnish-tools';
-
-// Schéma pour l'historique des messages, conforme à Genkit
-const HistorySchema = z.array(
-  z.object({
-    role: z.enum(['user', 'model']),
-    content: z.array(
-      z.object({
-        text: z.string(),
-      })
-    ),
-  })
-);
 
 export const chatbotFlow = ai.defineFlow(
   {
@@ -36,13 +24,13 @@ export const chatbotFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async ({ history, prompt }) => {
-    // Le schéma valide déjà l'historique. On s'assure juste que le type est correct.
-    const validatedHistory = history as MessageData[];
+    
+    const llmHistory = history as MessageData[];
 
     const response = await ai.generate({
       model: googleAI.model('gemini-2.5-flash'),
       tools: [searchMenuTool, searchForMatchingPreparationsTool, searchInventoryTool, searchGarnishesTool],
-      history: validatedHistory,
+      history: llmHistory,
       prompt,
       config: {
         temperature: 0.3,
