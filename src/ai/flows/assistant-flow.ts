@@ -34,17 +34,10 @@ export const chatbotFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async ({ history, prompt }) => {
-    // Validation et typage corrects de l'historique
-    const validatedHistory = HistorySchema.parse(history);
-
+    // Code de test suggéré par l'utilisateur
     const response = await ai.generate({
-      model: googleAI.model('gemini-1.5-flash'),
-      tools: [searchMenuTool, searchForMatchingPreparationsTool],
-      history: validatedHistory as Message[],
-      prompt: prompt,
-      config: {
-        temperature: 0.3,
-      },
+      model: "googleai/gemini-1.5-flash",
+      prompt: "Écris-moi une blague en français",
     });
 
     return response.text;
