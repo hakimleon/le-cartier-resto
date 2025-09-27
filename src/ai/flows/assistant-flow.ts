@@ -41,7 +41,7 @@ export const chatbotFlow = ai.defineFlow(
     const validatedHistory = HistorySchema.parse(history) as MessageData[];
 
     const response = await ai.generate({
-      model: googleAI.model('gemini-1.5-flash'),
+      model: googleAI.model('gemini-2.5-flash'),
       tools: [searchMenuTool, searchForMatchingPreparationsTool, searchInventoryTool, searchGarnishesTool],
       history: validatedHistory,
       prompt: prompt,
