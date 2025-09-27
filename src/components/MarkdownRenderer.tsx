@@ -23,6 +23,7 @@ function parseMarkdown(md: string | undefined): MarkdownNode[] {
     if (!md) return [];
 
     const nodes: MarkdownNode[] = [];
+    // Split by '### ' but keep the delimiter
     const sections = md.split(/(?=###\s)/g).map(s => s.trim()).filter(Boolean);
 
     sections.forEach(section => {
@@ -40,7 +41,8 @@ function parseMarkdown(md: string | undefined): MarkdownNode[] {
 }
 
 function parseSectionContent(content: string, nodes: MarkdownNode[]) {
-    const lines = content.split('\n').filter(line => line.trim() !== '');
+    if (!content) return;
+    const lines = content.split('\n');
     let currentList: { type: 'ol' | 'ul'; items: string[] } | null = null;
 
     const flushList = () => {
@@ -52,6 +54,8 @@ function parseSectionContent(content: string, nodes: MarkdownNode[]) {
 
     for (const line of lines) {
         const trimmedLine = line.trim();
+        if (!trimmedLine) continue; // Ignore empty lines
+
         const olMatch = trimmedLine.match(/^(\d+)\.\s+(.*)/);
         const ulMatch = trimmedLine.match(/^-\s+(.*)/);
 
@@ -72,12 +76,13 @@ function parseSectionContent(content: string, nodes: MarkdownNode[]) {
             currentList.items.push(ulMatch[1]);
             continue;
         }
-
+        
+        // If it's not a list item, flush any existing list and treat it as a paragraph
         flushList();
         nodes.push({ type: 'p', content: trimmedLine });
     }
 
-    flushList();
+    flushList(); // Flush any remaining list items at the end
 }
 
 
@@ -120,4 +125,3 @@ export default function MarkdownRenderer({ text }: { text: string | undefined })
     </div>
   );
 }
-
