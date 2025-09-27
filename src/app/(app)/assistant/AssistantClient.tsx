@@ -41,22 +41,28 @@ export default function AssistantClient() {
 
     try {
       // Pass the full new history to the server action
-      const modelResponseText = await sendMessageToChat(newHistory, currentInput);
+      const modelResponseText = await sendMessageToChat(newHistory);
       const modelMessage: Message = { role: 'model', content: [{ text: modelResponseText }] };
       setHistory((prevHistory) => [...prevHistory, modelMessage]);
 
     } catch (error) {
       console.error('Error calling chat action:', error);
       const errorMessageContent = error instanceof Error ? error.message : 'Erreur inconnue.';
+      
+      // We don't want to show the full technical error to the user.
+      const displayError = 'Désolé, une erreur est survenue. Veuillez réessayer.';
+
       const errorMessage: Message = {
         role: 'model',
-        content: [{ text: `Désolé, une erreur est survenue: ${errorMessageContent}` }],
+        content: [{ text: displayError }],
       };
-      // Revert to previous history on error and show error message
+
+      // Revert history to remove the user message that caused the error, then add the error message
       setHistory((prevHistory) => {
-        const revertedHistory = prevHistory.filter(m => m.role !== 'user' || m.content[0].text !== currentInput);
-        return [...revertedHistory, errorMessage];
+          const revertedHistory = prevHistory.slice(0, -1);
+          return [...revertedHistory, errorMessage];
       });
+
     } finally {
       setIsLoading(false);
     }
