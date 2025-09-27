@@ -32,15 +32,16 @@ export default function AssistantClient() {
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = { role: 'user', content: [{ text: input }] };
-    const historyForApi = [...history];
+    const newHistory = [...history, userMessage];
 
-    setHistory(currentHistory => [...currentHistory, userMessage]);
+    setHistory(newHistory);
     const currentInput = input;
     setInput('');
     setIsLoading(true);
 
     try {
-      const modelResponseText = await sendMessageToChat(historyForApi, currentInput);
+      // Pass the full new history to the server action
+      const modelResponseText = await sendMessageToChat(newHistory, currentInput);
       const modelMessage: Message = { role: 'model', content: [{ text: modelResponseText }] };
       setHistory((prevHistory) => [...prevHistory, modelMessage]);
 
@@ -51,7 +52,11 @@ export default function AssistantClient() {
         role: 'model',
         content: [{ text: `Désolé, une erreur est survenue: ${errorMessageContent}` }],
       };
-      setHistory((prevHistory) => [...prevHistory, errorMessage]);
+      // Revert to previous history on error and show error message
+      setHistory((prevHistory) => {
+        const revertedHistory = prevHistory.filter(m => m.role !== 'user' || m.content[0].text !== currentInput);
+        return [...revertedHistory, errorMessage];
+      });
     } finally {
       setIsLoading(false);
     }
@@ -95,7 +100,7 @@ export default function AssistantClient() {
                       className={cn(
                         'max-w-[80%] rounded-lg px-4 p-3 text-sm',
                         message.role === 'user'
-                          ? 'border p-2 text-primary-foreground bg-gray-200'
+                          ? 'bg-primary text-primary-foreground'
                           : 'bg-muted'
                       )}
                     >
