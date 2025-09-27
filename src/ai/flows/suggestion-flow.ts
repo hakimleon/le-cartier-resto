@@ -10,6 +10,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
+import { googleAI } from '@genkit-ai/googleai';
 
 // --- Flow pour l'argumentaire commercial ---
 
@@ -36,7 +37,7 @@ Ingrédients clés : ${input.ingredients?.join(', ') || 'Non fournis'}
 Ton unique sortie doit être l'argumentaire.`;
 
   const { output } = await ai.generate({
-    model: 'googleai/gemini-2.0-flash',
+    model: googleAI.model('gemini-1.5-flash'),
     prompt,
     output: {
       schema: CommercialArgumentOutputSchema,
@@ -84,7 +85,7 @@ Si c'est une préparation, estime une quantité produite (productionQuantity) et
 Ne fournis QUE la réponse au format JSON demandé.
 `;
   const { output } = await ai.generate({
-    model: 'googleai/gemini-2.5-flash',
+    model: googleAI.model('gemini-1.5-flash'),
     prompt,
     output: {
       format: 'json',
@@ -138,7 +139,7 @@ Exemple pour un "Fond brun de veau" :
 Fournis uniquement la réponse au format JSON demandé. Ne crée pas de plats finis complexes, mais bien des applications directes ou des transformations simples de la base.`;
 
     const { output } = await ai.generate({
-        model: 'googleai/gemini-2.0-flash',
+        model: googleAI.model('gemini-1.5-flash'),
         prompt,
         output: {
             format: 'json',
@@ -178,7 +179,7 @@ Propose 3 alternatives pertinentes. Pour chaque suggestion, fournis le nom du su
 Réponds uniquement au format JSON demandé.`;
 
     const { output } = await ai.generate({
-        model: 'googleai/gemini-2.0-flash',
+        model: googleAI.model('gemini-1.5-flash'),
         prompt,
         output: {
             schema: IngredientAlternativeOutputSchema,

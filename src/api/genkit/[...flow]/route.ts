@@ -25,9 +25,10 @@ import '@/ai/flows/recipe-workshop-flow';
 import '@/ai/flows/preparation-workshop-flow';
 import '@/ai/flows/garnish-workshop-flow';
 import '@/ai/flows/suggestion-flow';
-import '@/ai/flows/workshop-flow';
 import '@/ai/flows/assistant-flow';
 
+// We don't import workshop-flow directly as it only contains types/schemas
+// and they are imported by the flows that use them.
 
 config();
 

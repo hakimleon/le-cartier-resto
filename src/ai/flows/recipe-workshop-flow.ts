@@ -24,7 +24,7 @@ const recipeGenPrompt = ai.definePrompt({
     name: 'recipeWorkshopPrompt',
     input: { schema: RecipeConceptInputSchema.extend({ allPreparationNames: z.array(z.string()) }) },
     output: { schema: RecipeTextConceptSchema },
-    model: googleAI.model('gemini-2.5-flash'),
+    model: googleAI.model('gemini-1.5-flash'),
     prompt: `Vous êtes un chef exécutif créant une fiche technique pour un PLAT PRINCIPAL de restaurant gastronomique. Votre mission est de concevoir un plat complet, prêt à être servi au client, en utilisant potentiellement des préparations de base existantes.
 
 ---
@@ -145,7 +145,7 @@ const generateRecipeConceptFlow = ai.defineFlow(
                 const imagePrompt = `Photographie culinaire professionnelle, style magazine gastronomique. Plat : "${recipeConcept.name}". Description : "${recipeConcept.description}". Dressage : "${recipeConcept.procedure_service}". Éclairage de studio, faible profondeur de champ, assiette élégante.`;
 
                 const { media } = await ai.generate({
-                    model: 'googleai/imagen-4.0-fast-generate-001',
+                    model: googleAI.model('imagen-4.0-fast-generate-001'),
                     prompt: imagePrompt,
                 });
 
