@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Flux de l'assistant chatbot.
@@ -9,6 +10,7 @@ import { searchForMatchingPreparationsTool } from '../tools/recipe-tools';
 import { searchMenuTool } from '../tools/menu-tools';
 import { z } from 'zod';
 import { Message } from 'genkit';
+import { googleAI } from '@genkit-ai/googleai';
 
 // Schéma pour l'historique des messages
 const HistorySchema = z.array(z.object({
@@ -29,10 +31,8 @@ export const chatbotFlow = ai.defineFlow(
   },
   async ({ history, prompt }) => {
     
-    const llm = ai.getModel('gemini-1.5-flash');
-
     const response = await ai.generate({
-      model: llm,
+      model: googleAI.model('gemini-1.5-flash'),
       tools: [searchMenuTool, searchForMatchingPreparationsTool],
       history: history as Message[],
       prompt: prompt,
