@@ -9,7 +9,7 @@ import { ai } from '@/ai/genkit';
 import { searchForMatchingPreparationsTool } from '../tools/recipe-tools';
 import { searchMenuTool } from '../tools/menu-tools';
 import { z } from 'zod';
-import { Message } from 'genkit';
+import { Message, MessageData } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
 
 // Schéma pour l'historique des messages, conforme à Genkit
@@ -34,10 +34,17 @@ export const chatbotFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async ({ history, prompt }) => {
-    // Code de test suggéré par l'utilisateur
+    // Valide l'historique pour s'assurer qu'il est conforme au type Message[]
+    const validatedHistory = HistorySchema.parse(history) as MessageData[];
+
     const response = await ai.generate({
-      model: "googleai/gemini-1.5-flash",
-      prompt: "Écris-moi une blague en français",
+      model: 'googleai/gemini-1.5-flash',
+      tools: [searchMenuTool, searchForMatchingPreparationsTool],
+      history: validatedHistory,
+      prompt: prompt,
+      config: {
+        temperature: 0.3,
+      },
     });
 
     return response.text;
