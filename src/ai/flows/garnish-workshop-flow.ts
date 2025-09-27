@@ -17,7 +17,7 @@ const garnishGenPrompt = ai.definePrompt({
     name: 'garnishWorkshopPrompt',
     input: { schema: PreparationConceptInputSchema.extend({ allPreparationNames: z.array(z.string()) }) },
     output: { schema: PreparationConceptOutputSchema },
-    model: googleAI.model('gemini-1.5-flash'),
+    model: googleAI.model('gemini-2.5-flash'),
     prompt: `Vous êtes un chef expert créant une fiche technique pour une GARNITURE ou un ACCOMPAGNEMENT de restaurant. Votre tâche est de structurer une recette en utilisant SYSTÉMATIQUEMENT les préparations de base déjà existantes.
 
 Ceci est une garniture, pas un plat complet. Elle sera combinée plus tard avec une protéine. Exemples : Purée de pommes de terre, Gratin Dauphinois, Tian de légumes, Poêlée de champignons.

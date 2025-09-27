@@ -12,6 +12,7 @@ import { searchInventoryTool } from '../tools/inventory-tools';
 import { z } from 'zod';
 import { Message, MessageData } from 'genkit';
 import { googleAI } from '@genkit-ai/googleai';
+import { searchGarnishesTool } from '../tools/garnish-tools';
 
 // Schéma pour l'historique des messages, conforme à Genkit
 const HistorySchema = z.array(
@@ -41,7 +42,7 @@ export const chatbotFlow = ai.defineFlow(
 
     const response = await ai.generate({
       model: googleAI.model('gemini-1.5-flash'),
-      tools: [searchMenuTool, searchForMatchingPreparationsTool, searchInventoryTool],
+      tools: [searchMenuTool, searchForMatchingPreparationsTool, searchInventoryTool, searchGarnishesTool],
       history: validatedHistory,
       prompt: prompt,
       config: {

@@ -37,7 +37,7 @@ Ingrédients clés : ${input.ingredients?.join(', ') || 'Non fournis'}
 Ton unique sortie doit être l'argumentaire.`;
 
   const { output } = await ai.generate({
-    model: googleAI.model('gemini-1.5-flash'),
+    model: googleAI.model('gemini-2.5-flash'),
     prompt,
     output: {
       schema: CommercialArgumentOutputSchema,
