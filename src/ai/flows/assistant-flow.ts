@@ -1,8 +1,46 @@
 'use server';
 /**
- * @fileOverview Ce flow est actuellement désactivé.
- * La logique du chatbot est gérée directement via une Server Action
- * dans `src/app/(app)/assistant/actions.ts`.
+ * @fileOverview Flux de l'assistant chatbot.
+ * - chatbotFlow: Gère la conversation et l'utilisation des outils.
  */
 
-// Ce fichier est volontairement laissé vide pour éviter les erreurs de compilation.
+import { ai } from '@/ai/genkit';
+import { searchForMatchingPreparationsTool } from '../tools/recipe-tools';
+import { searchMenuTool } from '../tools/menu-tools';
+import { z } from 'zod';
+import { Message } from 'genkit';
+
+// Schéma pour l'historique des messages
+const HistorySchema = z.array(z.object({
+  role: z.enum(['user', 'model']),
+  content: z.array(z.object({
+    text: z.string(),
+  })),
+}));
+
+export const chatbotFlow = ai.defineFlow(
+  {
+    name: 'chatbotFlow',
+    inputSchema: z.object({
+      history: HistorySchema,
+      prompt: z.string(),
+    }),
+    outputSchema: z.string(),
+  },
+  async ({ history, prompt }) => {
+    
+    const llm = ai.getModel('gemini-1.5-flash');
+
+    const response = await ai.generate({
+      model: llm,
+      tools: [searchMenuTool, searchForMatchingPreparationsTool],
+      history: history as Message[],
+      prompt: prompt,
+      config: {
+        temperature: 0.3,
+      },
+    });
+
+    return response.text;
+  }
+);
