@@ -59,12 +59,11 @@ export type Preparation = {
   duration?: number; // in minutes
   tags?: string[];
   imageUrl?: string;
+  rawConcept?: string; // Pour stocker le JSON brut de l'IA
   
   // Champs Fiche Technique
   procedure_fabrication?: string;
   procedure_service?: string;
-  procedure_preparation?: string; // Ancien champ, conservé pour la migration
-  procedure_cuisson?: string;     // Ancien champ, conservé pour la migration
   allergens?: string[];
   
   // Champs spécifiques à la Préparation
@@ -99,13 +98,12 @@ export type Recipe = {
   duration?: number; // in minutes
   tags?: string[];
   imageUrl?: string;
+  rawConcept?: string; // Pour stocker le JSON brut de l'IA
   
   // Champs Fiche Technique
   portions: number;
   procedure_fabrication?: string;
   procedure_service?: string;
-  procedure_preparation?: string; // Ancien champ, conservé pour la migration
-  procedure_cuisson?: string;     // Ancien champ, conservé pour la migration
   allergens?: string[];
   commercialArgument?: string;
 

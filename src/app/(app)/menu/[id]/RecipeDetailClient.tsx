@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle, FishSymbol, CookingPot } from "lucide-react";
+import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle, FishSymbol, CookingPot, Braces } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -426,14 +426,17 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         if (!currentData) return '';
         if ((currentData as Recipe).procedure_fabrication) return (currentData as Recipe).procedure_fabrication;
         
-        // Fallback for old data structure
-        const prep = (currentData as any).procedure_preparation || '';
-        const cook = (currentData as any).procedure_cuisson || '';
-        if (prep || cook) {
-            return `${prep}\n\n${cook}`.trim();
-        }
         return '';
     }, [isEditing, recipe, editableRecipe]);
+
+    const rawConceptObject = useMemo(() => {
+        if (!editableRecipe?.rawConcept) return null;
+        try {
+            return JSON.parse(editableRecipe.rawConcept);
+        } catch (e) {
+            return null;
+        }
+    }, [editableRecipe?.rawConcept]);
 
 
     const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
@@ -1293,31 +1296,25 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                 </div>
 
                 <div className="space-y-8">
-                    {workshopConcept && isEditing && (
-                        <Card className="border-primary/20 bg-primary/5">
-                            <CardHeader>
-                                <CardTitle className="flex items-center justify-between text-lg text-primary">
-                                    <div className="flex items-center gap-2"><Lightbulb className="h-5 w-5" />Suggestion de l'Atelier</div>
-                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-primary/70 hover:text-primary" onClick={() => setWorkshopConcept(null)}><X className="h-4 w-4" /></Button>
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4 text-sm">
-                                <div>
-                                    <h4 className="font-semibold mb-1">Ingrédients suggérés</h4>
-                                    <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
-                                        {workshopConcept.ingredients.map(ing => <li key={ing.name}>{ing.quantity} {ing.unit} {ing.name}</li>)}
-                                    </ul>
-                                </div>
-                                {workshopConcept.subRecipes && workshopConcept.subRecipes.length > 0 && (
-                                <div>
-                                    <h4 className="font-semibold mb-1">Sous-recettes suggérées</h4>
-                                    <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
-                                        {workshopConcept.subRecipes.map(prep => <li key={prep.name}>{prep.name}</li>)}
-                                    </ul>
-                                </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                    {isEditing && rawConceptObject && (
+                        <Accordion type="single" collapsible className="w-full">
+                            <AccordionItem value="item-1">
+                                <Card className="border-primary/20 bg-primary/5">
+                                    <AccordionTrigger className="p-4 text-primary hover:no-underline">
+                                        <CardHeader className="p-0 text-left">
+                                            <CardTitle className="flex items-center gap-2 text-base">
+                                                <Lightbulb className="h-5 w-5" />Pense-bête de l'IA
+                                            </CardTitle>
+                                        </CardHeader>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="px-4 pb-4">
+                                        <pre className="text-xs whitespace-pre-wrap break-all bg-background/50 p-2 rounded-md overflow-x-auto max-h-96">
+                                            <code>{JSON.stringify(rawConceptObject, null, 2)}</code>
+                                        </pre>
+                                    </AccordionContent>
+                                </Card>
+                            </AccordionItem>
+                        </Accordion>
                     )}
 
                     <Card><CardHeader><CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle></CardHeader><CardContent><div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)} DZD</div><p className="text-xs text-muted-foreground text-right mt-1">{isPlat ? "Coût par portion : " + costPerPortion.toFixed(2) + " DZD" : ""}</p></CardContent></Card>

@@ -18,6 +18,7 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
     try {
         let docRef;
         let dataToSave: Omit<Recipe, 'id'> | Omit<Preparation, 'id'>;
+        const rawConceptString = JSON.stringify(concept);
 
         if (concept.type === 'Plat') {
             dataToSave = {
@@ -37,6 +38,7 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
                 tvaRate: 10, // Default TVA rate
                 allergens: [],
                 tags: [],
+                rawConcept: rawConceptString,
             };
         } else { // Handles 'Préparation' and 'Garniture'
              dataToSave = {
@@ -55,6 +57,7 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
                 tags: [],
                 imageUrl: concept.imageUrl || null, 
                 allergens: [],
+                rawConcept: rawConceptString,
             };
         }
         
