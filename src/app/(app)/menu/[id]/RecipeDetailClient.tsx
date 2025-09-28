@@ -1259,7 +1259,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                     </TabsList>
                                     <TabsContent value="fabrication" className="pt-4">
                                         <Textarea
-                                            value={fabricationProcedure}
+                                            value={(editableRecipe as Recipe)?.procedure_fabrication || ''}
                                             onChange={(e) => handleRecipeDataChange('procedure_fabrication', e.target.value)}
                                             rows={15}
                                             placeholder="Décrivez les étapes de fabrication, y compris la préparation et la cuisson..."
@@ -1414,3 +1414,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
