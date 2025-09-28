@@ -18,10 +18,8 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
     try {
         let docRef;
         let dataToSave: Omit<Recipe, 'id'> | Omit<Preparation, 'id'>;
-        let targetCollectionName: 'recipes' | 'preparations' | 'garnishes';
 
         if (concept.type === 'Plat') {
-            targetCollectionName = 'recipes';
             dataToSave = {
                 type: 'Plat',
                 name: concept.name,
@@ -41,7 +39,6 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
                 tags: [],
             };
         } else { // Handles 'Préparation' and 'Garniture'
-             targetCollectionName = collectionName;
              dataToSave = {
                 type: 'Préparation',
                 name: concept.name,
@@ -61,7 +58,7 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
             };
         }
         
-        const col = collection(db, targetCollectionName);
+        const col = collection(db, collectionName);
         docRef = await addDoc(col, dataToSave);
         
         return docRef.id;

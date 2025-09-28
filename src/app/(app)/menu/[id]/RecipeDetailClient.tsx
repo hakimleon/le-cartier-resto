@@ -1251,26 +1251,34 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                             <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Procédure</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            {isEditing ? (
-                                <Accordion type="multiple" defaultValue={['fabrication']} className="w-full">
-                                    <AccordionItem value="fabrication">
-                                        <AccordionTrigger>Fabrication</AccordionTrigger>
-                                        <AccordionContent>
-                                            <Textarea value={fabricationProcedure || ''} onChange={(e) => handleRecipeDataChange('procedure_fabrication', e.target.value)} rows={10} placeholder="Décrivez les étapes de fabrication..."/>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                    <AccordionItem value="service">
-                                        <AccordionTrigger>Service / Dressage</AccordionTrigger>
-                                        <AccordionContent>
-                                            <Textarea value={(editableRecipe as Recipe)?.procedure_service || ''} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={10} placeholder="Décrivez les étapes de service..."/>
-                                        </AccordionContent>
-                                    </AccordionItem>
-                                </Accordion>
+                           {isEditing ? (
+                                <Tabs defaultValue="fabrication">
+                                    <TabsList>
+                                        <TabsTrigger value="fabrication">Fabrication</TabsTrigger>
+                                        <TabsTrigger value="service">Service / Dressage</TabsTrigger>
+                                    </TabsList>
+                                    <TabsContent value="fabrication" className="pt-4">
+                                        <Textarea
+                                            value={fabricationProcedure}
+                                            onChange={(e) => handleRecipeDataChange('procedure_fabrication', e.target.value)}
+                                            rows={15}
+                                            placeholder="Décrivez les étapes de fabrication, y compris la préparation et la cuisson..."
+                                        />
+                                    </TabsContent>
+                                    <TabsContent value="service" className="pt-4">
+                                        <Textarea
+                                            value={(editableRecipe as Recipe)?.procedure_service || ''}
+                                            onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)}
+                                            rows={10}
+                                            placeholder="Décrivez les étapes de conservation, remise en température et dressage..."
+                                        />
+                                    </TabsContent>
+                                </Tabs>
                             ) : (
                                 <Tabs defaultValue="fabrication">
                                     <TabsList>
                                         <TabsTrigger value="fabrication">Fabrication</TabsTrigger>
-                                        <TabsTrigger value="service">Service</TabsTrigger>
+                                        <TabsTrigger value="service">Service / Dressage</TabsTrigger>
                                     </TabsList>
                                     <TabsContent value="fabrication" className="pt-4">
                                         <MarkdownRenderer text={fabricationProcedure} />

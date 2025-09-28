@@ -39,6 +39,7 @@ export const preparationCategories = [
     "Réductions & jus corsés",
     "Fermentations légères",
     "Bases pâtissières essentielles",
+    "Accompagnements",
 ] as const;
 
 
