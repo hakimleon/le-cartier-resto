@@ -1302,7 +1302,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                 </div>
                                 {workshopConcept.subRecipes && workshopConcept.subRecipes.length > 0 && (
                                 <div>
-                                    <h4 className="font-semibold mb-1">Sous-recettes existantes</h4>
+                                    <h4 className="font-semibold mb-1">Sous-recettes suggérées</h4>
                                     <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
                                         {workshopConcept.subRecipes.map(prep => <li key={prep.name}>{prep.name}</li>)}
                                     </ul>
