@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useRef } from "react";
@@ -21,7 +20,7 @@ import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
+const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
 export default function WorkshopClient() {
     const [isLoading, setIsLoading] = useState(false);
@@ -120,7 +119,7 @@ export default function WorkshopClient() {
             const newDocId = await createDishFromWorkshop(conceptForAction, 'preparations');
             
             if (newDocId) {
-                sessionStorage.setItem(PREPARATION_WORKSHOP_CONCEPT_KEY, JSON.stringify(conceptForAction));
+                sessionStorage.setItem(WORKSHOP_CONCEPT_KEY, JSON.stringify(conceptForAction));
                 toast({
                     title: "Préparation enregistrée !",
                     description: `"${conceptForAction.name}" a été ajoutée. Redirection...`,
@@ -286,8 +285,7 @@ export default function WorkshopClient() {
                                      <div>
                                         <h4 className="font-semibold mb-2 flex items-center gap-2">Procédure</h4>
                                         <div className="prose prose-sm max-w-none text-muted-foreground p-4 border rounded-md mt-2">
-                                            <MarkdownRenderer text={generatedConcept.procedure_preparation} />
-                                            <MarkdownRenderer text={generatedConcept.procedure_cuisson} />
+                                            <MarkdownRenderer text={generatedConcept.procedure_fabrication} />
                                             <MarkdownRenderer text={generatedConcept.procedure_service} />
                                         </div>
                                     </div>

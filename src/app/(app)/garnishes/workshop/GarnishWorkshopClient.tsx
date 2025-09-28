@@ -20,7 +20,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { generateGarnishConcept } from "@/ai/flows/garnish-workshop-flow";
 
 
-const GARNISH_WORKSHOP_CONCEPT_KEY = 'garnishWorkshopGeneratedConcept';
+const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
 export default function GarnishWorkshopClient() {
     const [isLoading, setIsLoading] = useState(false);
@@ -119,7 +119,7 @@ export default function GarnishWorkshopClient() {
             const newDocId = await createDishFromWorkshop(conceptForAction, 'garnishes');
             
             if (newDocId) {
-                sessionStorage.setItem(GARNISH_WORKSHOP_CONCEPT_KEY, JSON.stringify(conceptForAction));
+                sessionStorage.setItem(WORKSHOP_CONCEPT_KEY, JSON.stringify(conceptForAction));
                 toast({
                     title: "Garniture enregistrée !",
                     description: `"${conceptForAction.name}" a été ajoutée. Redirection...`,
@@ -285,8 +285,7 @@ export default function GarnishWorkshopClient() {
                                      <div>
                                         <h4 className="font-semibold mb-2 flex items-center gap-2">Procédure</h4>
                                         <div className="prose prose-sm max-w-none text-muted-foreground p-4 border rounded-md mt-2">
-                                            <MarkdownRenderer text={generatedConcept.procedure_preparation} />
-                                            <MarkdownRenderer text={generatedConcept.procedure_cuisson} />
+                                            <MarkdownRenderer text={generatedConcept.procedure_fabrication} />
                                             <MarkdownRenderer text={generatedConcept.procedure_service} />
                                         </div>
                                     </div>
