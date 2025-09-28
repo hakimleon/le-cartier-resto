@@ -51,7 +51,7 @@ import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
-import { Tooltip, TooltipContent, TooltipProvider } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { PrintLink } from "@/components/pdf/PrintLink";
 
 
