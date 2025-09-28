@@ -24,7 +24,7 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
                 type: 'Plat',
                 name: concept.name,
                 description: concept.description,
-                imageUrl: concept.imageUrl,
+                imageUrl: concept.imageUrl || null,
                 procedure_fabrication: concept.procedure_fabrication || "",
                 procedure_service: concept.procedure_service || "",
                 difficulty: concept.difficulty,
@@ -53,7 +53,7 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
                 productionUnit: concept.productionUnit || 'kg',
                 usageUnit: concept.usageUnit || 'g',
                 tags: [],
-                imageUrl: concept.imageUrl, // Preparations can also have images now.
+                imageUrl: concept.imageUrl || null, 
                 allergens: [],
             };
         }
@@ -99,3 +99,4 @@ export async function createPreparation(prepData: Partial<Preparation>, _id: str
         throw new Error("Failed to create preparation in database.");
     }
 }
+
