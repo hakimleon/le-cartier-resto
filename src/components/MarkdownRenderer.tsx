@@ -21,28 +21,13 @@ type MarkdownNode = {
 
 function parseMarkdown(md: string | undefined): MarkdownNode[] {
     if (!md) return [];
+    
+    // Pre-process the text: force line breaks before numbered steps (e.g., " 2. ", " 3. ")
+    const processedMd = md.replace(/\s(\d+\.\s)/g, '\n$1');
 
     const nodes: MarkdownNode[] = [];
-    // Split by '### ' but keep the delimiter
-    const sections = md.split(/(?=###\s)/g).map(s => s.trim()).filter(Boolean);
-
-    sections.forEach(section => {
-        if (section.startsWith('### ')) {
-            const contentWithoutHeader = section.substring(4);
-            const [header, ...restOfContent] = contentWithoutHeader.split('\n');
-            nodes.push({ type: 'h3', content: header });
-            parseSectionContent(restOfContent.join('\n'), nodes);
-        } else {
-            parseSectionContent(section, nodes);
-        }
-    });
-
-    return nodes;
-}
-
-function parseSectionContent(content: string, nodes: MarkdownNode[]) {
-    if (!content) return;
-    const lines = content.split('\n');
+    const lines = processedMd.split('\n').filter(line => line.trim() !== '');
+    
     let currentList: { type: 'ol' | 'ul'; items: string[] } | null = null;
 
     const flushList = () => {
@@ -54,7 +39,7 @@ function parseSectionContent(content: string, nodes: MarkdownNode[]) {
 
     for (const line of lines) {
         const trimmedLine = line.trim();
-        if (!trimmedLine) continue; // Ignore empty lines
+        if (!trimmedLine) continue;
 
         const olMatch = trimmedLine.match(/^(\d+)\.\s+(.*)/);
         const ulMatch = trimmedLine.match(/^-\s+(.*)/);
@@ -77,12 +62,18 @@ function parseSectionContent(content: string, nodes: MarkdownNode[]) {
             continue;
         }
         
-        // If it's not a list item, flush any existing list and treat it as a paragraph
         flushList();
-        nodes.push({ type: 'p', content: trimmedLine });
+        
+        if (trimmedLine.startsWith('### ')) {
+            nodes.push({ type: 'h3', content: trimmedLine.substring(4) });
+        } else {
+            nodes.push({ type: 'p', content: trimmedLine });
+        }
     }
 
     flushList(); // Flush any remaining list items at the end
+
+    return nodes;
 }
 
 
