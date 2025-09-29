@@ -101,6 +101,9 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
           form.setValue('purchaseWeightGrams', 1000, { shouldValidate: true });
         } else if (unit === "g" || unit === "ml") {
           form.setValue('purchaseWeightGrams', 1, { shouldValidate: true });
+        } else {
+            // For 'pièce', 'botte', or other units, clear the value to force user input
+            form.setValue('purchaseWeightGrams', 0, { shouldValidate: true });
         }
       }
     });
@@ -264,7 +267,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                                 <FormItem>
                                 <FormLabel>{getWeightLabel()}</FormLabel>
                                 <FormControl>
-                                <Input type="number" step="1" placeholder="Ex: 1000" {...field} />
+                                <Input type="number" step="1" placeholder="Ex: 1000" {...field} value={field.value === 0 ? '' : field.value} />
                                 </FormControl>
                                 <FormDescription className="text-xs">
                                     Pour 1 unité d'achat.
@@ -346,3 +349,5 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
+
+    
