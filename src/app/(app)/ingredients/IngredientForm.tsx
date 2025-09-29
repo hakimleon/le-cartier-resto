@@ -137,6 +137,10 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       setIsSubmitting(false);
     }
   }
+  
+  const purchaseWeightValue = form.watch('purchaseWeightGrams');
+  const displayWeightValue = (purchaseUnit === 'pièce' || purchaseUnit === 'botte') && purchaseWeightValue === 1000 ? 0 : purchaseWeightValue;
+
 
   return (
     <Form {...form}>
@@ -267,7 +271,14 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                                 <FormItem>
                                 <FormLabel>{getWeightLabel()}</FormLabel>
                                 <FormControl>
-                                <Input type="number" step="1" placeholder="Ex: 1000" {...field} value={field.value === 0 ? '' : field.value} />
+                                    <Input
+                                        type="number"
+                                        step="1"
+                                        placeholder="Ex: 50"
+                                        {...field}
+                                        value={displayWeightValue === 0 ? '' : displayWeightValue}
+                                        onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
+                                    />
                                 </FormControl>
                                 <FormDescription className="text-xs">
                                     Pour 1 unité d'achat.
@@ -349,5 +360,3 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
-
-    
