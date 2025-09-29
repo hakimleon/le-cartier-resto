@@ -130,24 +130,36 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
     return 1;
 };
 
-const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams) {
+const recomputeIngredientCost = (ingredientLink: { quantity: number, unit: string }, ingredientData: Ingredient): number => {
+    if (!ingredientData?.purchasePrice) {
         return 0;
     }
 
-    const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
+    const purchaseUnit = ingredientData.purchaseUnit.toLowerCase();
+    const isUnitBased = ['pièce', 'piece', 'botte'].includes(purchaseUnit);
 
-    const isLiquidPurchase = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
-    // Determine target unit based on purchase unit type (weight vs volume), not usage unit.
-    const targetUnit = isLiquidPurchase ? 'ml' : 'g';
-    
-    const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
-    
-    const finalCost = quantityInBaseUnit * netCostPerGramOrMl;
+    let finalCost = 0;
+
+    if (isUnitBased) {
+        const conversionFactor = getConversionFactor(ingredientLink.unit, purchaseUnit);
+        finalCost = ingredientLink.quantity * ingredientData.purchasePrice * conversionFactor;
+    } else {
+        // Fallback to weight/volume based calculation
+        if (!ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) {
+            return 0;
+        }
+        const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+        const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
+
+        const isLiquidPurchase = ['l', 'ml', 'litre', 'litres'].includes(purchaseUnit);
+        const targetUnit = isLiquidPurchase ? 'ml' : 'g';
+        
+        const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
+        finalCost = quantityInBaseUnit * netCostPerGramOrMl;
+    }
+
     return isNaN(finalCost) ? 0 : finalCost;
 };
-
 
 
 const GAUGE_LEVELS = {
@@ -216,7 +228,7 @@ const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExisti
     )
 }
 
-const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredientModal, handleRemoveNewIngredient, sortedIngredients }: { newIng: NewRecipeIngredient, handleNewIngredientChange: any, openNewIngredientModal: any, handleRemoveNewIngredient: any, sortedIngredients: Ingredient[] }) => {
+const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredientModal, handleRemoveNewIngredient, sortedIngredients }: { newIng: NewRecipeIngredient, handleNewIngredientChange: (tempId: string, field: keyof NewRecipeIngredient, value: any) => void, openNewIngredientModal: any, handleRemoveNewIngredient: any, sortedIngredients: Ingredient[] }) => {
     const [openCombobox, setOpenCombobox] = useState(false);
     const isLinked = !!newIng.ingredientId;
 
@@ -253,7 +265,7 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                                 />
                                 <CommandList>
                                     <CommandEmpty>
-                                        <Button variant="ghost" className="w-full justify-start" onClick={() => {
+                                        <Button variant="ghost" className="w-full justify-start" onClick={()={() => {
                                             setOpenCombobox(false);
                                             openNewIngredientModal(newIng.tempId);
                                         }}>
@@ -590,7 +602,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                 if (conceptJSON && isMounted) {
                     setIsEditing(true);
                     const concept: RecipeConceptOutput = JSON.parse(conceptJSON);
-                    setWorkshopConcept(concept); // <-- Store the raw concept
+                    setWorkshopConcept(concept); // &lt;-- Store the raw concept
 
                     setEditableRecipe(current => {
                         if (!current) return null;
