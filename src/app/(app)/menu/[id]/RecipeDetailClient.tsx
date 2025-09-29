@@ -265,7 +265,7 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
                                 />
                                 <CommandList>
                                     <CommandEmpty>
-                                        <Button variant="ghost" className="w-full justify-start" onClick={()={() => {
+                                        <Button variant="ghost" className="w-full justify-start" onClick={() => {
                                             setOpenCombobox(false);
                                             openNewIngredientModal(newIng.tempId);
                                         }}>
@@ -305,7 +305,7 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
             <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
         </TableRow>
     )
-}
+};
 
 
 const EditablePreparationRow = ({ prep, handlePreparationChange, handleRemoveExistingPreparation }: { prep: FullRecipePreparation, handlePreparationChange: any, handleRemoveExistingPreparation: any }) => {
@@ -1423,5 +1423,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
