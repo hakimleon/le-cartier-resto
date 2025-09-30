@@ -37,7 +37,7 @@ export default function AppLayout({
           <SidebarHeader className="p-4">
             <Link href="/" className="flex items-center gap-2">
                 <div className="flex flex-col">
-                    <h2 className="text-2xl font-bold tracking-tight text-[#5D4037] drop-shadow-sm">La Compagnie</h2>
+                    <h2 className="text-2xl font-bold tracking-tight text-[hsl(14_25%_25%)] drop-shadow-sm">La Compagnie</h2>
                 </div>
             </Link>
           </SidebarHeader>
