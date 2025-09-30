@@ -110,6 +110,8 @@ export default function MenuClient() {
     
     fetchMenuData();
 
+    // The onSnapshot listener is removed to switch to a single-fetch strategy.
+    // This prevents potential issues with ad-blockers or network configurations.
   }, []);
   
    useEffect(() => {
@@ -123,6 +125,7 @@ export default function MenuClient() {
           title: "Succès",
           description: `Le plat "${name}" a été supprimé.`,
         });
+        // You might want to re-fetch data here if not using onSnapshot
       } catch (error) {
         console.error("Error deleting dish:", error);
         toast({
@@ -215,7 +218,7 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <DishModal dish={null} onSuccess={() => { /* Re-fetch or rely on manual refresh */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat
@@ -257,3 +260,5 @@ export default function MenuClient() {
     </div>
   );
 }
+
+    

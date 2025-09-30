@@ -286,3 +286,5 @@ export default function GarnishesClient() {
     </div>
   );
 }
+
+    
