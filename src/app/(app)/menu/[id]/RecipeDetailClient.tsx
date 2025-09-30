@@ -202,7 +202,7 @@ const foodCostIndicators = [
     { range: "> 40%", level: "Mauvais", description: "Gestion défaillante. Action corrective urgente.", color: "text-red-500", icon: GAUGE_LEVELS.mauvais.icon },
 ];
 
-const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExistingIngredient, handleEditIngredient, sortedIngredients }: { ing: FullRecipeIngredient, handleIngredientChange: any, handleRemoveExistingIngredient: any, handleEditIngredient: (ing: FullRecipeIngredient) => void, sortedIngredients: Ingredient[] }) => {
+function EditableIngredientRow({ ing, handleIngredientChange, handleRemoveExistingIngredient, handleEditIngredient, sortedIngredients }: { ing: FullRecipeIngredient, handleIngredientChange: any, handleRemoveExistingIngredient: any, handleEditIngredient: (ing: FullRecipeIngredient) => void, sortedIngredients: Ingredient[] }) {
     const [openCombobox, setOpenCombobox] = useState(false);
     return (
         <TableRow key={ing.recipeIngredientId}>
@@ -249,10 +249,10 @@ const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExisti
             <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
             <TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell>
         </TableRow>
-    )
-};
+    );
+}
 
-const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredientModal, handleRemoveNewIngredient, sortedIngredients }: { newIng: NewRecipeIngredient, handleNewIngredientChange: (tempId: string, field: keyof NewRecipeIngredient, value: any) => void, openNewIngredientModal: any, handleRemoveNewIngredient: any, sortedIngredients: Ingredient[] }) => {
+function NewIngredientRow({ newIng, handleNewIngredientChange, openNewIngredientModal, handleRemoveNewIngredient, sortedIngredients }: { newIng: NewRecipeIngredient, handleNewIngredientChange: (tempId: string, field: keyof NewRecipeIngredient, value: any) => void, openNewIngredientModal: any, handleRemoveNewIngredient: any, sortedIngredients: Ingredient[] }) {
     const [openCombobox, setOpenCombobox] = useState(false);
     const isLinked = !!newIng.ingredientId;
 
@@ -332,7 +332,7 @@ const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredient
 };
 
 
-const EditablePreparationRow = ({ prep, handlePreparationChange, handleRemoveExistingPreparation }: { prep: FullRecipePreparation, handlePreparationChange: any, handleRemoveExistingPreparation: any }) => {
+function EditablePreparationRow({ prep, handlePreparationChange, handleRemoveExistingPreparation }: { prep: FullRecipePreparation, handlePreparationChange: any, handleRemoveExistingPreparation: any }) {
     return (
         <TableRow key={prep.id}>
             <TableCell className="font-medium">{prep.name}</TableCell>
@@ -363,7 +363,7 @@ const EditablePreparationRow = ({ prep, handlePreparationChange, handleRemoveExi
     )
 }
 
-const NewPreparationRow = ({ prep, handleNewPreparationChange, openNewPreparationModal, handleRemoveNewPreparation, allPreparations, recipeId }: { prep: NewRecipePreparation, handleNewPreparationChange: any, openNewPreparationModal: any, handleRemoveNewPreparation: any, allPreparations: Preparation[], recipeId: string }) => {
+function NewPreparationRow({ prep, handleNewPreparationChange, openNewPreparationModal, handleRemoveNewPreparation, allPreparations, recipeId }: { prep: NewRecipePreparation, handleNewPreparationChange: any, openNewPreparationModal: any, handleRemoveNewPreparation: any, allPreparations: Preparation[], recipeId: string }) {
     const [openPrepCombobox, setOpenPrepCombobox] = useState(false);
     return (
         <TableRow key={prep.tempId}>
@@ -628,7 +628,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                 if (conceptJSON && isMounted) {
                     setIsEditing(true);
                     const concept: RecipeConceptOutput = JSON.parse(conceptJSON);
-                    setWorkshopConcept(concept); // &lt;-- Store the raw concept
+                    setWorkshopConcept(concept); // <-- Store the raw concept
 
                     setEditableRecipe(current => {
                         if (!current) return null;
@@ -1053,64 +1053,54 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
             <IngredientModal open={isEditIngredientModalOpen} onOpenChange={setIsEditIngredientModalOpen} ingredient={editingIngredient} onSuccess={handleIngredientUpdateSuccess}>
                 <div />
             </IngredientModal>
-
-            {isPlat && (
-                <>
-                    <ImageUploadDialog
-                        isOpen={isImageUploadOpen}
-                        onClose={() => setIsImageUploadOpen(false)}
-                        onUploadComplete={(url) => { handleRecipeDataChange('imageUrl', url); }}
-                    />
-                    {currentRecipeData.imageUrl && (
-                        <ImagePreviewModal
-                            isOpen={isImagePreviewOpen}
-                            onClose={() => setIsImagePreviewOpen(false)}
-                            imageUrl={currentRecipeData.imageUrl}
-                            imageAlt={currentRecipeData.name}
-                        />
-                    )}
-                </>
+            
+            <ImageUploadDialog isOpen={isImageUploadOpen} onClose={() => setIsImageUploadOpen(false)} onUploadComplete={(url) => { handleRecipeDataChange('imageUrl', url); }} />
+            {currentRecipeData.imageUrl && (
+                <ImagePreviewModal
+                    isOpen={isImagePreviewOpen}
+                    onClose={() => setIsImagePreviewOpen(false)}
+                    imageUrl={currentRecipeData.imageUrl}
+                    imageAlt={currentRecipeData.name}
+                />
             )}
 
             <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex items-start gap-4 flex-grow">
-                    <div className={cn("text-primary rounded-lg h-14 w-14 flex items-center justify-center shrink-0", isPlat && "bg-primary/10", isGarnish && "bg-green-100 text-green-700", isPreparation && "bg-blue-100 text-blue-700")}>
-                        {isPlat ? <ChefHat className="h-7 w-7" /> : isGarnish ? <CookingPot className="h-7 w-7" /> : <NotebookText className="h-7 w-7" />}
+                    <div className="bg-primary/10 text-primary rounded-lg h-14 w-14 flex items-center justify-center shrink-0">
+                        {isPlat ? <ChefHat className="h-7 w-7" /> : (isGarnish ? <CookingPot className="h-7 w-7"/> : <NotebookText className="h-7 w-7" />)}
                     </div>
                     <div className="w-full">
                         {isEditing ? (
-                            <div className="space-y-2">
+                             <div className="space-y-2">
                                 <Input
-                                    value={editableRecipe?.name || ''}
+                                    value={editableRecipe?.name}
                                     onChange={(e) => handleRecipeDataChange('name', e.target.value)}
                                     className="text-2xl font-bold tracking-tight h-12 w-full"
                                 />
-                                 <Select value={(editableRecipe as Recipe)?.category || ''} onValueChange={(value) => handleRecipeDataChange('category', value)}>
-                                    <SelectTrigger className="w-[300px]">
-                                        <SelectValue placeholder="Choisir une catégorie..." />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {(isPlat ? dishCategories : preparationCategories).map(cat => (
-                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
+                                 {!isPlat && (
+                                    <Select value={editableRecipe?.category} onValueChange={(value) => handleRecipeDataChange('category', value)}>
+                                        <SelectTrigger className="w-[280px]">
+                                            <SelectValue placeholder="Choisir une catégorie..." />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {(isGarnish ? preparationCategories : preparationCategories).map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                                        </SelectContent>
+                                    </Select>
+                                )}
                             </div>
                         ) : (
-                             <div>
-                                <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
-                                <p className="text-muted-foreground">{recipe.category}</p>
-                            </div>
+                            <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
                         )}
+                        <p className="text-muted-foreground">{isPlat ? (recipe as Recipe).category : (isGarnish ? 'Garniture' : 'Préparation')}</p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                             {isPlat && <Badge variant={(recipe as Recipe).status === 'Actif' ? 'default' : 'secondary'} className={cn((recipe as Recipe).status === 'Actif' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>{(recipe as Recipe).status}</Badge>}
                             <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {recipe.duration} min</div>
                             <div className="flex items-center gap-1.5"><Soup className="h-4 w-4" /> {recipe.difficulty}</div>
-                             <PrintLink recipe={recipe} ingredients={ingredients} preparations={preparations} totalCost={totalRecipeCost} />
                         </div>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                    <PrintLink recipe={currentRecipeData} ingredients={[...ingredients, ...newIngredients]} preparations={[...preparations, ...newPreparations]} totalCost={totalRecipeCost} />
                     <Button variant="outline" onClick={handleToggleEditMode}>
                         {isEditing ? <><X className="mr-2 h-4 w-4" />Annuler</> : <><FilePen className="mr-2 h-4 w-4" />Modifier</>}
                     </Button>
@@ -1132,15 +1122,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsImagePreviewOpen(true) }}
                                     aria-label="Agrandir l'image du plat"
                                 >
-                                    <Image 
-                                      src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} 
-                                      alt={recipe.name}
-                                      fill
-                                      sizes="100vw"
-                                      style={{ objectFit: "contain" }} 
-                                      data-ai-hint="food image" 
-                                      className="transition-transform duration-300 group-hover:scale-105" 
-                                    />
+                                    <Image src={currentRecipeData.imageUrl || "https://placehold.co/800x600.png"} alt={recipe.name} fill style={{ objectFit: "contain" }} data-ai-hint="food image" className="transition-transform duration-300 group-hover:scale-105" />
                                     <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
                                         <p className="text-white bg-black/50 px-4 py-2 rounded-md">Agrandir</p>
                                     </div>
@@ -1161,7 +1143,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                 <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted/50 rounded-lg">
                                     <div><p className="text-sm text-muted-foreground">Vente TTC</p>{isEditing ? <Input type="number" value={(editableRecipe as Recipe)?.price || 0} onChange={(e) => handleRecipeDataChange('price', parseFloat(e.target.value) || 0)} className="font-bold text-lg text-center" /> : <p className="font-bold text-lg">{currentRecipeData.price ? currentRecipeData.price.toFixed(2) : 'N/A'} DZD</p>}</div>
                                     <div><p className="text-sm text-muted-foreground">Vente HT</p><p className="font-bold text-lg">{priceHT.toFixed(2)} DZD</p></div>
-                                    <div><p className="text-sm text-muted-foreground">Portions</p>{isEditing ? <Input type="number" value={(editableRecipe as Recipe)?.portions || ''} onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || 1)} className="font-bold text-lg text-center" /> : <p className="font-bold text-lg">{currentRecipeData.portions}</p>}</div>
+                                    <div><p className="text-sm text-muted-foreground">Portions</p>{isEditing ? <Input type="number" value={(editableRecipe as Recipe)?.portions} onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || 1)} className="font-bold text-lg text-center" /> : <p className="font-bold text-lg">{currentRecipeData.portions}</p>}</div>
                                 </div>
                                 <div className="space-y-2 text-sm border-t pt-4">
                                     <div className="flex justify-between items-center"><span className="text-muted-foreground">Coût Matière / Portion</span><span className="font-semibold">{costPerPortion.toFixed(2)} DZD</span></div>
@@ -1198,134 +1180,91 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                         </Card>
                     )}
 
-                    <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
-                        <AccordionItem value="item-1">
-                            <Card>
-                                <AccordionTrigger className="p-6 w-full">
-                                     <CardHeader className="p-0 text-left">
-                                        <CardTitle className="flex items-center gap-2"><Utensils className="h-5 w-5" />Ingrédients</CardTitle>
-                                        <CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription>
-                                    </CardHeader>
-                                </AccordionTrigger>
-                                <AccordionContent className="px-6">
-                                     {isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, category: '' }])} className="mb-4"><PlusCircle className="mr-2 h-4 w-4" />Ajouter Ingrédient</Button>}
-                                    <Table>
-                                        <TableHeader><TableRow><TableHead className="w-[45%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
-                                        <TableBody>
-                                            {isEditing && editableIngredients.map(ing => (
-                                                <EditableIngredientRow
-                                                    key={ing.recipeIngredientId}
-                                                    ing={ing}
-                                                    handleIngredientChange={handleIngredientChange}
-                                                    handleRemoveExistingIngredient={handleRemoveExistingIngredient}
-                                                    handleEditIngredient={handleEditIngredient}
-                                                    sortedIngredients={sortedIngredients}
-                                                />
-                                            ))}
-                                            {!isEditing && ingredients.map(ing => (
-                                                <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
-                                            ))}
-                                            {isEditing && newIngredients.map((newIng) => (
-                                                <NewIngredientRow
-                                                    key={newIng.tempId}
-                                                    newIng={newIng}
-                                                    handleNewIngredientChange={handleNewIngredientChange}
-                                                    openNewIngredientModal={openNewIngredientModal}
-                                                    handleRemoveNewIngredient={handleRemoveNewIngredient}
-                                                    sortedIngredients={sortedIngredients}
-                                                />
-                                            ))}
-                                            {ingredients.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
-                                        </TableBody>
-                                    </Table>
-                                </AccordionContent>
-                            </Card>
-                        </AccordionItem>
-                    </Accordion>
-                    
-                    <Accordion type="single" collapsible defaultValue="item-1" className="w-full">
-                        <AccordionItem value="item-1">
-                            <Card>
-                                <AccordionTrigger className="p-6 w-full">
-                                    <CardHeader className="p-0 text-left">
-                                        <CardTitle className="flex items-center gap-2"><BookCopy className="h-5 w-5" />Sous-Recettes</CardTitle>
-                                        <CardDescription>Liste des préparations utilisées dans cette recette.</CardDescription>
-                                    </CardHeader>
-                                </AccordionTrigger>
-                                <AccordionContent className="px-6">
-                                     {isEditing && <Button variant="outline" size="sm" onClick={() => setNewPreparations([...newPreparations, {tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, _productionUnit: '' }])} className="mb-4"><PlusCircle className="mr-2 h-4 w-4" />Ajouter Préparation</Button>}
-                                    <Table>
-                                        <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
-                                        <TableBody>
-                                            {isEditing && editablePreparations.map(prep => (
-                                                <EditablePreparationRow
-                                                    key={prep.id}
-                                                    prep={prep}
-                                                    handlePreparationChange={handlePreparationChange}
-                                                    handleRemoveExistingPreparation={handleRemoveExistingPreparation}
-                                                />
-                                            ))}
-                                            {!isEditing && preparations.map(prep => (
-                                                <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
-                                            ))}
-                                            {isEditing && newPreparations.map((prep) => (
-                                                <NewPreparationRow
-                                                    key={prep.tempId}
-                                                    prep={prep}
-                                                    handleNewPreparationChange={handleNewPreparationChange}
-                                                    openNewPreparationModal={openNewPreparationModal}
-                                                    handleRemoveNewPreparation={handleRemoveNewPreparation}
-                                                    allPreparations={allPreparations}
-                                                    recipeId={recipeId}
-                                                />
-                                            ))}
-                                            {preparations.length === 0 && newPreparations.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
-                                        </TableBody>
-                                    </Table>
-                                </AccordionContent>
-                            </Card>
-                        </AccordionItem>
-                    </Accordion>
+
+                    <Card>
+                        <CardHeader><CardTitle className="flex items-center justify-between"><div className="flex items-center gap-2"><Utensils className="h-5 w-5" />Ingrédients</div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewIngredients([...newIngredients, { tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, category: '' }])}><PlusCircle className="mr-2 h-4 w-4" />Ajouter Ingrédient</Button>}</CardTitle><CardDescription>Liste des matières premières nécessaires pour la recette.</CardDescription></CardHeader>
+                        <CardContent>
+                            <Table>
+                                <TableHeader><TableRow><TableHead className="w-[45%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
+                                <TableBody>
+                                    {isEditing && editableIngredients.map(ing => (
+                                        <EditableIngredientRow
+                                            key={ing.recipeIngredientId}
+                                            ing={ing}
+                                            handleIngredientChange={handleIngredientChange}
+                                            handleRemoveExistingIngredient={handleRemoveExistingIngredient}
+                                            handleEditIngredient={handleEditIngredient}
+                                            sortedIngredients={sortedIngredients}
+                                        />
+                                    ))}
+                                    {!isEditing && ingredients.map(ing => (
+                                        <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
+                                    ))}
+                                    {isEditing && newIngredients.map((newIng) => (
+                                        <NewIngredientRow
+                                            key={newIng.tempId}
+                                            newIng={newIng}
+                                            sortedIngredients={sortedIngredients}
+                                            handleNewIngredientChange={handleNewIngredientChange}
+                                            openNewIngredientModal={openNewIngredientModal}
+                                            handleRemoveNewIngredient={handleRemoveNewIngredient}
+                                        />
+                                    ))}
+                                    {ingredients.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
 
                     <Card>
                         <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Procédure</CardTitle>
-                        </CardHeader>
+                            <CardTitle className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                      <BookCopy className="h-5 w-5" />Sous-Recettes
+                            </div>{isEditing && <Button variant="outline" size="sm" onClick={() => setNewPreparations([...newPreparations, {tempId: `new-manual-${Date.now()}`, name: '', quantity: 0, unit: 'g', totalCost: 0, _productionUnit: '' }])}><PlusCircle className="mr-2 h-4 w-4" />Ajouter Préparation</Button>}</CardTitle><CardDescription>Liste des préparations (fiches techniques internes) utilisées dans cette recette.</CardDescription></CardHeader>
+                    <CardContent>
+                        <Table>
+                            <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
+                            <TableBody>
+                                {isEditing && editablePreparations.map(prep => (
+                                    <EditablePreparationRow key={prep.id} prep={prep} handlePreparationChange={handlePreparationChange} handleRemoveExistingPreparation={handleRemoveExistingPreparation} />
+                                ))}
+                                {!isEditing && preparations.map(prep => (
+                                    <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
+                                ))}
+                                {isEditing && newPreparations.map((prep) => (
+                                    <NewPreparationRow key={prep.tempId} prep={prep} handleNewPreparationChange={handleNewPreparationChange} openNewPreparationModal={openNewPreparationModal} handleRemoveNewPreparation={handleRemoveNewPreparation} allPreparations={allPreparations} recipeId={recipeId} />
+                                ))}
+                                {preparations.length === 0 && newPreparations.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5 : 4} className="text-center h-24 text-muted-foreground">Aucune sous-recette ajoutée.</TableCell></TableRow>)}
+                            </TableBody>
+                        </Table>
+                    </CardContent>
+                </Card>
+
+
+                    <Card>
+                        <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Procédure</CardTitle></CardHeader>
                         <CardContent>
-                           {isEditing ? (
+                            {isEditing ? (
                                 <Tabs defaultValue="fabrication">
                                     <TabsList>
                                         <TabsTrigger value="fabrication">Fabrication</TabsTrigger>
-                                        <TabsTrigger value="service">Service / Dressage</TabsTrigger>
+                                        <TabsTrigger value="service">Service/Dressage</TabsTrigger>
                                     </TabsList>
-                                    <TabsContent value="fabrication" className="pt-4">
-                                        <Textarea
-                                            value={(editableRecipe as Recipe)?.procedure_fabrication || ''}
-                                            onChange={(e) => handleRecipeDataChange('procedure_fabrication', e.target.value)}
-                                            rows={15}
-                                            placeholder="Décrivez les étapes de fabrication, y compris la préparation et la cuisson..."
-                                        />
-                                    </TabsContent>
-                                    <TabsContent value="service" className="pt-4">
-                                        <Textarea
-                                            value={(editableRecipe as Recipe)?.procedure_service || ''}
-                                            onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)}
-                                            rows={10}
-                                            placeholder="Décrivez les étapes de conservation, remise en température et dressage..."
-                                        />
-                                    </TabsContent>
+                                    <TabsContent value="fabrication" className="pt-4"><Textarea value={fabricationProcedure} onChange={(e) => handleRecipeDataChange('procedure_fabrication', e.target.value)} rows={12} placeholder="Décrivez ici les étapes de préparation et de cuisson..."/></TabsContent>
+                                    <TabsContent value="service" className="pt-4"><Textarea value={(editableRecipe as Recipe)?.procedure_service || ''} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={8} placeholder="Décrivez ici la conservation, la remise en température et le dressage de l'assiette."/></TabsContent>
                                 </Tabs>
                             ) : (
                                 <Tabs defaultValue="fabrication">
                                     <TabsList>
                                         <TabsTrigger value="fabrication">Fabrication</TabsTrigger>
-                                        <TabsTrigger value="service">Service / Dressage</TabsTrigger>
+                                        <TabsTrigger value="service">Service/Dressage</TabsTrigger>
                                     </TabsList>
                                     <TabsContent value="fabrication" className="pt-4">
                                         <MarkdownRenderer text={fabricationProcedure} />
                                     </TabsContent>
                                     <TabsContent value="service" className="pt-4">
-                                        <MarkdownRenderer text={(recipe as Recipe).procedure_service} />
+                                        <MarkdownRenderer text={(recipe as Recipe)?.procedure_service} />
                                     </TabsContent>
                                 </Tabs>
                             )}
@@ -1334,59 +1273,67 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                 </div>
 
                 <div className="space-y-8">
-                    {isEditing && rawConceptObject && (
-                        <Accordion type="single" collapsible className="w-full">
-                            <AccordionItem value="item-1">
-                                <Card className="border-primary/20 bg-primary/5">
-                                    <AccordionTrigger className="p-4 text-primary hover:no-underline">
-                                        <CardHeader className="p-0 text-left">
-                                            <CardTitle className="flex items-center gap-2 text-base">
-                                                <Lightbulb className="h-5 w-5" />Pense-bête de l'IA
-                                            </CardTitle>
-                                        </CardHeader>
-                                    </AccordionTrigger>
-                                    <AccordionContent className="px-4 pb-4">
-                                        <pre className="text-xs whitespace-pre-wrap break-all bg-background/50 p-2 rounded-md overflow-x-auto max-h-96">
-                                            <code>{JSON.stringify(rawConceptObject, null, 2)}</code>
-                                        </pre>
-                                    </AccordionContent>
-                                </Card>
+                    {workshopConcept && isEditing && (
+                        <Card className="border-primary/20 bg-primary/5">
+                            <CardHeader>
+                                <CardTitle className="flex items-center justify-between text-lg text-primary">
+                                    <div className="flex items-center gap-2"><Lightbulb className="h-5 w-5" />Suggestion de l'Atelier</div>
+                                    <Button variant="ghost" size="icon" className="h-7 w-7 text-primary/70 hover:text-primary" onClick={() => setWorkshopConcept(null)}><X className="h-4 w-4" /></Button>
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4 text-sm">
+                                <div>
+                                    <h4 className="font-semibold mb-1">Ingrédients bruts suggérés</h4>
+                                    <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
+                                        {workshopConcept.ingredients.map(ing => <li key={ing.name}>{ing.quantity} {ing.unit} {ing.name}</li>)}
+                                    </ul>
+                                </div>
+                                 {workshopConcept.subRecipes.length > 0 && (
+                                <div>
+                                    <h4 className="font-semibold mb-1">Sous-recettes suggérées</h4>
+                                    <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
+                                        {workshopConcept.subRecipes.map(prep => <li key={prep.name}>{prep.quantity} {prep.unit} {prep.name}</li>)}
+                                    </ul>
+                                </div>
+                                )}
+                                <Accordion type="single" collapsible>
+                                    <AccordionItem value="item-1" className="border-none">
+                                        <AccordionTrigger className="p-0 text-sm font-semibold hover:no-underline">Voir la procédure brute</AccordionTrigger>
+                                        <AccordionContent>
+                                             <div className="text-xs text-muted-foreground p-2 border rounded-md max-h-48 overflow-y-auto mt-2">
+                                                <MarkdownRenderer text={workshopConcept.procedure_fabrication} />
+                                                <MarkdownRenderer text={workshopConcept.procedure_service} />
+                                            </div>
+                                        </AccordionContent>
+                                    </AccordionItem>
+                                </Accordion>
+                            </CardContent>
+                        </Card>
+                    )}
+                    
+                    {rawConceptObject && (
+                         <Accordion type="single" collapsible>
+                            <AccordionItem value="json-view">
+                                <AccordionTrigger className="text-sm font-semibold text-muted-foreground hover:no-underline"><span className="flex items-center gap-2"><Braces className="h-4 w-4"/>Voir le concept brut</span></AccordionTrigger>
+                                <AccordionContent>
+                                    <pre className="text-xs bg-muted/50 p-2 rounded-md overflow-x-auto max-h-80">
+                                        <code>{JSON.stringify(rawConceptObject, null, 2)}</code>
+                                    </pre>
+                                </AccordionContent>
                             </AccordionItem>
                         </Accordion>
                     )}
 
-                    <Card><CardHeader><CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle></CardHeader><CardContent><div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)} DZD</div><p className="text-xs text-muted-foreground text-right mt-1">{isPlat ? "Coût par portion : " + costPerPortion.toFixed(2) + " DZD" : ""}</p></CardContent></Card>
+                    <Card><CardHeader><CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle></CardHeader><CardContent><div className="text-3xl font-bold text-right">{totalRecipeCost.toFixed(2)} DZD</div><p className="text-xs text-muted-foreground text-right mt-1">{isPlat ? "Coût par portion : " + costPerPortion.toFixed(2) + " DZD" : "Coût par " + ((recipe as Preparation).productionUnit || 'unité') + " : " + (totalRecipeCost / ((recipe as Preparation).productionQuantity || 1)).toFixed(2) + " DZD"}</p></CardContent></Card>
                     {isPlat && (
                         <>
-                            <Card>
-                                <CardHeader>
-                                    <CardTitle className="text-xl text-muted-foreground">Food Cost (%)</CardTitle>
-                                </CardHeader>
-                                <CardContent className="flex items-center justify-center p-6">
-                                    <GaugeChart value={foodCostPercentage} unit="%" />
-                                </CardContent>
-                                <CardContent>
-                                    <div className="space-y-3 text-sm p-4 border-t">
-                                        {foodCostIndicators.map(indicator => {
-                                            const Icon = indicator.icon;
-                                            return (
-                                                <div key={indicator.level} className="flex items-start gap-3">
-                                                    <Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} />
-                                                    <div>
-                                                        <span className="font-semibold">{indicator.range} - {indicator.level}</span>
-                                                        <p className="text-muted-foreground text-xs">{indicator.description}</p>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                </CardContent>
-                            </Card>
-                            <Card><CardHeader><CardTitle className="flex items-center justify-between text-xl text-muted-foreground"><div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600" />Allergènes</div>{isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4" /></Button>}</CardHeader><CardContent className="flex flex-wrap gap-2">{recipe.allergens && recipe.allergens.length > 0 ? recipe.allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>) : <p className="text-sm text-muted-foreground">Aucun allergène spécifié.</p>}</CardContent></Card>
+                            <Card><CardHeader><CardTitle className="text-xl text-muted-foreground">Food Cost (%)</CardTitle></CardHeader><CardContent className="flex items-center justify-center p-6"><GaugeChart value={foodCostPercentage} unit="%" /></CardContent></Card>
+                            <Card><Accordion type="single" collapsible className="w-full"><AccordionItem value="item-1" className="border-b-0"><AccordionTrigger className="p-4 hover:no-underline"><div className="flex items-center gap-2 text-lg font-semibold text-muted-foreground"><ListChecks className="h-5 w-5" />Indicateurs Food Cost</div></AccordionTrigger><AccordionContent className="px-4"><ul className="space-y-3 text-sm">{foodCostIndicators.map(indicator => { const Icon = indicator.icon; return (<li key={indicator.level} className="flex items-start gap-3"><Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} /><div><span className="font-semibold">{indicator.range} - {indicator.level}</span>:<p className="text-muted-foreground text-xs">{indicator.description}</p></div></li>) })}</ul></AccordionContent></AccordionItem></Accordion></Card>
+                            <Card><CardHeader><CardTitle className="flex items-center justify-between text-xl text-muted-foreground"><div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600" />Allergènes</div>{isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4" /></Button>}</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">{currentRecipeData.allergens && currentRecipeData.allergens.length > 0 ? currentRecipeData.allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>) : <p className="text-sm text-muted-foreground">Aucun allergène spécifié.</p>}</CardContent></Card>
                             <Card><CardHeader><CardTitle className="flex items-center justify-between text-xl text-muted-foreground"><div className="flex items-center gap-2">Argumentaire Commercial</div>{isEditing && (<Button variant="ghost" size="icon" onClick={handleGenerateArgument} disabled={isGenerating} title="Générer avec l'IA"><Sparkles className={cn("h-4 w-4", isGenerating && "animate-spin")} /></Button>)}</CardTitle></CardHeader><CardContent className="prose prose-sm max-w-none text-muted-foreground">{isEditing ? <Textarea value={(editableRecipe as Recipe)?.commercialArgument || ''} onChange={(e) => handleRecipeDataChange('commercialArgument', e.target.value)} rows={5} placeholder="Un argumentaire de vente concis et alléchant..." /> : <p>{(recipe as Recipe).commercialArgument || 'Aucun argumentaire défini.'}</p>}</CardContent></Card>
                         </>
                     )}
-                     {!isPlat && (
+                    {!isPlat && (
                        <Card>
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2"><Info className="h-5 w-5"/>Production & Coût</CardTitle>
@@ -1421,8 +1368,8 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                         <Separator className="my-4"/>
                                          <div className="space-y-2">
                                              <div className="flex justify-between items-center">
-                                                <span className="text-muted-foreground">Coût de revient / {(currentRecipeData as Preparation).productionUnit || 'unité'}</span>
-                                                <span className="font-bold text-primary text-base">{(totalRecipeCost / ((currentRecipeData as Preparation).productionQuantity || 1)).toFixed(2)} DZD</span>
+                                                <span className="text-muted-foreground">Coût de revient / {currentRecipeData.productionUnit || 'unité'}</span>
+                                                <span className="font-bold text-primary text-base">{(totalRecipeCost / (currentRecipeData.productionQuantity || 1)).toFixed(2)} DZD</span>
                                             </div>
                                         </div>
                                     </>
@@ -1433,7 +1380,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                 </div>
             </div>
 
-            {isEditing && (<div className="fixed bottom-6 right-6 z-50"><Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm shadow-lg"><Button onClick={handleSave} disabled={isSaving}><Save className="mr-2 h-4 w-4" />{isSaving ? "Sauvegarde..." : 'Sauvegarder les modifications'}</Button></Card></div>)}
+            {isEditing && (<div className="fixed bottom-6 right-6 z-50"><Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm shadow-lg"><Button onClick={handleSave} disabled={isSaving}><Save className="mr-2 h-4 w-4" />{isSaving ? "Sauvegarde..." : `Sauvegarder les modifications`}</Button></Card></div>)}
         </div>
     );
 }
@@ -1449,7 +1396,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
-
-    
