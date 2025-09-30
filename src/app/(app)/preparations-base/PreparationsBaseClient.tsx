@@ -66,8 +66,7 @@ export default function PreparationsBaseClient() {
     setIsLoading(true);
     try {
         const prepsCol = collection(db, "preparations");
-        const q = query(prepsCol);
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await getDocs(query(prepsCol));
         
         const prepsData = querySnapshot.docs.map(
             (doc) => ({ ...doc.data(), id: doc.id } as Preparation)

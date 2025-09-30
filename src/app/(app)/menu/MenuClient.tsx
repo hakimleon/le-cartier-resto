@@ -59,10 +59,13 @@ export default function MenuClient() {
         return;
       }
       setIsLoading(true);
+      console.log("MenuClient: Fetching documents from 'recipes' collection...");
       try {
           const recipesCol = collection(db, "recipes");
           const q = query(recipesCol);
           const querySnapshot = await getDocs(q);
+
+          console.log(`MenuClient: Fetched ${querySnapshot.size} documents.`);
 
           const recipesData = querySnapshot.docs
               .map((doc) => ({ ...doc.data(), id: doc.id } as Recipe))
@@ -99,6 +102,7 @@ export default function MenuClient() {
           setError("Impossible de charger le menu. " + e.message);
       } finally {
           setIsLoading(false);
+          console.log("MenuClient: Finished fetching menu data.");
       }
   }, []);
   
