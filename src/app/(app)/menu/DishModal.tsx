@@ -17,9 +17,10 @@ type DishModalProps = {
   children: ReactNode;
   dish: Recipe | null;
   onSuccess: () => void;
+  allCategories: string[];
 };
 
-export function DishModal({ children, dish, onSuccess }: DishModalProps) {
+export function DishModal({ children, dish, onSuccess, allCategories }: DishModalProps) {
     const [isOpen, setIsOpen] = useState(false);
 
     const handleSuccess = () => {
@@ -44,3 +45,5 @@ export function DishModal({ children, dish, onSuccess }: DishModalProps) {
     </Dialog>
   );
 }
+
+    

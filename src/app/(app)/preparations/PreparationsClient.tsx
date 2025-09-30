@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { collection, query, getDocs } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Preparation, preparationCategories } from "@/lib/types";
@@ -47,7 +47,7 @@ export default function PreparationsClient() {
   const { toast } = useToast();
   const router = useRouter();
 
-  useEffect(() => {
+  const fetchPreparations = useCallback(async () => {
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante.");
       setIsLoading(false);
@@ -55,27 +55,29 @@ export default function PreparationsClient() {
     }
     
     setIsLoading(true);
-    const fetchPreparations = async () => {
-        try {
-            const prepsCol = collection(db, "preparations");
-            const q = query(prepsCol);
-            const querySnapshot = await getDocs(q);
-            
-            const prepsData = querySnapshot.docs.map(
-                (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
-            );
-            setPreparations(prepsData);
-            setError(null);
-        } catch(e: any) {
-            console.error("Error fetching preparations: ", e);
-            setError("Impossible de charger les préparations. " + e.message);
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    fetchPreparations();
+    console.log("PreparationsClient: Fetching documents from 'preparations' collection...");
+    try {
+        const prepsCol = collection(db, "preparations");
+        const q = query(prepsCol);
+        const querySnapshot = await getDocs(q);
+        console.log(`PreparationsClient: Fetched ${querySnapshot.size} documents.`);
+        
+        const prepsData = querySnapshot.docs.map(
+            (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
+        );
+        setPreparations(prepsData);
+        setError(null);
+    } catch(e: any) {
+        console.error("Error fetching preparations: ", e);
+        setError("Impossible de charger les préparations. " + e.message);
+    } finally {
+        setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchPreparations();
+  }, [fetchPreparations]);
 
   const handleDelete = async (id: string, name: string) => {
       try {
@@ -228,7 +230,7 @@ export default function PreparationsClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <PreparationModal preparation={null} onSuccess={() => { /* Re-fetch on success if needed */ }}>
+             <PreparationModal preparation={null} onSuccess={fetchPreparations}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouvelle Préparation
@@ -258,3 +260,5 @@ export default function PreparationsClient() {
     </div>
   );
 }
+
+    

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, onSnapshot, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe, dishCategories } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -52,64 +52,61 @@ export default function MenuClient() {
   const [selectedStatus, setSelectedStatus] = useState<'Actif' | 'Inactif'>('Actif');
   const { toast } = useToast();
 
+  const fetchMenuData = async () => {
+      if (!isFirebaseConfigured) {
+        setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(true);
+      console.log("MenuClient: Fetching documents from 'recipes' collection...");
+      try {
+          const recipesCol = collection(db, "recipes");
+          const q = query(recipesCol, where("type", "==", "Plat"));
+          const querySnapshot = await getDocs(q);
+          
+          console.log(`MenuClient: Fetched ${querySnapshot.size} documents.`);
+
+          const recipesData = querySnapshot.docs.map(
+              (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
+          );
+          
+          setRecipes(recipesData);
+          
+          const activeCategoryMap = new Map<string, string>();
+          const inactiveCategoryMap = new Map<string, string>();
+
+          recipesData.forEach(recipe => {
+              if (recipe.category) {
+                  const normalizedCategory = formatCategoryForDisplay(recipe.category).toLowerCase();
+                  if(recipe.status === 'Actif') {
+                      if (!activeCategoryMap.has(normalizedCategory)) {
+                          activeCategoryMap.set(normalizedCategory, recipe.category);
+                      }
+                  } else {
+                        if (!inactiveCategoryMap.has(normalizedCategory)) {
+                          inactiveCategoryMap.set(normalizedCategory, recipe.category);
+                      }
+                  }
+              }
+          });
+          
+          const uniqueActiveCategories = Array.from(activeCategoryMap.values());
+          const uniqueInactiveCategories = Array.from(inactiveCategoryMap.values());
+          
+          setActiveCategories(["Tous", ...sortCategories(uniqueActiveCategories)]);
+          setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
+          setError(null);
+      } catch(e: any) {
+          console.error("MenuClient: Error fetching menu data: ", e);
+          setError("Impossible de charger le menu. " + e.message);
+      } finally {
+          setIsLoading(false);
+          console.log("MenuClient: Finished fetching menu data.");
+      }
+  };
+  
   useEffect(() => {
-    if (!isFirebaseConfigured) {
-      setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
-      setIsLoading(false);
-      return;
-    }
-    
-    setIsLoading(true);
-    console.log("MenuClient: useEffect triggered. Firebase configured: true");
-
-    const fetchMenuData = async () => {
-        try {
-            console.log("MenuClient: Fetching documents from 'recipes' collection...");
-            const recipesCol = collection(db, "recipes");
-            const q = query(recipesCol, where("type", "==", "Plat"));
-            const querySnapshot = await getDocs(q);
-            
-            console.log(`MenuClient: Fetched ${querySnapshot.size} documents.`);
-
-            const recipesData = querySnapshot.docs.map(
-                (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
-            );
-            
-            setRecipes(recipesData);
-            
-            const activeCategoryMap = new Map<string, string>();
-            const inactiveCategoryMap = new Map<string, string>();
-
-            recipesData.forEach(recipe => {
-                if (recipe.category) {
-                    const normalizedCategory = formatCategoryForDisplay(recipe.category).toLowerCase();
-                    if(recipe.status === 'Actif') {
-                        if (!activeCategoryMap.has(normalizedCategory)) {
-                            activeCategoryMap.set(normalizedCategory, recipe.category);
-                        }
-                    } else {
-                         if (!inactiveCategoryMap.has(normalizedCategory)) {
-                            inactiveCategoryMap.set(normalizedCategory, recipe.category);
-                        }
-                    }
-                }
-            });
-            
-            const uniqueActiveCategories = Array.from(activeCategoryMap.values());
-            const uniqueInactiveCategories = Array.from(inactiveCategoryMap.values());
-            
-            setActiveCategories(["Tous", ...sortCategories(uniqueActiveCategories)]);
-            setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
-            setError(null);
-        } catch(e: any) {
-            console.error("MenuClient: Error fetching menu data: ", e);
-            setError("Impossible de charger le menu. " + e.message);
-        } finally {
-            setIsLoading(false);
-            console.log("MenuClient: Finished fetching menu data.");
-        }
-    };
-    
     fetchMenuData();
   }, []);
   
@@ -124,9 +121,7 @@ export default function MenuClient() {
           title: "Succès",
           description: `Le plat "${name}" a été supprimé.`,
         });
-        // Re-fetch data after deletion
-        const newRecipes = recipes.filter(r => r.id !== id);
-        setRecipes(newRecipes);
+        fetchMenuData();
       } catch (error) {
         console.error("Error deleting dish:", error);
         toast({
@@ -219,7 +214,7 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} onSuccess={() => { /* Re-fetch or rely on manual refresh */ }}>
+             <DishModal dish={null} onSuccess={fetchMenuData}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat
@@ -261,3 +256,5 @@ export default function MenuClient() {
     </div>
   );
 }
+
+    
