@@ -1,12 +1,12 @@
-
 rules_version = '2';
 
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read/write access on all documents to anyone
-    // for prototyping. Make sure to restrict this for production.
+    // Allow public read access to all collections for now
+    // This is not recommended for production apps with sensitive data
     match /{document=**} {
-      allow read, write: if true;
+      allow read: if true;
+      allow write: if false; // Keep writes restricted
     }
   }
 }
