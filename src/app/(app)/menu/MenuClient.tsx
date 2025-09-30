@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, onSnapshot, query, where } from "firebase/firestore";
+import { collection, onSnapshot, query, where, getDocs } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe, dishCategories } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -61,13 +61,14 @@ export default function MenuClient() {
     }
     
     setIsLoading(true);
-    console.log("MenuClient: Setting up Firestore listener...");
-    const recipesCol = collection(db, "recipes");
-    const q = query(recipesCol, where("type", "==", "Plat"));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const fetchMenuData = async () => {
         try {
-            console.log("MenuClient: onSnapshot received data. Number of documents:", querySnapshot.size);
+            console.log("MenuClient: Fetching documents from 'recipes' collection...");
+            const recipesCol = collection(db, "recipes");
+            const q = query(recipesCol, where("type", "==", "Plat"));
+            const querySnapshot = await getDocs(q);
+            console.log("MenuClient: Fetched", querySnapshot.size, "documents.");
+            
             const recipesData = querySnapshot.docs.map(
                 (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
             );
@@ -99,24 +100,16 @@ export default function MenuClient() {
             setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
             setError(null);
         } catch(e: any) {
-            console.error("MenuClient: Error processing recipes snapshot: ", e);
-            setError("Impossible de traiter les données du menu. " + e.message);
+            console.error("MenuClient: Error fetching menu data: ", e);
+            setError("Impossible de charger le menu. " + e.message);
         } finally {
             setIsLoading(false);
-            console.log("MenuClient: Finished processing snapshot.");
-        }
-    }, (e: any) => {
-        console.error("MenuClient: Error with onSnapshot listener: ", e);
-        setError("Impossible de charger le menu en temps réel. " + e.message);
-        setIsLoading(false);
-    });
-
-    return () => {
-        console.log("MenuClient: Cleaning up Firestore listener.");
-        if(unsubscribe) {
-            unsubscribe();
+            console.log("MenuClient: Finished fetching menu data.");
         }
     };
+    
+    fetchMenuData();
+
   }, []);
   
    useEffect(() => {
