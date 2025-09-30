@@ -53,7 +53,6 @@ export default function MenuClient() {
   const { toast } = useToast();
 
   useEffect(() => {
-    console.log("MenuClient: useEffect triggered. Firebase configured:", isFirebaseConfigured);
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
       setIsLoading(false);
@@ -63,11 +62,9 @@ export default function MenuClient() {
     setIsLoading(true);
     const fetchMenuData = async () => {
         try {
-            console.log("MenuClient: Fetching documents from 'recipes' collection...");
             const recipesCol = collection(db, "recipes");
             const q = query(recipesCol, where("type", "==", "Plat"));
             const querySnapshot = await getDocs(q);
-            console.log("MenuClient: Fetched", querySnapshot.size, "documents.");
             
             const recipesData = querySnapshot.docs.map(
                 (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
@@ -104,14 +101,10 @@ export default function MenuClient() {
             setError("Impossible de charger le menu. " + e.message);
         } finally {
             setIsLoading(false);
-            console.log("MenuClient: Finished fetching menu data.");
         }
     };
     
     fetchMenuData();
-
-    // The onSnapshot listener is removed to switch to a single-fetch strategy.
-    // This prevents potential issues with ad-blockers or network configurations.
   }, []);
   
    useEffect(() => {
@@ -125,7 +118,9 @@ export default function MenuClient() {
           title: "Succès",
           description: `Le plat "${name}" a été supprimé.`,
         });
-        // You might want to re-fetch data here if not using onSnapshot
+        // Re-fetch data after deletion
+        const newRecipes = recipes.filter(r => r.id !== id);
+        setRecipes(newRecipes);
       } catch (error) {
         console.error("Error deleting dish:", error);
         toast({
@@ -260,5 +255,3 @@ export default function MenuClient() {
     </div>
   );
 }
-
-    

@@ -1,7 +1,8 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
-import { collection, onSnapshot, query } from "firebase/firestore";
+import { collection, query, getDocs } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Preparation, preparationCategories } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -54,33 +55,26 @@ export default function PreparationsClient() {
     }
     
     setIsLoading(true);
-    const prepsCol = collection(db, "preparations");
-    const q = query(prepsCol);
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+    const fetchPreparations = async () => {
         try {
+            const prepsCol = collection(db, "preparations");
+            const q = query(prepsCol);
+            const querySnapshot = await getDocs(q);
+            
             const prepsData = querySnapshot.docs.map(
                 (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
             );
             setPreparations(prepsData);
             setError(null);
         } catch(e: any) {
-            console.error("Error processing preparations snapshot: ", e);
-            setError("Impossible de traiter les données des préparations. " + e.message);
+            console.error("Error fetching preparations: ", e);
+            setError("Impossible de charger les préparations. " + e.message);
         } finally {
             setIsLoading(false);
         }
-    }, (e: any) => {
-        console.error("Error fetching preparations with onSnapshot: ", e);
-        setError("Impossible de charger les préparations en temps réel. " + e.message);
-        setIsLoading(false);
-    });
-
-    return () => {
-        if(unsubscribe) {
-            unsubscribe();
-        }
     };
+
+    fetchPreparations();
   }, []);
 
   const handleDelete = async (id: string, name: string) => {
@@ -90,6 +84,7 @@ export default function PreparationsClient() {
           title: "Succès",
           description: `La préparation "${name}" a été supprimée.`,
         });
+        setPreparations(preparations.filter(p => p.id !== id));
       } catch (error) {
         console.error("Error deleting preparation:", error);
         toast({
@@ -233,7 +228,7 @@ export default function PreparationsClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <PreparationModal preparation={null} onSuccess={() => { /* onSnapshot handles updates */ }}>
+             <PreparationModal preparation={null} onSuccess={() => { /* Re-fetch on success if needed */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouvelle Préparation

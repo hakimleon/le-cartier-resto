@@ -62,7 +62,6 @@ export default function GarnishesClient() {
   const router = useRouter();
 
   const fetchGarnishes = useCallback(async () => {
-    console.log("GarnishesClient: fetchGarnishes triggered. Firebase configured:", isFirebaseConfigured);
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante.");
       setIsLoading(false);
@@ -71,10 +70,8 @@ export default function GarnishesClient() {
     
     setIsLoading(true);
     try {
-        console.log("GarnishesClient: Fetching documents from 'garnishes' collection...");
         const prepsCol = collection(db, "garnishes");
         const querySnapshot = await getDocs(prepsCol);
-        console.log("GarnishesClient: Fetched", querySnapshot.size, "documents.");
         
         const prepsData = querySnapshot.docs.map(
             (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
@@ -86,7 +83,6 @@ export default function GarnishesClient() {
         setError("Impossible de charger les garnitures. " + e.message);
     } finally {
         setIsLoading(false);
-        console.log("GarnishesClient: Finished fetching garnishes.");
     }
   }, []);
 
@@ -286,5 +282,3 @@ export default function GarnishesClient() {
     </div>
   );
 }
-
-    
