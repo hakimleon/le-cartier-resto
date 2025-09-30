@@ -131,10 +131,11 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: { quantity: number, unit: string }, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit) {
-        if (!ingredientData.purchaseUnit) {
-            console.warn(`L'ingrédient "${ingredientData.name}" n'a pas d'unité d'achat définie. Coût calculé à 0.`);
-        }
+    if (!ingredientData.purchaseUnit) {
+        console.warn(`L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas d'unité d'achat définie. Coût calculé à 0.`);
+        return 0;
+    }
+    if (!ingredientData?.purchasePrice) {
         return 0;
     }
 
@@ -504,13 +505,15 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
             if (!prep) continue;
 
             let totalCost = 0;
-            const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
+            const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prepId));
             const ingredientsSnap = await getDocs(ingredientsQuery);
             for (const ingDoc of ingredientsSnap.docs) {
                 const ingLink = ingDoc.data() as RecipeIngredientLink;
                 const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
                  if (ingData) {
                     totalCost += recomputeIngredientCost(ingLink, ingData);
+                } else {
+                    console.warn(`Ingredient with ID ${ingLink.ingredientId} linked in preparation ${prep.name} not found.`);
                 }
             }
 
@@ -1379,7 +1382,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                     </div>
                                 </CardContent>
                             </Card>
-                            <Card><CardHeader><CardTitle className="flex items-center justify-between text-xl text-muted-foreground"><div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600" />Allergènes</div>{isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4" /></Button>}</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">{recipe.allergens && recipe.allergens.length > 0 ? recipe.allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>) : <p className="text-sm text-muted-foreground">Aucun allergène spécifié.</p>}</CardContent></Card>
+                            <Card><CardHeader><CardTitle className="flex items-center justify-between text-xl text-muted-foreground"><div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600" />Allergènes</div>{isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4" /></Button>}</CardHeader><CardContent className="flex flex-wrap gap-2">{recipe.allergens && recipe.allergens.length > 0 ? recipe.allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>) : <p className="text-sm text-muted-foreground">Aucun allergène spécifié.</p>}</CardContent></Card>
                             <Card><CardHeader><CardTitle className="flex items-center justify-between text-xl text-muted-foreground"><div className="flex items-center gap-2">Argumentaire Commercial</div>{isEditing && (<Button variant="ghost" size="icon" onClick={handleGenerateArgument} disabled={isGenerating} title="Générer avec l'IA"><Sparkles className={cn("h-4 w-4", isGenerating && "animate-spin")} /></Button>)}</CardTitle></CardHeader><CardContent className="prose prose-sm max-w-none text-muted-foreground">{isEditing ? <Textarea value={(editableRecipe as Recipe)?.commercialArgument || ''} onChange={(e) => handleRecipeDataChange('commercialArgument', e.target.value)} rows={5} placeholder="Un argumentaire de vente concis et alléchant..." /> : <p>{(recipe as Recipe).commercialArgument || 'Aucun argumentaire défini.'}</p>}</CardContent></Card>
                         </>
                     )}
@@ -1446,5 +1449,7 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
 
     
