@@ -9,6 +9,19 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Permissions-Policy',
+            value: 'browsing-topics=()',
+          },
+        ],
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {
