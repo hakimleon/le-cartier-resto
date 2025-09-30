@@ -60,12 +60,17 @@ export default function MenuClient() {
     }
     
     setIsLoading(true);
+    console.log("MenuClient: useEffect triggered. Firebase configured: true");
+
     const fetchMenuData = async () => {
         try {
+            console.log("MenuClient: Fetching documents from 'recipes' collection...");
             const recipesCol = collection(db, "recipes");
             const q = query(recipesCol, where("type", "==", "Plat"));
             const querySnapshot = await getDocs(q);
             
+            console.log(`MenuClient: Fetched ${querySnapshot.size} documents.`);
+
             const recipesData = querySnapshot.docs.map(
                 (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
             );
@@ -101,6 +106,7 @@ export default function MenuClient() {
             setError("Impossible de charger le menu. " + e.message);
         } finally {
             setIsLoading(false);
+            console.log("MenuClient: Finished fetching menu data.");
         }
     };
     

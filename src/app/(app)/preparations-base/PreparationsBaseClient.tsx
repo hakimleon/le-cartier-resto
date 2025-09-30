@@ -64,10 +64,13 @@ export default function PreparationsBaseClient() {
     }
     
     setIsLoading(true);
+    console.log("PreparationsClient: useEffect triggered. Firebase configured: true");
     try {
+        console.log("PreparationsClient: Fetching documents from 'preparations' collection...");
         const prepsCol = collection(db, "preparations");
         const q = query(prepsCol);
         const querySnapshot = await getDocs(q);
+        console.log(`PreparationsClient: Fetched ${querySnapshot.size} documents.`);
 
         const prepsData = querySnapshot.docs.map(
             (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
@@ -79,6 +82,7 @@ export default function PreparationsBaseClient() {
         setError("Impossible de charger les préparations. " + e.message);
     } finally {
         setIsLoading(false);
+        console.log("PreparationsClient: Finished fetching preparations.");
     }
   }, []);
 
