@@ -26,7 +26,7 @@ import Image from 'next/image';
 export default function AppLayout({
   children,
 }: Readonly<{
-  children: React.Node;
+  children: React.ReactNode;
 }>) {
   const pathname = usePathname();
 
@@ -37,7 +37,7 @@ export default function AppLayout({
           <SidebarHeader className="p-4">
             <Link href="/" className="flex items-center gap-2">
                 <div className="flex flex-col">
-                    <h2 className="text-2xl font-bold tracking-tight text-[#b8945e] drop-shadow-sm">La Compagnie</h2>
+                    <h2 className="text-2xl font-bold tracking-tight text-[#5D4037] drop-shadow-sm">La Compagnie</h2>
                 </div>
             </Link>
           </SidebarHeader>
