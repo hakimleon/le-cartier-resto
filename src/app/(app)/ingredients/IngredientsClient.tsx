@@ -37,6 +37,7 @@ export default function IngredientsClient() {
   const { toast } = useToast();
 
   const fetchIngredients = useCallback(async () => {
+    console.log("IngredientsClient: fetchIngredients triggered. Firebase configured:", isFirebaseConfigured);
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
       setIsLoading(false);
@@ -45,9 +46,11 @@ export default function IngredientsClient() {
     
     setIsLoading(true);
     try {
+        console.log("IngredientsClient: Fetching documents from 'ingredients' collection...");
         const ingredientsCol = collection(db, "ingredients");
         const q = query(ingredientsCol, orderBy("name"));
         const querySnapshot = await getDocs(q);
+        console.log("IngredientsClient: Fetched", querySnapshot.size, "documents.");
 
         const ingredientsData = querySnapshot.docs.map(
             (doc) => ({ ...doc.data(), id: doc.id } as Ingredient)
@@ -55,10 +58,11 @@ export default function IngredientsClient() {
         setIngredients(ingredientsData);
         setError(null);
     } catch(e: any) {
-        console.error("Error fetching ingredients: ", e);
+        console.error("IngredientsClient: Error fetching ingredients: ", e);
         setError("Impossible de charger les ingrédients. " + e.message);
     } finally {
         setIsLoading(false);
+        console.log("IngredientsClient: Finished fetching ingredients.");
     }
   }, []);
 

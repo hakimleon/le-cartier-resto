@@ -53,6 +53,7 @@ export default function MenuClient() {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log("MenuClient: useEffect triggered. Firebase configured:", isFirebaseConfigured);
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
       setIsLoading(false);
@@ -60,11 +61,13 @@ export default function MenuClient() {
     }
     
     setIsLoading(true);
+    console.log("MenuClient: Setting up Firestore listener...");
     const recipesCol = collection(db, "recipes");
     const q = query(recipesCol, where("type", "==", "Plat"));
     
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
         try {
+            console.log("MenuClient: onSnapshot received data. Number of documents:", querySnapshot.size);
             const recipesData = querySnapshot.docs.map(
                 (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
             );
@@ -96,18 +99,20 @@ export default function MenuClient() {
             setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
             setError(null);
         } catch(e: any) {
-            console.error("Error processing recipes snapshot: ", e);
+            console.error("MenuClient: Error processing recipes snapshot: ", e);
             setError("Impossible de traiter les données du menu. " + e.message);
         } finally {
             setIsLoading(false);
+            console.log("MenuClient: Finished processing snapshot.");
         }
     }, (e: any) => {
-        console.error("Error fetching recipes with onSnapshot: ", e);
+        console.error("MenuClient: Error with onSnapshot listener: ", e);
         setError("Impossible de charger le menu en temps réel. " + e.message);
         setIsLoading(false);
     });
 
     return () => {
+        console.log("MenuClient: Cleaning up Firestore listener.");
         if(unsubscribe) {
             unsubscribe();
         }
