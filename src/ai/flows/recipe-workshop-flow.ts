@@ -151,7 +151,7 @@ const generateRecipeConceptFlow = ai.defineFlow(
 
                 if (media?.url) {
                     const uploadResult = await cloudinary.uploader.upload(media.url, {
-                        folder: "le-singulier-ai-generated",
+                        folder: "la-compagnie-ai-generated",
                         resource_type: "image",
                     });
                     imageUrl = uploadResult.secure_url;

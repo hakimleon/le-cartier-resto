@@ -144,7 +144,7 @@ export async function uploadImage(dataUri: string): Promise<string> {
   }
   try {
     const uploadResult = await cloudinary.uploader.upload(dataUri, {
-      folder: "le-singulier-ai-generated",
+      folder: "la-compagnie-ai-generated",
       resource_type: "image",
     });
     return uploadResult.secure_url;
