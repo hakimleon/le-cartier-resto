@@ -1,8 +1,10 @@
+
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Allow read and write access to all documents
-    // for developers running the app locally.
+    // Allow read/write access on all documents to anyone
+    // for prototyping. Make sure to restrict this for production.
     match /{document=**} {
       allow read, write: if true;
     }
