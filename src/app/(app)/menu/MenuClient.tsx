@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, getDocs } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe, dishCategories } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -62,14 +62,14 @@ export default function MenuClient() {
       console.log("MenuClient: Fetching documents from 'recipes' collection...");
       try {
           const recipesCol = collection(db, "recipes");
-          const q = query(recipesCol, where("type", "==", "Plat"));
+          const q = query(recipesCol);
           const querySnapshot = await getDocs(q);
           
           console.log(`MenuClient: Fetched ${querySnapshot.size} documents.`);
 
-          const recipesData = querySnapshot.docs.map(
-              (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
-          );
+          const recipesData = querySnapshot.docs
+              .map((doc) => ({ ...doc.data(), id: doc.id } as Recipe))
+              .filter(recipe => recipe.type === 'Plat'); // Filtrage côté client
           
           setRecipes(recipesData);
           

@@ -71,14 +71,14 @@ export default function GarnishesClient() {
     setIsLoading(true);
     console.log("GarnishesClient: Fetching documents from 'garnishes' collection...");
     try {
-        const prepsCol = collection(db, "garnishes");
-        const querySnapshot = await getDocs(prepsCol);
+        const garnishCol = collection(db, "garnishes");
+        const querySnapshot = await getDocs(query(garnishCol));
         console.log(`GarnishesClient: Fetched ${querySnapshot.size} documents.`);
         
-        const prepsData = querySnapshot.docs.map(
+        const garnishesData = querySnapshot.docs.map(
             (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
         );
-        setGarnishes(prepsData);
+        setGarnishes(garnishesData);
         setError(null);
     } catch(e: any) {
         console.error("GarnishesClient: Error fetching garnishes: ", e);
