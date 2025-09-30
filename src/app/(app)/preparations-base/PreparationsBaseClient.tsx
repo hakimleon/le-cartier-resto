@@ -70,7 +70,7 @@ export default function PreparationsBaseClient() {
         const q = query(prepsCol);
         const querySnapshot = await getDocs(q);
         console.log(`PreparationsClient: Fetched ${querySnapshot.size} documents.`);
-
+        
         const prepsData = querySnapshot.docs.map(
             (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
         );
