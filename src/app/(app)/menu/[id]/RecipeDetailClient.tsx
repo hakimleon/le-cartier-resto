@@ -131,7 +131,10 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: { quantity: number, unit: string }, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice) {
+    if (!ingredientData?.purchasePrice || !ingredientData.purchaseUnit) {
+        if (!ingredientData.purchaseUnit) {
+            console.warn(`L'ingrédient "${ingredientData.name}" n'a pas d'unité d'achat définie. Coût calculé à 0.`);
+        }
         return 0;
     }
 
@@ -147,12 +150,9 @@ const recomputeIngredientCost = (ingredientLink: { quantity: number, unit: strin
         case 'pièce':
         case 'piece':
         case 'botte':
-            // Case 1: Unit-based purchase (e.g., eggs, bunch of parsley)
             if (['pièce', 'piece', 'botte'].includes(unitUse.toLowerCase().trim())) {
-                // If the recipe uses the same unit, it's a direct multiplication
                 totalCost = quantity * purchasePrice;
             } else {
-                // If the recipe uses weight (g), we need the average weight of the piece/bunch
                 if (purchaseWeightGrams > 0) {
                     const costPerGram = purchasePrice / (purchaseWeightGrams * yieldFactor);
                     const quantityInGrams = quantity * getConversionFactor(unitUse, 'g');
@@ -167,7 +167,6 @@ const recomputeIngredientCost = (ingredientLink: { quantity: number, unit: strin
         case 'ml':
         case 'litre':
         case 'litres':
-             // Case 2: Weight/Volume based purchase
             let costPerBaseUnit = 0; // Cost per g or ml
             const purchaseQuantityBase = purchaseWeightGrams || 1; // total g or ml of the purchase unit
             if (purchaseQuantityBase > 0) {
@@ -178,7 +177,6 @@ const recomputeIngredientCost = (ingredientLink: { quantity: number, unit: strin
             break;
             
         default:
-            // Fallback for unknown units, though should be avoided
             totalCost = 0;
             break;
     }
@@ -1448,3 +1446,4 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
