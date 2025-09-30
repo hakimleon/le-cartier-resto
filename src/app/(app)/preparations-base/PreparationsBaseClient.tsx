@@ -64,12 +64,10 @@ export default function PreparationsBaseClient() {
     }
     
     setIsLoading(true);
-    console.log("PreparationsClient: Fetching documents from 'preparations' collection...");
     try {
         const prepsCol = collection(db, "preparations");
         const q = query(prepsCol);
         const querySnapshot = await getDocs(q);
-        console.log(`PreparationsClient: Fetched ${querySnapshot.size} documents.`);
         
         const prepsData = querySnapshot.docs.map(
             (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
