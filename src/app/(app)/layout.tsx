@@ -24,7 +24,7 @@ import FloatingAssistant from '@/app/(app)/assistant/FloatingAssistant';
 import Image from 'next/image';
 
 const Logo = () => (
-    <Image src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDE1IDE1Ij48cGF0aCBmaWxsPSJncmF5IiBkPSJNMTIuMDE3IDEyLjVIMTQuNUwxMiAxNXYtMi40ODNhMS42MiAxLjYyIDAgMCAxLTEuMTM3LjQ4YTEuNjAgMS42IDAgMCAxLS45OTMtLjM0NWE2Ljc4NCA2Ljc4NCAwIDAgMSAuMDA4LTEwLjMxYTEuNjIgMS42MiAwIDAgMSAyLjEyMi4xMlYwTDE0LjUgMi41aC0yLjQ2NGEyIDIgMCAwIDEgLjEyMy4xMjlhMS42MjQgMS42MjQgMCAwIDEtLjI4OCAyLjI4YTMuNTIgMy41MiAwIDAgMC0xLjEyMSAyLjU4NmEzLjU2IDMuNTYgMCAwIDAgMS4xNDcgMi42MTZhMS4zNSAxLjYzNSAwIDAgMSAuMjMyIDIuMjc5Yy0uMDM0LjA0MS0uMDc1LjA3Mi0uMTEyLjExTTIuNTA0IDBsLTEgNS41Yy0uMTQ2LjgwNSAxLjc4MSAxLjE4MSAxLjc1IDJMLjc1IDYuNWMtLjAzMS0uODE4IDEuNzMzLTEuMTggMS43NS0ybC0xIDUuNWgtLjVsLjI1IDRsLS43NS41bC0uMjUtNC41aC0uNWwtLjI1IDQuNWwtLjc1LS41bC4yNS00WiIvPjwvc3ZnPg==" alt="Le Cartier Logo" width={40} height={40} />
+    <Image src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIxNSIgaGVpZ2h0PSIxNSIgdmlld0JveD0iMCAwIDE1IDE1Ij48cGF0aCBmaWxsPSJncmF5IiBkPSJNMTIuMDE3IDEyLjVIMTQuNUwxMiAxNXYtMi40ODNhMS42MiAxLjYyIDAgMCAxLTEuMTM3LjQ4YTEuNjAgMS42IDAgMCAxLS45OTMtLjM0NWE2Ljc4NCA2Ljc4NCAwIDAgMSAuMDA4LTEwLjMxYTEuNjIgMS42MiAwIDAgMSAyLjEyMi4xMlYwTDE0LjUgMi41aC0yLjQ2NGEyIDIgMCAwIDEgLjEyMy4xMjlhMS42MjQgMS42MjQgMCAwIDEtLjI4OCAyLjI4YTMuNTIgMy41MiAwIDAgMC0xLjEyMSAyLjU4NmEzLjU2IDMuNTYgMCAwIDAgMS4xNDcgMi42MTZhMS4zNSAxLjYzNSAwIDAgMSAuMjMyIDIuMjc5Yy0uMDM0LjA0MS0uMDc1LjA3Mi0uMTEyLjExTTIuNTA0IDBsLTEgNS41Yy0uMTQ2LjgwNSAxLjc4MSAxLjE4MSAxLjc1IDJMLjc1IDYuNWMtLjAzMS0uODE4IDEuNzMzLTEuMTggMS43NS0ybC0xIDUuNWgtLjVsLjI1IDRsLS43NS41bC0uMjUtNC41aC0uNWwtLjI1IDQuNWwtLjc1LS41bC4yNS00WiIvPjwvc3ZnPg==" alt="La Compagnie Logo" width={40} height={40} />
 );
 
 
@@ -45,7 +45,7 @@ export default function AppLayout({
                     <Logo />
                 </div>
                 <div className="flex flex-col">
-                    <h2 className="text-2xl font-bold tracking-tight text-[#b8945e] drop-shadow-sm">Le Cartier</h2>
+                    <h2 className="text-2xl font-bold tracking-tight text-[#b8945e] drop-shadow-sm">La Compagnie</h2>
                 </div>
             </Link>
           </SidebarHeader>

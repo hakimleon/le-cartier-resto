@@ -153,7 +153,7 @@ export const RecipePDFDocument = ({ recipe, ingredients, preparations, totalCost
     const serviceProcedure = (recipe as Recipe).procedure_service;
 
     return (
-        <Document title={recipe.name} author="Le Cartier">
+        <Document title={recipe.name} author="La Compagnie">
             <Page size="A4" style={styles.page}>
                 {/* En-tête */}
                 <View style={styles.header}>
@@ -230,10 +230,8 @@ export const RecipePDFDocument = ({ recipe, ingredients, preparations, totalCost
                     </View>
                 </View>
                 
-                <Text style={styles.footer} fixed>Fiche Technique - Le Cartier - Générée le {new Date().toLocaleDateString('fr-FR')}</Text>
+                <Text style={styles.footer} fixed>Fiche Technique - La Compagnie - Générée le {new Date().toLocaleDateString('fr-FR')}</Text>
             </Page>
         </Document>
     );
 };
-
-    
