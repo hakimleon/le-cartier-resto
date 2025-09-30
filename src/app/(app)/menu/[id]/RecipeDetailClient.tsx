@@ -135,30 +135,55 @@ const recomputeIngredientCost = (ingredientLink: { quantity: number, unit: strin
         return 0;
     }
 
-    const purchaseUnit = ingredientData.purchaseUnit.toLowerCase();
-    const isUnitBased = ['pièce', 'piece', 'botte'].includes(purchaseUnit);
+    const { purchasePrice, purchaseUnit, purchaseWeightGrams, yieldPercentage } = ingredientData;
+    const { quantity, unit: unitUse } = ingredientLink;
+    let totalCost = 0;
 
-    let finalCost = 0;
+    const purchaseUnitClean = purchaseUnit.toLowerCase().trim();
+    const yieldFactor = (yieldPercentage || 100) / 100;
+    if (yieldFactor === 0) return 0; // Avoid division by zero
 
-    if (isUnitBased) {
-        const conversionFactor = getConversionFactor(ingredientLink.unit, purchaseUnit);
-        finalCost = ingredientLink.quantity * ingredientData.purchasePrice * conversionFactor;
-    } else {
-        // Fallback to weight/volume based calculation
-        if (!ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) {
-            return 0;
-        }
-        const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-        const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
+    switch (purchaseUnitClean) {
+        case 'pièce':
+        case 'piece':
+        case 'botte':
+            // Case 1: Unit-based purchase (e.g., eggs, bunch of parsley)
+            if (['pièce', 'piece', 'botte'].includes(unitUse.toLowerCase().trim())) {
+                // If the recipe uses the same unit, it's a direct multiplication
+                totalCost = quantity * purchasePrice;
+            } else {
+                // If the recipe uses weight (g), we need the average weight of the piece/bunch
+                if (purchaseWeightGrams > 0) {
+                    const costPerGram = purchasePrice / (purchaseWeightGrams * yieldFactor);
+                    const quantityInGrams = quantity * getConversionFactor(unitUse, 'g');
+                    totalCost = quantityInGrams * costPerGram;
+                }
+            }
+            break;
 
-        const isLiquidPurchase = ['l', 'ml', 'litre', 'litres'].includes(purchaseUnit);
-        const targetUnit = isLiquidPurchase ? 'ml' : 'g';
-        
-        const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
-        finalCost = quantityInBaseUnit * netCostPerGramOrMl;
+        case 'kg':
+        case 'g':
+        case 'l':
+        case 'ml':
+        case 'litre':
+        case 'litres':
+             // Case 2: Weight/Volume based purchase
+            let costPerBaseUnit = 0; // Cost per g or ml
+            const purchaseQuantityBase = purchaseWeightGrams || 1; // total g or ml of the purchase unit
+            if (purchaseQuantityBase > 0) {
+                 costPerBaseUnit = purchasePrice / (purchaseQuantityBase * yieldFactor);
+            }
+            const quantityInBaseUnit = quantity * getConversionFactor(unitUse, ['l','ml','litre','litres'].includes(purchaseUnitClean) ? 'ml' : 'g');
+            totalCost = quantityInBaseUnit * costPerBaseUnit;
+            break;
+            
+        default:
+            // Fallback for unknown units, though should be avoided
+            totalCost = 0;
+            break;
     }
 
-    return isNaN(finalCost) ? 0 : finalCost;
+    return isNaN(totalCost) ? 0 : totalCost;
 };
 
 
