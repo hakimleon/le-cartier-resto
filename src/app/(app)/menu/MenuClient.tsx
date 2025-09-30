@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe, dishCategories } from "@/lib/types";
@@ -52,7 +52,7 @@ export default function MenuClient() {
   const [selectedStatus, setSelectedStatus] = useState<'Actif' | 'Inactif'>('Actif');
   const { toast } = useToast();
 
-  const fetchMenuData = async () => {
+  const fetchMenuData = useCallback(async () => {
       if (!isFirebaseConfigured) {
         setError("La configuration de Firebase est manquante. Veuillez vérifier votre fichier .env.");
         setIsLoading(false);
@@ -104,11 +104,11 @@ export default function MenuClient() {
           setIsLoading(false);
           console.log("MenuClient: Finished fetching menu data.");
       }
-  };
+  }, []);
   
   useEffect(() => {
     fetchMenuData();
-  }, []);
+  }, [fetchMenuData]);
   
    useEffect(() => {
     setSelectedCategory("Tous");
@@ -214,7 +214,7 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} onSuccess={fetchMenuData}>
+             <DishModal dish={null} allCategories={activeCategories.filter(c => c !== "Tous")} onSuccess={fetchMenuData}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     Nouveau Plat
@@ -256,5 +256,3 @@ export default function MenuClient() {
     </div>
   );
 }
-
-    

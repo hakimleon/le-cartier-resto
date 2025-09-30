@@ -69,9 +69,8 @@ export default function GarnishesClient() {
     }
     
     setIsLoading(true);
-    console.log("GarnishesClient: useEffect triggered. Firebase configured: true");
+    console.log("GarnishesClient: Fetching documents from 'garnishes' collection...");
     try {
-        console.log("GarnishesClient: Fetching documents from 'garnishes' collection...");
         const prepsCol = collection(db, "garnishes");
         const querySnapshot = await getDocs(prepsCol);
         console.log(`GarnishesClient: Fetched ${querySnapshot.size} documents.`);
@@ -86,7 +85,6 @@ export default function GarnishesClient() {
         setError("Impossible de charger les garnitures. " + e.message);
     } finally {
         setIsLoading(false);
-        console.log("GarnishesClient: Finished fetching garnishes.");
     }
   }, []);
 
