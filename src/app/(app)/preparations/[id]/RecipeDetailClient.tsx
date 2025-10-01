@@ -520,7 +520,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             productionUnit: (editableRecipe as Preparation).productionUnit,
             usageUnit: (editableRecipe as Preparation).usageUnit,
         };
-        await updateRecipeDetails(recipeId, recipeDataToSave, 'Préparation');
+        await updateRecipeDetails(recipeId, recipeDataToSave, 'preparations');
         
         const allCurrentIngredients = [ ...editableIngredients.map(ing => ({ ingredientId: ing.id, quantity: ing.quantity, unitUse: ing.unit })), ...newIngredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: ing.quantity, unitUse: ing.unit }))].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'id' | 'recipeId'>[];
         await replaceRecipeIngredients(recipeId, allCurrentIngredients);
@@ -1137,3 +1137,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
