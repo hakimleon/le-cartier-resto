@@ -130,67 +130,28 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
     return 1;
 };
 
-const recomputeIngredientCost = (ingredientLink: { quantity: number, unit: string }, ingredientData: Ingredient): number => {
+const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData: Ingredient): number => {
     if (!ingredientData) {
-        // This case should ideally not happen if called correctly, but it's a good safeguard.
         return 0;
     }
-    // **** DEBUGGING START ****
-    // If purchaseUnit is missing, log the problematic ingredient and return 0 to prevent a crash.
     if (!ingredientData.purchaseUnit) {
-        console.error(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas de 'purchaseUnit' (unité d'achat) définie. Le coût est calculé à 0. Veuillez corriger cet ingrédient dans la base de données.`);
+        console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas de 'purchaseUnit' (unité d'achat) définie. Le coût est calculé à 0. Veuillez corriger cet ingrédient dans la base de données.`);
         return 0;
     }
-    // **** DEBUGGING END ****
+    if (!ingredientData.purchasePrice || !ingredientData.purchaseWeightGrams) {
+        return 0;
+    }
+
+    const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+    const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
+
+    const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
+    const targetUnit = isLiquid ? 'ml' : 'g';
     
-    if (!ingredientData.purchasePrice) {
-        return 0;
-    }
-
-    const { purchasePrice, purchaseUnit, purchaseWeightGrams, yieldPercentage } = ingredientData;
-    const { quantity, unit: unitUse } = ingredientLink;
-    let totalCost = 0;
-
-    const purchaseUnitClean = purchaseUnit.toLowerCase().trim();
-    const yieldFactor = (yieldPercentage || 100) / 100;
-    if (yieldFactor === 0) return 0; // Avoid division by zero
-
-    switch (purchaseUnitClean) {
-        case 'pièce':
-        case 'piece':
-        case 'botte':
-            if (['pièce', 'piece', 'botte'].includes(unitUse.toLowerCase().trim())) {
-                totalCost = quantity * purchasePrice;
-            } else {
-                if (purchaseWeightGrams > 0) {
-                    const costPerGram = purchasePrice / (purchaseWeightGrams * yieldFactor);
-                    const quantityInGrams = quantity * getConversionFactor(unitUse, 'g');
-                    totalCost = quantityInGrams * costPerGram;
-                }
-            }
-            break;
-
-        case 'kg':
-        case 'g':
-        case 'l':
-        case 'ml':
-        case 'litre':
-        case 'litres':
-            let costPerBaseUnit = 0; // Cost per g or ml
-            const purchaseQuantityBase = purchaseWeightGrams || 1; // total g or ml of the purchase unit
-            if (purchaseQuantityBase > 0) {
-                 costPerBaseUnit = purchasePrice / (purchaseQuantityBase * yieldFactor);
-            }
-            const quantityInBaseUnit = quantity * getConversionFactor(unitUse, ['l','ml','litre','litres'].includes(purchaseUnitClean) ? 'ml' : 'g');
-            totalCost = quantityInBaseUnit * costPerBaseUnit;
-            break;
-            
-        default:
-            totalCost = 0;
-            break;
-    }
-
-    return isNaN(totalCost) ? 0 : totalCost;
+    const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
+    
+    const finalCost = quantityInBaseUnit * netCostPerGramOrMl;
+    return isNaN(finalCost) ? 0 : finalCost;
 };
 
 
