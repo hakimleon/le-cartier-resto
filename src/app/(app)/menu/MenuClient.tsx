@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -33,11 +34,11 @@ const sortCategories = (categories: string[]) => {
   ];
 
   return [...categories].sort((a, b) => {
-    const normalizedA = a.toLowerCase().trim();
-    const normalizedB = b.toLowerCase().trim();
+    const normalizedA = formatCategory(a).toLowerCase().trim();
+    const normalizedB = formatCategory(b).toLowerCase().trim();
     
-    const indexA = customOrder.findIndex(item => item.toLowerCase().trim() === normalizedA);
-    const indexB = customOrder.findIndex(item => item.toLowerCase().trim() === normalizedB);
+    const indexA = customOrder.findIndex(item => formatCategory(item).toLowerCase().trim() === normalizedA);
+    const indexB = customOrder.findIndex(item => formatCategory(item).toLowerCase().trim() === normalizedB);
 
     if (indexA === -1 && indexB === -1) {
         return a.localeCompare(b);
@@ -87,14 +88,14 @@ export default function MenuClient() {
 
             recipesData.forEach(recipe => {
                 if (recipe.category) {
-                    const normalizedCategory = recipe.category.toLowerCase().trim();
+                    const formattedCat = formatCategory(recipe.category);
                     if(recipe.status === 'Actif') {
-                        if (!activeCategoryMap.has(normalizedCategory)) {
-                            activeCategoryMap.set(normalizedCategory, recipe.category);
+                        if (!activeCategoryMap.has(formattedCat)) {
+                            activeCategoryMap.set(formattedCat, recipe.category);
                         }
                     } else {
-                         if (!inactiveCategoryMap.has(normalizedCategory)) {
-                            inactiveCategoryMap.set(normalizedCategory, recipe.category);
+                         if (!inactiveCategoryMap.has(formattedCat)) {
+                            inactiveCategoryMap.set(formattedCat, recipe.category);
                         }
                     }
                 }
@@ -157,7 +158,7 @@ export default function MenuClient() {
     return recipes.filter(recipe => {
         const statusMatch = recipe.status === selectedStatus;
         const searchTermMatch = searchTerm === '' || recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const categoryMatch = selectedCategory === 'Tous' || recipe.category?.toLowerCase().trim() === selectedCategory.toLowerCase().trim();
+        const categoryMatch = selectedCategory === 'Tous' || recipe.category === selectedCategory;
         return statusMatch && searchTermMatch && categoryMatch;
     });
   }, [recipes, searchTerm, selectedCategory, selectedStatus]);
@@ -253,7 +254,7 @@ export default function MenuClient() {
         <TabsContent value="Actif">
             <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
                 <TabsList className="h-auto justify-start flex-wrap">
-                    {activeCategories.map(cat => <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>)}
+                    {activeCategories.map(cat => <TabsTrigger key={cat} value={cat}>{formatCategory(cat)}</TabsTrigger>)}
                 </TabsList>
                 <div className="pt-4">{renderRecipeList(filteredRecipes)}</div>
             </Tabs>
@@ -261,7 +262,7 @@ export default function MenuClient() {
         <TabsContent value="Inactif">
             <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
                 <TabsList className="h-auto justify-start flex-wrap">
-                    {inactiveCategories.map(cat => <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>)}
+                    {inactiveCategories.map(cat => <TabsTrigger key={cat} value={cat}>{formatCategory(cat)}</TabsTrigger>)}
                 </TabsList>
                  <div className="pt-4">{renderRecipeList(filteredRecipes)}</div>
             </Tabs>
