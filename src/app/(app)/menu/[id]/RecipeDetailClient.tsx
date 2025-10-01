@@ -131,6 +131,9 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData: Ingredient): number => {
+    if (!ingredientData) {
+      return 0;
+    }
     if (!ingredientData?.purchaseUnit) {
       console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData?.name}" (ID: ${ingredientData?.id}) n'a pas de 'purchaseUnit'. Le coût sera de 0.`);
       return 0;
@@ -147,6 +150,7 @@ const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: strin
     const finalCost = quantityInBaseUnit * netCostPerGramOrMl;
     return isNaN(finalCost) ? 0 : finalCost;
 };
+
 
 
 const GAUGE_LEVELS = {
@@ -1041,21 +1045,21 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                     onChange={(e) => handleRecipeDataChange('name', e.target.value)}
                                     className="text-2xl font-bold tracking-tight h-12 w-full"
                                 />
-                                 {!isPlat && (
-                                    <Select value={editableRecipe?.category} onValueChange={(value) => handleRecipeDataChange('category', value)}>
-                                        <SelectTrigger className="w-[280px]">
-                                            <SelectValue placeholder="Choisir une catégorie..." />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {(isGarnish ? preparationCategories : preparationCategories).map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
-                                        </SelectContent>
-                                    </Select>
-                                )}
+                                 <Select value={editableRecipe?.category} onValueChange={(value) => handleRecipeDataChange('category', value)}>
+                                    <SelectTrigger className="w-[280px]">
+                                        <SelectValue placeholder="Choisir une catégorie..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {(isPlat ? dishCategories : preparationCategories).map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
                             </div>
                         ) : (
-                            <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
+                             <div>
+                                <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
+                                <p className="text-muted-foreground">{recipe.category}</p>
+                            </div>
                         )}
-                        <p className="text-muted-foreground">{isPlat ? (recipe as Recipe).category : (isGarnish ? 'Garniture' : 'Préparation')}</p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
                             {isPlat && <Badge variant={(recipe as Recipe).status === 'Actif' ? 'default' : 'secondary'} className={cn((recipe as Recipe).status === 'Actif' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800')}>{(recipe as Recipe).status}</Badge>}
                             <div className="flex items-center gap-1.5"><Clock className="h-4 w-4" /> {recipe.duration} min</div>

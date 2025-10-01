@@ -112,9 +112,12 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
     return 1;
 };
 
-const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchaseUnit) {
-      console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData?.name}" (ID: ${ingredientData?.id}) n'a pas de 'purchaseUnit'. Le coût sera de 0.`);
+const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData?: Ingredient): number => {
+    if (!ingredientData) {
+      return 0;
+    }
+    if (!ingredientData.purchaseUnit) {
+      console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas de 'purchaseUnit'. Le coût sera de 0.`);
       return 0;
     }
     if (ingredientData.purchasePrice == null || ingredientData.purchaseWeightGrams == null) {
@@ -535,11 +538,21 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                     </div>
                     <div className="w-full space-y-2">
                         {isEditing ? (
-                             <Input
-                                value={editableRecipe?.name}
-                                onChange={(e) => handleRecipeDataChange('name', e.target.value)}
-                                className="text-2xl font-bold tracking-tight h-12 w-full"
-                            />
+                             <div className="space-y-2">
+                                <Input
+                                    value={editableRecipe?.name}
+                                    onChange={(e) => handleRecipeDataChange('name', e.target.value)}
+                                    className="text-2xl font-bold tracking-tight h-12 w-full"
+                                />
+                                <Select value={editableRecipe?.category} onValueChange={(value) => handleRecipeDataChange('category', value)}>
+                                    <SelectTrigger className="w-[280px]">
+                                        <SelectValue placeholder="Choisir une catégorie..." />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        {preparationCategories.map(cat => <SelectItem key={cat} value={cat}>{cat}</SelectItem>)}
+                                    </SelectContent>
+                                </Select>
+                            </div>
                         ) : (
                              <div>
                                 <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">{recipe.name}</h1>
