@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -246,32 +245,28 @@ export default function MenuClient() {
         </Alert>
       )}
 
-      <div className="space-y-4 rounded-lg border p-4">
-        <div className="flex items-baseline gap-4">
-            <Label className="text-sm font-semibold">Statut :</Label>
-            <Tabs defaultValue="Actif" onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')} className="w-full">
-                <TabsList>
-                    <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
-                    <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
+      <Tabs value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')} className="w-full">
+        <TabsList>
+            <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
+            <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
+        </TabsList>
+        <TabsContent value="Actif">
+            <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
+                <TabsList className="h-auto justify-start flex-wrap">
+                    {activeCategories.map(cat => <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>)}
                 </TabsList>
+                <div className="pt-4">{renderRecipeList(filteredRecipes)}</div>
             </Tabs>
-        </div>
-      </div>
-
-
-      <div className="pt-4">
-        <Tabs value={selectedStatus}>
-            <TabsContent value="Actif" forceMount>
-                {selectedStatus === 'Actif' && renderRecipeList(filteredRecipes)}
-            </TabsContent>
-            <TabsContent value="Inactif" forceMount>
-                {selectedStatus === 'Inactif' && renderRecipeList(filteredRecipes)}
-            </TabsContent>
-        </Tabs>
-      </div>
-
+        </TabsContent>
+        <TabsContent value="Inactif">
+            <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
+                <TabsList className="h-auto justify-start flex-wrap">
+                    {inactiveCategories.map(cat => <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>)}
+                </TabsList>
+                 <div className="pt-4">{renderRecipeList(filteredRecipes)}</div>
+            </Tabs>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
-
-    
