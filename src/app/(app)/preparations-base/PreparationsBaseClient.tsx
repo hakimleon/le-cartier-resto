@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { collection, getDocs, query } from "firebase/firestore";
+import { collection, getDocs, query, onSnapshot } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Preparation, preparationCategories } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -56,7 +56,7 @@ export default function PreparationsBaseClient() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const fetchPreparations = useCallback(async () => {
+  useEffect(() => {
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante.");
       setIsLoading(false);
@@ -64,26 +64,29 @@ export default function PreparationsBaseClient() {
     }
     
     setIsLoading(true);
-    try {
-        const prepsCol = collection(db, "preparations");
-        const querySnapshot = await getDocs(query(prepsCol));
-        
-        const prepsData = querySnapshot.docs.map(
-            (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
-        );
-        setPreparations(prepsData);
-        setError(null);
-    } catch(e: any) {
-        console.error("PreparationsClient: Error fetching preparations: ", e);
-        setError("Impossible de charger les préparations. " + e.message);
-    } finally {
+    const prepsCol = collection(db, "preparations");
+    
+    const unsubscribe = onSnapshot(query(prepsCol), (querySnapshot) => {
+        try {
+            const prepsData = querySnapshot.docs.map(
+                (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
+            );
+            setPreparations(prepsData);
+            setError(null);
+        } catch (e: any) {
+            console.error("Error processing preparations snapshot: ", e);
+            setError("Impossible de traiter les données. " + e.message);
+        } finally {
+            setIsLoading(false);
+        }
+    }, (e: any) => {
+        console.error("Error fetching preparations with onSnapshot: ", e);
+        setError("Impossible de charger les données en temps réel. " + e.message);
         setIsLoading(false);
-    }
-  }, []);
+    });
 
-  useEffect(() => {
-    fetchPreparations();
-  }, [fetchPreparations]);
+    return () => unsubscribe();
+  }, []);
 
   const handleDelete = async (id: string, name: string) => {
       try {
@@ -92,7 +95,6 @@ export default function PreparationsBaseClient() {
           title: "Succès",
           description: `La préparation "${name}" a été supprimée.`,
         });
-        fetchPreparations(); // Re-fetch
       } catch (error) {
         console.error("Error deleting preparation:", error);
         toast({

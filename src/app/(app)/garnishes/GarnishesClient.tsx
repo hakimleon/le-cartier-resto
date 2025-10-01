@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useCallback } from "react";
-import { collection, getDocs, query } from "firebase/firestore";
+import { collection, getDocs, query, onSnapshot } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Preparation } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -61,7 +61,7 @@ export default function GarnishesClient() {
   const { toast } = useToast();
   const router = useRouter();
 
-  const fetchGarnishes = useCallback(async () => {
+  useEffect(() => {
     if (!isFirebaseConfigured) {
       setError("La configuration de Firebase est manquante.");
       setIsLoading(false);
@@ -69,26 +69,28 @@ export default function GarnishesClient() {
     }
     
     setIsLoading(true);
-    try {
-        const garnishCol = collection(db, "garnishes");
-        const querySnapshot = await getDocs(query(garnishCol));
-        
-        const garnishesData = querySnapshot.docs.map(
-            (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
-        );
-        setGarnishes(garnishesData);
-        setError(null);
-    } catch(e: any) {
-        console.error("GarnishesClient: Error fetching garnishes: ", e);
-        setError("Impossible de charger les garnitures. " + e.message);
-    } finally {
+    const garnishCol = collection(db, "garnishes");
+    const unsubscribe = onSnapshot(query(garnishCol), (querySnapshot) => {
+        try {
+            const garnishesData = querySnapshot.docs.map(
+                (doc) => ({ ...doc.data(), id: doc.id } as Preparation)
+            );
+            setGarnishes(garnishesData);
+            setError(null);
+        } catch (e: any) {
+             console.error("GarnishesClient: Error processing snapshot: ", e);
+             setError("Impossible de traiter les données. " + e.message);
+        } finally {
+            setIsLoading(false);
+        }
+    }, (err) => {
+        console.error("GarnishesClient: Error fetching garnishes: ", err);
+        setError("Impossible de charger les garnitures en temps réel. " + err.message);
         setIsLoading(false);
-    }
-  }, []);
+    });
 
-  useEffect(() => {
-    fetchGarnishes();
-  }, [fetchGarnishes]);
+    return () => unsubscribe();
+  }, []);
 
   const handleDelete = async (id: string, name: string) => {
       try {
@@ -97,7 +99,6 @@ export default function GarnishesClient() {
           title: "Succès",
           description: `La garniture "${name}" a été supprimée.`,
         });
-        fetchGarnishes();
       } catch (error) {
         console.error("Error deleting garnish:", error);
         toast({
