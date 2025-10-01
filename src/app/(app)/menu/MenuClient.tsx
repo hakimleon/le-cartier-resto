@@ -89,13 +89,14 @@ export default function MenuClient() {
             recipesData.forEach(recipe => {
                 if (recipe.category) {
                     const formattedCat = formatCategory(recipe.category);
+                    const lowercasedFormattedCat = formattedCat.toLowerCase();
                     if(recipe.status === 'Actif') {
-                        if (!activeCategoryMap.has(formattedCat)) {
-                            activeCategoryMap.set(formattedCat, recipe.category);
+                        if (!activeCategoryMap.has(lowercasedFormattedCat)) {
+                            activeCategoryMap.set(lowercasedFormattedCat, formattedCat);
                         }
                     } else {
-                         if (!inactiveCategoryMap.has(formattedCat)) {
-                            inactiveCategoryMap.set(formattedCat, recipe.category);
+                         if (!inactiveCategoryMap.has(lowercasedFormattedCat)) {
+                            inactiveCategoryMap.set(lowercasedFormattedCat, formattedCat);
                         }
                     }
                 }
@@ -158,7 +159,7 @@ export default function MenuClient() {
     return recipes.filter(recipe => {
         const statusMatch = recipe.status === selectedStatus;
         const searchTermMatch = searchTerm === '' || recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const categoryMatch = selectedCategory === 'Tous' || recipe.category === selectedCategory;
+        const categoryMatch = selectedCategory === 'Tous' || formatCategory(recipe.category) === selectedCategory;
         return statusMatch && searchTermMatch && categoryMatch;
     });
   }, [recipes, searchTerm, selectedCategory, selectedStatus]);
@@ -254,7 +255,7 @@ export default function MenuClient() {
         <TabsContent value="Actif">
             <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
                 <TabsList className="h-auto justify-start flex-wrap">
-                    {activeCategories.map(cat => <TabsTrigger key={cat} value={cat}>{formatCategory(cat)}</TabsTrigger>)}
+                    {activeCategories.map(cat => <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>)}
                 </TabsList>
                 <div className="pt-4">{renderRecipeList(filteredRecipes)}</div>
             </Tabs>
@@ -262,7 +263,7 @@ export default function MenuClient() {
         <TabsContent value="Inactif">
             <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
                 <TabsList className="h-auto justify-start flex-wrap">
-                    {inactiveCategories.map(cat => <TabsTrigger key={cat} value={cat}>{formatCategory(cat)}</TabsTrigger>)}
+                    {inactiveCategories.map(cat => <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>)}
                 </TabsList>
                  <div className="pt-4">{renderRecipeList(filteredRecipes)}</div>
             </Tabs>
