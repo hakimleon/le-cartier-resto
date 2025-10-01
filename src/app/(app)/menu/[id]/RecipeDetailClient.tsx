@@ -526,7 +526,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
                         const conversionFactor = getConversionFactor(childPrep.productionUnit || 'g', linkData.unitUse);
-                        const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
+                        const costPerUseUnit = costPerProductionUnit / conversionFactor;
                         totalCost += (linkData.quantity || 0) * costPerUseUnit;
                     }
                 }
@@ -1396,3 +1396,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
