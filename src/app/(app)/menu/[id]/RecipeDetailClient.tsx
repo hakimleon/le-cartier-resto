@@ -130,12 +130,12 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
     return 1;
 };
 
-const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData: Ingredient): number => {
+const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData?: Ingredient): number => {
     if (!ingredientData) {
       return 0;
     }
-    if (!ingredientData?.purchaseUnit) {
-      console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData?.name}" (ID: ${ingredientData?.id}) n'a pas de 'purchaseUnit'. Le coût sera de 0.`);
+    if (!ingredientData.purchaseUnit) {
+      console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas de 'purchaseUnit'. Le coût sera de 0.`);
       return 0;
     }
     if (ingredientData.purchasePrice == null || ingredientData.purchaseWeightGrams == null) {
@@ -150,7 +150,6 @@ const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: strin
     const finalCost = quantityInBaseUnit * netCostPerGramOrMl;
     return isNaN(finalCost) ? 0 : finalCost;
 };
-
 
 
 const GAUGE_LEVELS = {
