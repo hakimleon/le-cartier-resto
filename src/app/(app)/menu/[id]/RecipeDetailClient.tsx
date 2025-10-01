@@ -131,7 +131,7 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: { quantity: number, unit: string }, ingredientData: Ingredient): number => {
-    if (!ingredientData.purchaseUnit) {
+    if (!ingredientData?.purchaseUnit) {
         console.warn(`L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas d'unité d'achat définie. Coût calculé à 0.`);
         return 0;
     }
@@ -526,7 +526,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
                         const conversionFactor = getConversionFactor(childPrep.productionUnit || 'g', linkData.unitUse);
-                        const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                        const costPerUseUnit = conversionFactor > 0 ? childCostPerProductionUnit / conversionFactor : 0;
                         totalCost += (linkData.quantity || 0) * costPerUseUnit;
                     }
                 }
@@ -602,7 +602,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
             if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                 const costPerProductionUnit = costs[linkData.childPreparationId];
                 const conversionFactor = getConversionFactor(childRecipeData.productionUnit || 'g', linkData.unitUse);
-                const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                const costPerUseUnit = conversionFactor > 0 ? costPerProductionUnit / conversionFactor : 0;
                 return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit || 'g' };
             }
             return null;
@@ -845,7 +845,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                 const updatedPrep = { ...prep, [field]: value };
                 const costPerProductionUnit = prep._costPerUnit || 0;
                 const conversionFactor = getConversionFactor(prep._productionUnit, updatedPrep.unit);
-                const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                const costPerUseUnit = conversionFactor > 0 ? costPerProductionUnit / conversionFactor : 0;
                 updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
                 return updatedPrep;
             }
@@ -871,7 +871,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                 if (field === 'quantity' || field === 'childPreparationId' || field === 'unit') {
                     const costPerProductionUnit = updatedPrep._costPerUnit || 0;
                     const conversionFactor = getConversionFactor(updatedPrep._productionUnit, updatedPrep.unit);
-                    const costPerUseUnit = costPerProductionUnit / conversionFactor;
+                    const costPerUseUnit = conversionFactor > 0 ? costPerProductionUnit / conversionFactor : 0;
                     updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
                 }
                 return updatedPrep;
@@ -1396,5 +1396,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    

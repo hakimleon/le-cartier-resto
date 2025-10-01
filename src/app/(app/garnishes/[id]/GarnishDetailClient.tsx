@@ -113,6 +113,9 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
+    if (!ingredientData?.purchaseUnit) {
+        return 0;
+    }
     if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams) {
         return 0;
     }
@@ -303,9 +306,9 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
                 if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                     const costPerProductionUnit = costs[linkData.childPreparationId];
-                    const conversionFactor = getConversionFactor(childRecipeData.productionUnit!, linkData.unitUse);
-                    const costPerUseUnit = costPerProductionUnit / conversionFactor;
-                    return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit! };
+                    const conversionFactor = getConversionFactor(childRecipeData.productionUnit || 'g', linkData.unitUse);
+                    const costPerUseUnit = conversionFactor > 0 ? costPerProductionUnit / conversionFactor : 0;
+                    return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit || 'g' };
                 }
                 return null;
             }).filter(Boolean) as FullRecipePreparation[];
@@ -701,5 +704,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
