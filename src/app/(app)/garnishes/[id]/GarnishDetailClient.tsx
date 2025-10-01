@@ -112,11 +112,15 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
     return 1;
 };
 
-const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchaseUnit) {
+const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData: Ingredient): number => {
+    if (!ingredientData) {
         return 0;
     }
-    if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams) {
+    if (!ingredientData.purchaseUnit) {
+        console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas de 'purchaseUnit' (unité d'achat) définie. Le coût est calculé à 0. Veuillez corriger cet ingrédient dans la base de données.`);
+        return 0;
+    }
+    if (!ingredientData.purchasePrice || !ingredientData.purchaseWeightGrams) {
         return 0;
     }
 
@@ -704,5 +708,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
