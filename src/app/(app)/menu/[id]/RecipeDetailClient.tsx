@@ -131,11 +131,11 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: { quantity: number, unit: string }, ingredientData: Ingredient): number => {
-    if (!ingredientData) {
-        return 0;
-    }
-    if (!ingredientData.purchaseUnit) {
-        console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas de 'purchaseUnit' (unité d'achat) définie. Le coût est calculé à 0. Veuillez corriger cet ingrédient dans la base de données.`);
+    // Robust check to prevent crashes if ingredientData is missing or malformed
+    if (!ingredientData || !ingredientData.purchaseUnit) {
+        if (ingredientData) {
+            console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas de 'purchaseUnit' (unité d'achat) définie. Le coût est calculé à 0.`);
+        }
         return 0;
     }
     if (!ingredientData.purchasePrice) {
@@ -513,7 +513,8 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
             for (const ingDoc of ingredientsSnap.docs) {
                 const ingLink = ingDoc.data() as RecipeIngredientLink;
                 const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
-                 if (ingData) {
+                // Robust check
+                if (ingData) {
                     totalCost += recomputeIngredientCost(ingLink, ingData);
                 } else {
                     console.warn(`Ingredient with ID ${ingLink.ingredientId} linked in preparation ${prep.name} not found.`);
@@ -1399,3 +1400,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
