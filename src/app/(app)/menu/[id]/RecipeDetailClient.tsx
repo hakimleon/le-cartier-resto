@@ -131,13 +131,18 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: { quantity: number, unit: string }, ingredientData: Ingredient): number => {
-    // Robust check to prevent crashes if ingredientData is missing or malformed
-    if (!ingredientData || !ingredientData.purchaseUnit) {
-        if (ingredientData) {
-            console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas de 'purchaseUnit' (unité d'achat) définie. Le coût est calculé à 0.`);
-        }
+    if (!ingredientData) {
+        // This case should ideally not happen if called correctly, but it's a good safeguard.
         return 0;
     }
+    // **** DEBUGGING START ****
+    // If purchaseUnit is missing, log the problematic ingredient and return 0 to prevent a crash.
+    if (!ingredientData.purchaseUnit) {
+        console.error(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas de 'purchaseUnit' (unité d'achat) définie. Le coût est calculé à 0. Veuillez corriger cet ingrédient dans la base de données.`);
+        return 0;
+    }
+    // **** DEBUGGING END ****
+    
     if (!ingredientData.purchasePrice) {
         return 0;
     }
@@ -1400,5 +1405,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
