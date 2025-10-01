@@ -113,39 +113,49 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData: Ingredient): number => {
-    if (!ingredientData || !ingredientData.purchaseUnit) {
-        return 0;
+    if (!ingredientData) {
+      console.warn(`[recomputeIngredientCost] Ingrédient manquant pour le calcul.`);
+      return 0;
+    }
+    if (!ingredientData.purchaseUnit) {
+      console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas de 'purchaseUnit'. Le coût sera de 0.`);
+      return 0;
     }
     if (ingredientData.purchasePrice == null || ingredientData.purchaseWeightGrams == null) {
-        return 0;
+      console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) a un prix ou un poids d'achat manquant. Le coût sera de 0.`);
+      return 0;
     }
 
     const purchaseUnit = ingredientData.purchaseUnit.toLowerCase();
     const useUnit = ingredientLink.unit.toLowerCase();
 
     // Direct unit-to-unit cost calculation (e.g., 'pièce' to 'pièce')
-    if (purchaseUnit === useUnit) {
-        return ingredientLink.quantity * ingredientData.purchasePrice;
+    const nonMetricUnits = ['pièce', 'piece', 'botte'];
+    if (nonMetricUnits.includes(purchaseUnit) && purchaseUnit === useUnit) {
+        return (ingredientLink.quantity || 0) * (ingredientData.purchasePrice || 0);
     }
     
-    // Special handling for non-metric units being converted to weight/volume
-    const nonMetricUnits = ['pièce', 'piece', 'botte'];
     if (nonMetricUnits.includes(purchaseUnit)) {
-        const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-        const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
-        const quantityInGrams = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, 'g');
-        const finalCost = quantityInGrams * netCostPerGram;
-        return isNaN(finalCost) ? 0 : finalCost;
+        if (ingredientData.purchaseWeightGrams > 0) {
+            const costPerGram = (ingredientData.purchasePrice || 0) / ingredientData.purchaseWeightGrams;
+            const netCostPerGram = costPerGram / ((ingredientData.yieldPercentage || 100) / 100);
+            const quantityInGrams = (ingredientLink.quantity || 0) * getConversionFactor(ingredientLink.unit, 'g');
+            const finalCost = quantityInGrams * netCostPerGram;
+            return isNaN(finalCost) ? 0 : finalCost;
+        }
+        return 0; // Cannot determine cost if weight is zero
     }
 
     // Standard metric conversion
-    const costPerBaseUnit = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    const netCostPerBaseUnit = costPerBaseUnit / ((ingredientData.yieldPercentage || 100) / 100);
-    
-    const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, 'g');
-    
-    const finalCost = quantityInBaseUnit * netCostPerBaseUnit;
-    return isNaN(finalCost) ? 0 : finalCost;
+    if (ingredientData.purchaseWeightGrams > 0) {
+        const costPerBaseUnit = (ingredientData.purchasePrice || 0) / ingredientData.purchaseWeightGrams;
+        const netCostPerBaseUnit = costPerBaseUnit / ((ingredientData.yieldPercentage || 100) / 100);
+        const quantityInBaseUnit = (ingredientLink.quantity || 0) * getConversionFactor(ingredientLink.unit, 'g');
+        const finalCost = quantityInBaseUnit * netCostPerBaseUnit;
+        return isNaN(finalCost) ? 0 : finalCost;
+    }
+
+    return 0;
 };
 
 
