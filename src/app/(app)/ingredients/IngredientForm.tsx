@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Ingredient } from "@/lib/types";
@@ -232,45 +232,22 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
           {fields.map((field, index) => (
             <div key={field.id} className="flex items-end gap-2 p-2 border rounded-md">
               <div className="grid grid-cols-3 gap-2 flex-grow">
-                 <FormField
-                  control={form.control}
-                  name={`equivalencesArray.${index}.fromUnit`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">De</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="pièce" />
-                      </FormControl>
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name={`equivalencesArray.${index}.toUnit`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Vers</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="g" />
-                      </FormControl>
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`equivalencesArray.${index}.value`}
-                  render={({ field }) => (
-                     <FormItem>
-                      <FormLabel className="text-xs">Valeur</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} placeholder="50" />
-                      </FormControl>
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
-                />
+                {/* Manual control for fields to avoid FormControl issues */}
+                <div className="space-y-2">
+                  <Label htmlFor={`equivalencesArray.${index}.fromUnit`} className="text-xs">De</Label>
+                  <Input {...form.register(`equivalencesArray.${index}.fromUnit`)} placeholder="pièce" id={`equivalencesArray.${index}.fromUnit`} />
+                  <FormMessage>{form.formState.errors.equivalencesArray?.[index]?.fromUnit?.message}</FormMessage>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`equivalencesArray.${index}.toUnit`} className="text-xs">Vers</Label>
+                  <Input {...form.register(`equivalencesArray.${index}.toUnit`)} placeholder="g" id={`equivalencesArray.${index}.toUnit`} />
+                  <FormMessage>{form.formState.errors.equivalencesArray?.[index]?.toUnit?.message}</FormMessage>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor={`equivalencesArray.${index}.value`} className="text-xs">Valeur</Label>
+                  <Input type="number" {...form.register(`equivalencesArray.${index}.value`)} placeholder="50" id={`equivalencesArray.${index}.value`} />
+                  <FormMessage>{form.formState.errors.equivalencesArray?.[index]?.value?.message}</FormMessage>
+                </div>
               </div>
               <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => remove(index)}>
                 <Trash2 className="h-4 w-4 text-destructive" />
