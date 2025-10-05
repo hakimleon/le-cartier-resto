@@ -1,3 +1,4 @@
+
 // src/lib/unitConverter.ts
 import type { Ingredient } from './types';
 
@@ -39,11 +40,17 @@ export function getConversionFactor(
   // C'est la conversion la plus prioritaire.
   const eq = ingredient?.equivalences || {};
   const key = `${f}->${t}`;
-  if (eq[key]) return eq[key];
+  if (eq[key]) {
+    const factor = parseFloat(eq[key] as any); // Assurer la conversion en nombre
+    if (!isNaN(factor)) return factor;
+  }
 
   // On essaie aussi dans l'autre sens (ex: g -> pièce si pièce -> g est défini)
   const reverseKey = `${t}->${f}`;
-  if (eq[reverseKey] && eq[reverseKey] !== 0) return 1 / eq[reverseKey];
+  if (eq[reverseKey]) {
+    const factor = parseFloat(eq[reverseKey] as any);
+    if (!isNaN(factor) && factor !== 0) return 1 / factor;
+  }
   
   // Cas 3 — Conversion standard (poids/poids, volume/volume)
   if (standardConversions[f] && standardConversions[t]) {
