@@ -49,6 +49,15 @@ export default function TestIngredientsClient() {
         return computeIngredientCost(selectedIngredient, quantity, unit);
     }, [quantity, unit, selectedIngredient]);
 
+    const getWeightLabel = () => {
+        if (!selectedIngredient) return "Poids/Vol Achat";
+        const unit = selectedIngredient.purchaseUnit?.toLowerCase();
+        if (unit === 'pièce' || unit === 'unité') return "Poids moyen par pièce (g)";
+        if (unit === 'botte') return "Poids moyen par botte (g)";
+        if (unit === 'l' || unit === 'litre' || unit === 'litres' || unit === 'cl' || unit === 'ml') return "Volume équivalent (ml)";
+        return "Poids équivalent (g)";
+    };
+
     if (isLoading) {
         return <Skeleton className="h-[400px] w-full" />;
     }
@@ -143,7 +152,7 @@ export default function TestIngredientsClient() {
                                     <TableRow><TableCell className="font-medium">Nom</TableCell><TableCell>{selectedIngredient.name}</TableCell></TableRow>
                                     <TableRow><TableCell className="font-medium text-blue-600">Prix d'Achat</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchasePrice} DZD</TableCell></TableRow>
                                     <TableRow><TableCell className="font-medium text-blue-600">Unité d'Achat</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchaseUnit}</TableCell></TableRow>
-                                    <TableRow><TableCell className="font-medium text-blue-600">Poids/Vol Achat (g/ml)</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchaseWeightGrams}</TableCell></TableRow>
+                                    <TableRow><TableCell className="font-medium text-blue-600">{getWeightLabel()}</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchaseWeightGrams}</TableCell></TableRow>
                                     <TableRow><TableCell className="font-medium">Rendement (%)</TableCell><TableCell>{selectedIngredient.yieldPercentage} %</TableCell></TableRow>
                                     <TableRow><TableCell className="font-medium text-green-600">Unité de Base</TableCell><TableCell className="text-green-600">{selectedIngredient.baseUnit || 'Non défini'}</TableCell></TableRow>
                                     <TableRow><TableCell className="font-medium text-green-600">Table d'Équivalences</TableCell><TableCell className="text-green-600 font-mono text-xs">{selectedIngredient.equivalences ? JSON.stringify(selectedIngredient.equivalences, null, 2) : 'Aucune'}</TableCell></TableRow>

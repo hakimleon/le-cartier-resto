@@ -104,8 +104,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
           form.setValue('purchaseWeightGrams', 1000, { shouldValidate: true });
         } else if (unit === "g" || unit === "ml") {
           form.setValue('purchaseWeightGrams', 1, { shouldValidate: true });
-        } else {
-            form.setValue('purchaseWeightGrams', 0, { shouldValidate: true });
         }
       }
     });
@@ -139,10 +137,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       setIsSubmitting(false);
     }
   }
-  
-  const purchaseWeightValue = form.watch('purchaseWeightGrams');
-  const displayWeightValue = (purchaseUnit === 'pièce' || purchaseUnit === 'botte' || purchaseUnit === 'unité') && purchaseWeightValue === 1000 ? 0 : purchaseWeightValue;
-
 
   return (
     <Form {...form}>
@@ -278,8 +272,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                                         step="1"
                                         placeholder="Ex: 50"
                                         {...field}
-                                        value={displayWeightValue === 0 ? '' : displayWeightValue}
-                                        onChange={e => field.onChange(parseFloat(e.target.value) || 0)}
                                     />
                                 </FormControl>
                                 <FormDescription className="text-xs">
