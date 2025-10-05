@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Ingredient } from "@/lib/types";
@@ -232,42 +232,42 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
           {fields.map((field, index) => (
             <div key={field.id} className="flex items-end gap-2 p-2 border rounded-md">
               <div className="grid grid-cols-3 gap-2 flex-grow">
-                <FormField
+                 <Controller
                   control={form.control}
                   name={`equivalencesArray.${index}.fromUnit`}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel className="text-xs">De</FormLabel>
                       <FormControl>
                         <Input {...field} placeholder="pièce" />
                       </FormControl>
-                      <FormMessage />
+                      {fieldState.error && <FormMessage className="text-xs">{fieldState.error.message}</FormMessage>}
                     </FormItem>
                   )}
                 />
-                <FormField
+                 <Controller
                   control={form.control}
                   name={`equivalencesArray.${index}.toUnit`}
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel className="text-xs">Vers</FormLabel>
                       <FormControl>
                         <Input {...field} placeholder="g" />
                       </FormControl>
-                      <FormMessage />
+                       {fieldState.error && <FormMessage className="text-xs">{fieldState.error.message}</FormMessage>}
                     </FormItem>
                   )}
                 />
-                <FormField
+                <Controller
                   control={form.control}
                   name={`equivalencesArray.${index}.value`}
-                  render={({ field }) => (
-                    <FormItem>
+                  render={({ field, fieldState }) => (
+                     <FormItem>
                       <FormLabel className="text-xs">Valeur</FormLabel>
                       <FormControl>
                         <Input type="number" {...field} placeholder="50" />
                       </FormControl>
-                      <FormMessage />
+                       {fieldState.error && <FormMessage className="text-xs">{fieldState.error.message}</FormMessage>}
                     </FormItem>
                   )}
                 />
@@ -303,3 +303,5 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
+
+    
