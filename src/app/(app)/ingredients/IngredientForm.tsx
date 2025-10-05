@@ -159,9 +159,11 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
             {categoryExamples && ( <TooltipProvider> <Tooltip> <TooltipTrigger asChild> <Info className="h-4 w-4 text-muted-foreground cursor-help" /> </TooltipTrigger> <TooltipContent className="max-w-xs"> <p className="font-semibold mb-1">Exemples:</p> <p>{categoryExamples}</p> </TooltipContent> </Tooltip> </TooltipProvider> )}
         </div>
         <Select onValueChange={field.onChange} defaultValue={field.value}>
-            <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez une catégorie..." />
-            </SelectTrigger>
+            <FormControl>
+                <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez une catégorie..." />
+                </SelectTrigger>
+            </FormControl>
             <SelectContent> 
                 {ingredientCategories.map(cat => ( 
                     <SelectItem key={cat.name} value={cat.name}> 
@@ -187,9 +189,11 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     <FormItem>
         <FormLabel>Unité d'achat</FormLabel>
         <Select onValueChange={field.onChange} defaultValue={field.value}>
-            <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez..." />
-            </SelectTrigger>
+            <FormControl>
+                <SelectTrigger>
+                    <SelectValue placeholder="Sélectionnez..." />
+                </SelectTrigger>
+            </FormControl>
             <SelectContent>
                 <SelectItem value="kg">Kg</SelectItem>
                 <SelectItem value="l">Litres</SelectItem>
@@ -211,12 +215,12 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                   render={({ field }) => (
                     <FormItem>
                         <FormLabel>Rendement (%)</FormLabel>
-                        <FormControl>
-                            <div className="relative">
+                        <div className="relative">
+                            <FormControl>
                                 <Input type="number" step="1" placeholder="Ex: 80" {...field} className="pr-8" />
-                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">%</div>
-                            </div>
-                        </FormControl>
+                            </FormControl>
+                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">%</div>
+                        </div>
                         <FormDescription className="text-xs">% utilisable après parage.</FormDescription>
                         <FormMessage />
                     </FormItem>
