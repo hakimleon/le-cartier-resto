@@ -1,18 +1,18 @@
 
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo, useCallback, useTransition } from "react";
 import { collection, query, orderBy, getDocs } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Ingredient } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, PlusCircle, Search, Pencil, Trash2 } from "lucide-react";
+import { AlertTriangle, PlusCircle, Search, Pencil, Trash2, DatabaseZap, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { deleteIngredient } from "./actions";
+import { deleteIngredient, migrateIngredientsToNewStructure } from "./actions";
 import { cn } from "@/lib/utils";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { IngredientModal } from "./IngredientModal";
@@ -35,6 +35,7 @@ export default function IngredientsClient() {
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const { toast } = useToast();
+  const [isMigrating, startMigration] = useTransition();
 
   const fetchIngredients = useCallback(async () => {
     if (!isFirebaseConfigured) {
@@ -86,6 +87,31 @@ export default function IngredientsClient() {
     };
   };
 
+  const handleMigration = () => {
+    startMigration(async () => {
+      try {
+        const result = await migrateIngredientsToNewStructure();
+        if (result.success) {
+          toast({
+            title: "Migration des Données",
+            description: result.message,
+          });
+          if (result.updatedCount > 0) {
+            fetchIngredients(); // Re-fetch to get fresh data
+          }
+        } else {
+          throw new Error(result.message);
+        }
+      } catch (err: any) {
+        toast({
+          title: "Erreur de Migration",
+          description: err.message || "Une erreur est survenue lors de la migration.",
+          variant: "destructive",
+        });
+      }
+    });
+  };
+
   const filteredIngredients = useMemo(() => {
     return ingredients.filter(ingredient => 
       ingredient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -132,6 +158,25 @@ export default function IngredientsClient() {
 
   return (
     <div className="space-y-4">
+      <Card className="bg-amber-50 border-amber-200">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-amber-900">
+            <DatabaseZap className="h-5 w-5" />
+            Mise à jour de la structure des données
+          </CardTitle>
+          <CardDescription className="text-amber-800">
+            Une nouvelle structure de données est disponible pour une meilleure gestion des coûts. Cliquez sur le bouton pour mettre à jour tous vos ingrédients. Cette action est sécurisée et ne doit être effectuée qu'une seule fois.
+          </CardDescription>
+        </CardHeader>
+        <CardFooter>
+          <Button onClick={handleMigration} disabled={isMigrating} variant="secondary" className="bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 border">
+            {isMigrating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseZap className="mr-2 h-4 w-4" />}
+            {isMigrating ? "Migration en cours..." : "Lancer la migration des données"}
+          </Button>
+        </CardFooter>
+      </Card>
+
+
       <div className="flex items-center justify-between gap-4">
         <div className="relative w-full max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
