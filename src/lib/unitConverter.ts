@@ -83,11 +83,23 @@ export function computeIngredientCost(
   usedUnit: string
 ): { cost: number; error?: string } {
   // Sécurités
-  if (ingredient.purchasePrice == null || ingredient.purchaseWeightGrams == null) {
-    return { cost: 0, error: "Données d'achat (prix ou poids) incomplètes." };
+  if (ingredient.purchasePrice == null) {
+    return { cost: 0, error: "Le prix d'achat est manquant." };
   }
   if (usedQuantity <= 0) return { cost: 0 };
   
+  // Cas prioritaire : l'unité utilisée est la même que l'unité d'achat
+  if (usedUnit.toLowerCase() === ingredient.purchaseUnit.toLowerCase()) {
+    const costPerPurchaseUnit = ingredient.purchasePrice; // Le prix est pour UNE unité d'achat
+    const finalCost = costPerPurchaseUnit * usedQuantity;
+    return { cost: finalCost };
+  }
+
+  // Si les unités sont différentes, on passe par la conversion via l'unité de base
+  if (ingredient.purchaseWeightGrams == null) {
+    return { cost: 0, error: "Le poids de l'unité d'achat est requis pour la conversion." };
+  }
+
   const baseUnit = ingredient.baseUnit || 'g';
 
   // 1. Coût par unité de base (g ou ml), tenant compte du rendement
@@ -97,7 +109,6 @@ export function computeIngredientCost(
   // 2. Convertir la quantité utilisée vers l'unité de base
   const conversionFactor = getConversionFactor(usedUnit, baseUnit, ingredient);
   
-  // Vérification de la validité de la conversion
   if (conversionFactor === 1 && usedUnit.toLowerCase() !== baseUnit.toLowerCase()) {
      const hasDirectEquivalence = ingredient.equivalences && Object.keys(ingredient.equivalences).some(k => k.startsWith(usedUnit.toLowerCase()));
      if(!hasDirectEquivalence && !standardConversions[usedUnit.toLowerCase()]) {
