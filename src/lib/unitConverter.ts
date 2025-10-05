@@ -68,7 +68,7 @@ export function getConversionFactor(
  * @param ingredient La fiche complète de l'ingrédient.
  * @param usedQuantity La quantité utilisée dans la recette.
  * @param usedUnit L'unité de cette quantité (ex: "pièce", "g", "ml").
- * @returns Le coût calculé.
+ * @returns Le coût calculé et une erreur potentielle.
  */
 export function computeIngredientCost(
   ingredient: Ingredient,
@@ -76,8 +76,8 @@ export function computeIngredientCost(
   usedUnit: string
 ): { cost: number; error?: string } {
   // Sécurités
-  if (!ingredient.purchasePrice || !ingredient.purchaseWeightGrams) {
-    return { cost: 0, error: "Données d'achat incomplètes." };
+  if (ingredient.purchasePrice == null || ingredient.purchaseWeightGrams == null) {
+    return { cost: 0, error: "Données d'achat (prix ou poids) incomplètes." };
   }
   if (usedQuantity <= 0) return { cost: 0 };
   
@@ -89,10 +89,12 @@ export function computeIngredientCost(
 
   // 2. Convertir la quantité utilisée vers l'unité de base
   const conversionFactor = getConversionFactor(usedUnit, baseUnit, ingredient);
+  
+  // Vérification de la validité de la conversion
   if (conversionFactor === 1 && usedUnit.toLowerCase() !== baseUnit.toLowerCase()) {
      const hasDirectEquivalence = ingredient.equivalences && Object.keys(ingredient.equivalences).some(k => k.startsWith(usedUnit.toLowerCase()));
      if(!hasDirectEquivalence && !standardConversions[usedUnit.toLowerCase()]) {
-        return { cost: 0, error: `Conversion impossible de '${usedUnit}' à '${baseUnit}'. Veuillez définir une équivalence.` };
+        return { cost: 0, error: `Conversion impossible de '${usedUnit}' à '${baseUnit}'. Veuillez définir une équivalence dans la fiche ingrédient.` };
      }
   }
 
@@ -100,6 +102,10 @@ export function computeIngredientCost(
   
   // 3. Calcul final
   const finalCost = quantityInBaseUnit * costPerBaseUnitNet;
+
+  if (isNaN(finalCost)) {
+    return { cost: 0, error: "Le résultat du calcul est invalide (NaN)." };
+  }
 
   return { cost: finalCost };
 }
