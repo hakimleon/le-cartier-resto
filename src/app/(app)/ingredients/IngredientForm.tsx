@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -95,20 +95,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     if (unit === 'pièce' || unit === 'unité' || unit === 'botte') return `Pour 1 ${unit}.`;
     return `Pour 1 ${unit} acheté.`;
   }
-
-  useEffect(() => {
-    const subscription = form.watch((value, { name, type }) => {
-      if (name === "purchaseUnit" && type === 'change') {
-        const unit = value.purchaseUnit?.toLowerCase();
-        if (unit === "kg" || unit === "l" || unit === "litre" || unit === "litres") {
-          form.setValue('purchaseWeightGrams', 1000, { shouldValidate: true });
-        } else if (unit === "g" || unit === "ml") {
-          form.setValue('purchaseWeightGrams', 1, { shouldValidate: true });
-        }
-      }
-    });
-    return () => subscription.unsubscribe();
-  }, [form]);
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -245,3 +231,5 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
+
+    
