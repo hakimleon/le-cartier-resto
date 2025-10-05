@@ -16,86 +16,77 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 // --- LOGIQUE DE CALCUL ISOLÉE ---
 
-const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (!fromUnit || !toUnit || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) {
-        return 1;
-    }
-    const u = (unit: string) => unit.toLowerCase().trim();
-    const factors: Record<string, number> = {
-        'kg': 1000, 'g': 1, 'mg': 0.001,
-        'l': 1000, 'ml': 1,
-        'pièce': 1, 'piece': 1,
-    };
-    const fromFactor = factors[u(fromUnit)];
-    const toFactor = factors[u(toUnit)];
-
-    if (fromFactor !== undefined && toFactor !== undefined) {
-        return fromFactor / toFactor;
-    }
-    return 1; // Facteur par défaut si conversion inconnue
-};
-
 const recomputeIngredientCost = (
     quantity: number,
-    unit: string,
+    useUnit: string,
     ingredient: Ingredient | null
 ): { cost: number; error?: string } => {
     
     // --- Sécurités fondamentales ---
-    if (!ingredient) {
-        return { cost: 0, error: "Aucun ingrédient sélectionné." };
-    }
-    if (!ingredient.purchasePrice || !ingredient.purchaseUnit || !ingredient.purchaseWeightGrams) {
-        return { cost: 0, error: "Données d'achat de l'ingrédient incomplètes." };
-    }
-    if (quantity <= 0) {
-        return { cost: 0 };
-    }
+    if (!ingredient) return { cost: 0, error: "Aucun ingrédient sélectionné." };
+    if (!ingredient.purchasePrice || !ingredient.purchaseUnit || !ingredient.purchaseWeightGrams) return { cost: 0, error: "Données d'achat de l'ingrédient incomplètes." };
+    if (quantity <= 0) return { cost: 0 };
 
     const u = (str: string) => str.toLowerCase().trim();
     const purchaseUnit = u(ingredient.purchaseUnit);
-    const useUnit = u(unit);
+    const baseUnit = u(ingredient.baseUnit || 'g'); // 'g' par défaut si non défini
+    const currentUseUnit = u(useUnit);
 
-    // --- Logique de calcul avec SWITCH ---
-
-    switch (purchaseUnit) {
-        case 'pièce':
-        case 'piece':
-            // CAS 1: Acheté à la pièce
-            const costPerPiece = ingredient.purchasePrice;
-            const weightPerPiece = ingredient.purchaseWeightGrams;
-
-            if (useUnit === 'pièce' || useUnit === 'piece') {
-                // Utilisation à la pièce : calcul simple
-                return { cost: quantity * costPerPiece };
-            } else {
-                // Utilisation au poids : on se base sur le poids moyen de la pièce
-                if (weightPerPiece <= 0) {
-                    return { cost: 0, error: "Le poids par pièce doit être > 0 pour convertir." };
-                }
-                const costPerGram = costPerPiece / weightPerPiece;
-                const quantityInGrams = quantity * getConversionFactor(useUnit, 'g');
-                return { cost: quantityInGrams * costPerGram };
-            }
-
-        case 'kg':
-        case 'g':
-        case 'l':
-        case 'ml':
-            // CAS 2: Acheté au poids ou au volume
-            const costPerGramOrMl = ingredient.purchasePrice / ingredient.purchaseWeightGrams;
-            const netCost = costPerGramOrMl / ((ingredient.yieldPercentage || 100) / 100);
-            
-            const baseUnit = (purchaseUnit === 'l' || purchaseUnit === 'ml') ? 'ml' : 'g';
-            const quantityInBaseUnit = quantity * getConversionFactor(useUnit, baseUnit);
-            
-            return { cost: quantityInBaseUnit * netCost };
-
-        default:
-            // CAS PAR DÉFAUT: Unité d'achat non gérée
-            return { cost: 0, error: `L'unité d'achat '${ingredient.purchaseUnit}' n'est pas gérée.` };
+    // --- Étape 1 : Calculer le Coût par Unité de Base (Coût/g, Coût/ml...) ---
+    let costPerBaseUnit: number;
+    
+    // On calcule le coût de revient pour l'ensemble de l'unité d'achat
+    const totalPurchaseCost = ingredient.purchasePrice;
+    
+    // On calcule la quantité totale en unité de base pour cette unité d'achat
+    let totalBaseUnitQuantityInPurchaseUnit: number;
+    
+    if (purchaseUnit === 'kg' && baseUnit === 'g') {
+        totalBaseUnitQuantityInPurchaseUnit = 1000;
+    } else if ((purchaseUnit === 'l' || purchaseUnit === 'litre') && baseUnit === 'ml') {
+        totalBaseUnitQuantityInPurchaseUnit = 1000;
+    } else if (purchaseUnit === baseUnit) {
+        totalBaseUnitQuantityInPurchaseUnit = ingredient.purchaseWeightGrams; // Pour g -> g ou ml -> ml
+    } else {
+        // Cas complexe (pièce -> g, etc.)
+        const equivalenceKey = `${purchaseUnit}->${baseUnit}`;
+        const equivalenceValue = ingredient.equivalences?.[equivalenceKey];
+        if (equivalenceValue) {
+            totalBaseUnitQuantityInPurchaseUnit = equivalenceValue;
+        } else {
+            // Fallback si pas d'équivalence : on utilise le poids de l'unité d'achat
+            totalBaseUnitQuantityInPurchaseUnit = ingredient.purchaseWeightGrams;
+        }
     }
+    
+    if (totalBaseUnitQuantityInPurchaseUnit === 0) return { cost: 0, error: "La quantité de base dans l'unité d'achat est zéro." };
+
+    const costPerPurchaseUnitQuantity = totalPurchaseCost / totalBaseUnitQuantityInPurchaseUnit;
+    
+    // Appliquer le rendement
+    costPerBaseUnit = costPerPurchaseUnitQuantity / ((ingredient.yieldPercentage || 100) / 100);
+
+    // --- Étape 2: Convertir la quantité utilisée en Unité de Base ---
+    let quantityInBaseUnit: number;
+    
+    if (currentUseUnit === baseUnit) {
+        quantityInBaseUnit = quantity;
+    } else {
+        const equivalenceKey = `${currentUseUnit}->${baseUnit}`;
+        const equivalenceValue = ingredient.equivalences?.[equivalenceKey];
+        if (equivalenceValue) {
+            quantityInBaseUnit = quantity * equivalenceValue;
+        } else {
+             return { cost: 0, error: `Aucune équivalence trouvée pour convertir '${currentUseUnit}' en '${baseUnit}'.` };
+        }
+    }
+    
+    // --- Étape 3: Calcul Final ---
+    const finalCost = quantityInBaseUnit * costPerBaseUnit;
+
+    return { cost: finalCost };
 };
+
 
 // --- COMPOSANT CLIENT ---
 
@@ -216,9 +207,11 @@ export default function TestIngredientsClient() {
                             <Table>
                                 <TableBody>
                                     <TableRow><TableCell className="font-medium">Nom</TableCell><TableCell>{selectedIngredient.name}</TableCell></TableRow>
-                                    <TableRow><TableCell className="font-medium">Prix d'Achat</TableCell><TableCell>{selectedIngredient.purchasePrice} DZD</TableCell></TableRow>
-                                    <TableRow><TableCell className="font-medium">Unité d'Achat</TableCell><TableCell>{selectedIngredient.purchaseUnit}</TableCell></TableRow>
+                                    <TableRow><TableCell className="font-medium text-blue-600">Prix d'Achat</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchasePrice} DZD</TableCell></TableRow>
+                                    <TableRow><TableCell className="font-medium text-blue-600">Unité d'Achat</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchaseUnit}</TableCell></TableRow>
                                     <TableRow><TableCell className="font-medium">Poids Unité (g)</TableCell><TableCell>{selectedIngredient.purchaseWeightGrams} g</TableCell></TableRow>
+                                    <TableRow><TableCell className="font-medium text-green-600">Unité de Base</TableCell><TableCell className="text-green-600">{selectedIngredient.baseUnit || 'Non défini'}</TableCell></TableRow>
+                                    <TableRow><TableCell className="font-medium text-green-600">Équivalences</TableCell><TableCell className="text-green-600 font-mono text-xs">{selectedIngredient.equivalences ? JSON.stringify(selectedIngredient.equivalences) : 'Aucune'}</TableCell></TableRow>
                                     <TableRow><TableCell className="font-medium">Rendement</TableCell><TableCell>{selectedIngredient.yieldPercentage} %</TableCell></TableRow>
                                 </TableBody>
                             </Table>
