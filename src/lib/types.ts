@@ -17,7 +17,7 @@ export type Ingredient = {
 
     // Nouveaux champs pour la conversion intelligente
     baseUnit?: 'g' | 'ml' | 'pièce'; // L'unité de référence interne pour le calcul de coût.
-    equivalences?: Record<string, number>; // Table de conversion (ex: { "pièce->g": 120, "pièce->ml": 60 })
+    equivalences: Record<string, number>; // Table de conversion (ex: { "pièce->g": 120 })
 };
 
 // Types pour la génération de recette par l'IA

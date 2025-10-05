@@ -39,8 +39,9 @@ export default function TestIngredientsClient() {
             const ingredientsData = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
             setIngredients(ingredientsData);
             if (ingredientsData.length > 0) {
-                setSelectedIngredientId(ingredientsData[0].id!);
-                setEditableEquivalences(ingredientsData[0].equivalences || {});
+                const firstIngredient = ingredientsData[0];
+                setSelectedIngredientId(firstIngredient.id!);
+                setEditableEquivalences(firstIngredient.equivalences || {});
             }
             setIsLoading(false);
         };
@@ -200,7 +201,7 @@ export default function TestIngredientsClient() {
                             <Separator className="my-4"/>
                             
                             <div>
-                                <h4 className="font-medium text-green-600 mb-2">Table d'Équivalences (modifiable)</h4>
+                                <h4 className="font-medium text-green-600 mb-2">Table d'Équivalences</h4>
                                 {Object.keys(editableEquivalences).length > 0 ? (
                                     <div className="space-y-2">
                                         {Object.entries(editableEquivalences).map(([key, value]) => (
