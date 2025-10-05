@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -22,6 +23,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
 
 const ingredientCategories = [
     { name: "Viandes & Gibiers", examples: "Bœuf (entrecôte, steak haché, joue), Agneau (carré, gigot), Porc (filet, échine, côte), Produits transformés : bacon, chorizo, jambon, saucisse" },
@@ -201,7 +203,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                     <FormItem>
                       <FormLabel>Rendement (%)</FormLabel>
                       <FormControl>
-                          <Input type="number" step="1" placeholder="Ex: 80" {...field} />
+                        <Input type="number" step="1" placeholder="Ex: 80" {...field} />
                       </FormControl>
                       <FormDescription className="text-xs">% utilisable après parage.</FormDescription>
                       <FormMessage />
