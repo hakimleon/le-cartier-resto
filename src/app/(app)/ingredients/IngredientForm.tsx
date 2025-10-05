@@ -49,7 +49,7 @@ const formSchema = z.object({
   supplier: z.string().optional(),
   purchasePrice: z.coerce.number().positive("Le prix d'achat doit être un nombre positif."),
   purchaseUnit: z.string().min(1, "L'unité d'achat est requise."),
-  purchaseWeightGrams: z.coerce.number().positive("Le poids de l'unité d'achat doit être positif."),
+  purchaseWeightGrams: z.coerce.number().positive("Le poids ou volume de l'unité d'achat doit être positif."),
   yieldPercentage: z.coerce.number().min(0, "Le rendement doit être entre 0 et 100.").max(100, "Le rendement doit être entre 0 et 100."),
 });
 
@@ -83,15 +83,18 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   const purchaseUnit = form.watch("purchaseUnit");
 
   const getWeightLabel = () => {
-    switch (purchaseUnit?.toLowerCase()) {
-      case 'pièce':
-        return "Poids moyen d'une pièce (g)";
-      case 'botte':
-        return "Poids moyen d'une botte (g)";
-      default:
-        return "Poids de l'unité d'achat (g)";
-    }
+    const unit = purchaseUnit?.toLowerCase();
+    if (unit === 'pièce' || unit === 'unité') return "Poids moyen par pièce (g)";
+    if (unit === 'botte') return "Poids moyen par botte (g)";
+    if (unit === 'l' || unit === 'litre' || unit === 'litres' || unit === 'cl' || unit === 'ml') return "Volume équivalent (ml)";
+    return "Poids équivalent (g)";
   };
+  
+  const getWeightDescription = () => {
+    const unit = purchaseUnit?.toLowerCase();
+    if (unit === 'pièce' || unit === 'unité' || unit === 'botte') return `Pour 1 ${unit}.`;
+    return `Pour 1 ${unit} acheté.`;
+  }
 
   useEffect(() => {
     const subscription = form.watch((value, { name, type }) => {
@@ -102,7 +105,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
         } else if (unit === "g" || unit === "ml") {
           form.setValue('purchaseWeightGrams', 1, { shouldValidate: true });
         } else {
-            // For 'pièce', 'botte', or other units, clear the value to force user input
             form.setValue('purchaseWeightGrams', 0, { shouldValidate: true });
         }
       }
@@ -139,7 +141,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   }
   
   const purchaseWeightValue = form.watch('purchaseWeightGrams');
-  const displayWeightValue = (purchaseUnit === 'pièce' || purchaseUnit === 'botte') && purchaseWeightValue === 1000 ? 0 : purchaseWeightValue;
+  const displayWeightValue = (purchaseUnit === 'pièce' || purchaseUnit === 'botte' || purchaseUnit === 'unité') && purchaseWeightValue === 1000 ? 0 : purchaseWeightValue;
 
 
   return (
@@ -262,7 +264,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                 </div>
 
                 <div>
-                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Poids & Rendement</h4>
+                    <h4 className="font-medium text-sm text-muted-foreground mb-2">Conversion & Rendement</h4>
                     <div className="grid grid-cols-2 gap-4">
                          <FormField
                             control={form.control}
@@ -281,7 +283,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                                     />
                                 </FormControl>
                                 <FormDescription className="text-xs">
-                                    Pour 1 unité d'achat.
+                                    {getWeightDescription()}
                                 </FormDescription>
                                 <FormMessage />
                                 </FormItem>
