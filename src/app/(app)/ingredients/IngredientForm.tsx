@@ -231,17 +231,27 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
           </p>
           {fields.map((field, index) => (
             <div key={field.id} className="flex items-end gap-2 p-2 border rounded-md">
-                <div className="flex-grow grid grid-cols-3 gap-2">
-                    <FormField control={form.control} name={`equivalencesArray.${index}.fromUnit`} render={({ field }) => (<FormItem> <FormLabel className="text-xs">De</FormLabel> <FormControl><Input {...field} placeholder="pièce" /></FormControl> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name={`equivalencesArray.${index}.toUnit`} render={({ field }) => (<FormItem> <FormLabel className="text-xs">Vers</FormLabel> <FormControl><Input {...field} placeholder="g" /></FormControl> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name={`equivalencesArray.${index}.value`} render={({ field }) => (<FormItem> <FormLabel className="text-xs">Valeur</FormLabel> <FormControl><Input type="number" {...field} placeholder="50" /></FormControl> <FormMessage /> </FormItem> )}/>
-                </div>
+                <FormField
+                    control={form.control}
+                    name={`equivalencesArray.${index}`}
+                    render={() => (
+                        <FormItem className="flex-grow">
+                            <FormControl>
+                                <div className="grid grid-cols-3 gap-2">
+                                    <FormField control={form.control} name={`equivalencesArray.${index}.fromUnit`} render={({ field }) => (<FormItem> <FormLabel className="text-xs">De</FormLabel> <FormControl><Input {...field} placeholder="pièce" /></FormControl> <FormMessage /> </FormItem> )}/>
+                                    <FormField control={form.control} name={`equivalencesArray.${index}.toUnit`} render={({ field }) => (<FormItem> <FormLabel className="text-xs">Vers</FormLabel> <FormControl><Input {...field} placeholder="g" /></FormControl> <FormMessage /> </FormItem> )}/>
+                                    <FormField control={form.control} name={`equivalencesArray.${index}.value`} render={({ field }) => (<FormItem> <FormLabel className="text-xs">Valeur</FormLabel> <FormControl><Input type="number" {...field} placeholder="50" /></FormControl> <FormMessage /> </FormItem> )}/>
+                                </div>
+                            </FormControl>
+                        </FormItem>
+                    )}
+                />
                 <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => remove(index)}>
                     <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
             </div>
           ))}
-          <Button type="button" variant="outline" size="sm" onClick={() => append({ fromUnit: '', toUnit: '', value: 0 })}>
+          <Button type="button" variant="outline" size="sm" onClick={() => append({ fromUnit: 'pièce', toUnit: 'g', value: 0 })}>
             <PlusCircle className="mr-2 h-4 w-4" />
             Ajouter une équivalence
           </Button>
@@ -267,3 +277,5 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
+
+  
