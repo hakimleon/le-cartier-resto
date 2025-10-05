@@ -215,12 +215,9 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                   render={({ field }) => (
                     <FormItem>
                         <FormLabel>Rendement (%)</FormLabel>
-                        <div className="relative">
-                           <FormControl>
-                                <Input type="number" step="1" placeholder="Ex: 80" {...field} className="pr-8" />
-                            </FormControl>
-                           <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">%</div>
-                        </div>
+                        <FormControl>
+                          <Input type="number" step="1" placeholder="Ex: 80" {...field} />
+                        </FormControl>
                         <FormDescription className="text-xs">% utilisable après parage.</FormDescription>
                         <FormMessage />
                     </FormItem>
