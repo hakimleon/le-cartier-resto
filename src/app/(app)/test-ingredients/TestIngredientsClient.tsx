@@ -87,7 +87,7 @@ export default function TestIngredientsClient() {
     };
 
     const getWeightLabel = (ingredient: Ingredient | null) => {
-        if (!ingredient) return "Poids/Vol Achat";
+        if (!ingredient) return "Poids/Vol Unité (g/ml)";
         const unit = ingredient.purchaseUnit?.toLowerCase();
         if (unit === 'pièce' || unit === 'unité') return "Poids moyen par pièce (g)";
         if (unit === 'botte') return "Poids moyen par botte (g)";

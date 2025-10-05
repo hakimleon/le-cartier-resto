@@ -30,8 +30,8 @@ export function getConversionFactor(
 ): number {
   if (!fromUnit || !toUnit) return 1;
 
-  const f = fromUnit.toLowerCase();
-  const t = toUnit.toLowerCase();
+  const f = fromUnit.toLowerCase().trim();
+  const t = toUnit.toLowerCase().trim();
 
   // Cas 1 — Même unité, le facteur est 1.
   if (f === t) return 1;
@@ -89,18 +89,18 @@ export function computeIngredientCost(
   if (usedQuantity <= 0) return { cost: 0 };
   
   // Cas prioritaire : l'unité utilisée est la même que l'unité d'achat
-  if (usedUnit.toLowerCase() === ingredient.purchaseUnit.toLowerCase()) {
+  if (usedUnit.toLowerCase().trim() === ingredient.purchaseUnit.toLowerCase().trim()) {
     const costPerPurchaseUnit = ingredient.purchasePrice; // Le prix est pour UNE unité d'achat
     const finalCost = costPerPurchaseUnit * usedQuantity;
     return { cost: finalCost };
   }
 
   // Si les unités sont différentes, on passe par la conversion via l'unité de base
-  if (ingredient.purchaseWeightGrams == null) {
-    return { cost: 0, error: "Le poids de l'unité d'achat est requis pour la conversion." };
+  if (ingredient.purchaseWeightGrams == null || ingredient.purchaseWeightGrams === 0) {
+    return { cost: 0, error: "Le poids/volume de l'unité d'achat est manquant ou nul, conversion impossible." };
   }
 
-  // *** LOGIQUE DE CALCUL CORRIGÉE ***
+  // *** LOGIQUE DE CALCUL CENTRALE ***
 
   // 1. Calculer le coût PAR GRAMME (ou ml) NET.
   // On divise le prix de l'unité d'achat par le nombre de grammes qu'elle contient.
