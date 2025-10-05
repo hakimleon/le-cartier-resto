@@ -100,26 +100,29 @@ export function computeIngredientCost(
     return { cost: 0, error: "Le poids de l'unité d'achat est requis pour la conversion." };
   }
 
-  const baseUnit = ingredient.baseUnit || 'g';
+  // *** LOGIQUE DE CALCUL CORRIGÉE ***
 
-  // 1. Coût par unité de base (g ou ml), tenant compte du rendement
-  const costPerBaseUnitRaw = ingredient.purchasePrice / ingredient.purchaseWeightGrams;
-  const costPerBaseUnitNet = costPerBaseUnitRaw / ((ingredient.yieldPercentage || 100) / 100);
+  // 1. Calculer le coût PAR GRAMME (ou ml) NET.
+  // On divise le prix de l'unité d'achat par le nombre de grammes qu'elle contient.
+  const costPerGramRaw = ingredient.purchasePrice / ingredient.purchaseWeightGrams;
+  const costPerGramNet = costPerGramRaw / ((ingredient.yieldPercentage || 100) / 100);
 
-  // 2. Convertir la quantité utilisée vers l'unité de base
-  const conversionFactor = getConversionFactor(usedUnit, baseUnit, ingredient);
+  // 2. Convertir la quantité demandée en unité de base (grammes).
+  // La logique assume ici que l'unité de base pour le calcul de coût est le gramme.
+  const baseUnitForCost = 'g';
+  const conversionFactor = getConversionFactor(usedUnit, baseUnitForCost, ingredient);
   
-  if (conversionFactor === 1 && usedUnit.toLowerCase() !== baseUnit.toLowerCase()) {
+  if (conversionFactor === 1 && usedUnit.toLowerCase() !== baseUnitForCost.toLowerCase()) {
      const hasDirectEquivalence = ingredient.equivalences && Object.keys(ingredient.equivalences).some(k => k.startsWith(usedUnit.toLowerCase()));
      if(!hasDirectEquivalence && !standardConversions[usedUnit.toLowerCase()]) {
-        return { cost: 0, error: `Conversion impossible de '${usedUnit}' à '${baseUnit}'. Veuillez définir une équivalence dans la fiche ingrédient.` };
+        return { cost: 0, error: `Conversion impossible de '${usedUnit}' à '${baseUnitForCost}'. Veuillez définir une équivalence dans la fiche ingrédient.` };
      }
   }
 
-  const quantityInBaseUnit = usedQuantity * conversionFactor;
+  const quantityInGrams = usedQuantity * conversionFactor;
   
   // 3. Calcul final
-  const finalCost = quantityInBaseUnit * costPerBaseUnitNet;
+  const finalCost = quantityInGrams * costPerGramNet;
 
   if (isNaN(finalCost)) {
     return { cost: 0, error: "Le résultat du calcul est invalide (NaN)." };
