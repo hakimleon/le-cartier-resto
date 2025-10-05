@@ -5,7 +5,6 @@ import { useEffect, useState, useMemo } from "react";
 import { collection, getDocs, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Ingredient } from "@/lib/types";
-import { computeIngredientCost } from "@/lib/unitConverter";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -14,9 +13,73 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle, PlusCircle, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { AlertTriangle } from "lucide-react";
+
+// Simplified conversion for demonstration
+const getConversionFactor = (fromUnit: string, toUnit: string): number => {
+    if (!fromUnit || !toUnit || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
+
+    const u = (unit: string) => unit.toLowerCase().trim();
+    const factors: Record<string, number> = {
+        'kg': 1000, 'g': 1, 'mg': 0.001,
+        'l': 1000, 'ml': 1, 'cl': 10,
+        'litre': 1000, 'litres': 1000,
+        'pièce': 1, 'unité': 1, 'botte': 1,
+    };
+    
+    const fromFactor = factors[u(fromUnit)];
+    const toFactor = factors[u(toUnit)];
+
+    if (fromFactor !== undefined && toFactor !== undefined) {
+        const weightUnits = ["g", "kg", "mg"];
+        const volumeUnits = ["ml", "l", "cl"];
+
+        const bothWeight = weightUnits.includes(u(fromUnit)) && weightUnits.includes(u(toUnit));
+        const bothVolume = volumeUnits.includes(u(fromUnit)) && volumeUnits.includes(u(toUnit));
+
+        if (bothWeight || bothVolume) {
+          return fromFactor / toFactor;
+        }
+    }
+    
+    // Fallback for piece -> g or similar requires specific data not available in this simplified version
+    if (u(toUnit) === 'g' && (u(fromUnit) === 'pièce' || u(fromUnit) === 'unité')) {
+        console.warn(`[CONVERSION] No specific weight for 'pièce' of this ingredient. Assuming 1 pièce = 1g which is likely incorrect.`);
+        return 1;
+    }
+
+
+    console.warn(`[CONVERSION] Conversion impossible entre '${fromUnit}' et '${toUnit}'. Facteur par défaut : 1.`);
+    return 1;
+};
+
+
+const computeIngredientCost = (
+  ingredient: Ingredient,
+  usedQuantity: number,
+  usedUnit: string
+): { cost: number; error?: string } => {
+  if (ingredient.purchasePrice == null || ingredient.purchaseWeightGrams == null || ingredient.purchaseWeightGrams === 0) {
+    return { cost: 0, error: "Données d'achat (prix, poids) manquantes ou invalides." };
+  }
+
+  const costPerGramRaw = ingredient.purchasePrice / ingredient.purchaseWeightGrams;
+  const costPerGramNet = costPerGramRaw / ((ingredient.yieldPercentage || 100) / 100);
+
+  const conversionFactorToGrams = getConversionFactor(usedUnit, 'g');
+  if (conversionFactorToGrams === 1 && usedUnit.toLowerCase() !== 'g') {
+       return { cost: 0, error: `Conversion de '${usedUnit}' vers 'g' non standard. Nécessite une table d'équivalence (fonctionnalité retirée).` };
+  }
+
+  const quantityInGrams = usedQuantity * conversionFactorToGrams;
+  const finalCost = quantityInGrams * costPerGramNet;
+  
+  if (isNaN(finalCost)) {
+    return { cost: 0, error: "Le résultat du calcul est invalide (NaN)." };
+  }
+
+  return { cost: finalCost };
+};
 
 
 export default function TestIngredientsClient() {
@@ -25,11 +88,8 @@ export default function TestIngredientsClient() {
     
     const [selectedIngredientId, setSelectedIngredientId] = useState<string | null>(null);
     const [quantity, setQuantity] = useState<number>(1);
-    const [unit, setUnit] = useState<string>('pièce');
+    const [unit, setUnit] = useState<string>('g');
 
-    // State pour les équivalences éditables localement
-    const [editableEquivalences, setEditableEquivalences] = useState<Record<string, number>>({});
-    const [newEq, setNewEq] = useState({ from: 'pièce', to: 'g', value: '' });
 
     useEffect(() => {
         const fetchIngredients = async () => {
@@ -39,9 +99,7 @@ export default function TestIngredientsClient() {
             const ingredientsData = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
             setIngredients(ingredientsData);
             if (ingredientsData.length > 0) {
-                const firstIngredient = ingredientsData[0];
-                setSelectedIngredientId(firstIngredient.id!);
-                setEditableEquivalences(firstIngredient.equivalences || {});
+                setSelectedIngredientId(ingredientsData[0].id!);
             }
             setIsLoading(false);
         };
@@ -49,52 +107,13 @@ export default function TestIngredientsClient() {
     }, []);
 
     const selectedIngredient = useMemo(() => {
-        const ing = ingredients.find(ing => ing.id === selectedIngredientId) || null;
-        if (ing) {
-             setEditableEquivalences(ing.equivalences || {});
-        }
-        return ing;
+        return ingredients.find(ing => ing.id === selectedIngredientId) || null;
     }, [selectedIngredientId, ingredients]);
 
-    const simulatedIngredient = useMemo(() => {
-        if (!selectedIngredient) return null;
-        return {
-            ...selectedIngredient,
-            equivalences: editableEquivalences,
-        };
-    }, [selectedIngredient, editableEquivalences]);
-
     const { cost, error: costError } = useMemo(() => {
-        if (!simulatedIngredient) return { cost: 0, error: "Aucun ingrédient sélectionné." };
-        return computeIngredientCost(simulatedIngredient, quantity, unit);
-    }, [quantity, unit, simulatedIngredient]);
-
-
-    const handleAddEquivalence = () => {
-        const value = parseFloat(newEq.value);
-        if (newEq.from && newEq.to && !isNaN(value) && value > 0) {
-            const key = `${newEq.from}->${newEq.to}`;
-            setEditableEquivalences(prev => ({ ...prev, [key]: value }));
-            setNewEq({ from: 'pièce', to: 'g', value: '' }); // Reset
-        }
-    };
-
-    const handleRemoveEquivalence = (key: string) => {
-        setEditableEquivalences(prev => {
-            const newEquivalences = { ...prev };
-            delete newEquivalences[key];
-            return newEquivalences;
-        });
-    };
-
-    const getWeightLabel = (ingredient: Ingredient | null) => {
-        if (!ingredient) return "Poids/Vol Unité (g/ml)";
-        const unit = ingredient.purchaseUnit?.toLowerCase();
-        if (unit === 'pièce' || unit === 'unité') return "Poids moyen par pièce (g)";
-        if (unit === 'botte') return "Poids moyen par botte (g)";
-        if (unit === 'l' || unit === 'litre' || unit === 'litres' || unit === 'cl' || unit === 'ml') return "Volume équivalent (ml)";
-        return "Poids équivalent (g)";
-    };
+        if (!selectedIngredient) return { cost: 0, error: "Aucun ingrédient sélectionné." };
+        return computeIngredientCost(selectedIngredient, quantity, unit);
+    }, [quantity, unit, selectedIngredient]);
 
     if (isLoading) {
         return <Skeleton className="h-[400px] w-full" />;
@@ -181,50 +200,20 @@ export default function TestIngredientsClient() {
                 {/* --- FICHE TECHNIQUE INGRÉDIENT --- */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Données de l'Ingrédient Simulé</CardTitle>
-                        <CardDescription>Vérifiez les valeurs utilisées pour le calcul. Les équivalences sont modifiables localement.</CardDescription>
+                        <CardTitle>Données de l'Ingrédient</CardTitle>
+                        <CardDescription>Vérifiez les valeurs de base utilisées pour le calcul.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         {selectedIngredient ? (
-                            <>
                             <Table>
                                 <TableBody>
                                     <TableRow><TableCell className="font-medium">Nom</TableCell><TableCell>{selectedIngredient.name}</TableCell></TableRow>
                                     <TableRow><TableCell className="font-medium text-blue-600">Prix d'Achat</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchasePrice} DZD</TableCell></TableRow>
                                     <TableRow><TableCell className="font-medium text-blue-600">Unité d'Achat</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchaseUnit}</TableCell></TableRow>
-                                    <TableRow><TableCell className="font-medium text-blue-600">{getWeightLabel(selectedIngredient)}</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchaseWeightGrams}</TableCell></TableRow>
+                                    <TableRow><TableCell className="font-medium text-blue-600">Poids/Vol de l'Unité Achat (g/ml)</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchaseWeightGrams}</TableCell></TableRow>
                                     <TableRow><TableCell className="font-medium">Rendement (%)</TableCell><TableCell>{selectedIngredient.yieldPercentage} %</TableCell></TableRow>
-                                    <TableRow><TableCell className="font-medium text-green-600">Unité de Base</TableCell><TableCell className="text-green-600">{selectedIngredient.baseUnit || 'Non défini'}</TableCell></TableRow>
                                 </TableBody>
                             </Table>
-
-                            <Separator className="my-4"/>
-                            
-                            <div>
-                                <h4 className="font-medium text-green-600 mb-2">Table d'Équivalences</h4>
-                                {Object.keys(editableEquivalences).length > 0 ? (
-                                    <div className="space-y-2">
-                                        {Object.entries(editableEquivalences).map(([key, value]) => (
-                                            <div key={key} className="flex items-center justify-between text-sm p-2 bg-muted/50 rounded-md">
-                                                <span className="font-mono">{`1 ${key.split('->')[0]} = ${value} ${key.split('->')[1]}`}</span>
-                                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleRemoveEquivalence(key)}>
-                                                    <Trash2 className="h-4 w-4 text-destructive"/>
-                                                </Button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : <p className="text-xs text-muted-foreground">Aucune équivalence définie.</p>}
-
-                                <div className="flex items-end gap-2 mt-4">
-                                     <div className="grid w-full grid-cols-3 gap-2">
-                                        <Input value={newEq.from} onChange={e => setNewEq({...newEq, from: e.target.value})} placeholder="De (ex: pièce)" />
-                                        <Input value={newEq.to} onChange={e => setNewEq({...newEq, to: e.target.value})} placeholder="Vers (ex: g)" />
-                                        <Input type="number" value={newEq.value} onChange={e => setNewEq({...newEq, value: e.target.value})} placeholder="Valeur (ex: 50)"/>
-                                    </div>
-                                    <Button size="icon" onClick={handleAddEquivalence} className="shrink-0"><PlusCircle className="h-4 w-4"/></Button>
-                                </div>
-                            </div>
-                            </>
                         ) : (
                             <p className="text-muted-foreground text-center py-10">Sélectionnez un ingrédient pour voir ses données.</p>
                         )}

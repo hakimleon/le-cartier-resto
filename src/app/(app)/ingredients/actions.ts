@@ -1,12 +1,12 @@
 
 'use server';
 
-import { collection, addDoc, doc, setDoc, deleteDoc, getDocs, writeBatch, query, where } from 'firebase/firestore';
+import { collection, addDoc, doc, setDoc, deleteDoc, writeBatch, query, where, getDocs } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { Ingredient } from '@/lib/types';
 
 export async function saveIngredient(ingredient: Omit<Ingredient, 'id'>, id: string | null): Promise<Ingredient> {
-  const { name, category, stockQuantity, lowStockThreshold, supplier, purchasePrice, purchaseUnit, purchaseWeightGrams, yieldPercentage, baseUnit, equivalences } = ingredient;
+  const { name, category, stockQuantity, lowStockThreshold, supplier, purchasePrice, purchaseUnit, purchaseWeightGrams, yieldPercentage } = ingredient;
   
   const ingredientToSave: Omit<Ingredient, 'id'> = {
     name, 
@@ -18,8 +18,6 @@ export async function saveIngredient(ingredient: Omit<Ingredient, 'id'>, id: str
     purchaseUnit, 
     purchaseWeightGrams, 
     yieldPercentage, 
-    baseUnit: baseUnit || 'g',
-    equivalences: equivalences || {},
   };
 
   let savedIngredient: Ingredient;
@@ -76,11 +74,11 @@ export async function migrateIngredientsToNewStructure(): Promise<{success: bool
         let updatedCount = 0;
 
         querySnapshot.forEach(doc => {
-            const ingredient = doc.data() as Ingredient;
+            const ingredient = doc.data() as Partial<Ingredient & { baseUnit?: any; equivalences?: any }>;
             
             // Check if migration is needed for this document
             if (ingredient.baseUnit === undefined || ingredient.equivalences === undefined) {
-                const dataToUpdate: { baseUnit?: 'g' | 'ml' | 'pièce', equivalences?: Record<string, number> } = {};
+                const dataToUpdate: any = {};
 
                 if (ingredient.baseUnit === undefined) {
                     dataToUpdate.baseUnit = 'g'; // Default to 'g'

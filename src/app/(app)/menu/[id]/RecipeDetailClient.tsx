@@ -41,7 +41,6 @@ import {
 import { ImageUploadDialog } from "./ImageUploadDialog";
 import { generateCommercialArgument } from "@/ai/flows/suggestion-flow";
 import { IngredientModal } from "../../ingredients/IngredientModal";
-import { DishConceptOutput } from "@/ai/flows/workshop-flow";
 import { PreparationModal } from "../../preparations/PreparationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
@@ -49,6 +48,9 @@ import { ImagePreviewModal } from "./ImagePreviewModal";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { computeIngredientCost, getConversionFactor } from "@/lib/unitConverter";
+import { RecipeConceptOutput } from "@/ai/flows/workshop-flow";
+
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
@@ -98,45 +100,6 @@ type NewRecipePreparation = {
     _costPerUnit?: number; // Internal: to recalculate cost
     _productionUnit: string;
 };
-
-const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (!fromUnit || !toUnit || fromUnit.toLowerCase() === toUnit.toLowerCase()) return 1;
-
-    const u = (unit: string) => unit.toLowerCase().trim();
-    const factors: Record<string, number> = {
-        'kg': 1000, 'g': 1, 'mg': 0.001,
-        'l': 1000, 'ml': 1,
-        'litre': 1000, 'litres': 1000,
-        'pièce': 1, 'piece': 1,
-    };
-    
-    const fromFactor = factors[u(fromUnit)];
-    const toFactor = factors[u(toUnit)];
-
-    if (fromFactor !== undefined && toFactor !== undefined) {
-        return fromFactor / toFactor;
-    }
-    
-    console.warn(`No conversion factor found between '${fromUnit}' and '${toUnit}'. Defaulting to 1.`);
-    return 1;
-};
-
-const recomputeIngredientCost = (ingredientLink: {quantity: number, unit: string}, ingredientData: Ingredient): number => {
-    if (!ingredientData?.purchasePrice || !ingredientData?.purchaseWeightGrams) {
-        return 0;
-    }
-
-    const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
-
-    const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
-    const targetUnit = isLiquid ? 'ml' : 'g';
-    
-    const quantityInBaseUnit = ingredientLink.quantity * getConversionFactor(ingredientLink.unit, targetUnit);
-    
-    return quantityInBaseUnit * netCostPerGramOrMl;
-};
-
 
 const GAUGE_LEVELS = {
     exceptionnel: { icon: Star },
@@ -324,7 +287,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     const [isNewIngredientModalOpen, setIsNewIngredientModalOpen] = useState(false);
     const [newIngredientDefaults, setNewIngredientDefaults] = useState<Partial<Ingredient> | null>(null);
     const [currentTempId, setCurrentTempId] = useState<string | null>(null);
-    const [workshopConcept, setWorkshopConcept] = useState<DishConceptOutput | null>(null);
+    const [workshopConcept, setWorkshopConcept] = useState<RecipeConceptOutput | null>(null);
 
 
     const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
@@ -357,13 +320,14 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             if (!prep) continue;
 
             let totalCost = 0;
-            const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prep.id));
+            const ingredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", prepId));
             const ingredientsSnap = await getDocs(ingredientsQuery);
             for (const ingDoc of ingredientsSnap.docs) {
                 const ingLink = ingDoc.data() as RecipeIngredientLink;
                 const ingData = ingredientsList.find(i => i.id === ingLink.ingredientId);
                  if (ingData) {
-                    totalCost += recomputeIngredientCost(ingLink, ingData);
+                    const { cost } = computeIngredientCost(ingData, ingLink.quantity, ingLink.unitUse);
+                    totalCost += cost;
                 }
             }
 
@@ -429,7 +393,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
             const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
             if (ingredientData) {
-                const totalCost = recomputeIngredientCost(recipeIngredientData, ingredientData);
+                const { cost } = computeIngredientCost(ingredientData, recipeIngredientData.quantity, recipeIngredientData.unitUse);
 
                 return {
                     id: ingredientData.id!,
@@ -438,7 +402,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     quantity: recipeIngredientData.quantity,
                     unit: recipeIngredientData.unitUse,
                     category: ingredientData.category,
-                    totalCost: totalCost
+                    totalCost: cost
                 };
             }
             return null;
@@ -478,7 +442,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 const conceptJSON = sessionStorage.getItem(WORKSHOP_CONCEPT_KEY);
                 if (conceptJSON && isMounted) {
                     setIsEditing(true);
-                    const concept: DishConceptOutput = JSON.parse(conceptJSON);
+                    const concept: RecipeConceptOutput = JSON.parse(conceptJSON);
                     setWorkshopConcept(concept); // <-- Store the raw concept
 
                     setEditableRecipe(current => {
@@ -518,23 +482,24 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const tempId = `new-ws-${Date.now()}-${Math.random()}`;
             let totalCost = 0;
             if (existing) {
-                totalCost = recomputeIngredientCost({quantity: sugIng.quantity, unit: sugIng.unit}, existing);
+                const { cost } = computeIngredientCost(existing, sugIng.quantity, sugIng.unit);
+                totalCost = cost;
             }
-            return { tempId, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: isNaN(totalCost) ? 0 : totalCost, category: existing?.category || '' };
+            return { tempId, ingredientId: existing?.id, name: existing?.name || sugIng.name, quantity: sugIng.quantity, unit: sugIng.unit, totalCost: totalCost, category: existing?.category || '' };
         });
         setNewIngredients(newIngs);
     };
 
-    const processSuggestedPreparations = (suggestedNames: string[], currentAllPreps: Preparation[]) => {
-        const newPreps: NewRecipePreparation[] = suggestedNames.map(name => {
-            const existing = currentAllPreps.find(p => p.name.toLowerCase() === name.toLowerCase());
+    const processSuggestedPreparations = (suggested: {name: string, quantity: number, unit: string}[], currentAllPreps: Preparation[]) => {
+        const newPreps: NewRecipePreparation[] = suggested.map(prep => {
+            const existing = currentAllPreps.find(p => p.name.toLowerCase() === prep.name.toLowerCase());
             const tempId = `new-prep-ws-${Date.now()}-${Math.random()}`;
             return {
                 tempId,
                 childPreparationId: existing?.id,
-                name: existing?.name || name,
-                quantity: 1, // Default quantity, user must adjust
-                unit: existing?.usageUnit || existing?.productionUnit || 'g',
+                name: existing?.name || prep.name,
+                quantity: prep.quantity, 
+                unit: prep.unit,
                 totalCost: 0, // Will be calculated when linked
                 _costPerUnit: existing ? preparationsCosts[existing.id!] || 0 : 0,
                 _productionUnit: existing?.productionUnit || ''
@@ -565,7 +530,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 const updatedIng = { ...ing, [field]: value };
                 const ingData = allIngredients.find(i => i.id === ing.id);
                 if (ingData) {
-                    updatedIng.totalCost = recomputeIngredientCost(updatedIng, ingData);
+                    const { cost } = computeIngredientCost(ingData, updatedIng.quantity, updatedIng.unit);
+                    updatedIng.totalCost = cost;
                 }
                 return updatedIng;
             }
@@ -583,7 +549,8 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         updatedIng.name = selectedIngredient.name;
                         updatedIng.category = selectedIngredient.category;
                     }
-                    updatedIng.totalCost = recomputeIngredientCost(updatedIng, selectedIngredient);
+                    const { cost } = computeIngredientCost(selectedIngredient, updatedIng.quantity, updatedIng.unit);
+                    updatedIng.totalCost = cost;
                 }
                 return updatedIng;
             }
@@ -671,7 +638,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setIsSaving(true);
         try {
             const recipeDataToSave = {
-                name: editableRecipe.name, description: editableRecipe.description, difficulty: editableRecipe.difficulty, duration: editableRecipe.duration, procedure_preparation: editableRecipe.procedure_preparation, procedure_cuisson: editableRecipe.procedure_cuisson, procedure_service: editableRecipe.procedure_service, imageUrl: editableRecipe.imageUrl,
+                name: editableRecipe.name, description: editableRecipe.description, difficulty: editableRecipe.difficulty, duration: editableRecipe.duration, procedure_fabrication: editableRecipe.procedure_fabrication, procedure_service: editableRecipe.procedure_service, imageUrl: editableRecipe.imageUrl,
                 ...(editableRecipe.type === 'Plat' ? { portions: editableRecipe.portions, tvaRate: editableRecipe.tvaRate, price: editableRecipe.price, commercialArgument: editableRecipe.commercialArgument, status: editableRecipe.status, category: editableRecipe.category, } : { productionQuantity: (editableRecipe as Preparation).productionQuantity, productionUnit: (editableRecipe as Preparation).productionUnit, usageUnit: (editableRecipe as Preparation).usageUnit, })
             };
             await updateRecipeDetails(recipeId, recipeDataToSave, editableRecipe.type);
@@ -1008,24 +975,19 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                         <CardHeader><CardTitle className="flex items-center gap-2"><FileText className="h-5 w-5" />Procédure</CardTitle></CardHeader>
                         <CardContent>
                             {isEditing ? (
-                                <Tabs defaultValue="preparation">
-                                    <TabsList><TabsTrigger value="preparation">Préparation</TabsTrigger><TabsTrigger value="cuisson">Cuisson</TabsTrigger><TabsTrigger value="service">Service</TabsTrigger></TabsList>
-                                    <TabsContent value="preparation" className="pt-4"><Textarea value={editableRecipe?.procedure_preparation} onChange={(e) => handleRecipeDataChange('procedure_preparation', e.target.value)} rows={8} /></TabsContent>
-                                    <TabsContent value="cuisson" className="pt-4"><Textarea value={editableRecipe?.procedure_cuisson} onChange={(e) => handleRecipeDataChange('procedure_cuisson', e.target.value)} rows={8} /></TabsContent>
+                                <Tabs defaultValue="fabrication">
+                                    <TabsList><TabsTrigger value="fabrication">Fabrication</TabsTrigger><TabsTrigger value="service">Service</TabsTrigger></TabsList>
+                                    <TabsContent value="fabrication" className="pt-4"><Textarea value={editableRecipe?.procedure_fabrication} onChange={(e) => handleRecipeDataChange('procedure_fabrication', e.target.value)} rows={8} /></TabsContent>
                                     <TabsContent value="service" className="pt-4"><Textarea value={editableRecipe?.procedure_service} onChange={(e) => handleRecipeDataChange('procedure_service', e.target.value)} rows={8} /></TabsContent>
                                 </Tabs>
                             ) : (
-                                <Tabs defaultValue="preparation">
+                                <Tabs defaultValue="fabrication">
                                     <TabsList>
-                                        <TabsTrigger value="preparation">Préparation</TabsTrigger>
-                                        <TabsTrigger value="cuisson">Cuisson</TabsTrigger>
+                                        <TabsTrigger value="fabrication">Fabrication</TabsTrigger>
                                         <TabsTrigger value="service">Service</TabsTrigger>
                                     </TabsList>
-                                    <TabsContent value="preparation" className="pt-4">
-                                        <MarkdownRenderer text={recipe.procedure_preparation} />
-                                    </TabsContent>
-                                    <TabsContent value="cuisson" className="pt-4">
-                                        <MarkdownRenderer text={recipe.procedure_cuisson} />
+                                    <TabsContent value="fabrication" className="pt-4">
+                                        <MarkdownRenderer text={recipe.procedure_fabrication} />
                                     </TabsContent>
                                     <TabsContent value="service" className="pt-4">
                                         <MarkdownRenderer text={recipe.procedure_service} />
@@ -1055,13 +1017,13 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                 <div>
                                     <h4 className="font-semibold mb-1">Sous-recettes suggérées</h4>
                                     <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
-                                        {workshopConcept.subRecipes.map(prep => <li key={prep}>{prep}</li>)}
+                                        {workshopConcept.subRecipes.map(prep => <li key={prep.name}>{prep.name}</li>)}
                                     </ul>
                                 </div>
                                 <div>
                                     <h4 className="font-semibold mb-1">Procédure brute</h4>
                                     <div className="text-xs text-muted-foreground p-2 border rounded-md max-h-48 overflow-y-auto">
-                                        <MarkdownRenderer text={`${workshopConcept.procedure_preparation}\n${workshopConcept.procedure_cuisson}\n${workshopConcept.procedure_service}`} />
+                                        <MarkdownRenderer text={`${workshopConcept.procedure_fabrication}\n${workshopConcept.procedure_service}`} />
                                     </div>
                                 </div>
                             </CardContent>
@@ -1140,7 +1102,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
-
-    

@@ -2,7 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm, useFieldArray } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Ingredient } from "@/lib/types";
@@ -21,7 +21,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Info, PlusCircle, Trash2 } from "lucide-react";
+import { Info } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const ingredientCategories = [
@@ -40,11 +40,6 @@ const ingredientCategories = [
     { name: "Autres / Divers", examples: "Décors alimentaires (perles de sucre, paillettes), Produits spécifiques (algues nori, fonds, fumets, gélatine…)" },
 ];
 
-const equivalenceSchema = z.object({
-  fromUnit: z.string().min(1, "Unité de départ requise"),
-  toUnit: z.string().min(1, "Unité d'arrivée requise"),
-  value: z.coerce.number().positive("La valeur doit être positive"),
-});
 
 const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
@@ -56,7 +51,6 @@ const formSchema = z.object({
   purchaseUnit: z.string().min(1, "L'unité d'achat est requise."),
   purchaseWeightGrams: z.coerce.number().positive("Le poids ou volume de l'unité d'achat doit être positif."),
   yieldPercentage: z.coerce.number().min(0, "Le rendement doit être entre 0 et 100.").max(100, "Le rendement doit être entre 0 et 100."),
-  equivalencesArray: z.array(equivalenceSchema).optional(),
 });
 
 
@@ -81,19 +75,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       purchaseUnit: ingredient?.purchaseUnit || "kg",
       purchaseWeightGrams: ingredient?.purchaseWeightGrams || 1000,
       yieldPercentage: ingredient?.yieldPercentage || 100,
-      equivalencesArray: ingredient?.equivalences 
-        ? Object.entries(ingredient.equivalences).map(([key, value]) => ({
-            fromUnit: key.split('->')[0],
-            toUnit: key.split('->')[1],
-            value: value
-          }))
-        : [],
     },
-  });
-
-  const { fields, append, remove } = useFieldArray({
-    control: form.control,
-    name: "equivalencesArray",
   });
 
   const selectedCategory = form.watch("category");
@@ -132,14 +114,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     setIsSubmitting(true);
     try {
       
-      const equivalences: Record<string, number> = {};
-      if (values.equivalencesArray) {
-        for (const eq of values.equivalencesArray) {
-            const key = `${eq.fromUnit}->${eq.toUnit}`;
-            equivalences[key] = eq.value;
-        }
-      }
-
       const ingredientToSave: Omit<Ingredient, 'id'> = {
         name: values.name,
         category: values.category,
@@ -150,7 +124,6 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
         purchaseUnit: values.purchaseUnit,
         purchaseWeightGrams: values.purchaseWeightGrams,
         yieldPercentage: values.yieldPercentage,
-        equivalences: equivalences,
       };
 
       const savedIngredient = await saveIngredient(ingredientToSave, ingredient?.id || null);
@@ -180,15 +153,26 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom de l'ingrédient</FormLabel> <FormControl> <Input placeholder="Ex: Beurre doux AOP" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
                 <FormField control={form.control} name="category" render={({ field }) => (
-                    <FormItem>
-                        <div className="flex items-center gap-2">
-                            <FormLabel>Catégorie</FormLabel>
-                            {categoryExamples && ( <TooltipProvider> <Tooltip> <TooltipTrigger asChild> <Info className="h-4 w-4 text-muted-foreground cursor-help" /> </TooltipTrigger> <TooltipContent className="max-w-xs"> <p className="font-semibold mb-1">Exemples:</p> <p>{categoryExamples}</p> </TooltipContent> </Tooltip> </TooltipProvider> )}
-                        </div>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl> <SelectTrigger> <SelectValue placeholder="Sélectionnez une catégorie..." /> </SelectTrigger> </FormControl> <SelectContent> {ingredientCategories.map(cat => ( <SelectItem key={cat.name} value={cat.name}> {cat.name} </SelectItem> ))} </SelectContent> </Select>
-                        <FormMessage />
-                    </FormItem>
-                )}/>
+    <FormItem>
+        <div className="flex items-center gap-2">
+            <FormLabel>Catégorie</FormLabel>
+            {categoryExamples && ( <TooltipProvider> <Tooltip> <TooltipTrigger asChild> <Info className="h-4 w-4 text-muted-foreground cursor-help" /> </TooltipTrigger> <TooltipContent className="max-w-xs"> <p className="font-semibold mb-1">Exemples:</p> <p>{categoryExamples}</p> </TooltipContent> </Tooltip> </TooltipProvider> )}
+        </div>
+        <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <SelectTrigger>
+                <SelectValue placeholder="Sélectionnez une catégorie..." />
+            </SelectTrigger>
+            <SelectContent> 
+                {ingredientCategories.map(cat => ( 
+                    <SelectItem key={cat.name} value={cat.name}> 
+                        {cat.name} 
+                    </SelectItem> 
+                ))} 
+            </SelectContent>
+        </Select>
+        <FormMessage />
+    </FormItem>
+)}/>
                 <FormField control={form.control} name="supplier" render={({ field }) => ( <FormItem> <FormLabel>Fournisseur (Optionnel)</FormLabel> <FormControl> <Input placeholder="Ex: Fournisseur ABC" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
             </div>
         </div>
@@ -200,92 +184,46 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
             <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="purchasePrice" render={({ field }) => ( <FormItem> <FormLabel>Prix d'achat (DZD)</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 150" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
                 <FormField control={form.control} name="purchaseUnit" render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Unité d'achat</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}> <FormControl> <SelectTrigger> <SelectValue placeholder="Sélectionnez..." /> </SelectTrigger> </FormControl> <SelectContent> <SelectItem value="kg">Kg</SelectItem> <SelectItem value="l">Litres</SelectItem> <SelectItem value="pièce">Pièce</SelectItem> <SelectItem value="botte">Botte</SelectItem> <SelectItem value="g">Grammes</SelectItem> <SelectItem value="ml">ml</SelectItem> </SelectContent> </Select>
-                        <FormMessage />
-                    </FormItem>
-                )}/>
+    <FormItem>
+        <FormLabel>Unité d'achat</FormLabel>
+        <Select onValueChange={field.onChange} defaultValue={field.value}>
+            <SelectTrigger>
+                <SelectValue placeholder="Sélectionnez..." />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="kg">Kg</SelectItem>
+                <SelectItem value="l">Litres</SelectItem>
+                <SelectItem value="pièce">Pièce</SelectItem>
+                <SelectItem value="botte">Botte</SelectItem>
+                <SelectItem value="g">Grammes</SelectItem>
+                <SelectItem value="ml">ml</SelectItem>
+            </SelectContent>
+        </Select>
+        <FormMessage />
+    </FormItem>
+)}/>
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="purchaseWeightGrams" render={({ field }) => ( <FormItem> <FormLabel>{getWeightLabel()}</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 50" {...field} /> </FormControl> <FormDescription className="text-xs">{getWeightDescription()}</FormDescription> <FormMessage /> </FormItem> )}/>
-                <FormField control={form.control} name="yieldPercentage" render={({ field }) => (
+                <FormField
+                  control={form.control}
+                  name="yieldPercentage"
+                  render={({ field }) => (
                     <FormItem>
                         <FormLabel>Rendement (%)</FormLabel>
-                        <div className="relative">
-                            <FormControl>
+                        <FormControl>
+                            <div className="relative">
                                 <Input type="number" step="1" placeholder="Ex: 80" {...field} className="pr-8" />
-                            </FormControl>
-                            <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">%</div>
-                        </div>
+                                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">%</div>
+                            </div>
+                        </FormControl>
                         <FormDescription className="text-xs">% utilisable après parage.</FormDescription>
                         <FormMessage />
                     </FormItem>
-                )}/>
+                  )}
+                />
             </div>
         </div>
-
-        <Separator />
-        
-        <div className="space-y-4">
-          <h3 className="text-lg font-medium">Table d'Équivalences</h3>
-          <p className="text-sm text-muted-foreground">
-            Définissez ici les conversions spécifiques, par exemple, le poids d'une 'pièce'.
-          </p>
-          {fields.map((field, index) => (
-            <div key={field.id} className="flex items-end gap-2 p-2 border rounded-md">
-              <div className="grid grid-cols-3 gap-2 flex-grow">
-                <FormField
-                  control={form.control}
-                  name={`equivalencesArray.${index}.fromUnit`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">De</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="pièce" />
-                      </FormControl>
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
-                />
-                <FormField
-                  control={form.control}
-                  name={`equivalencesArray.${index}.toUnit`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Vers</FormLabel>
-                      <FormControl>
-                        <Input {...field} placeholder="g" />
-                      </FormControl>
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={form.control}
-                  name={`equivalencesArray.${index}.value`}
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">Valeur</FormLabel>
-                      <FormControl>
-                        <Input type="number" {...field} placeholder="50" />
-                      </FormControl>
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              <Button type="button" variant="ghost" size="icon" className="shrink-0" onClick={() => remove(index)}>
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-          ))}
-          <Button type="button" variant="outline" size="sm" onClick={() => append({ fromUnit: 'pièce', toUnit: 'g', value: 0 })}>
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Ajouter une équivalence
-          </Button>
-        </div>
-
 
         <Separator />
         

@@ -37,7 +37,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { PreparationConceptOutput } from "@/ai/flows/workshop-flow";
-import { computeIngredientCost } from "@/lib/unitConverter";
+import { computeIngredientCost, getConversionFactor } from "@/lib/unitConverter";
 
 
 const GARNISH_WORKSHOP_CONCEPT_KEY = 'garnishWorkshopGeneratedConcept';
@@ -76,41 +76,6 @@ type NewRecipePreparation = {
     totalCost: number;
     _costPerUnit?: number;
     _productionUnit: string;
-};
-
-const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (!fromUnit || !toUnit || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
-
-    const u = (unit: string) => unit.toLowerCase().trim();
-    const factors: Record<string, number> = {
-        'kg': 1000, 'g': 1, 'mg': 0.001,
-        'l': 1000, 'ml': 1,
-        'litre': 1000, 'litres': 1000,
-        'pièce': 1, 'piece': 1, 'botte': 1,
-    };
-    
-    const fromFactor = factors[u(fromUnit)];
-    const toFactor = factors[u(toUnit)];
-
-    if (fromFactor !== undefined && toFactor !== undefined) {
-        const weightUnits = ['kg', 'g', 'mg'];
-        const volumeUnits = ['l', 'ml', 'litre', 'litres'];
-        const unitUnits = ['pièce', 'piece', 'botte'];
-
-        const fromType = weightUnits.includes(u(fromUnit)) ? 'weight' : volumeUnits.includes(u(fromUnit)) ? 'volume' : 'unit';
-        const toType = weightUnits.includes(u(toUnit)) ? 'weight' : volumeUnits.includes(u(toUnit)) ? 'volume' : 'unit';
-
-        if ((fromType === 'weight' && toType === 'volume') || (fromType === 'volume' && toType === 'weight')) {
-             // Basic assumption: 1ml = 1g for water-like density. This is a simplification.
-             return fromFactor / toFactor;
-        }
-
-        if (fromType === toType) {
-            return fromFactor / toFactor;
-        }
-    }
-    
-    return 1;
 };
 
 const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExistingIngredient, sortedIngredients }: { ing: FullRecipeIngredient, handleIngredientChange: any, handleRemoveExistingIngredient: any, sortedIngredients: Ingredient[] }) => {
@@ -269,9 +234,11 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             const ingredientsData = recipeIngredientsSnap.docs.map(docSnap => {
                 const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
                 const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
-                const { cost } = computeIngredientCost(ingredientData!, recipeIngredientData.quantity, recipeIngredientData.unitUse);
-                
-                return { id: ingredientData!.id!, recipeIngredientId: docSnap.id, name: ingredientData!.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, category: ingredientData!.category, totalCost: cost };
+                if (ingredientData) {
+                    const { cost } = computeIngredientCost(ingredientData, recipeIngredientData.quantity, recipeIngredientData.unitUse);
+                    return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, category: ingredientData.category, totalCost: cost };
+                }
+                return null;
             }).filter(Boolean) as FullRecipeIngredient[];
             setIngredients(ingredientsData);
             setEditableIngredients(JSON.parse(JSON.stringify(ingredientsData)));
@@ -447,8 +414,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 category: editableRecipe.category,
                 difficulty: editableRecipe.difficulty,
                 duration: editableRecipe.duration,
-                procedure_preparation: editableRecipe.procedure_preparation,
-                procedure_cuisson: editableRecipe.procedure_cuisson,
+                procedure_fabrication: editableRecipe.procedure_fabrication,
                 procedure_service: editableRecipe.procedure_service,
                 portions: editableRecipe.portions,
                 productionQuantity: editableRecipe.productionQuantity,

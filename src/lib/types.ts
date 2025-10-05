@@ -14,10 +14,6 @@ export type Ingredient = {
     purchaseUnit: string;         // Unité d'achat (ex: "botte", "kg", "pièce", "l")
     purchaseWeightGrams: number;  // Poids en grammes de l'unité d'achat (pour les solides ET les liquides, on assume 1ml=1g)
     yieldPercentage: number;      // Rendement en pourcentage (ex: 60 pour 60%)
-
-    // Nouveaux champs pour la conversion intelligente
-    baseUnit?: 'g' | 'ml' | 'pièce'; // L'unité de référence interne pour le calcul de coût.
-    equivalences: Record<string, number>; // Table de conversion (ex: { "pièce->g": 120 })
 };
 
 // Types pour la génération de recette par l'IA
