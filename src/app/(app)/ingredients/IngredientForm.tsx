@@ -23,7 +23,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Info } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
-import { Label } from "@/components/ui/label";
 
 const ingredientCategories = [
     { name: "Viandes & Gibiers", examples: "Bœuf (entrecôte, steak haché, joue), Agneau (carré, gigot), Porc (filet, échine, côte), Produits transformés : bacon, chorizo, jambon, saucisse" },
@@ -201,14 +200,15 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                   name="yieldPercentage"
                   render={({ field }) => (
                     <FormItem>
-                        <FormLabel>Rendement (%)</FormLabel>
-                        <div className="relative">
-                           <FormControl>
-                                <Input type="number" step="1" placeholder="Ex: 80" {...field} />
-                            </FormControl>
-                        </div>
-                        <FormDescription className="text-xs">% utilisable après parage.</FormDescription>
-                        <FormMessage />
+                      <FormLabel>Rendement (%)</FormLabel>
+                      <div className="relative">
+                        <FormControl>
+                          <Input type="number" step="1" placeholder="Ex: 80" {...field} className="pr-8" />
+                        </FormControl>
+                        <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-muted-foreground">%</div>
+                      </div>
+                      <FormDescription className="text-xs">% utilisable après parage.</FormDescription>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
