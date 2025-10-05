@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from "react";
@@ -19,8 +20,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Tooltip, TooltipProvider, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { Info } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 const ingredientCategories = [
@@ -140,23 +139,26 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                   name="category"
                   render={({ field }) => (
                     <FormItem>
-                      <div className="flex items-center gap-2">
                         <FormLabel>Catégorie</FormLabel>
-                        {categoryExamples && ( <TooltipProvider> <Tooltip> <TooltipTrigger asChild> <Info className="h-4 w-4 text-muted-foreground cursor-help" /> </TooltipTrigger> <TooltipContent className="max-w-xs"> <p className="font-semibold mb-1">Exemples:</p> <p>{categoryExamples}</p> </TooltipContent> </Tooltip> </TooltipProvider> )}
-                      </div>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez une catégorie..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ingredientCategories.map(cat => (
-                            <SelectItem key={cat.name} value={cat.name}>
-                              {cat.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sélectionnez une catégorie..." />
+                            </SelectTrigger>
+                            <SelectContent> 
+                                {ingredientCategories.map(cat => ( 
+                                    <SelectItem key={cat.name} value={cat.name}> 
+                                        {cat.name} 
+                                    </SelectItem> 
+                                ))} 
+                            </SelectContent>
+                        </Select>
+                        {categoryExamples && (
+                            <FormDescription className="text-xs">
+                                <span className="font-semibold">Exemples : </span> 
+                                {categoryExamples}
+                            </FormDescription>
+                        )}
+                        <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -179,9 +181,9 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                     <FormItem>
                       <FormLabel>Unité d'achat</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionnez..." />
-                        </SelectTrigger>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sélectionnez..." />
+                            </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="kg">Kg</SelectItem>
                           <SelectItem value="l">Litres</SelectItem>
