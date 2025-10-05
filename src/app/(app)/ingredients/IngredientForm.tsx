@@ -139,29 +139,29 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
             <h3 className="text-lg font-medium">Informations Générales</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
                 <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom de l'ingrédient</FormLabel> <FormControl> <Input placeholder="Ex: Beurre doux AOP" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                
                 <FormField control={form.control} name="category" render={({ field }) => (
-    <FormItem>
-        <div className="flex items-center gap-2">
-            <FormLabel>Catégorie</FormLabel>
-            {categoryExamples && ( <TooltipProvider> <Tooltip> <TooltipTrigger asChild> <Info className="h-4 w-4 text-muted-foreground cursor-help" /> </TooltipTrigger> <TooltipContent className="max-w-xs"> <p className="font-semibold mb-1">Exemples:</p> <p>{categoryExamples}</p> </TooltipContent> </Tooltip> </TooltipProvider> )}
-        </div>
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-            <FormControl>
-                <SelectTrigger>
-                    <SelectValue placeholder="Sélectionnez une catégorie..." />
-                </SelectTrigger>
-            </FormControl>
-            <SelectContent> 
-                {ingredientCategories.map(cat => ( 
-                    <SelectItem key={cat.name} value={cat.name}> 
-                        {cat.name} 
-                    </SelectItem> 
-                ))} 
-            </SelectContent>
-        </Select>
-        <FormMessage />
-    </FormItem>
-)}/>
+                    <FormItem>
+                        <div className="flex items-center gap-2">
+                            <FormLabel>Catégorie</FormLabel>
+                            {categoryExamples && ( <TooltipProvider> <Tooltip> <TooltipTrigger asChild> <Info className="h-4 w-4 text-muted-foreground cursor-help" /> </TooltipTrigger> <TooltipContent className="max-w-xs"> <p className="font-semibold mb-1">Exemples:</p> <p>{categoryExamples}</p> </TooltipContent> </Tooltip> </TooltipProvider> )}
+                        </div>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sélectionnez une catégorie..." />
+                            </SelectTrigger>
+                            <SelectContent> 
+                                {ingredientCategories.map(cat => ( 
+                                    <SelectItem key={cat.name} value={cat.name}> 
+                                        {cat.name} 
+                                    </SelectItem> 
+                                ))} 
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}/>
+
                 <FormField control={form.control} name="supplier" render={({ field }) => ( <FormItem> <FormLabel>Fournisseur (Optionnel)</FormLabel> <FormControl> <Input placeholder="Ex: Fournisseur ABC" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
             </div>
         </div>
@@ -172,30 +172,31 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
             <h3 className="text-lg font-medium">Prix, Unités & Rendement</h3>
             <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="purchasePrice" render={({ field }) => ( <FormItem> <FormLabel>Prix d'achat (DZD)</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 150" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                
                 <FormField control={form.control} name="purchaseUnit" render={({ field }) => (
-    <FormItem>
-        <FormLabel>Unité d'achat</FormLabel>
-        <Select onValueChange={field.onChange} defaultValue={field.value}>
-            <FormControl>
-                <SelectTrigger>
-                    <SelectValue placeholder="Sélectionnez..." />
-                </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-                <SelectItem value="kg">Kg</SelectItem>
-                <SelectItem value="l">Litres</SelectItem>
-                <SelectItem value="pièce">Pièce</SelectItem>
-                <SelectItem value="botte">Botte</SelectItem>
-                <SelectItem value="g">Grammes</SelectItem>
-                <SelectItem value="ml">ml</SelectItem>
-            </SelectContent>
-        </Select>
-        <FormMessage />
-    </FormItem>
-)}/>
+                    <FormItem>
+                        <FormLabel>Unité d'achat</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Sélectionnez..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="kg">Kg</SelectItem>
+                                <SelectItem value="l">Litres</SelectItem>
+                                <SelectItem value="pièce">Pièce</SelectItem>
+                                <SelectItem value="botte">Botte</SelectItem>
+                                <SelectItem value="g">Grammes</SelectItem>
+                                <SelectItem value="ml">ml</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                )}/>
+
             </div>
             <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="purchaseWeightGrams" render={({ field }) => ( <FormItem> <FormLabel>{getWeightLabel()}</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 50" {...field} /> </FormControl> <FormDescription className="text-xs">{getWeightDescription()}</FormDescription> <FormMessage /> </FormItem> )}/>
+                
                 <FormField
                   control={form.control}
                   name="yieldPercentage"
