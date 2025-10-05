@@ -1,3 +1,4 @@
+
 "use client"
 
 import * as React from "react"
@@ -109,15 +110,15 @@ const FormControl = React.forwardRef<
 >(({ ...props }, ref) => {
   const { error, formItemId, formDescriptionId, formMessageId } = useFormField()
 
+  const describedBy = error 
+    ? [formDescriptionId, formMessageId].filter(Boolean).join(' ')
+    : formDescriptionId
+
   return (
     <Slot
       ref={ref}
       id={formItemId}
-      aria-describedby={
-        !error
-          ? `${formDescriptionId}`
-          : `${formDescriptionId} ${formMessageId}`
-      }
+      aria-describedby={describedBy || undefined}
       aria-invalid={!!error}
       {...props}
     />
