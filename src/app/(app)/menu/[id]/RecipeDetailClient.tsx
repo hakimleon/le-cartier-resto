@@ -131,24 +131,54 @@ const getConversionFactor = (fromUnit: string, toUnit: string): number => {
 };
 
 const recomputeIngredientCost = (ingredientLink: { quantity: number; unit: string }, ingredientData?: Ingredient): number => {
-    if (!ingredientData) {
+    if (!ingredientData || ingredientData.purchasePrice == null) {
       return 0;
     }
-    if (!ingredientData.purchaseUnit) {
-      console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) n'a pas de 'purchaseUnit'. Le coût sera de 0.`);
-      return 0;
+    
+    const quantity = ingredientLink.quantity || 0;
+    const unitUsed = ingredientLink.unit.toLowerCase();
+    const purchaseUnit = (ingredientData.purchaseUnit || '').toLowerCase();
+    
+    switch (purchaseUnit) {
+        case 'pièce':
+        case 'piece':
+            if (unitUsed === 'pièce' || unitUsed === 'piece') {
+                return quantity * ingredientData.purchasePrice;
+            } else { // Converting piece to weight (g/kg)
+                if (!ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) {
+                    console.warn(`[COST CALC] L'ingrédient "${ingredientData.name}" est acheté à la pièce mais son poids de référence (purchaseWeightGrams) est manquant. Impossible de calculer le coût pour une utilisation au poids.`);
+                    return 0;
+                }
+                const costPerGram = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+                const quantityInGrams = quantity * getConversionFactor(unitUsed, 'g');
+                const netCost = (costPerGram / ((ingredientData.yieldPercentage || 100) / 100)) * quantityInGrams;
+                return isNaN(netCost) ? 0 : netCost;
+            }
+
+        case 'kg':
+        case 'g':
+        case 'l':
+        case 'ml':
+        case 'litre':
+        case 'litres':
+            if (!ingredientData.purchaseWeightGrams || ingredientData.purchaseWeightGrams === 0) {
+                 console.warn(`[COST CALC] L'ingrédient "${ingredientData.name}" a une unité d'achat au poids/volume mais son poids de référence est 0.`);
+                return 0;
+            }
+            const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
+            const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
+            
+            const isLiquid = ['l', 'ml', 'litre', 'litres'].includes(purchaseUnit);
+            const baseUnit = isLiquid ? 'ml' : 'g';
+            
+            const quantityInBaseUnit = quantity * getConversionFactor(unitUsed, baseUnit);
+            const finalCost = quantityInBaseUnit * netCostPerGramOrMl;
+            return isNaN(finalCost) ? 0 : finalCost;
+
+        default:
+             console.warn(`[COST CALC] Unité d'achat non reconnue ('${ingredientData.purchaseUnit}') pour l'ingrédient "${ingredientData.name}". Le coût ne peut être calculé.`);
+            return 0;
     }
-    if (ingredientData.purchasePrice == null || ingredientData.purchaseWeightGrams == null) {
-      console.warn(`[DATA ISSUE] L'ingrédient "${ingredientData.name}" (ID: ${ingredientData.id}) a un prix ou un poids d'achat manquant. Le coût sera de 0.`);
-      return 0;
-    }
-    const costPerGramOrMl = ingredientData.purchasePrice / ingredientData.purchaseWeightGrams;
-    const netCostPerGramOrMl = costPerGramOrMl / ((ingredientData.yieldPercentage || 100) / 100);
-    const isLiquid = ['l', 'ml', 'litres'].includes(ingredientData.purchaseUnit.toLowerCase());
-    const targetUnit = isLiquid ? 'ml' : 'g';
-    const quantityInBaseUnit = (ingredientLink.quantity || 0) * getConversionFactor(ingredientLink.unit, targetUnit);
-    const finalCost = quantityInBaseUnit * netCostPerGramOrMl;
-    return isNaN(finalCost) ? 0 : finalCost;
 };
 
 
@@ -1363,3 +1393,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
