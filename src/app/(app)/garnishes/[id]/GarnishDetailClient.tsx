@@ -38,6 +38,7 @@ import { Label } from "@/components/ui/label";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { PreparationConceptOutput } from "@/ai/flows/workshop-flow";
 import { computeIngredientCost, getConversionFactor } from "@/utils/unitConverter";
+import { EditableIngredientRow, NewIngredientRow } from "../../menu/[id]/IngredientRow";
 
 
 const GARNISH_WORKSHOP_CONCEPT_KEY = 'garnishWorkshopGeneratedConcept';
@@ -78,137 +79,6 @@ type NewRecipePreparation = {
     _productionUnit: string;
 };
 
-const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExistingIngredient, sortedIngredients }: { ing: FullRecipeIngredient, handleIngredientChange: any, handleRemoveExistingIngredient: any, sortedIngredients: Ingredient[] }) => {
-    const [openCombobox, setOpenCombobox] = useState(false);
-    return (
-        <TableRow key={ing.recipeIngredientId}>
-            <TableCell className="font-medium">
-                 <div className="flex items-center gap-1">
-                    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                        <PopoverTrigger asChild>
-                            <Button variant="outline" role="combobox" aria-expanded={openCombobox} className="w-full justify-between">
-                                {ing.name || "Choisir..."}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[300px] p-0">
-                            <Command>
-                                <CommandInput placeholder="Rechercher un ingrédient..." />
-                                <CommandList>
-                                    <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
-                                    <CommandGroup>
-                                        {sortedIngredients.map((sIng) => (
-                                            sIng.id ?
-                                                <CommandItem key={sIng.id} value={sIng.name} onSelect={() => { handleIngredientChange(ing.recipeIngredientId, 'id', sIng.id!); setOpenCombobox(false); }}>
-                                                    <Check className={cn("mr-2 h-4 w-4", ing.id === sIng.id ? "opacity-100" : "opacity-0")} />
-                                                    {sIng.name}
-                                                </CommandItem>
-                                                : null
-                                        ))}
-                                    </CommandGroup>
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
-                </div>
-            </TableCell>
-            <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
-            <TableCell>{ing.unit}</TableCell>
-            <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
-            <TableCell>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger>
-                    <AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent>
-                </AlertDialog>
-            </TableCell>
-        </TableRow>
-    )
-}
-
-const NewIngredientRow = ({ newIng, handleNewIngredientChange, openNewIngredientModal, handleRemoveNewIngredient, sortedIngredients }: { newIng: NewRecipeIngredient, handleNewIngredientChange: any, openNewIngredientModal: any, handleRemoveNewIngredient: any, sortedIngredients: Ingredient[] }) => {
-    const [openCombobox, setOpenCombobox] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-
-    const handleSelect = (currentValue: string) => {
-        const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
-        if (selected) {
-            handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!);
-        }
-        setOpenCombobox(false);
-        setSearchTerm("");
-    };
-
-    const handleCreateNew = () => {
-        handleNewIngredientChange(newIng.tempId, 'name', searchTerm);
-        openNewIngredientModal(newIng.tempId);
-        setOpenCombobox(false);
-        setSearchTerm("");
-    }
-
-    const filteredAndSorted = sortedIngredients.filter(ing => ing.name.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    return (
-        <TableRow key={newIng.tempId}>
-            <TableCell>
-                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                    <PopoverTrigger asChild>
-                        <Button
-                            variant="outline"
-                            role="combobox"
-                            aria-expanded={openCombobox}
-                            className={cn(
-                                "w-full justify-between font-normal",
-                                !newIng.ingredientId && "border-dashed border-destructive text-destructive"
-                            )}
-                        >
-                            {newIng.ingredientId ? sortedIngredients.find((ing) => ing.id === newIng.ingredientId)?.name : newIng.name || "Choisir ou créer..."}
-                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                        </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-[300px] p-0">
-                        <Command>
-                           <CommandInput
-                                placeholder="Rechercher ou créer..."
-                                value={searchTerm}
-                                onValueChange={setSearchTerm}
-                            />
-                            <CommandList>
-                                 <CommandGroup>
-                                    {filteredAndSorted.map((ing) => (
-                                        <CommandItem
-                                            key={ing.id}
-                                            value={ing.name}
-                                            onSelect={handleSelect}
-                                        >
-                                            <Check className={cn("mr-2 h-4 w-4", newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0")} />
-                                            {ing.name}
-                                        </CommandItem>
-                                    ))}
-                                </CommandGroup>
-                                <CommandEmpty>
-                                    {searchTerm.length > 1 ? (
-                                        <div 
-                                            className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent"
-                                            onClick={handleCreateNew}
-                                        >
-                                            <PlusCircle className="mr-2 h-4 w-4" />
-                                            Créer l'ingrédient "{searchTerm}"
-                                        </div>
-                                    ) : "Aucun ingrédient trouvé."}
-                                </CommandEmpty>
-                            </CommandList>
-                        </Command>
-                    </PopoverContent>
-                </Popover>
-            </TableCell>
-            <TableCell><Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} /></TableCell>
-            <TableCell>{newIng.unit}</TableCell>
-            <TableCell className="text-right font-semibold">{(newIng.totalCost || 0).toFixed(2)} DZD</TableCell>
-            <TableCell><Button variant="ghost" size="icon" onClick={() => handleRemoveNewIngredient(newIng.tempId)}><Trash2 className="h-4 w-4 text-red-500" /></Button></TableCell>
-        </TableRow>
-    )
-}
-
 export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProps) {
   const [recipe, setRecipe] = useState<Preparation | null>(null);
   const [editableRecipe, setEditableRecipe] = useState<Preparation | null>(null);
@@ -238,15 +108,30 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
   const [newPreparationDefaults, setNewPreparationDefaults] = useState<Partial<Preparation> | null>(null);
   const [currentTempId, setCurrentTempId] = useState<string | null>(null);
   const [currentPrepTempId, setCurrentPrepTempId] = useState<string | null>(null);
+
+  // State and handler for editing an existing ingredient
+  const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
+  const [isEditIngredientModalOpen, setIsEditIngredientModalOpen] = useState(false);
+
+  const handleOpenEditIngredientModal = (ingredientId: string) => {
+    const ingredientToEdit = allIngredients.find(ing => ing.id === ingredientId);
+    if (ingredientToEdit) {
+        setEditingIngredient(ingredientToEdit);
+        setIsEditIngredientModalOpen(true);
+    }
+  };
+
+  const handleIngredientUpdate = () => {
+    fetchAllIngredients();
+    fullDataRefresh();
+  };
   
     const fullDataRefresh = useCallback(async () => {
         setIsLoading(true);
         try {
-            // Fetch all supporting data first
             const ingredientsList = await fetchAllIngredients();
             const allPrepsData = await fetchAllPreparations();
             
-            // Mocked costs, to be replaced by real calculation
             const costs: Record<string, number> = {};
             for (const prep of allPrepsData) {
                 if (prep.id) {
@@ -255,7 +140,6 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             }
             setPreparationsCosts(costs);
 
-            // Fetch the main garnish data
             const recipeDocRef = doc(db, "garnishes", recipeId);
             const recipeSnap = await getDoc(recipeDocRef);
 
@@ -269,7 +153,6 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             setRecipe(fetchedRecipe);
             setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
 
-            // Fetch and process ingredients for this garnish
             const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
             const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
             const ingredientsData = recipeIngredientsSnap.docs.map(docSnap => {
@@ -287,7 +170,6 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
             setIngredients(ingredientsData);
             setEditableIngredients(JSON.parse(JSON.stringify(ingredientsData)));
 
-            // Fetch and process sub-preparations for this garnish
             const recipePreparationsQuery = query(collection(db, "recipePreparationLinks"), where("parentRecipeId", "==", recipeId));
             const recipePreparationsSnap = await getDocs(recipePreparationsQuery);
             const preparationsData = recipePreparationsSnap.docs.map(linkDoc => {
@@ -295,9 +177,9 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
                 if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                     const costPerProductionUnit = costs[linkData.childPreparationId];
-                    const conversionFactor = getConversionFactor(childRecipeData.productionUnit || 'g', linkData.unitUse, childRecipeData);
-                    const costPerUseUnit = conversionFactor > 0 ? costPerProductionUnit / conversionFactor : 0;
-                    return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit || 'g' };
+                    const quantityInProductionUnit = (linkData.quantity || 0) * getConversionFactor(linkData.unitUse, childRecipeData.productionUnit!);
+                    const totalCost = quantityInProductionUnit * costPerProductionUnit;
+                    return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: totalCost, _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit || 'g' };
                 }
                 return null;
             }).filter(Boolean) as FullRecipePreparation[];
@@ -309,7 +191,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         } finally {
             setIsLoading(false);
         }
-    }, [recipeId, toast]); // Only recipeId should be a stable dependency here
+    }, [recipeId, toast]); 
 
   const fetchAllIngredients = useCallback(async () => {
     const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
@@ -372,7 +254,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
 
     const handleToggleEditMode = () => {
         if (isEditing) {
-            fullDataRefresh(); // Reset changes
+            fullDataRefresh(); 
             setNewIngredients([]);
             setNewPreparations([]);
         }
@@ -418,7 +300,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 const { cost } = computeIngredientCost(selectedIngredient, updatedIng.quantity, updatedIng.unit);
                 updatedIng.totalCost = cost;
             } else if(field === 'ingredientId') {
-                updatedIng.ingredientId = undefined; // Unlink if not found
+                updatedIng.ingredientId = undefined;
             }
             return updatedIng;
             }
@@ -519,6 +401,9 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
 
     return (
         <div className="space-y-4">
+            <IngredientModal open={isEditIngredientModalOpen} onOpenChange={setIsEditIngredientModalOpen} ingredient={editingIngredient} onSuccess={handleIngredientUpdate}>
+                <div />
+            </IngredientModal>
             <IngredientModal open={isNewIngredientModalOpen} onOpenChange={setIsNewIngredientModalOpen} ingredient={newIngredientDefaults} onSuccess={(newDbIngredient) => { if (newDbIngredient && currentTempId) { handleCreateAndLinkIngredient(currentTempId, newDbIngredient); } }} ><div /></IngredientModal>
             <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                 <div className="flex items-start gap-4 flex-grow">
@@ -571,7 +456,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                         </CardHeader>
                         <CardContent>
                             <Table>
-                                <TableHeader><TableRow><TableHead className="w-[35%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
+                                <TableHeader><TableRow><TableHead className="w-[35%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[100px] text-right">Actions</TableHead>}</TableRow></TableHeader>
                                 <TableBody>
                                     {isEditing ? (
                                         <>
@@ -581,6 +466,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                                                     ing={ing}
                                                     handleIngredientChange={handleIngredientChange}
                                                     handleRemoveExistingIngredient={handleRemoveExistingIngredient}
+                                                    handleOpenEditIngredientModal={handleOpenEditIngredientModal}
                                                     sortedIngredients={sortedIngredients}
                                                 />
                                             ))}
@@ -592,6 +478,8 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                                                     openNewIngredientModal={openNewIngredientModal}
                                                     handleRemoveNewIngredient={handleRemoveNewIngredient}
                                                     sortedIngredients={sortedIngredients}
+                                                    handleOpenEditIngredientModal={handleOpenEditIngredientModal}
+                                                    handleOpenSuggestionModal={() => {}} // Placeholder
                                                 />
                                             ))}
                                         </>
@@ -699,3 +587,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    

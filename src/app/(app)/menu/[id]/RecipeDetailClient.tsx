@@ -12,13 +12,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle, FishSymbol } from "lucide-react";
+import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle, FishSymbol, Pencil } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { replaceRecipeIngredients, updateRecipeDetails, addRecipePreparationLink, deleteRecipePreparationLink, updateRecipePreparationLink, replaceRecipePreparations } from "../actions";
+import { updateRecipeDetails, replaceRecipeIngredients, replaceRecipePreparations } from "../actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -271,7 +271,7 @@ const NewIngredientRow = ({
     );
 };
 
-const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExistingIngredient, sortedIngredients }: { ing: FullRecipeIngredient, handleIngredientChange: any, handleRemoveExistingIngredient: any, sortedIngredients: Ingredient[] }) => {
+const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExistingIngredient, sortedIngredients, onEditIngredient }: { ing: FullRecipeIngredient, handleIngredientChange: any, handleRemoveExistingIngredient: any, sortedIngredients: Ingredient[], onEditIngredient: (id: string) => void }) => {
     const [openCombobox, setOpenCombobox] = useState(false);
     return (
         <TableRow key={ing.recipeIngredientId}>
@@ -309,7 +309,20 @@ const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExisti
             <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
             <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell>
             <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
-            <TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell>
+            <TableCell>
+                <div className="flex items-center justify-end">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => onEditIngredient(ing.id)}>
+                        <Pencil className="h-4 w-4 text-blue-600" />
+                    </Button>
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><Trash2 className="h-4 w-4 text-red-500"/></Button></AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ?</AlertDialogDescription></AlertDialogHeader>
+                            <AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                </div>
+            </TableCell>
         </TableRow>
     )
 };
@@ -405,6 +418,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
     const [newIngredientDefaults, setNewIngredientDefaults] = useState<Partial<Ingredient> | null>(null);
     const [currentTempId, setCurrentTempId] = useState<string | null>(null);
     const [workshopConcept, setWorkshopConcept] = useState<RecipeConceptOutput | null>(null);
+    const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
 
 
     const calculatePreparationsCosts = useCallback(async (preparationsList: Preparation[], ingredientsList: Ingredient[]): Promise<Record<string, number>> => {
@@ -456,9 +470,9 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                     const childPrep = preparationsList.find(p => p.id === depId);
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
-                        const conversionFactor = getConversionFactor(childPrep.productionUnit, linkData.unitUse, childPrep);
-                        const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
-                        totalCost += (linkData.quantity || 0) * costPerUseUnit;
+                        const quantityInProductionUnit = linkData.quantity * getConversionFactor(linkData.unitUse, childPrep.productionUnit!);
+                        const subPrepCost = quantityInProductionUnit * childCostPerProductionUnit;
+                        totalCost += subPrepCost;
                     }
                 }
             }
@@ -534,9 +548,9 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
             const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
             if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                 const costPerProductionUnit = costs[linkData.childPreparationId];
-                const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse, childRecipeData);
-                const costPerUseUnit = costPerProductionUnit / conversionFactor;
-                return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit };
+                const quantityInProductionUnit = linkData.quantity * getConversionFactor(linkData.unitUse, childRecipeData.productionUnit!);
+                const subPrepCost = quantityInProductionUnit * costPerProductionUnit;
+                return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: subPrepCost, _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit };
             }
             return null;
         }).filter(Boolean) as FullRecipePreparation[];
@@ -694,6 +708,12 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         });
     };
     const openNewIngredientModal = (tempId: string) => { const ingredientToCreate = newIngredients.find(ing => ing.tempId === tempId); if (ingredientToCreate) { setCurrentTempId(tempId); setNewIngredientDefaults({ name: ingredientToCreate.name }); setIsNewIngredientModalOpen(true); } }
+    const handleOpenEditIngredientModal = (ingredientId: string) => {
+        const ingredientToEdit = allIngredients.find(i => i.id === ingredientId);
+        if (ingredientToEdit) {
+            setEditingIngredient(ingredientToEdit);
+        }
+    };
 
     // --- PREPARATION HANDLERS ---
     const openNewPreparationModal = (tempId: string) => {
@@ -720,10 +740,11 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         setEditablePreparations(current => current.map(prep => {
             if (prep.id === linkId) {
                 const updatedPrep = { ...prep, [field]: value };
-                const costPerProductionUnit = prep._costPerUnit || 0;
-                const conversionFactor = getConversionFactor(prep._productionUnit, updatedPrep.unit);
-                const costPerUseUnit = costPerProductionUnit / conversionFactor;
-                updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
+                const childPrep = allPreparations.find(p => p.id === prep.childPreparationId);
+                if (childPrep) {
+                    const quantityInProductionUnit = updatedPrep.quantity * getConversionFactor(updatedPrep.unit, prep._productionUnit);
+                    updatedPrep.totalCost = quantityInProductionUnit * (prep._costPerUnit || 0);
+                }
                 return updatedPrep;
             }
             return prep;
@@ -733,28 +754,22 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         setNewPreparations(current => current.map(p => {
             if (p.tempId === tempId) {
                 const updatedPrep = { ...p, [field]: value };
-                if (field === 'childPreparationId') {
-                    const selectedPrep = allPreparations.find(prep => prep.id === value);
-                    if (selectedPrep) {
-                        updatedPrep.name = selectedPrep.name;
-                        updatedPrep.unit = selectedPrep.usageUnit || selectedPrep.productionUnit || 'g';
-                        updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0;
-                        updatedPrep._productionUnit = selectedPrep.productionUnit || '';
-                    } else {
-                        updatedPrep.childPreparationId = undefined;
-                    }
+                const selectedPrep = allPreparations.find(prep => prep.id === updatedPrep.childPreparationId);
+                if (field === 'childPreparationId' && selectedPrep) {
+                    updatedPrep.name = selectedPrep.name;
+                    updatedPrep.unit = selectedPrep.usageUnit || selectedPrep.productionUnit || 'g';
+                    updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0;
+                    updatedPrep._productionUnit = selectedPrep.productionUnit || '';
                 }
-                if (field === 'quantity' || field === 'childPreparationId') {
-                    const costPerProductionUnit = updatedPrep._costPerUnit || 0;
-                    const conversionFactor = getConversionFactor(updatedPrep.unit, updatedPrep._productionUnit);
-                    const costPerUseUnit = costPerProductionUnit / conversionFactor;
-                    updatedPrep.totalCost = (updatedPrep.quantity || 0) * costPerUseUnit;
+                
+                if (selectedPrep) {
+                    const quantityInProductionUnit = updatedPrep.quantity * getConversionFactor(updatedPrep.unit, selectedPrep.productionUnit!);
+                    updatedPrep.totalCost = quantityInProductionUnit * (updatedPrep._costPerUnit || 0);
                 }
                 return updatedPrep;
             }
             return p;
-        })
-        );
+        }));
     };
 
     const handleSave = async () => {
@@ -888,7 +903,18 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
 
     return (
         <div className="space-y-4">
-            <IngredientModal open={isNewIngredientModalOpen} onOpenChange={setIsNewIngredientModalOpen} ingredient={newIngredientDefaults} onSuccess={(newDbIngredient) => { if (newDbIngredient && currentTempId) { handleCreateAndLinkIngredient(currentTempId, newDbIngredient); } }} ><div /></IngredientModal>
+            <IngredientModal
+                open={!!editingIngredient}
+                onOpenChange={(isOpen) => !isOpen && setEditingIngredient(null)}
+                ingredient={editingIngredient}
+                onSuccess={() => {
+                    setEditingIngredient(null);
+                    fullDataRefresh(); // Refresh all data and costs
+                }}
+            >
+                <div />
+            </IngredientModal>
+
             <PreparationModal open={isNewPreparationModalOpen} onOpenChange={setIsNewPreparationModalOpen} preparation={newPreparationDefaults} onSuccess={(newDbPrep) => { if (newDbPrep && currentPrepTempId) { handleCreateAndLinkPreparation(currentPrepTempId, newDbPrep); } }}><div /></PreparationModal>
             <ImageUploadDialog isOpen={isImageUploadOpen} onClose={() => setIsImageUploadOpen(false)} onUploadComplete={(url) => { handleRecipeDataChange('imageUrl', url); }} />
             {currentRecipeData.imageUrl && (
@@ -1031,6 +1057,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                             handleIngredientChange={handleIngredientChange}
                                             handleRemoveExistingIngredient={handleRemoveExistingIngredient}
                                             sortedIngredients={sortedIngredients}
+                                            onEditIngredient={handleOpenEditIngredientModal}
                                         />
                                     )) : ingredients.map(ing => (
                                         <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
