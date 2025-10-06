@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { collection, getDocs, query } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { Ingredient } from "@/lib/types";
@@ -13,8 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Pencil } from "lucide-react";
 import { computeIngredientCost } from "@/utils/unitConverter";
+import { IngredientModal } from "../ingredients/IngredientModal";
+import { Button } from "@/components/ui/button";
 
 
 export default function TestIngredientsClient() {
@@ -26,20 +28,27 @@ export default function TestIngredientsClient() {
     const [unit, setUnit] = useState<string>('pièce');
 
 
-    useEffect(() => {
-        const fetchIngredients = async () => {
-            setIsLoading(true);
+    const fetchIngredients = useCallback(async (selectFirst = false) => {
+        setIsLoading(true);
+        try {
             const ingredientsQuery = query(collection(db, "ingredients"));
             const querySnapshot = await getDocs(ingredientsQuery);
             const ingredientsData = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
             setIngredients(ingredientsData);
-            if (ingredientsData.length > 0) {
+
+            if (selectFirst && ingredientsData.length > 0) {
                 setSelectedIngredientId(ingredientsData[0].id!);
             }
+        } catch (error) {
+            console.error("Failed to fetch ingredients:", error);
+        } finally {
             setIsLoading(false);
-        };
-        fetchIngredients();
+        }
     }, []);
+
+    useEffect(() => {
+        fetchIngredients(true);
+    }, [fetchIngredients]);
 
     const selectedIngredient = useMemo(() => {
         return ingredients.find(ing => ing.id === selectedIngredientId) || null;
@@ -50,7 +59,7 @@ export default function TestIngredientsClient() {
         return computeIngredientCost(selectedIngredient, quantity, unit);
     }, [quantity, unit, selectedIngredient]);
 
-    if (isLoading) {
+    if (isLoading && ingredients.length === 0) {
         return <Skeleton className="h-[400px] w-full" />;
     }
 
@@ -135,8 +144,23 @@ export default function TestIngredientsClient() {
                 {/* --- FICHE TECHNIQUE INGRÉDIENT --- */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Données de l'Ingrédient</CardTitle>
-                        <CardDescription>Vérifiez les valeurs de base utilisées pour le calcul.</CardDescription>
+                        <div className="flex justify-between items-start">
+                             <div>
+                                <CardTitle>Données de l'Ingrédient</CardTitle>
+                                <CardDescription>Vérifiez les valeurs de base utilisées pour le calcul.</CardDescription>
+                            </div>
+                            {selectedIngredient && (
+                                <IngredientModal
+                                    ingredient={selectedIngredient}
+                                    onSuccess={() => fetchIngredients(false)}
+                                >
+                                    <Button variant="outline" size="sm">
+                                        <Pencil className="mr-2 h-4 w-4" />
+                                        Modifier
+                                    </Button>
+                                </IngredientModal>
+                            )}
+                        </div>
                     </CardHeader>
                     <CardContent>
                         {selectedIngredient ? (
