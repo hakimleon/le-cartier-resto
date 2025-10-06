@@ -55,7 +55,7 @@ const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
 type RecipeDetailClientProps = {
     recipeId: string;
-    collectionName: 'recipes' | 'preparations';
+    collectionName: 'recipes' | 'preparations' | 'garnishes';
 };
 
 // Extends RecipeIngredient to include purchase unit details for conversion
@@ -1114,5 +1114,6 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
 
     
