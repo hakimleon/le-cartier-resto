@@ -55,6 +55,7 @@ const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
 type RecipeDetailClientProps = {
     recipeId: string;
+    collectionName: 'recipes' | 'preparations';
 };
 
 // Extends RecipeIngredient to include purchase unit details for conversion
@@ -253,7 +254,7 @@ const NewIngredientRow = ({
     );
 };
 
-export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
+export default function RecipeDetailClient({ recipeId, collectionName }: RecipeDetailClientProps) {
     const [recipe, setRecipe] = useState<Recipe | Preparation | null>(null);
     const [editableRecipe, setEditableRecipe] = useState<Recipe | Preparation | null>(null);
 
@@ -370,8 +371,6 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         const costs = await calculatePreparationsCosts(allPrepsData, ingredientsList);
         setPreparationsCosts(costs);
 
-        const isLikelyPreparation = window.location.pathname.includes('/preparations/');
-        const collectionName = isLikelyPreparation ? "preparations" : "recipes";
         const recipeDocRef = doc(db, collectionName, recipeId);
         const recipeSnap = await getDoc(recipeDocRef);
 
@@ -425,7 +424,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setPreparations(preparationsData);
         setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
 
-    }, [recipeId, fetchAllIngredients, fetchAllPreparations, calculatePreparationsCosts]);
+    }, [recipeId, collectionName, fetchAllIngredients, fetchAllPreparations, calculatePreparationsCosts]);
 
 
     useEffect(() => {
@@ -640,7 +639,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 name: editableRecipe.name, description: editableRecipe.description, difficulty: editableRecipe.difficulty, duration: editableRecipe.duration, procedure_fabrication: editableRecipe.procedure_fabrication, procedure_service: editableRecipe.procedure_service, imageUrl: editableRecipe.imageUrl,
                 ...(editableRecipe.type === 'Plat' ? { portions: editableRecipe.portions, tvaRate: editableRecipe.tvaRate, price: editableRecipe.price, commercialArgument: editableRecipe.commercialArgument, status: editableRecipe.status, category: editableRecipe.category, } : { productionQuantity: (editableRecipe as Preparation).productionQuantity, productionUnit: (editableRecipe as Preparation).productionUnit, usageUnit: (editableRecipe as Preparation).usageUnit, })
             };
-            await updateRecipeDetails(recipeId, recipeDataToSave, editableRecipe.type);
+            await updateRecipeDetails(recipeId, recipeDataToSave, collectionName);
 
             const allCurrentIngredients = [...editableIngredients.map(ing => ({ ingredientId: ing.id, quantity: ing.quantity, unitUse: ing.unit })), ...newIngredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: ing.quantity, unitUse: ing.unit }))].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'id' | 'recipeId'>[];
             await replaceRecipeIngredients(recipeId, allCurrentIngredients);
@@ -1115,3 +1114,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
