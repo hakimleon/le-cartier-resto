@@ -21,30 +21,15 @@ const formatCategory = (category?: string): string => {
     if (!category) return "Non classé";
     const cat = category.toLowerCase();
 
+    // Correction ciblée pour les variations de "pâtes"
     if (cat.includes('pates') || cat.includes('pâtes')) {
         return 'Symphonie de pâtes';
     }
-    if (cat.includes('entrées')) {
-        return 'Entrées froides et chaudes';
-    }
-     if (cat.includes('plats') || cat.includes('grillades')) {
-        return 'Plats et Grillades';
-    }
-     if (cat.includes('mets de chez nous')) {
-        return 'Les mets de chez nous';
-    }
-    if (cat.includes('burgers')) {
-        return 'Nos Burgers Bistronomiques';
-    }
-    if (cat.includes('dessert')) {
-        return 'Dessert';
-    }
-    if (cat.includes('boissons') || cat.includes('rafraîchissements') || cat.includes('élixirs')) {
-        return 'Élixirs & Rafraîchissements';
-    }
-    
+
+    // Comportement par défaut pour toutes les autres catégories
     return category.split(/[-–]/)[0].trim();
 };
+
 
 const sortCategories = (categories: string[]) => {
   const customOrder = [
@@ -296,5 +281,3 @@ export default function MenuClient() {
     </div>
   );
 }
-
-    
