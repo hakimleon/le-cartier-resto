@@ -5,116 +5,74 @@ import React from "react";
 
 const inlineFormat = (text: string) => {
   if (!text) return "";
-  // Basic formatting for bold and italics
-  const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-  let t = esc(text);
-  t = t.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
-  t = t.replace(/\*(.+?)\*/g, "<em>$1</em>");
-  return t;
+  // Escape HTML to prevent XSS, then apply formatting
+  let safeText = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+  
+  safeText = safeText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  return safeText;
 };
 
-type MarkdownNode = {
-    type: 'h3' | 'p' | 'ol' | 'ul';
-    content?: string;
-    items?: string[];
-}
+const renderNodes = (lines: string[]) => {
+    const elements: React.ReactNode[] = [];
+    let currentSubList: string[] | null = null;
+    let keyCounter = 0;
 
-function parseMarkdown(md: string | undefined): MarkdownNode[] {
-    if (!md) return [];
-    
-    // Pre-process the text: force line breaks before # and numbered steps
-    const processedMd = md
-        .replace(/\s*#\s*/g, '\n\n### ') // Headings
-        .replace(/(\d+)\.\s*/g, '\n$1. '); // Numbered lists
-
-    const nodes: MarkdownNode[] = [];
-    const lines = processedMd.split('\n').filter(line => line.trim() !== '');
-    
-    let currentList: { type: 'ol' | 'ul'; items: string[] } | null = null;
-
-    const flushList = () => {
-        if (currentList) {
-            nodes.push(currentList);
-            currentList = null;
+    const flushSubList = () => {
+        if (currentSubList && currentSubList.length > 0) {
+            elements.push(
+                <ul key={`ul-${keyCounter++}`} className="list-disc list-outside pl-8 mt-2 space-y-1">
+                    {currentSubList.map((item, index) => (
+                        <li key={index} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
+                    ))}
+                </ul>
+            );
+            currentSubList = null;
         }
     };
 
-    for (const line of lines) {
+    lines.forEach(line => {
         const trimmedLine = line.trim();
-        if (!trimmedLine) continue;
 
-        const olMatch = trimmedLine.match(/^(\d+)\.\s+(.*)/);
-        const ulMatch = trimmedLine.match(/^-\s+(.*)/);
+        if (!trimmedLine) {
+            return; // Ignore empty lines
+        }
 
-        if (olMatch) {
-            if (currentList?.type !== 'ol') {
-                flushList();
-                currentList = { type: 'ol', items: [] };
+        if (trimmedLine.match(/^(\d+)\./)) { // This is a main title/step like "1. ..."
+            flushSubList();
+            elements.push(
+                <p key={`p-${keyCounter++}`} className="font-semibold text-foreground/90 mt-4" dangerouslySetInnerHTML={{ __html: inlineFormat(trimmedLine) }} />
+            );
+        } else if (trimmedLine.startsWith('*')) { // This is a sub-list item
+            if (currentSubList === null) {
+                currentSubList = [];
             }
-            currentList.items.push(olMatch[2]);
-            continue;
+            currentSubList.push(trimmedLine.substring(1).trim());
+        } else { // This is a continuation of the previous line or a simple paragraph
+             flushSubList();
+             elements.push(<p key={`p-${keyCounter++}`} dangerouslySetInnerHTML={{ __html: inlineFormat(trimmedLine)}} />);
         }
+    });
 
-        if (ulMatch) {
-            if (currentList?.type !== 'ul') {
-                flushList();
-                currentList = { type: 'ul', items: [] };
-            }
-            currentList.items.push(ulMatch[1]);
-            continue;
-        }
-        
-        flushList();
-        
-        if (trimmedLine.startsWith('### ')) {
-            nodes.push({ type: 'h3', content: trimmedLine.substring(4) });
-        } else {
-            nodes.push({ type: 'p', content: trimmedLine });
-        }
-    }
-
-    flushList(); // Flush any remaining list items at the end
-
-    return nodes;
+    flushSubList(); // Flush any remaining list at the end
+    return elements;
 }
 
 
 export default function MarkdownRenderer({ text }: { text: string | undefined }) {
   if (!text) return null;
-  const nodes = parseMarkdown(text);
-  
+
+  // Split by newlines to process line by line
+  const lines = text.split('\n');
+  const nodes = renderNodes(lines);
+
   return (
     <div className="prose prose-sm max-w-none text-muted-foreground">
-      {nodes.map((node, idx) => {
-        switch (node.type) {
-          case 'h3':
-            return (
-              <h3 key={idx} className="mt-4 mb-2 font-semibold text-foreground/90 text-base" dangerouslySetInnerHTML={{ __html: inlineFormat(node.content || '') }} />
-            );
-          case 'p':
-            return (
-              <p key={idx} className="mb-2" dangerouslySetInnerHTML={{ __html: inlineFormat(node.content || '') }} />
-            );
-          case 'ol':
-            return (
-              <ol key={idx} className="list-decimal list-outside pl-6 my-2 space-y-2">
-                {node.items?.map((item, i) => (
-                  <li key={i} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
-                ))}
-              </ol>
-            );
-          case 'ul':
-            return (
-              <ul key={idx} className="list-disc list-outside pl-6 my-2 space-y-1">
-                {node.items?.map((item, i) => (
-                  <li key={i} dangerouslySetInnerHTML={{ __html: inlineFormat(item) }} />
-                ))}
-              </ul>
-            );
-          default:
-            return null;
-        }
-      })}
+      {nodes}
     </div>
   );
 }
