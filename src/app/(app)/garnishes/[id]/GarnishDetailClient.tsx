@@ -37,7 +37,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { PreparationConceptOutput } from "@/ai/flows/workshop-flow";
-import { computeIngredientCost, getConversionFactor } from "@/lib/unitConverter";
+import { computeIngredientCost, getConversionFactor } from "@/utils/unitConverter";
 
 
 const GARNISH_WORKSHOP_CONCEPT_KEY = 'garnishWorkshopGeneratedConcept';
@@ -292,7 +292,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
                 if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                     const costPerProductionUnit = costs[linkData.childPreparationId];
-                    const conversionFactor = getConversionFactor(childRecipeData.productionUnit || 'g', linkData.unitUse);
+                    const conversionFactor = getConversionFactor(childRecipeData.productionUnit || 'g', linkData.unitUse, childRecipeData);
                     const costPerUseUnit = conversionFactor > 0 ? costPerProductionUnit / conversionFactor : 0;
                     return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit || 'g' };
                 }
@@ -696,6 +696,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-
-    

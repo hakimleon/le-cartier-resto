@@ -41,7 +41,7 @@ import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { RecipeConceptOutput } from "@/ai/flows/recipe-workshop-flow";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent } from "@/components/ui/dialog";
-import { computeIngredientCost, getConversionFactor } from "@/lib/unitConverter";
+import { computeIngredientCost, getConversionFactor } from "@/utils/unitConverter";
 
 
 const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
@@ -297,7 +297,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 const childPrep = preparationsList.find(p => p.id === depId);
                 const childCostPerProductionUnit = costs[depId];
                 if (childPrep && childCostPerProductionUnit !== undefined) {
-                     const conversionFactor = getConversionFactor(childPrep.productionUnit!, linkData.unitUse);
+                     const conversionFactor = getConversionFactor(childPrep.productionUnit!, linkData.unitUse, childPrep);
                      const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
                      totalCost += (linkData.quantity || 0) * costPerUseUnit;
                 }
@@ -366,7 +366,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
             if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                 const costPerProductionUnit = costs[linkData.childPreparationId];
-                const conversionFactor = getConversionFactor(childRecipeData.productionUnit!, linkData.unitUse);
+                const conversionFactor = getConversionFactor(childRecipeData.productionUnit!, linkData.unitUse, childRecipeData);
                 const costPerUseUnit = costPerProductionUnit / conversionFactor;
                 return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit! };
             }
@@ -449,7 +449,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const childPrep = allPreparations.find(p => p.id === prep.childPreparationId);
             const costPerUnit = preparationsCosts[prep.childPreparationId];
             if(childPrep && costPerUnit !== undefined) {
-                 const conversionFactor = getConversionFactor(childPrep.productionUnit!, prep.unit);
+                 const conversionFactor = getConversionFactor(childPrep.productionUnit!, prep.unit, childPrep);
                  const costPerUseUnit = costPerUnit / conversionFactor;
                  prep.totalCost = (prep.quantity || 0) * costPerUseUnit;
             }
@@ -880,9 +880,40 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <Table>
                         <TableHeader><TableRow><TableHead className="w-[35%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[100px] text-right">Actions</TableHead>}</TableRow></TableHeader>
                         <TableBody>
-                            {isEditing && editableIngredients.map(ing => (
+                            {isEditing && editableIngredients.map(ing => {
+                                const [openCombobox, setOpenCombobox] = useComboboxState();
+                                return (
                                 <TableRow key={ing.recipeIngredientId}>
-                                    <TableCell className="font-medium">{ing.name}</TableCell>
+                                    <TableCell className="font-medium">
+                                        <div className="flex items-center gap-1">
+                                            <Popover open={openCombobox as boolean} onOpenChange={setOpenCombobox as (open: boolean) => void}>
+                                                <PopoverTrigger asChild>
+                                                    <Button variant="outline" role="combobox" aria-expanded={openCombobox as boolean} className="w-full justify-between">
+                                                        {ing.name || "Choisir..."}
+                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-[300px] p-0">
+                                                    <Command>
+                                                        <CommandInput placeholder="Rechercher un ingrédient..." />
+                                                        <CommandList>
+                                                            <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                                            <CommandGroup>
+                                                                {sortedIngredients.map((sIng) => (
+                                                                    sIng.id ?
+                                                                        <CommandItem key={sIng.id} value={sIng.name} onSelect={() => { handleIngredientChange(ing.recipeIngredientId, 'id', sIng.id!); (setOpenCombobox as (open: boolean) => void)(false); }}>
+                                                                            <Check className={cn("mr-2 h-4 w-4", ing.id === sIng.id ? "opacity-100" : "opacity-0")} />
+                                                                            {sIng.name}
+                                                                        </CommandItem>
+                                                                        : null
+                                                                ))}
+                                                            </CommandGroup>
+                                                        </CommandList>
+                                                    </Command>
+                                                </PopoverContent>
+                                            </Popover>
+                                        </div>
+                                    </TableCell>
                                     <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20"/></TableCell>
                                     <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell>
                                     <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
@@ -899,7 +930,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            ))}
+                            )})}
                             {!isEditing && ingredients.map(ing => ( <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>))}
                             {isEditing && newIngredients.map((newIng) => (
                                 <NewIngredientRow 
@@ -1126,5 +1157,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    

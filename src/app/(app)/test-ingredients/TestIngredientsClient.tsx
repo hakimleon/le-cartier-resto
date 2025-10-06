@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-import { computeIngredientCost } from "@/lib/unitConverter";
+import { computeIngredientCost } from "@/utils/unitConverter";
 
 
 export default function TestIngredientsClient() {
@@ -166,7 +166,7 @@ export default function TestIngredientsClient() {
                                                 {Object.entries(selectedIngredient.equivalences).map(([key, value]) => (
                                                     <TableRow key={key}>
                                                         <TableCell>{key}</TableCell>
-                                                        <TableCell className="text-right">{value} {selectedIngredient.baseUnit || 'g'}</TableCell>
+                                                        <TableCell className="text-right">{String(value)}</TableCell>
                                                     </TableRow>
                                                 ))}
                                             </TableBody>

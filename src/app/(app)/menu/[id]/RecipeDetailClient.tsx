@@ -49,7 +49,7 @@ import { ImagePreviewModal } from "./ImagePreviewModal";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { computeIngredientCost, getConversionFactor } from "@/lib/unitConverter";
+import { computeIngredientCost, getConversionFactor } from "@/utils/unitConverter";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
@@ -399,7 +399,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                     const childPrep = preparationsList.find(p => p.id === depId);
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
-                        const conversionFactor = getConversionFactor(childPrep.productionUnit, linkData.unitUse);
+                        const conversionFactor = getConversionFactor(childPrep.productionUnit, linkData.unitUse, childPrep);
                         const costPerUseUnit = childCostPerProductionUnit / conversionFactor;
                         totalCost += (linkData.quantity || 0) * costPerUseUnit;
                     }
@@ -475,7 +475,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
             const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
             if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                 const costPerProductionUnit = costs[linkData.childPreparationId];
-                const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse);
+                const conversionFactor = getConversionFactor(childRecipeData.productionUnit, linkData.unitUse, childRecipeData);
                 const costPerUseUnit = costPerProductionUnit / conversionFactor;
                 return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: costPerUseUnit * (linkData.quantity || 0), _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit };
             }
@@ -1187,5 +1187,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
-    
