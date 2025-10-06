@@ -223,37 +223,38 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
             </div>
 
             <Separator />
-
-            <div className="space-y-4">
+            
+            <div>
                 <h3 className="text-lg font-medium">Table d'équivalence</h3>
                 <p className="text-sm text-muted-foreground">Définissez ici les conversions spécifiques (ex: "pièce->g").</p>
-                {fields.map((field, index) => (
-                    <div key={field.id} className="flex items-end gap-2">
-                        <FormField control={form.control} name={`equivalences.${index}.key`} render={({ field }) => (
-                            <FormItem className="flex-1">
-                                {index === 0 && <FormLabel>Conversion</FormLabel>}
-                                <FormControl><Input placeholder="ex: pièce->g" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}/>
-                        <FormField control={form.control} name={`equivalences.${index}.value`} render={({ field }) => (
-                            <FormItem className="flex-1">
-                                {index === 0 && <FormLabel>Valeur</FormLabel>}
-                                <FormControl><Input placeholder="ex: 120" {...field} /></FormControl>
-                                <FormMessage />
-                            </FormItem>
-                        )}/>
-                        <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                            <Trash2 className="h-4 w-4 text-destructive"/>
-                        </Button>
-                    </div>
-                ))}
-                <Button type="button" variant="outline" size="sm" onClick={() => append({ key: "", value: "" })}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Ajouter une conversion
-                </Button>
+                <div className="space-y-4 pt-4">
+                    {fields.map((field, index) => (
+                        <div key={field.id} className="flex items-end gap-2">
+                            <FormField control={form.control} name={`equivalences.${index}.key`} render={({ field }) => (
+                                <FormItem className="flex-1">
+                                    {index === 0 && <FormLabel>Conversion</FormLabel>}
+                                    <FormControl><Input placeholder="ex: pièce->g" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name={`equivalences.${index}.value`} render={({ field }) => (
+                                <FormItem className="flex-1">
+                                    {index === 0 && <FormLabel>Valeur</FormLabel>}
+                                    <FormControl><Input placeholder="ex: 120" {...field} /></FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                <Trash2 className="h-4 w-4 text-destructive"/>
+                            </Button>
+                        </div>
+                    ))}
+                    <Button type="button" variant="outline" size="sm" onClick={() => append({ key: "", value: "" })}>
+                    <PlusCircle className="mr-2 h-4 w-4" />
+                    Ajouter une conversion
+                    </Button>
+                </div>
             </div>
-
 
             <Separator />
             
