@@ -25,59 +25,55 @@ export function getConversionFactor(
   // Cas 1 — Même unité
   if (f === t) return 1;
 
-  // Cas 2 - Conversion standard (poids <-> poids, volume <-> volume)
-  const fFactor = standardConversions[f];
-  const tFactor = standardConversions[t];
-  if (fFactor && tFactor) {
-    const fIsWeight = ["g", "kg", "mg"].includes(f);
-    const tIsWeight = ["g", "kg", "mg"].includes(t);
-    const fIsVolume = ["l", "ml", "cl"].includes(f);
-    const tIsVolume = ["l", "ml", "cl"].includes(t);
-
-    if ((fIsWeight && tIsWeight) || (fIsVolume && tIsVolume)) {
-      return fFactor / tFactor;
+  // Cas 2 - Conversion implicite depuis l'unité d'achat vers l'unité de base
+  if (ingredient?.purchaseUnit && ingredient.baseUnit && ingredient.purchaseWeightGrams) {
+    if (f === ingredient.purchaseUnit.toLowerCase().trim() && t === ingredient.baseUnit.toLowerCase().trim()) {
+      return ingredient.purchaseWeightGrams;
     }
   }
 
-  // Cas 3 — Conversion spécifique à l’ingrédient (directe)
-  const eq = ingredient?.equivalences || {};
-  const directKey = `${f}->${t}`;
-  if (eq[directKey]) {
-    const value = Number(eq[directKey]);
-    return isNaN(value) ? 1 : value;
+  // Cas 3 — Conversion standard poids / volume
+  if (standardConversions[f] && standardConversions[t]) {
+    const bothWeight =
+      ["g", "kg", "mg"].includes(f) && ["g", "kg", "mg"].includes(t);
+    const bothVolume =
+      ["ml", "l", "cl"].includes(f) && ["ml", "l", "cl"].includes(t);
+
+    if (bothWeight || bothVolume) {
+      return standardConversions[f] / standardConversions[t];
+    }
   }
+
+  // Cas 4 — Conversion spécifique à l’ingrédient (table d'équivalence)
+  const eq = ingredient?.equivalences || {};
+  const key = `${f}->${t}`;
+  if (eq[key]) return Number(eq[key]);
 
   const reverseKey = `${t}->${f}`;
   if (eq[reverseKey]) {
       const reverseValue = Number(eq[reverseKey]);
       return reverseValue === 0 ? 1 : 1 / reverseValue;
   }
-
-  // Cas 4 — Conversion en chaîne via une unité de base (ex: pièce -> g -> kg)
+  
+  // Cas 5 - Conversion en chaîne via l'unité de base
   if (ingredient?.baseUnit) {
-    const base = ingredient.baseUnit;
-    const keyToBase = `${f}->${base}`;
-    
-    // On ne fait une récursion que si on a un chemin direct vers l'unité de base.
-    // Ceci évite la boucle infinie.
-    if (eq[keyToBase]) {
-      const fromToBaseFactor = Number(eq[keyToBase]);
+      const base = ingredient.baseUnit;
+      const keyToBase = `${f}->${base}`;
       
-      // Appel récursif pour la deuxième partie de la chaîne (ex: g -> kg)
-      // Cet appel se résoudra généralement par le Cas 2 (standard).
-      const baseToTargetFactor = getConversionFactor(base, t, ingredient);
-      
-      // Si la deuxième partie de la chaîne a échoué (retourné 1 alors que base !== t), on ne continue pas.
-      if (baseToTargetFactor === 1 && base !== t) {
-         // Laisse tomber et passe au warning final
-      } else {
-         return fromToBaseFactor * baseToTargetFactor;
+      if (eq[keyToBase]) {
+          const toBaseFactor = Number(eq[keyToBase]);
+          const fromBaseToTargetFactor = getConversionFactor(base, t, ingredient); 
+          
+          if (fromBaseToTargetFactor === 1 && base !== t) {
+             // La chaîne est rompue, on ne continue pas
+          } else {
+             return toBaseFactor * fromBaseToTargetFactor;
+          }
       }
-    }
   }
 
-  // Cas 5 — Conversion impossible à déterminer
-  console.warn(`⚠️ Conversion manquante pour l'ingrédient '${ingredient?.name}': ${fromUnit} → ${toUnit}`);
+  // Cas 6 — Conversion impossible
+  console.warn(`⚠️ Conversion manquante : ${fromUnit} → ${toUnit}`);
   return 1;
 }
 
@@ -98,7 +94,7 @@ export function computeIngredientCost(
   usedQuantity: number,
   usedUnit: string
 ): { cost: number, error?: string } {
-    if (ingredient.purchasePrice == null || !ingredient.purchaseWeightGrams || ingredient.purchaseWeightGrams === 0) {
+    if (!ingredient.purchasePrice || !ingredient.purchaseWeightGrams || ingredient.purchaseWeightGrams === 0) {
         return { cost: 0, error: "Données d'achat incomplètes (prix ou poids)." };
     }
     if (!ingredient.baseUnit) {
