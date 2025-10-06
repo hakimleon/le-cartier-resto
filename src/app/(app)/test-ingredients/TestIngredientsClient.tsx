@@ -10,76 +10,11 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableRow, TableHead, TableHeader } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AlertTriangle } from "lucide-react";
-
-// Simplified conversion for demonstration
-const getConversionFactor = (fromUnit: string, toUnit: string): number => {
-    if (!fromUnit || !toUnit || fromUnit.toLowerCase().trim() === toUnit.toLowerCase().trim()) return 1;
-
-    const u = (unit: string) => unit.toLowerCase().trim();
-    const factors: Record<string, number> = {
-        'kg': 1000, 'g': 1, 'mg': 0.001,
-        'l': 1000, 'ml': 1, 'cl': 10,
-        'litre': 1000, 'litres': 1000,
-        'pièce': 1, 'unité': 1, 'botte': 1,
-    };
-    
-    const fromFactor = factors[u(fromUnit)];
-    const toFactor = factors[u(toUnit)];
-
-    if (fromFactor !== undefined && toFactor !== undefined) {
-        const weightUnits = ["g", "kg", "mg"];
-        const volumeUnits = ["ml", "l", "cl"];
-
-        const bothWeight = weightUnits.includes(u(fromUnit)) && weightUnits.includes(u(toUnit));
-        const bothVolume = volumeUnits.includes(u(fromUnit)) && volumeUnits.includes(u(toUnit));
-
-        if (bothWeight || bothVolume) {
-          return fromFactor / toFactor;
-        }
-    }
-    
-    // Fallback for piece -> g or similar requires specific data not available in this simplified version
-    if (u(toUnit) === 'g' && (u(fromUnit) === 'pièce' || u(fromUnit) === 'unité')) {
-        console.warn(`[CONVERSION] No specific weight for 'pièce' of this ingredient. Assuming 1 pièce = 1g which is likely incorrect.`);
-        return 1;
-    }
-
-
-    console.warn(`[CONVERSION] Conversion impossible entre '${fromUnit}' et '${toUnit}'. Facteur par défaut : 1.`);
-    return 1;
-};
-
-
-const computeIngredientCost = (
-  ingredient: Ingredient,
-  usedQuantity: number,
-  usedUnit: string
-): { cost: number; error?: string } => {
-  if (ingredient.purchasePrice == null || ingredient.purchaseWeightGrams == null || ingredient.purchaseWeightGrams === 0) {
-    return { cost: 0, error: "Données d'achat (prix, poids) manquantes ou invalides." };
-  }
-
-  const costPerGramRaw = ingredient.purchasePrice / ingredient.purchaseWeightGrams;
-  const costPerGramNet = costPerGramRaw / ((ingredient.yieldPercentage || 100) / 100);
-
-  const conversionFactorToGrams = getConversionFactor(usedUnit, 'g');
-  if (conversionFactorToGrams === 1 && usedUnit.toLowerCase() !== 'g') {
-       return { cost: 0, error: `Conversion de '${usedUnit}' vers 'g' non standard. Nécessite une table d'équivalence (fonctionnalité retirée).` };
-  }
-
-  const quantityInGrams = usedQuantity * conversionFactorToGrams;
-  const finalCost = quantityInGrams * costPerGramNet;
-  
-  if (isNaN(finalCost)) {
-    return { cost: 0, error: "Le résultat du calcul est invalide (NaN)." };
-  }
-
-  return { cost: finalCost };
-};
+import { computeIngredientCost } from "@/lib/unitConverter";
 
 
 export default function TestIngredientsClient() {
@@ -88,7 +23,7 @@ export default function TestIngredientsClient() {
     
     const [selectedIngredientId, setSelectedIngredientId] = useState<string | null>(null);
     const [quantity, setQuantity] = useState<number>(1);
-    const [unit, setUnit] = useState<string>('g');
+    const [unit, setUnit] = useState<string>('pièce');
 
 
     useEffect(() => {
@@ -205,15 +140,40 @@ export default function TestIngredientsClient() {
                     </CardHeader>
                     <CardContent>
                         {selectedIngredient ? (
-                            <Table>
-                                <TableBody>
-                                    <TableRow><TableCell className="font-medium">Nom</TableCell><TableCell>{selectedIngredient.name}</TableCell></TableRow>
-                                    <TableRow><TableCell className="font-medium text-blue-600">Prix d'Achat</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchasePrice} DZD</TableCell></TableRow>
-                                    <TableRow><TableCell className="font-medium text-blue-600">Unité d'Achat</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchaseUnit}</TableCell></TableRow>
-                                    <TableRow><TableCell className="font-medium text-blue-600">Poids/Vol de l'Unité Achat (g/ml)</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchaseWeightGrams}</TableCell></TableRow>
-                                    <TableRow><TableCell className="font-medium">Rendement (%)</TableCell><TableCell>{selectedIngredient.yieldPercentage} %</TableCell></TableRow>
-                                </TableBody>
-                            </Table>
+                            <div className="space-y-4">
+                                <Table>
+                                    <TableBody>
+                                        <TableRow><TableCell className="font-medium">Nom</TableCell><TableCell>{selectedIngredient.name}</TableCell></TableRow>
+                                        <TableRow><TableCell className="font-medium text-blue-600">Prix d'Achat</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchasePrice} DZD</TableCell></TableRow>
+                                        <TableRow><TableCell className="font-medium text-blue-600">Unité d'Achat</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchaseUnit}</TableCell></TableRow>
+                                        <TableRow><TableCell className="font-medium text-blue-600">Poids/Vol de l'Unité Achat</TableCell><TableCell className="text-blue-600">{selectedIngredient.purchaseWeightGrams} {selectedIngredient.baseUnit || 'g'}</TableCell></TableRow>
+                                        <TableRow><TableCell className="font-medium">Rendement (%)</TableCell><TableCell>{selectedIngredient.yieldPercentage} %</TableCell></TableRow>
+                                        <TableRow><TableCell className="font-medium">Unité de Base</TableCell><TableCell>{selectedIngredient.baseUnit || 'g (défaut)'}</TableCell></TableRow>
+                                    </TableBody>
+                                </Table>
+
+                                {selectedIngredient.equivalences && Object.keys(selectedIngredient.equivalences).length > 0 && (
+                                    <div>
+                                        <h4 className="font-medium mt-4 mb-2">Table d'équivalence</h4>
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Conversion</TableHead>
+                                                    <TableHead className="text-right">Valeur</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {Object.entries(selectedIngredient.equivalences).map(([key, value]) => (
+                                                    <TableRow key={key}>
+                                                        <TableCell>{key}</TableCell>
+                                                        <TableCell className="text-right">{value} {selectedIngredient.baseUnit || 'g'}</TableCell>
+                                                    </TableRow>
+                                                ))}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                )}
+                            </div>
                         ) : (
                             <p className="text-muted-foreground text-center py-10">Sélectionnez un ingrédient pour voir ses données.</p>
                         )}
