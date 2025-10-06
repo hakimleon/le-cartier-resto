@@ -172,66 +172,82 @@ const NewIngredientRow = ({
     handleRemoveNewIngredient: (tempId: string) => void;
 }) => {
     const [openCombobox, setOpenCombobox] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+
+    const handleSelect = (currentValue: string) => {
+        const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
+        if (selected) {
+            handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!);
+        }
+        setOpenCombobox(false);
+        setSearchTerm("");
+    };
+
+    const handleCreateNew = () => {
+        // Use the search term to pre-fill the creation modal
+        handleNewIngredientChange(newIng.tempId, 'name', searchTerm);
+        openNewIngredientModal(newIng.tempId);
+        setOpenCombobox(false);
+        setSearchTerm("");
+    }
+
+    const filteredAndSorted = sortedIngredients.filter(ing => ing.name.toLowerCase().includes(searchTerm.toLowerCase()));
 
     return (
         <TableRow>
             <TableCell>
-                <div className="flex items-center gap-2">
-                    <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
-                        <PopoverTrigger asChild>
-                            <Button
-                                variant="outline"
-                                role="combobox"
-                                aria-expanded={openCombobox}
-                                className="w-full justify-between"
-                            >
-                                {newIng.ingredientId
-                                    ? sortedIngredients.find((ing) => ing.id === newIng.ingredientId)?.name
-                                    : newIng.name || "Choisir..."}
-                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                            </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-[300px] p-0">
-                            <Command>
-                                <CommandInput placeholder="Rechercher un ingrédient..." />
-                                <CommandList>
-                                    <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
-                                    <CommandGroup>
-                                        {sortedIngredients.map((ing) => (
-                                            ing.id ?
-                                                <CommandItem
-                                                    key={ing.id}
-                                                    value={ing.name}
-                                                    onSelect={(currentValue) => {
-                                                        const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
-                                                        if (selected) {
-                                                            handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!);
-                                                        }
-                                                        setOpenCombobox(false);
-                                                    }}
-                                                >
-                                                    <Check
-                                                        className={cn(
-                                                            "mr-2 h-4 w-4",
-                                                            newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0"
-                                                        )}
-                                                    />
-                                                    {ing.name}
-                                                </CommandItem>
-                                                : null
-                                        ))}
-                                    </CommandGroup>
-                                </CommandList>
-                            </Command>
-                        </PopoverContent>
-                    </Popover>
-
-                    {!newIng.ingredientId && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={`Créer l'ingrédient "${newIng.name}"`}>
-                            <PlusCircle className="h-4 w-4 text-primary" />
+                 <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={openCombobox}
+                            className={cn(
+                                "w-full justify-between font-normal",
+                                !newIng.ingredientId && "border-dashed border-destructive text-destructive"
+                            )}
+                        >
+                            {newIng.ingredientId
+                                ? sortedIngredients.find((ing) => ing.id === newIng.ingredientId)?.name
+                                : newIng.name || "Choisir ou créer..."}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                         </Button>
-                    )}
-                </div>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0">
+                        <Command>
+                            <CommandInput
+                                placeholder="Rechercher ou créer..."
+                                value={searchTerm}
+                                onValueChange={setSearchTerm}
+                            />
+                            <CommandList>
+                                 <CommandGroup>
+                                    {filteredAndSorted.map((ing) => (
+                                        <CommandItem
+                                            key={ing.id}
+                                            value={ing.name}
+                                            onSelect={handleSelect}
+                                        >
+                                            <Check className={cn("mr-2 h-4 w-4", newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0")} />
+                                            {ing.name}
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                                <CommandEmpty>
+                                    {searchTerm.length > 1 ? (
+                                        <div 
+                                            className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent"
+                                            onClick={handleCreateNew}
+                                        >
+                                            <PlusCircle className="mr-2 h-4 w-4" />
+                                            Créer l'ingrédient "{searchTerm}"
+                                        </div>
+                                    ) : "Aucun ingrédient trouvé."}
+                                </CommandEmpty>
+                            </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
             </TableCell>
             <TableCell>
                 <Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} />
@@ -1114,6 +1130,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-
 
     

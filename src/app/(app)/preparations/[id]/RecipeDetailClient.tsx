@@ -82,6 +82,127 @@ type NewRecipePreparation = {
     _productionUnit: string;
 };
 
+const NewIngredientRow = ({
+    newIng,
+    sortedIngredients,
+    handleNewIngredientChange,
+    openNewIngredientModal,
+    handleRemoveNewIngredient,
+    handleOpenSuggestionModal,
+}: {
+    newIng: NewRecipeIngredient;
+    sortedIngredients: Ingredient[];
+    handleNewIngredientChange: (tempId: string, field: keyof NewRecipeIngredient, value: any) => void;
+    openNewIngredientModal: (tempId: string) => void;
+    handleRemoveNewIngredient: (tempId: string) => void;
+    handleOpenSuggestionModal: (ingredientId: string, ingredientName: string, isNew: boolean) => void;
+}) => {
+    const [openCombobox, setOpenCombobox] = useState(false);
+    const [searchTerm, setSearchTerm] = useState("");
+
+    const handleSelect = (currentValue: string) => {
+        const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase());
+        if (selected) {
+            handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!);
+        }
+        setOpenCombobox(false);
+        setSearchTerm("");
+    };
+
+    const handleCreateNew = () => {
+        handleNewIngredientChange(newIng.tempId, 'name', searchTerm);
+        openNewIngredientModal(newIng.tempId);
+        setOpenCombobox(false);
+        setSearchTerm("");
+    }
+    
+    const filteredAndSorted = sortedIngredients.filter(ing => ing.name.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    return (
+        <TableRow key={newIng.tempId}>
+            <TableCell>
+                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={openCombobox}
+                             className={cn(
+                                "w-full justify-between font-normal",
+                                !newIng.ingredientId && "border-dashed border-destructive text-destructive"
+                            )}
+                        >
+                            {newIng.ingredientId ? sortedIngredients.find((ing) => ing.id === newIng.ingredientId)?.name : newIng.name || "Choisir ou créer..."}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0">
+                        <Command>
+                           <CommandInput
+                                placeholder="Rechercher ou créer..."
+                                value={searchTerm}
+                                onValueChange={setSearchTerm}
+                            />
+                            <CommandList>
+                                 <CommandGroup>
+                                    {filteredAndSorted.map((ing) => (
+                                        <CommandItem
+                                            key={ing.id}
+                                            value={ing.name}
+                                            onSelect={handleSelect}
+                                        >
+                                            <Check className={cn("mr-2 h-4 w-4", newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0")} />
+                                            {ing.name}
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                                <CommandEmpty>
+                                    {searchTerm.length > 1 ? (
+                                        <div 
+                                            className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none hover:bg-accent"
+                                            onClick={handleCreateNew}
+                                        >
+                                            <PlusCircle className="mr-2 h-4 w-4" />
+                                            Créer l'ingrédient "{searchTerm}"
+                                        </div>
+                                    ) : "Aucun ingrédient trouvé."}
+                                </CommandEmpty>
+                            </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
+            </TableCell>
+            <TableCell>
+                <Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} />
+            </TableCell>
+            <TableCell>
+                <Select value={newIng.unit} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'unit', value)} >
+                    <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="g">g</SelectItem>
+                        <SelectItem value="kg">kg</SelectItem>
+                        <SelectItem value="ml">ml</SelectItem>
+                        <SelectItem value="l">l</SelectItem>
+                        <SelectItem value="pièce">pièce</SelectItem>
+                    </SelectContent>
+                </Select>
+            </TableCell>
+            <TableCell className="text-right font-semibold">{(newIng.totalCost || 0).toFixed(2)} DZD</TableCell>
+            <TableCell className="text-right">
+                <div className="flex items-center justify-end">
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenSuggestionModal(newIng.tempId, newIng.name, true)}>
+                        <Sparkles className="h-4 w-4 text-amber-500" />
+                    </Button>
+                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveNewIngredient(newIng.tempId)}>
+                        <Trash2 className="h-4 w-4 text-red-500" />
+                    </Button>
+                </div>
+            </TableCell>
+        </TableRow>
+    )
+};
+
+
 export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps) {
   const [recipe, setRecipe] = useState<Recipe | Preparation | null>(null);
   const [editableRecipe, setEditableRecipe] = useState<Recipe | Preparation | null>(null);
@@ -759,40 +880,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     <Table>
                         <TableHeader><TableRow><TableHead className="w-[35%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[100px] text-right">Actions</TableHead>}</TableRow></TableHeader>
                         <TableBody>
-                            {isEditing && editableIngredients.map(ing => {
-                                const [openCombobox, setOpenCombobox] = useComboboxState();
-                                return (
+                            {isEditing && editableIngredients.map(ing => (
                                 <TableRow key={ing.recipeIngredientId}>
-                                    <TableCell className="font-medium">
-                                        <div className="flex items-center gap-1">
-                                            <Popover open={openCombobox as boolean} onOpenChange={setOpenCombobox as (open: boolean) => void}>
-                                                <PopoverTrigger asChild>
-                                                    <Button variant="outline" role="combobox" aria-expanded={openCombobox as boolean} className="w-full justify-between">
-                                                        {ing.name || "Choisir..."}
-                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-[300px] p-0">
-                                                    <Command>
-                                                        <CommandInput placeholder="Rechercher un ingrédient..." />
-                                                        <CommandList>
-                                                            <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
-                                                            <CommandGroup>
-                                                                {sortedIngredients.map((sIng) => (
-                                                                    sIng.id ?
-                                                                        <CommandItem key={sIng.id} value={sIng.name} onSelect={() => { handleIngredientChange(ing.recipeIngredientId, 'id', sIng.id!); (setOpenCombobox as (open: boolean) => void)(false); }}>
-                                                                            <Check className={cn("mr-2 h-4 w-4", ing.id === sIng.id ? "opacity-100" : "opacity-0")} />
-                                                                            {sIng.name}
-                                                                        </CommandItem>
-                                                                        : null
-                                                                ))}
-                                                            </CommandGroup>
-                                                        </CommandList>
-                                                    </Command>
-                                                </PopoverContent>
-                                            </Popover>
-                                        </div>
-                                    </TableCell>
+                                    <TableCell className="font-medium">{ing.name}</TableCell>
                                     <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20"/></TableCell>
                                     <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell>
                                     <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
@@ -809,71 +899,19 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                                         </div>
                                     </TableCell>
                                 </TableRow>
-                            )})}
+                            ))}
                             {!isEditing && ingredients.map(ing => ( <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>))}
-                            {isEditing && newIngredients.map((newIng) => {
-                                const [openCombobox, setOpenCombobox] = useComboboxState();
-                                return (
-                                <TableRow key={newIng.tempId}>
-                                    <TableCell>
-                                        <div className="flex items-center gap-1">
-                                            <Popover open={openCombobox as boolean} onOpenChange={setOpenCombobox as (open: boolean) => void}>
-                                                <PopoverTrigger asChild>
-                                                    <Button variant="outline" role="combobox" aria-expanded={openCombobox as boolean} className="w-full justify-between" >
-                                                        {newIng.ingredientId ? sortedIngredients.find((ing) => ing.id === newIng.ingredientId)?.name : newIng.name || "Choisir..."}
-                                                        <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent className="w-[300px] p-0">
-                                                    <Command>
-                                                        <CommandInput placeholder="Rechercher un ingrédient..." />
-                                                        <CommandList>
-                                                            <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
-                                                            <CommandGroup>
-                                                                {sortedIngredients.map((ing) => (
-                                                                    ing.id ?
-                                                                        <CommandItem key={ing.id} value={ing.name} onSelect={(currentValue) => { const selected = sortedIngredients.find(i => i.name.toLowerCase() === currentValue.toLowerCase()); if (selected) { handleNewIngredientChange(newIng.tempId, 'ingredientId', selected.id!); } (setOpenCombobox as (open: boolean) => void)(false); }}>
-                                                                            <Check className={cn("mr-2 h-4 w-4", newIng.ingredientId === ing.id ? "opacity-100" : "opacity-0")} />
-                                                                            {ing.name}
-                                                                        </CommandItem>
-                                                                        : null
-                                                                ))}
-                                                            </CommandGroup>
-                                                        </CommandList>
-                                                    </Command>
-                                                </PopoverContent>
-                                            </Popover>
-                                            {!newIng.ingredientId && newIng.name && ( <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={() => openNewIngredientModal(newIng.tempId)} title={'Créer l\'ingrédient "'+newIng.name+'"'}> <PlusCircle className="h-4 w-4 text-primary" /> </Button> )}
-                                        </div>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Input type="number" placeholder="Qté" className="w-20" value={newIng.quantity === 0 ? '' : newIng.quantity} onChange={(e) => handleNewIngredientChange(newIng.tempId, 'quantity', parseFloat(e.target.value) || 0)} />
-                                    </TableCell>
-                                    <TableCell>
-                                        <Select value={newIng.unit} onValueChange={(value) => handleNewIngredientChange(newIng.tempId, 'unit', value)} >
-                                            <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="g">g</SelectItem>
-                                                <SelectItem value="kg">kg</SelectItem>
-                                                <SelectItem value="ml">ml</SelectItem>
-                                                <SelectItem value="l">l</SelectItem>
-                                                <SelectItem value="pièce">pièce</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </TableCell>
-                                    <TableCell className="text-right font-semibold">{(newIng.totalCost || 0).toFixed(2)} DZD</TableCell>
-                                    <TableCell className="text-right">
-                                        <div className="flex items-center justify-end">
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenSuggestionModal(newIng.tempId, newIng.name, true)}>
-                                                <Sparkles className="h-4 w-4 text-amber-500" />
-                                            </Button>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleRemoveNewIngredient(newIng.tempId)}>
-                                                <Trash2 className="h-4 w-4 text-red-500" />
-                                            </Button>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
-                            )})}
+                            {isEditing && newIngredients.map((newIng) => (
+                                <NewIngredientRow 
+                                    key={newIng.tempId}
+                                    newIng={newIng}
+                                    sortedIngredients={sortedIngredients}
+                                    handleNewIngredientChange={handleNewIngredientChange}
+                                    openNewIngredientModal={openNewIngredientModal}
+                                    handleRemoveNewIngredient={handleRemoveNewIngredient}
+                                    handleOpenSuggestionModal={handleOpenSuggestionModal}
+                                />
+                            ))}
                             {ingredients.length === 0 && newIngredients.length === 0 && !isEditing && (<TableRow><TableCell colSpan={isEditing ? 5: 4} className="text-center h-24">Aucun ingrédient lié.</TableCell></TableRow>)}
                         </TableBody>
                     </Table>
@@ -1088,3 +1126,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
