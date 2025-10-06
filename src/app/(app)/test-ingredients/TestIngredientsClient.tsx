@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -30,20 +29,17 @@ export default function TestIngredientsClient() {
 
     const fetchIngredients = useCallback(async (selectFirst = false) => {
         setIsLoading(true);
-        try {
-            const ingredientsQuery = query(collection(db, "ingredients"));
-            const querySnapshot = await getDocs(ingredientsQuery);
-            const ingredientsData = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
-            setIngredients(ingredientsData);
+        const ingredientsQuery = query(collection(db, "ingredients"));
+        const querySnapshot = await getDocs(ingredientsQuery);
+        const ingredientsData = querySnapshot.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+        
+        ingredientsData.sort((a,b) => a.name.localeCompare(b.name));
+        setIngredients(ingredientsData);
 
-            if (selectFirst && ingredientsData.length > 0) {
-                setSelectedIngredientId(ingredientsData[0].id!);
-            }
-        } catch (error) {
-            console.error("Failed to fetch ingredients:", error);
-        } finally {
-            setIsLoading(false);
+        if (selectFirst && ingredientsData.length > 0) {
+            setSelectedIngredientId(ingredientsData[0].id!);
         }
+        setIsLoading(false);
     }, []);
 
     useEffect(() => {
@@ -59,7 +55,7 @@ export default function TestIngredientsClient() {
         return computeIngredientCost(selectedIngredient, quantity, unit);
     }, [quantity, unit, selectedIngredient]);
 
-    if (isLoading && ingredients.length === 0) {
+    if (isLoading) {
         return <Skeleton className="h-[400px] w-full" />;
     }
 
@@ -144,8 +140,8 @@ export default function TestIngredientsClient() {
                 {/* --- FICHE TECHNIQUE INGRÉDIENT --- */}
                 <Card>
                     <CardHeader>
-                        <div className="flex justify-between items-start">
-                             <div>
+                         <div className="flex justify-between items-start">
+                            <div>
                                 <CardTitle>Données de l'Ingrédient</CardTitle>
                                 <CardDescription>Vérifiez les valeurs de base utilisées pour le calcul.</CardDescription>
                             </div>
