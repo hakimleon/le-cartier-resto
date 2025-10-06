@@ -2,7 +2,7 @@
 "use client";
 
 import { useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { Ingredient } from "@/lib/types";
@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { PlusCircle, Trash2 } from "lucide-react";
 
 const ingredientCategories = [
     { name: "Viandes & Gibiers", examples: "Bœuf (entrecôte, steak haché, joue), Agneau (carré, gigot), Porc (filet, échine, côte), Produits transformés : bacon, chorizo, jambon, saucisse" },
@@ -48,6 +49,11 @@ const formSchema = z.object({
   purchaseUnit: z.string().min(1, "L'unité d'achat est requise."),
   purchaseWeightGrams: z.coerce.number().positive("Le poids ou volume de l'unité d'achat doit être positif."),
   yieldPercentage: z.coerce.number().min(0, "Le rendement doit être entre 0 et 100.").max(100, "Le rendement doit être entre 0 et 100."),
+  baseUnit: z.enum(['g', 'ml']),
+  equivalences: z.array(z.object({
+    key: z.string().min(1, "Clé requise"),
+    value: z.string().min(1, "Valeur requise"),
+  })).optional(),
 });
 
 type IngredientFormProps = {
@@ -71,7 +77,16 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       purchaseUnit: ingredient?.purchaseUnit || "kg",
       purchaseWeightGrams: ingredient?.purchaseWeightGrams || 1000,
       yieldPercentage: ingredient?.yieldPercentage || 100,
+      baseUnit: ingredient?.baseUnit || 'g',
+      equivalences: ingredient?.equivalences 
+        ? Object.entries(ingredient.equivalences).map(([key, value]) => ({ key, value: String(value) })) 
+        : [],
     },
+  });
+
+  const { fields, append, remove } = useFieldArray({
+    control: form.control,
+    name: "equivalences",
   });
 
   const selectedCategory = form.watch("category");
@@ -95,6 +110,12 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
+      const equivalencesAsRecord = values.equivalences?.reduce((acc, { key, value }) => {
+        const numValue = parseFloat(value);
+        acc[key] = isNaN(numValue) ? value : numValue;
+        return acc;
+      }, {} as Record<string, string | number>);
+      
       const ingredientToSave: Omit<Ingredient, 'id'> = {
         name: values.name,
         category: values.category,
@@ -105,6 +126,8 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
         purchaseUnit: values.purchaseUnit,
         purchaseWeightGrams: values.purchaseWeightGrams,
         yieldPercentage: values.yieldPercentage,
+        baseUnit: values.baseUnit,
+        equivalences: equivalencesAsRecord,
       };
 
       const savedIngredient = await saveIngredient(ingredientToSave, ingredient?.id || null);
@@ -164,6 +187,21 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                 />
 
                 <FormField control={form.control} name="supplier" render={({ field }) => ( <FormItem> <FormLabel>Fournisseur (Optionnel)</FormLabel> <FormControl> <Input placeholder="Ex: Fournisseur ABC" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                 <FormField
+                    control={form.control}
+                    name="baseUnit"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Unité de Base</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent><SelectItem value="g">g (grammes)</SelectItem><SelectItem value="ml">ml (millilitres)</SelectItem></SelectContent>
+                        </Select>
+                        <FormDescription className="text-xs">Unité de référence pour les calculs de coût.</FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
             </div>
         </div>
         
@@ -217,6 +255,56 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                 />
             </div>
         </div>
+        
+        <Separator />
+
+        <div className="space-y-4">
+            <h3 className="text-lg font-medium">Table d'équivalence</h3>
+             <p className="text-sm text-muted-foreground">Définissez ici les conversions spécifiques (ex: "pièce->g").</p>
+            {fields.map((field, index) => (
+                <div key={field.id} className="flex items-end gap-2">
+                    <FormField
+                        control={form.control}
+                        name={`equivalences.${index}.key`}
+                        render={({ field }) => (
+                            <FormItem className="flex-1">
+                                <FormLabel>Conversion</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="ex: pièce->g" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name={`equivalences.${index}.value`}
+                        render={({ field }) => (
+                            <FormItem className="flex-1">
+                                <FormLabel>Valeur</FormLabel>
+                                <FormControl>
+                                    <Input placeholder="ex: 120" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                        <Trash2 className="h-4 w-4 text-destructive"/>
+                    </Button>
+                </div>
+            ))}
+             <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => append({ key: "", value: "" })}
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Ajouter une conversion
+            </Button>
+        </div>
+
 
         <Separator />
         
@@ -237,3 +325,4 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
+
