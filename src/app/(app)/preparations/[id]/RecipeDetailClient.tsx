@@ -82,6 +82,7 @@ type NewRecipePreparation = {
     _productionUnit: string;
 };
 
+
 const NewIngredientRow = ({
     newIng,
     sortedIngredients,
@@ -351,7 +352,10 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
             const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
             if (ingredientData) {
-                const { cost } = computeIngredientCost(ingredientData, recipeIngredientData.quantity, recipeIngredientData.unitUse);
+                const { cost, error } = computeIngredientCost(ingredientData, recipeIngredientData.quantity, recipeIngredientData.unitUse);
+                 if (error) {
+                    toast({ title: `Erreur de calcul: ${ingredientData.name}`, description: error, variant: 'destructive'});
+                }
                 return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, category: ingredientData.category, totalCost: cost };
             }
             return null;
@@ -375,7 +379,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         setPreparations(preparationsData);
         setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
 
-    }, [recipeId, calculatePreparationsCosts, fetchAllIngredients, fetchAllPreparations]);
+    }, [recipeId, calculatePreparationsCosts, fetchAllIngredients, fetchAllPreparations, toast]);
 
 
     useEffect(() => {
@@ -424,7 +428,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         initialLoad();
 
         return () => { isMounted = false; };
-    }, [recipeId, fullDataRefresh, fetchAllIngredients, fetchAllPreparations]);
+    }, [recipeId, fullDataRefresh, fetchAllIngredients, fetchAllPreparations, toast, preparationsCosts]);
 
 
   const handleToggleEditMode = () => {
@@ -1157,3 +1161,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    

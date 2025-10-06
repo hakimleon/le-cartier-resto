@@ -101,6 +101,7 @@ type NewRecipePreparation = {
     _productionUnit: string;
 };
 
+
 const GAUGE_LEVELS = {
     exceptionnel: { icon: Star },
     excellent: { icon: CheckCircle2 },
@@ -451,8 +452,10 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
             const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
             const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
             if (ingredientData) {
-                const { cost } = computeIngredientCost(ingredientData, recipeIngredientData.quantity, recipeIngredientData.unitUse);
-
+                const { cost, error } = computeIngredientCost(ingredientData, recipeIngredientData.quantity, recipeIngredientData.unitUse);
+                if (error) {
+                    toast({ title: `Erreur de calcul: ${ingredientData.name}`, description: error, variant: 'destructive'});
+                }
                 return {
                     id: ingredientData.id!,
                     recipeIngredientId: docSnap.id,
@@ -484,7 +487,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         setPreparations(preparationsData);
         setEditablePreparations(JSON.parse(JSON.stringify(preparationsData)));
 
-    }, [recipeId, collectionName, fetchAllIngredients, fetchAllPreparations, calculatePreparationsCosts]);
+    }, [recipeId, collectionName, fetchAllIngredients, fetchAllPreparations, calculatePreparationsCosts, toast]);
 
 
     useEffect(() => {
@@ -531,7 +534,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         initialLoad();
 
         return () => { isMounted = false; };
-    }, [recipeId, fullDataRefresh, fetchAllIngredients, fetchAllPreparations]);
+    }, [recipeId, fullDataRefresh, fetchAllIngredients, fetchAllPreparations, toast]);
 
 
     const processSuggestedIngredients = (suggested: GeneratedIngredient[], currentAllIngredients: Ingredient[]) => {
@@ -965,7 +968,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                             <Table>
                                 <TableHeader><TableRow><TableHead className="w-[45%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
                                 <TableBody>
-                                    {isEditing && editableIngredients.map(ing => (
+                                    {isEditing ? editableIngredients.map(ing => (
                                         <EditableIngredientRow
                                             key={ing.recipeIngredientId}
                                             ing={ing}
@@ -973,8 +976,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                             handleRemoveExistingIngredient={handleRemoveExistingIngredient}
                                             sortedIngredients={sortedIngredients}
                                         />
-                                    ))}
-                                    {!isEditing && ingredients.map(ing => (
+                                    )) : ingredients.map(ing => (
                                         <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
                                     ))}
                                     {isEditing && newIngredients.map((newIng) => (
@@ -1003,10 +1005,9 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                         <Table>
                             <TableHeader><TableRow><TableHead className="w-1/3">Préparation</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
                             <TableBody>
-                                {isEditing && editablePreparations.map(prep => (
+                                {isEditing ? editablePreparations.map(prep => (
                                     <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell><Input type="number" value={prep.quantity} onChange={(e) => handlePreparationChange(prep.id, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell><TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer la préparation ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{prep.name}" de cette recette ?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingPreparation(prep.id)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>
-                                ))}
-                                {!isEditing && preparations.map(prep => (
+                                )) : preparations.map(prep => (
                                     <TableRow key={prep.id}><TableCell className="font-medium">{prep.name}</TableCell><TableCell>{prep.quantity}</TableCell><TableCell>{prep.unit}</TableCell><TableCell className="text-right font-semibold">{(prep.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
                                 ))}
                                 {isEditing && newPreparations.map((prep) => {
@@ -1187,3 +1188,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    

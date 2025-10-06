@@ -276,7 +276,10 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 const recipeIngredientData = docSnap.data() as RecipeIngredientLink;
                 const ingredientData = ingredientsList.find(i => i.id === recipeIngredientData.ingredientId);
                 if (ingredientData) {
-                    const { cost } = computeIngredientCost(ingredientData, recipeIngredientData.quantity, recipeIngredientData.unitUse);
+                    const { cost, error } = computeIngredientCost(ingredientData, recipeIngredientData.quantity, recipeIngredientData.unitUse);
+                    if (error) {
+                        toast({ title: `Erreur de calcul pour ${ingredientData.name}`, description: error, variant: 'destructive'});
+                    }
                     return { id: ingredientData.id!, recipeIngredientId: docSnap.id, name: ingredientData.name, quantity: recipeIngredientData.quantity, unit: recipeIngredientData.unitUse, category: ingredientData.category, totalCost: cost };
                 }
                 return null;
@@ -306,7 +309,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
         } finally {
             setIsLoading(false);
         }
-    }, [recipeId]); // Only recipeId should be a stable dependency here
+    }, [recipeId, toast]); // Only recipeId should be a stable dependency here
 
   const fetchAllIngredients = useCallback(async () => {
     const allIngredientsSnap = await getDocs(query(collection(db, "ingredients")));
@@ -364,7 +367,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
 
         initialLoad();
         return () => { isMounted = false; };
-    }, [recipeId]);
+    }, [recipeId, fetchAllIngredients, fetchAllPreparations, fullDataRefresh, preparationsCosts, toast]);
 
 
     const handleToggleEditMode = () => {
@@ -696,3 +699,5 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
+
+    
