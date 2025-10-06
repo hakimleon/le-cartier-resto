@@ -34,13 +34,23 @@ export function getConversionFactor(
 
   // Cas 3 — Conversion standard poids / volume
   if (standardConversions[f] && standardConversions[t]) {
-    const bothWeight =
-      ["g", "kg", "mg"].includes(f) && ["g", "kg", "mg"].includes(t);
-    const bothVolume =
-      ["ml", "l", "cl"].includes(f) && ["ml", "l", "cl"].includes(t);
+    const weightUnits = ["g", "kg", "mg"];
+    const volumeUnits = ["ml", "l", "cl"];
 
-    if (bothWeight || bothVolume) {
+    const fIsWeight = weightUnits.includes(f);
+    const tIsWeight = weightUnits.includes(t);
+    const fIsVolume = volumeUnits.includes(f);
+    const tIsVolume = volumeUnits.includes(t);
+    
+    // Si même famille (poids-poids ou volume-volume), convertir directement.
+    if ((fIsWeight && tIsWeight) || (fIsVolume && tIsVolume)) {
       return standardConversions[f] / standardConversions[t];
+    }
+    
+    // Si familles différentes, assumer une densité de 1 (1g = 1ml).
+    if ((fIsWeight && tIsVolume) || (fIsVolume && tIsWeight)) {
+        console.warn(`⚠️ Conversion approximative poids/volume: ${fromUnit} → ${toUnit}.`);
+        return standardConversions[f] / standardConversions[t];
     }
   }
 
