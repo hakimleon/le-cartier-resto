@@ -22,8 +22,10 @@ type MarkdownNode = {
 function parseMarkdown(md: string | undefined): MarkdownNode[] {
     if (!md) return [];
     
-    // Pre-process the text: force line breaks before numbered steps (e.g., " 2. ", " 3. ")
-    const processedMd = md.replace(/\s(\d+\.\s)/g, '\n$1');
+    // Pre-process the text: force line breaks before # and numbered steps
+    const processedMd = md
+        .replace(/\s*#\s*/g, '\n\n### ') // Headings
+        .replace(/(\d+)\.\s*/g, '\n$1. '); // Numbered lists
 
     const nodes: MarkdownNode[] = [];
     const lines = processedMd.split('\n').filter(line => line.trim() !== '');
