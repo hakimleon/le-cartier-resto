@@ -270,6 +270,50 @@ const NewIngredientRow = ({
     );
 };
 
+const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemoveExistingIngredient, sortedIngredients }: { ing: FullRecipeIngredient, handleIngredientChange: any, handleRemoveExistingIngredient: any, sortedIngredients: Ingredient[] }) => {
+    const [openCombobox, setOpenCombobox] = useState(false);
+    return (
+        <TableRow key={ing.recipeIngredientId}>
+            <TableCell className="font-medium">
+                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" role="combobox" aria-expanded={openCombobox} className="w-full justify-between">
+                            {ing.name || "Choisir..."}
+                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0">
+                        <Command>
+                            <CommandInput placeholder="Rechercher un ingrédient..." />
+                            <CommandList>
+                                <CommandEmpty>Aucun ingrédient trouvé.</CommandEmpty>
+                                <CommandGroup>
+                                    {sortedIngredients.map((sIng) => (
+                                        sIng.id ?
+                                            <CommandItem key={sIng.id} value={sIng.name} onSelect={() => { 
+                                                handleIngredientChange(ing.recipeIngredientId, 'id', sIng.id!); 
+                                                setOpenCombobox(false); 
+                                            }}>
+                                                <Check className={cn("mr-2 h-4 w-4", ing.id === sIng.id ? "opacity-100" : "opacity-0")} />
+                                                {sIng.name}
+                                            </CommandItem>
+                                            : null
+                                    ))}
+                                </CommandGroup>
+                            </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
+            </TableCell>
+            <TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell>
+            <TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell>
+            <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
+            <TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ?</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell>
+        </TableRow>
+    )
+};
+
+
 export default function RecipeDetailClient({ recipeId, collectionName }: RecipeDetailClientProps) {
     const [recipe, setRecipe] = useState<Recipe | Preparation | null>(null);
     const [editableRecipe, setEditableRecipe] = useState<Recipe | Preparation | null>(null);
@@ -538,11 +582,18 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         if (editableRecipe) { setEditableRecipe({ ...editableRecipe, [field]: value }); }
     };
 
-    const handleIngredientChange = (recipeIngredientId: string, field: 'quantity' | 'unit', value: any) => {
+    const handleIngredientChange = (recipeIngredientId: string, field: 'quantity' | 'unit' | 'id', value: any) => {
         setEditableIngredients(current => current.map(ing => {
             if (ing.recipeIngredientId === recipeIngredientId) {
                 const updatedIng = { ...ing, [field]: value };
-                const ingData = allIngredients.find(i => i.id === ing.id);
+                 if(field === 'id') {
+                  const newIngData = allIngredients.find(i => i.id === value);
+                  if(newIngData) {
+                      updatedIng.name = newIngData.name;
+                      updatedIng.category = newIngData.category;
+                  }
+                }
+                const ingData = allIngredients.find(i => i.id === updatedIng.id);
                 if (ingData) {
                     const { cost } = computeIngredientCost(ingData, updatedIng.quantity, updatedIng.unit);
                     updatedIng.totalCost = cost;
@@ -915,7 +966,13 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                 <TableHeader><TableRow><TableHead className="w-[45%]">Ingrédient</TableHead><TableHead>Quantité</TableHead><TableHead>Unité</TableHead><TableHead className="text-right">Coût</TableHead>{isEditing && <TableHead className="w-[50px]"></TableHead>}</TableRow></TableHeader>
                                 <TableBody>
                                     {isEditing && editableIngredients.map(ing => (
-                                        <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell><Input type="number" value={ing.quantity} onChange={(e) => handleIngredientChange(ing.recipeIngredientId, 'quantity', parseFloat(e.target.value) || 0)} className="w-20" /></TableCell><TableCell><Select value={ing.unit} onValueChange={(value) => handleIngredientChange(ing.recipeIngredientId, 'unit', value)} ><SelectTrigger className="w-24"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="g">g</SelectItem><SelectItem value="kg">kg</SelectItem><SelectItem value="ml">ml</SelectItem><SelectItem value="l">l</SelectItem><SelectItem value="pièce">pièce</SelectItem></SelectContent></Select></TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell><TableCell><AlertDialog><AlertDialogTrigger asChild><Button variant="ghost" size="icon"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger><AlertDialogContent><AlertDialogHeader><AlertDialogTitle>Retirer l'ingrédient ?</AlertDialogTitle><AlertDialogDescription>Êtes-vous sûr de vouloir retirer "{ing.name}" de cette recette ? Cette action prendra effet à la sauvegarde.</AlertDialogDescription></AlertDialogHeader><AlertDialogFooter><AlertDialogCancel>Annuler</AlertDialogCancel><AlertDialogAction onClick={() => handleRemoveExistingIngredient(ing.recipeIngredientId)}>Retirer</AlertDialogAction></AlertDialogFooter></AlertDialogContent></AlertDialog></TableCell></TableRow>
+                                        <EditableIngredientRow
+                                            key={ing.recipeIngredientId}
+                                            ing={ing}
+                                            handleIngredientChange={handleIngredientChange}
+                                            handleRemoveExistingIngredient={handleRemoveExistingIngredient}
+                                            sortedIngredients={sortedIngredients}
+                                        />
                                     ))}
                                     {!isEditing && ingredients.map(ing => (
                                         <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
