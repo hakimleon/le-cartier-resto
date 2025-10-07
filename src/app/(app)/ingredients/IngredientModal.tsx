@@ -41,7 +41,12 @@ export function IngredientModal({ children, ingredient, onSuccess, open, onOpenC
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="sm:max-w-4xl max-h-[90svh] flex flex-col">
+      <DialogContent 
+        className="sm:max-w-4xl h-[90vh] flex flex-col"
+        onInteractOutside={(e) => {
+          e.preventDefault();
+        }}
+      >
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>
