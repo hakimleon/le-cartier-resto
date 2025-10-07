@@ -20,9 +20,10 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Separator } from "@/components/ui/separator";
-import { PlusCircle, Trash2 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { PlusCircle, Trash2 } from "lucide-react";
+
 
 const ingredientCategories = [
     { name: "Viandes & Gibiers", examples: "Bœuf (entrecôte, steak haché, joue), Agneau (carré, gigot), Porc (filet, échine, côte), Produits transformés : bacon, chorizo, jambon, saucisse" },
@@ -89,10 +90,8 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     control: form.control,
     name: "equivalences",
   });
-
-  const selectedCategory = form.watch("category");
-  const purchaseUnit = form.watch("purchaseUnit");
   
+  const purchaseUnit = form.watch("purchaseUnit");
   const getDynamicLabel = (field: 'purchaseWeightGrams') => {
     const unit = purchaseUnit?.toLowerCase();
     if (field === 'purchaseWeightGrams') {
@@ -150,78 +149,97 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
         <ScrollArea className="flex-grow pr-6 -mr-6">
-          <div className="space-y-8">
+          <div className="space-y-6">
             
-            <div>
-              <h3 className="text-lg font-medium mb-4">Informations Générales</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                  <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom de l'ingrédient</FormLabel> <FormControl> <Input placeholder="Ex: Beurre doux AOP" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                  <FormField control={form.control} name="category" render={({ field }) => (
-                      <FormItem>
-                          <FormLabel>Catégorie</FormLabel>
-                          <Select onValueChange={field.onChange} value={field.value}>
-                              <SelectTrigger><SelectValue placeholder="Sélectionnez une catégorie..." /></SelectTrigger>
-                              <SelectContent> {ingredientCategories.map(cat => ( <SelectItem key={cat.name} value={cat.name}> {cat.name} </SelectItem> ))} </SelectContent>
-                          </Select>
-                          <FormMessage />
-                      </FormItem>
-                  )}/>
-                  <FormField control={form.control} name="supplier" render={({ field }) => ( <FormItem> <FormLabel>Fournisseur (Optionnel)</FormLabel> <FormControl> <Input placeholder="Ex: Fournisseur ABC" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                  <FormField control={form.control} name="baseUnit" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Unité de Base</FormLabel>
+            <Card>
+                <CardHeader><CardTitle>Informations Générales</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                    <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom de l'ingrédient</FormLabel> <FormControl> <Input placeholder="Ex: Beurre doux AOP" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                         <FormField control={form.control} name="category" render={({ field }) => (
+                            <FormItem>
+                                <FormLabel>Catégorie</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger><SelectValue placeholder="Sélectionnez une catégorie..." /></SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent> {ingredientCategories.map(cat => ( <SelectItem key={cat.name} value={cat.name}> {cat.name} </SelectItem> ))} </SelectContent>
+                                </Select>
+                                <FormMessage />
+                            </FormItem>
+                        )}/>
+                        <FormField control={form.control} name="supplier" render={({ field }) => ( <FormItem> <FormLabel>Fournisseur (Optionnel)</FormLabel> <FormControl> <Input placeholder="Ex: Fournisseur ABC" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader><CardTitle>Données d'Achat & Coût</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="purchasePrice" render={({ field }) => ( <FormItem> <FormLabel>Prix d'achat (DZD)</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 150" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                        <FormField control={form.control} name="purchaseUnit" render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Unité d'achat</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger><SelectValue /></SelectTrigger>
-                                <SelectContent><SelectItem value="g">g (grammes)</SelectItem><SelectItem value="ml">ml (millilitres)</SelectItem></SelectContent>
+                                <FormControl>
+                                    <SelectTrigger><SelectValue placeholder="Sélectionnez..." /></SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                <SelectItem value="kg">Kg</SelectItem>
+                                <SelectItem value="l">Litres</SelectItem>
+                                <SelectItem value="pièce">Pièce</SelectItem>
+                                <SelectItem value="botte">Botte</SelectItem>
+                                <SelectItem value="g">Grammes</SelectItem>
+                                <SelectItem value="ml">ml</SelectItem>
+                                </SelectContent>
                             </Select>
-                            <FormDescription className="text-xs">Unité de référence pour les calculs de coût.</FormDescription>
+                            <FormMessage />
+                            </FormItem>
+                        )}/>
+                    </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="purchaseWeightGrams" render={({ field }) => ( <FormItem> <FormLabel>{getDynamicLabel('purchaseWeightGrams').label}</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 1000" {...field} /> </FormControl> <FormDescription className="text-xs">{getDynamicLabel('purchaseWeightGrams').desc}</FormDescription> <FormMessage /> </FormItem> )}/>
+                        <FormField control={form.control} name="yieldPercentage" render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Rendement (%)</FormLabel>
+                            <FormControl><Input type="number" step="1" placeholder="Ex: 80" {...field} /></FormControl>
+                            <FormDescription className="text-xs">% utilisable après parage.</FormDescription>
+                            <FormMessage />
+                            </FormItem>
+                        )}/>
+                    </div>
+                     <FormField control={form.control} name="baseUnit" render={({ field }) => (
+                        <FormItem className="space-y-3">
+                            <FormLabel>Unité de base pour le calcul</FormLabel>
+                            <FormControl>
+                                <div className="grid grid-cols-2 gap-4">
+                                     <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                            <input type="radio" value="g" checked={field.value === 'g'} onChange={field.onChange} id="g" name="baseUnit" className="form-radio h-4 w-4 text-primary border-gray-300 focus:ring-primary"/>
+                                        </FormControl>
+                                        <label htmlFor="g" className="font-normal">g (grammes)</label>
+                                    </FormItem>
+                                     <FormItem className="flex items-center space-x-2 space-y-0">
+                                        <FormControl>
+                                            <input type="radio" value="ml" checked={field.value === 'ml'} onChange={field.onChange} id="ml" name="baseUnit" className="form-radio h-4 w-4 text-primary border-gray-300 focus:ring-primary"/>
+                                        </FormControl>
+                                        <label htmlFor="ml" className="font-normal">ml (millilitres)</label>
+                                    </FormItem>
+                                </div>
+                            </FormControl>
                             <FormMessage />
                         </FormItem>
                     )}/>
-              </div>
-            </div>
-            
-            <Separator />
+                </CardContent>
+            </Card>
 
-            <div>
-                <h3 className="text-lg font-medium mb-4">Détails d'Achat & Coût</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <FormField control={form.control} name="purchasePrice" render={({ field }) => ( <FormItem> <FormLabel>Prix d'achat (DZD)</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 150" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name="purchaseUnit" render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Unité d'achat</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger><SelectValue placeholder="Sélectionnez..." /></SelectTrigger>
-                            <SelectContent>
-                            <SelectItem value="kg">Kg</SelectItem>
-                            <SelectItem value="l">Litres</SelectItem>
-                            <SelectItem value="pièce">Pièce</SelectItem>
-                            <SelectItem value="botte">Botte</SelectItem>
-                            <SelectItem value="g">Grammes</SelectItem>
-                            <SelectItem value="ml">ml</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                        </FormItem>
-                    )}/>
-                    <FormField control={form.control} name="purchaseWeightGrams" render={({ field }) => ( <FormItem> <FormLabel>{getDynamicLabel('purchaseWeightGrams').label}</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 1000" {...field} /> </FormControl> <FormDescription className="text-xs">{getDynamicLabel('purchaseWeightGrams').desc}</FormDescription> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name="yieldPercentage" render={({ field }) => (
-                        <FormItem>
-                        <FormLabel>Rendement (%)</FormLabel>
-                        <FormControl><Input type="number" step="1" placeholder="Ex: 80" {...field} /></FormControl>
-                        <FormDescription className="text-xs">% utilisable après parage.</FormDescription>
-                        <FormMessage />
-                        </FormItem>
-                    )}/>
-                </div>
-            </div>
-
-            <Separator />
-            
-             <div>
-                <h3 className="text-lg font-medium">Table d'équivalence</h3>
-                <p className="text-sm text-muted-foreground">Définissez ici les conversions spécifiques (ex: "pièce->g").</p>
-                <div className="space-y-4 pt-4">
+            <Card>
+                <CardHeader>
+                    <CardTitle>Table d'équivalence</CardTitle>
+                    <CardDescription>Définissez ici les conversions spécifiques (ex: "pièce->g").</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
                     {fields.map((field, index) => (
                         <div key={field.id} className="flex items-end gap-2">
                             <FormField control={form.control} name={`equivalences.${index}.key`} render={({ field }) => (
@@ -243,22 +261,28 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                             </Button>
                         </div>
                     ))}
-                    <Button type="button" variant="outline" size="sm" onClick={() => append({ key: "", value: "" })}>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Ajouter une conversion
+                    <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => append({ key: "", value: "" })}
+                    >
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Ajouter une conversion
                     </Button>
-                </div>
-            </div>
+                </CardContent>
+            </Card>
 
-            <Separator />
-            
-            <div>
-                <h3 className="text-lg font-medium mb-4">Gestion du Stock</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                    <FormField control={form.control} name="stockQuantity" render={({ field }) => ( <FormItem> <FormLabel>Stock actuel</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 10" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name="lowStockThreshold" render={({ field }) => ( <FormItem> <FormLabel>Seuil d'alerte</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 2" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
-                </div>
-            </div>
+            <Card>
+                <CardHeader><CardTitle>Gestion du Stock</CardTitle></CardHeader>
+                <CardContent>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <FormField control={form.control} name="stockQuantity" render={({ field }) => ( <FormItem> <FormLabel>Stock actuel</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 10" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
+                        <FormField control={form.control} name="lowStockThreshold" render={({ field }) => ( <FormItem> <FormLabel>Seuil d'alerte</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 2" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
+                    </div>
+                </CardContent>
+            </Card>
 
           </div>
         </ScrollArea>
@@ -271,4 +295,3 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
-
