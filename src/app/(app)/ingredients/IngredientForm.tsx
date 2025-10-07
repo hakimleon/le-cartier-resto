@@ -91,22 +91,18 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   });
 
   const selectedCategory = form.watch("category");
-  const categoryExamples = ingredientCategories.find(c => c.name === selectedCategory)?.examples;
   const purchaseUnit = form.watch("purchaseUnit");
-
-  const getWeightLabel = () => {
-    const unit = purchaseUnit?.toLowerCase();
-    if (unit === 'pièce' || unit === 'unité') return "Poids moyen par pièce (g)";
-    if (unit === 'botte') return "Poids moyen par botte (g)";
-    if (unit === 'l' || unit === 'litre' || unit === 'litres' || unit === 'cl' || unit === 'ml') return "Volume équivalent (ml)";
-    return "Poids équivalent (g)";
-  };
   
-  const getWeightDescription = () => {
+  const getDynamicLabel = (field: 'purchaseWeightGrams') => {
     const unit = purchaseUnit?.toLowerCase();
-    if (unit === 'pièce' || unit === 'unité' || unit === 'botte') return `Pour 1 ${unit}.`;
-    return `Pour 1 ${unit} acheté.`;
-  }
+    if (field === 'purchaseWeightGrams') {
+        if (unit === 'pièce' || unit === 'unité') return { label: "Poids moyen par pièce (g)", desc: "Pour 1 pièce achetée." };
+        if (unit === 'botte') return { label: "Poids moyen par botte (g)", desc: "Pour 1 botte achetée." };
+        if (unit === 'l' || unit === 'litre' || unit === 'litres' || unit === 'cl' || unit === 'ml') return { label: "Volume équivalent (ml)", desc: `Pour 1 ${unit} acheté.` };
+        return { label: `Poids équivalent (g)`, desc: `Pour 1 ${unit} acheté.` };
+    }
+    return { label: "Label", desc: "Description" };
+  };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -155,23 +151,23 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
       <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
         <ScrollArea className="flex-grow pr-6 -mr-6">
           <div className="space-y-8">
-            <div className="space-y-6">
-                <h3 className="text-lg font-medium">Informations Générales</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                    <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom de l'ingrédient</FormLabel> <FormControl> <Input placeholder="Ex: Beurre doux AOP" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name="category" render={({ field }) => (
-                        <FormItem>
-                            <FormLabel>Catégorie</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <SelectTrigger><SelectValue placeholder="Sélectionnez une catégorie..." /></SelectTrigger>
-                                <SelectContent> {ingredientCategories.map(cat => ( <SelectItem key={cat.name} value={cat.name}> {cat.name} </SelectItem> ))} </SelectContent>
-                            </Select>
-                            {categoryExamples && ( <FormDescription className="text-xs"> <span className="font-semibold">Exemples : </span> {categoryExamples} </FormDescription> )}
-                            <FormMessage />
-                        </FormItem>
-                    )}/>
-                    <FormField control={form.control} name="supplier" render={({ field }) => ( <FormItem> <FormLabel>Fournisseur (Optionnel)</FormLabel> <FormControl> <Input placeholder="Ex: Fournisseur ABC" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name="baseUnit" render={({ field }) => (
+            
+            <div>
+              <h3 className="text-lg font-medium mb-4">Informations Générales</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                  <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom de l'ingrédient</FormLabel> <FormControl> <Input placeholder="Ex: Beurre doux AOP" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                  <FormField control={form.control} name="category" render={({ field }) => (
+                      <FormItem>
+                          <FormLabel>Catégorie</FormLabel>
+                          <Select onValueChange={field.onChange} value={field.value}>
+                              <SelectTrigger><SelectValue placeholder="Sélectionnez une catégorie..." /></SelectTrigger>
+                              <SelectContent> {ingredientCategories.map(cat => ( <SelectItem key={cat.name} value={cat.name}> {cat.name} </SelectItem> ))} </SelectContent>
+                          </Select>
+                          <FormMessage />
+                      </FormItem>
+                  )}/>
+                  <FormField control={form.control} name="supplier" render={({ field }) => ( <FormItem> <FormLabel>Fournisseur (Optionnel)</FormLabel> <FormControl> <Input placeholder="Ex: Fournisseur ABC" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                  <FormField control={form.control} name="baseUnit" render={({ field }) => (
                         <FormItem>
                             <FormLabel>Unité de Base</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value}>
@@ -182,14 +178,14 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                             <FormMessage />
                         </FormItem>
                     )}/>
-                </div>
+              </div>
             </div>
             
             <Separator />
 
-            <div className="space-y-6">
-                <h3 className="text-lg font-medium">Prix, Unités & Rendement</h3>
-                <div className="grid grid-cols-2 gap-4">
+            <div>
+                <h3 className="text-lg font-medium mb-4">Détails d'Achat & Coût</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                     <FormField control={form.control} name="purchasePrice" render={({ field }) => ( <FormItem> <FormLabel>Prix d'achat (DZD)</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 150" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
                     <FormField control={form.control} name="purchaseUnit" render={({ field }) => (
                         <FormItem>
@@ -208,9 +204,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                         <FormMessage />
                         </FormItem>
                     )}/>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="purchaseWeightGrams" render={({ field }) => ( <FormItem> <FormLabel>{getWeightLabel()}</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 50" {...field} /> </FormControl> <FormDescription className="text-xs">{getWeightDescription()}</FormDescription> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name="purchaseWeightGrams" render={({ field }) => ( <FormItem> <FormLabel>{getDynamicLabel('purchaseWeightGrams').label}</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 1000" {...field} /> </FormControl> <FormDescription className="text-xs">{getDynamicLabel('purchaseWeightGrams').desc}</FormDescription> <FormMessage /> </FormItem> )}/>
                     <FormField control={form.control} name="yieldPercentage" render={({ field }) => (
                         <FormItem>
                         <FormLabel>Rendement (%)</FormLabel>
@@ -224,7 +218,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
 
             <Separator />
             
-            <div>
+             <div>
                 <h3 className="text-lg font-medium">Table d'équivalence</h3>
                 <p className="text-sm text-muted-foreground">Définissez ici les conversions spécifiques (ex: "pièce->g").</p>
                 <div className="space-y-4 pt-4">
@@ -258,13 +252,14 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
 
             <Separator />
             
-            <div className="space-y-6">
-                <h3 className="text-lg font-medium">Gestion du Stock</h3>
-                <div className="grid grid-cols-2 gap-4">
-                    <FormField control={form.control} name="stockQuantity" render={({ field }) => ( <FormItem> <FormLabel>Stock actuel</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 10" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat.</FormDescription> <FormMessage /> </FormItem> )}/>
-                    <FormField control={form.control} name="lowStockThreshold" render={({ field }) => ( <FormItem> <FormLabel>Seuil d'alerte</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 2" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat.</FormDescription> <FormMessage /> </FormItem> )}/>
+            <div>
+                <h3 className="text-lg font-medium mb-4">Gestion du Stock</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                    <FormField control={form.control} name="stockQuantity" render={({ field }) => ( <FormItem> <FormLabel>Stock actuel</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 10" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
+                    <FormField control={form.control} name="lowStockThreshold" render={({ field }) => ( <FormItem> <FormLabel>Seuil d'alerte</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 2" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
                 </div>
             </div>
+
           </div>
         </ScrollArea>
         <div className="flex justify-end pt-4 border-t mt-auto shrink-0">
@@ -276,3 +271,4 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
+
