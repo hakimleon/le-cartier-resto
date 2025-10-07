@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, Merge, Replace } from "lucide-react";
+import { AlertTriangle, ChefHat, Clock, Euro, FilePen, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, Merge, Replace, Pencil } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
@@ -499,6 +499,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             productionQuantity: (editableRecipe as Preparation).productionQuantity,
             productionUnit: (editableRecipe as Preparation).productionUnit,
             usageUnit: (editableRecipe as Preparation).usageUnit,
+            personalNotes: editableRecipe.personalNotes,
         };
         await updateRecipeDetails(recipeId, recipeDataToSave, 'preparations');
         
@@ -575,9 +576,9 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             });
 
             setIsEditing(true);
-            setEditableIngredients([]); 
-            setNewIngredients(newIngs); 
-            setEditablePreparations([]); 
+            setEditableIngredients([]); // Clear existing ones
+            setNewIngredients(newIngs); // Add newly generated ones
+            setEditablePreparations([]); // Clear sub-recipes for a base preparation
             setNewPreparations(newPreps);
 
             toast({ title: "Recette générée !", description: "Vérifiez les détails et sauvegardez pour appliquer les changements." });
@@ -935,7 +936,25 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                     </Accordion>
                 </Card>
             )}
-
+             {isEditing && (
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Pencil className="h-5 w-5" />
+                            Carnet du Chef
+                        </CardTitle>
+                        <CardDescription>Vos notes personnelles. Non visibles sur les fiches techniques.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Textarea
+                            value={editableRecipe?.personalNotes || ''}
+                            onChange={(e) => handleRecipeDataChange('personalNotes', e.target.value)}
+                            rows={6}
+                            placeholder="Vos idées, alternatives, points de vigilance..."
+                        />
+                    </CardContent>
+                </Card>
+            )}
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle>

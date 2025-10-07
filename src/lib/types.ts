@@ -65,6 +65,7 @@ export type Preparation = {
   procedure_fabrication?: string;
   procedure_service?: string;
   allergens?: string[];
+  personalNotes?: string;
   
   // Champs spécifiques à la Préparation
   portions?: number; // Nombre de parts que la recette produit
@@ -106,6 +107,7 @@ export type Recipe = {
   procedure_service?: string;
   allergens?: string[];
   commercialArgument?: string;
+  personalNotes?: string;
 
   // Champs spécifiques au Plat
   price: number; // Prix de vente

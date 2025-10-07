@@ -777,7 +777,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         setIsSaving(true);
         try {
             const recipeDataToSave = {
-                name: editableRecipe.name, description: editableRecipe.description, difficulty: editableRecipe.difficulty, duration: editableRecipe.duration, procedure_fabrication: editableRecipe.procedure_fabrication, procedure_service: editableRecipe.procedure_service, imageUrl: editableRecipe.imageUrl,
+                name: editableRecipe.name, description: editableRecipe.description, difficulty: editableRecipe.difficulty, duration: editableRecipe.duration, procedure_fabrication: editableRecipe.procedure_fabrication, procedure_service: editableRecipe.procedure_service, imageUrl: editableRecipe.imageUrl, personalNotes: editableRecipe.personalNotes,
                 ...(editableRecipe.type === 'Plat' ? { portions: editableRecipe.portions, tvaRate: editableRecipe.tvaRate, price: editableRecipe.price, commercialArgument: editableRecipe.commercialArgument, status: editableRecipe.status, category: editableRecipe.category, } : { productionQuantity: (editableRecipe as Preparation).productionQuantity, productionUnit: (editableRecipe as Preparation).productionUnit, usageUnit: (editableRecipe as Preparation).usageUnit, })
             };
             await updateRecipeDetails(recipeId, recipeDataToSave, collectionName);
@@ -1170,6 +1170,26 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                     </AccordionContent>
                                 </AccordionItem>
                             </Accordion>
+                        </Card>
+                    )}
+                    
+                    {isEditing && (
+                        <Card>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Pencil className="h-5 w-5" />
+                                    Carnet du Chef
+                                </CardTitle>
+                                <CardDescription>Vos notes personnelles pour cette recette. Elles ne seront pas visibles sur le menu.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <Textarea
+                                    value={editableRecipe?.personalNotes || ''}
+                                    onChange={(e) => handleRecipeDataChange('personalNotes', e.target.value)}
+                                    rows={8}
+                                    placeholder="Notez ici vos idées, alternatives, tests, points de vigilance..."
+                                />
+                            </CardContent>
                         </Card>
                     )}
 
