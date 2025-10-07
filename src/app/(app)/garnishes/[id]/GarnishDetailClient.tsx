@@ -177,7 +177,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
                 if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                     const costPerProductionUnit = costs[linkData.childPreparationId];
-                    const quantityInProductionUnit = (linkData.quantity || 0) * getConversionFactor(linkData.unitUse, childRecipeData.productionUnit!);
+                    const quantityInProductionUnit = (linkData.quantity || 0) * getConversionFactor(linkData.unitUse, childRecipeData.productionUnit!, childRecipeData);
                     const totalCost = quantityInProductionUnit * costPerProductionUnit;
                     return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: totalCost, _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit || 'g' };
                 }

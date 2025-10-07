@@ -470,7 +470,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                     const childPrep = preparationsList.find(p => p.id === depId);
                     const childCostPerProductionUnit = costs[depId];
                     if (childPrep && childCostPerProductionUnit !== undefined) {
-                        const quantityInProductionUnit = linkData.quantity * getConversionFactor(linkData.unitUse, childPrep.productionUnit!);
+                        const quantityInProductionUnit = linkData.quantity * getConversionFactor(linkData.unitUse, childPrep.productionUnit, childPrep);
                         const subPrepCost = quantityInProductionUnit * childCostPerProductionUnit;
                         totalCost += subPrepCost;
                     }
@@ -548,7 +548,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
             const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
             if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                 const costPerProductionUnit = costs[linkData.childPreparationId];
-                const quantityInProductionUnit = linkData.quantity * getConversionFactor(linkData.unitUse, childRecipeData.productionUnit!);
+                const quantityInProductionUnit = linkData.quantity * getConversionFactor(linkData.unitUse, childRecipeData.productionUnit!, childRecipeData);
                 const subPrepCost = quantityInProductionUnit * costPerProductionUnit;
                 return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: subPrepCost, _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit };
             }
@@ -742,7 +742,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                 const updatedPrep = { ...prep, [field]: value };
                 const childPrep = allPreparations.find(p => p.id === prep.childPreparationId);
                 if (childPrep) {
-                    const quantityInProductionUnit = updatedPrep.quantity * getConversionFactor(updatedPrep.unit, prep._productionUnit);
+                    const quantityInProductionUnit = updatedPrep.quantity * getConversionFactor(updatedPrep.unit, prep._productionUnit, childPrep);
                     updatedPrep.totalCost = quantityInProductionUnit * (prep._costPerUnit || 0);
                 }
                 return updatedPrep;
@@ -763,7 +763,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                 }
                 
                 if (selectedPrep) {
-                    const quantityInProductionUnit = updatedPrep.quantity * getConversionFactor(updatedPrep.unit, selectedPrep.productionUnit!);
+                    const quantityInProductionUnit = updatedPrep.quantity * getConversionFactor(updatedPrep.unit, selectedPrep.productionUnit!, selectedPrep);
                     updatedPrep.totalCost = quantityInProductionUnit * (updatedPrep._costPerUnit || 0);
                 }
                 return updatedPrep;

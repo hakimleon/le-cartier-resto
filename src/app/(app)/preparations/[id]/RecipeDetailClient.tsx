@@ -197,7 +197,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
                 const childPrep = preparationsList.find(p => p.id === depId);
                 const childCostPerProductionUnit = costs[depId];
                 if (childPrep && childCostPerProductionUnit !== undefined) {
-                     const quantityInProductionUnit = (linkData.quantity || 0) * getConversionFactor(linkData.unitUse, childPrep.productionUnit!);
+                     const quantityInProductionUnit = (linkData.quantity || 0) * getConversionFactor(linkData.unitUse, childPrep.productionUnit!, childPrep);
                      totalCost += quantityInProductionUnit * childCostPerProductionUnit;
                 }
             }
@@ -268,7 +268,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const childRecipeData = allPrepsData.find(p => p.id === linkData.childPreparationId);
             if (childRecipeData && costs[linkData.childPreparationId] !== undefined) {
                 const costPerProductionUnit = costs[linkData.childPreparationId];
-                const quantityInProductionUnit = (linkData.quantity || 0) * getConversionFactor(linkData.unitUse, childRecipeData.productionUnit!);
+                const quantityInProductionUnit = (linkData.quantity || 0) * getConversionFactor(linkData.unitUse, childRecipeData.productionUnit!, childRecipeData);
                 const totalCost = quantityInProductionUnit * costPerProductionUnit;
                 return { id: linkDoc.id, childPreparationId: linkData.childPreparationId, name: childRecipeData.name, quantity: linkData.quantity, unit: linkData.unitUse, totalCost: totalCost, _costPerUnit: costPerProductionUnit, _productionUnit: childRecipeData.productionUnit! };
             }
@@ -350,7 +350,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
             const childPrep = allPreparations.find(p => p.id === prep.childPreparationId);
             const costPerUnit = preparationsCosts[prep.childPreparationId];
             if(childPrep && costPerUnit !== undefined) {
-                 const quantityInProductionUnit = (prep.quantity || 0) * getConversionFactor(prep.unit, childPrep.productionUnit!);
+                 const quantityInProductionUnit = (prep.quantity || 0) * getConversionFactor(prep.unit, childPrep.productionUnit!, childPrep);
                  prep.totalCost = quantityInProductionUnit * costPerUnit;
             }
             return prep;
@@ -429,8 +429,11 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       setEditablePreparations(current => current.map(prep => {
           if (prep.id === linkId) {
               const updatedPrep = { ...prep, [field]: value };
-              const quantityInProductionUnit = (updatedPrep.quantity || 0) * getConversionFactor(updatedPrep.unit, prep._productionUnit);
-              updatedPrep.totalCost = quantityInProductionUnit * (prep._costPerUnit || 0);
+              const childPrep = allPreparations.find(p => p.id === updatedPrep.childPreparationId);
+              if (childPrep) {
+                const quantityInProductionUnit = (updatedPrep.quantity || 0) * getConversionFactor(updatedPrep.unit, prep._productionUnit, childPrep);
+                updatedPrep.totalCost = quantityInProductionUnit * (prep._costPerUnit || 0);
+              }
               return updatedPrep;
           }
           return prep;
@@ -440,17 +443,15 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
       setNewPreparations(current => current.map(p => {
               if (p.tempId === tempId) {
                   const updatedPrep = { ...p, [field]: value };
-                  if (field === 'childPreparationId') {
-                      const selectedPrep = allPreparations.find(prep => prep.id === value);
-                      if (selectedPrep) { 
+                  const selectedPrep = allPreparations.find(prep => prep.id === updatedPrep.childPreparationId);
+                  if (field === 'childPreparationId' && selectedPrep) {
                         updatedPrep.name = selectedPrep.name; 
                         updatedPrep.unit = selectedPrep.usageUnit || selectedPrep.productionUnit || 'g'; 
                         updatedPrep._costPerUnit = preparationsCosts[selectedPrep.id!] || 0; 
                         updatedPrep._productionUnit = selectedPrep.productionUnit || ''; 
-                      }
                   }
-                  if (field === 'quantity' || field === 'childPreparationId') {
-                      const quantityInProductionUnit = (updatedPrep.quantity || 0) * getConversionFactor(updatedPrep.unit, updatedPrep._productionUnit);
+                  if (selectedPrep) {
+                      const quantityInProductionUnit = (updatedPrep.quantity || 0) * getConversionFactor(updatedPrep.unit, selectedPrep.productionUnit!, selectedPrep);
                       updatedPrep.totalCost = quantityInProductionUnit * (updatedPrep._costPerUnit || 0);
                   }
                   return updatedPrep;
@@ -677,7 +678,7 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
 
   return (
     <div className="space-y-4">
-      <IngredientModal open={isEditIngredientModalOpen} onOpenChange={setIsEditIngredientModalOpen} ingredient={editingIngredient} onSuccess={handleIngredientUpdate}>
+       <IngredientModal open={isEditIngredientModalOpen} onOpenChange={setIsEditIngredientModalOpen} ingredient={editingIngredient} onSuccess={handleIngredientUpdate}>
         <div />
       </IngredientModal>
       <IngredientModal open={isNewIngredientModalOpen} onOpenChange={setIsNewIngredientModalOpen} ingredient={newIngredientDefaults} onSuccess={(newDbIngredient) => { if (newDbIngredient && currentTempId) { handleCreateAndLinkIngredient(currentTempId, newDbIngredient); } }}><div/></IngredientModal>
@@ -1022,5 +1023,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
