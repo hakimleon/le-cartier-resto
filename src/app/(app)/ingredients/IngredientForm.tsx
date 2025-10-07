@@ -20,25 +20,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { PlusCircle, Trash2 } from "lucide-react";
-import { ScrollArea } from "@/components/ui/scroll-area";
-
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const ingredientCategories = [
-    { name: "Viandes & Gibiers", examples: "Bœuf (entrecôte, steak haché, joue), Agneau (carré, gigot), Porc (filet, échine, côte), Produits transformés : bacon, chorizo, jambon, saucisse" },
-    { name: "Volaille", examples: "Poulet entier, Cuisse, aile, blanc, filet" },
-    { name: "Poissons & Fruits de mer", examples: "Poissons frais : saumon, rouget, cabillaud, bar, dorade. Produits transformés : saumon fumé, morue salée, anchois marinés, surimi. Fruits de mer : crevettes, moules, calamars, huîtres" },
-    { name: "Légumes frais", examples: "Carotte, courgette, aubergine, poivron, oignon, échalote, Ail, poireau, pomme de terre, brocoli, champignon" },
-    { name: "Fruits frais", examples: "Citron, orange, pomme, poire, Fraise, framboise, raisin, mangue" },
-    { name: "Herbes & Aromates frais", examples: "Persil, coriandre, basilic, ciboulette, menthe, Thym, romarin, laurier, estragon, aneth, sauge" },
-    { name: "Produits laitiers & Fromages", examples: "Lait, crème, beurre, yaourt, Mozzarella, parmesan, fromage râpé, chèvre" },
-    { name: "Épicerie sèche", examples: "Riz, pâtes, semoule, polenta, Farine, sucre, sel, Lentilles, pois chiches, haricots secs" },
-    { name: "Huiles, Condiments & Vinaigres", examples: "Huiles : olive, tournesol, colza. Condiments : moutarde, mayonnaise, ketchup, sauce soja. Vinaigres : balsamique, vin rouge, cidre" },
-    { name: "Épices & Assaisonnements secs", examples: "Poivre, paprika, curry, cumin, curcuma, Cannelle, girofle, noix de muscade" },
-    { name: "Boulangerie & Pâtisserie", examples: "Pain, baguette, brioche, Pâte feuilletée, pâte brisée, Biscuits, levure, chocolat pâtissier" },
-    { name: "Boissons (sans alcool)", examples: "Eau plate, eau gazeuse, Sodas (cola, limonade…), Jus de fruits (orange, pomme, ananas…)" },
-    { name: "Autres / Divers", examples: "Décors alimentaires (perles de sucre, paillettes), Produits spécifiques (algues nori, fonds, fumets, gélatine…)" },
+    "Viandes & Gibiers", "Volaille", "Poissons & Fruits de mer", "Légumes frais", "Fruits frais", 
+    "Herbes & Aromates frais", "Produits laitiers & Fromages", "Épicerie sèche", "Huiles, Condiments & Vinaigres", 
+    "Épices & Assaisonnements secs", "Boulangerie & Pâtisserie", "Boissons (sans alcool)", "Autres / Divers"
 ];
 
 const formSchema = z.object({
@@ -92,24 +82,17 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   });
   
   const purchaseUnit = form.watch("purchaseUnit");
-  const getDynamicLabel = (field: 'purchaseWeightGrams') => {
+  const getDynamicLabel = () => {
     const unit = purchaseUnit?.toLowerCase();
-    if (field === 'purchaseWeightGrams') {
-        if (unit === 'pièce' || unit === 'unité') return "Poids moyen par pièce (g)";
-        if (unit === 'botte') return "Poids moyen par botte (g)";
-        if (unit === 'l' || unit === 'litre' || unit === 'litres' || unit === 'cl' || unit === 'ml') return "Volume équivalent (ml)";
-        return `Poids équivalent (g)`;
-    }
-    return "Label";
+    if (unit === 'pièce' || unit === 'unité') return "Poids moyen par pièce (g)";
+    if (unit === 'botte') return "Poids moyen par botte (g)";
+    if (unit === 'l' || unit === 'litre' || unit === 'litres' || unit === 'cl' || unit === 'ml') return "Volume équivalent (ml)";
+    return `Poids équivalent (g)`;
   };
-  const getDynamicDescription = (field: 'purchaseWeightGrams') => {
+  const getDynamicDescription = () => {
       const unit = purchaseUnit || 'kg';
-      if (field === 'purchaseWeightGrams') {
-        return `Pour 1 ${unit} acheté.`;
-      }
-      return "";
+      return `Pour 1 ${unit} acheté(e).`;
   }
-
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
@@ -155,60 +138,57 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="flex flex-col h-full overflow-hidden">
-        <ScrollArea className="flex-grow pr-6 -mr-6">
-          <div className="space-y-6">
-            <Card>
-                <CardHeader><CardTitle>Informations Générales</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                    <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom de l'ingrédient</FormLabel> <FormControl> <Input placeholder="Ex: Beurre doux AOP" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                         <FormField control={form.control} name="category" render={({ field }) => (
-                            <FormItem>
-                                <FormLabel>Catégorie</FormLabel>
-                                <Select onValueChange={field.onChange} value={field.value}>
-                                    <FormControl>
-                                        <SelectTrigger><SelectValue placeholder="Sélectionnez une catégorie..." /></SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent> {ingredientCategories.map(cat => ( <SelectItem key={cat.name} value={cat.name}> {cat.name} </SelectItem> ))} </SelectContent>
-                                </Select>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <Tabs defaultValue="main" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="main">Informations Principales</TabsTrigger>
+                <TabsTrigger value="equivalences">Table d'équivalence</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="main" className="mt-6 space-y-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Informations Générales</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom de l'ingrédient</FormLabel> <FormControl> <Input placeholder="Ex: Beurre doux AOP" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             <FormField control={form.control} name="category" render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Catégorie</FormLabel>
+                                    <Select onValueChange={field.onChange} value={field.value}>
+                                        <FormControl>
+                                            <SelectTrigger><SelectValue placeholder="Sélectionnez une catégorie..." /></SelectTrigger>
+                                        </FormControl>
+                                        <SelectContent> {ingredientCategories.map(cat => ( <SelectItem key={cat} value={cat}> {cat} </SelectItem> ))} </SelectContent>
+                                    </Select>
+                                    <FormMessage />
+                                </FormItem>
+                            )}/>
+                            <FormField control={form.control} name="supplier" render={({ field }) => ( <FormItem> <FormLabel>Fournisseur (Optionnel)</FormLabel> <FormControl> <Input placeholder="Ex: Fournisseur ABC" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                        </div>
+                         <FormField control={form.control} name="baseUnit" render={({ field }) => (
+                            <FormItem className="space-y-3 pt-2">
+                                <FormLabel>Unité de base pour le coût</FormLabel>
+                                <FormControl>
+                                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center gap-6">
+                                        <FormItem className="flex items-center space-x-2 space-y-0"> <FormControl> <RadioGroupItem value="g" /> </FormControl> <FormLabel className="font-normal">g (grammes)</FormLabel> </FormItem>
+                                        <FormItem className="flex items-center space-x-2 space-y-0"> <FormControl> <RadioGroupItem value="ml" /> </FormControl> <FormLabel className="font-normal">ml (millilitres)</FormLabel> </FormItem>
+                                    </RadioGroup>
+                                </FormControl>
+                                 <FormDescription className="text-xs">Définit si le coût de revient est calculé par gramme ou par millilitre.</FormDescription>
                                 <FormMessage />
                             </FormItem>
                         )}/>
-                        <FormField control={form.control} name="supplier" render={({ field }) => ( <FormItem> <FormLabel>Fournisseur (Optionnel)</FormLabel> <FormControl> <Input placeholder="Ex: Fournisseur ABC" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                    </div>
-                     <FormField control={form.control} name="baseUnit" render={({ field }) => (
-                        <FormItem className="space-y-3 pt-2">
-                            <FormLabel>Unité de base pour le calcul du coût</FormLabel>
-                            <FormControl>
-                                <div className="flex gap-4">
-                                     <FormItem className="flex items-center space-x-2 space-y-0">
-                                        <FormControl>
-                                            <input type="radio" value="g" checked={field.value === 'g'} onChange={field.onChange} id="g" name="baseUnit" className="form-radio h-4 w-4 text-primary border-gray-300 focus:ring-primary"/>
-                                        </FormControl>
-                                        <label htmlFor="g" className="font-normal">g (grammes)</label>
-                                    </FormItem>
-                                     <FormItem className="flex items-center space-x-2 space-y-0">
-                                        <FormControl>
-                                            <input type="radio" value="ml" checked={field.value === 'ml'} onChange={field.onChange} id="ml" name="baseUnit" className="form-radio h-4 w-4 text-primary border-gray-300 focus:ring-primary"/>
-                                        </FormControl>
-                                        <label htmlFor="ml" className="font-normal">ml (millilitres)</label>
-                                    </FormItem>
-                                </div>
-                            </FormControl>
-                             <FormDescription>Définit si le coût de revient est calculé par gramme ou par millilitre.</FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                    )}/>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
 
-             <Card>
-                <CardHeader>
-                    <CardTitle>Détails d'Achat et Rendement</CardTitle>
-                    <CardDescription>Informations utilisées pour calculer le coût de revient précis.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Détails d'Achat et Rendement</CardTitle>
+                        <CardDescription>Informations utilisées pour calculer le coût de revient précis.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                         <FormField control={form.control} name="purchasePrice" render={({ field }) => ( <FormItem> <FormLabel>Prix d'achat (DZD)</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 150" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
                         <FormField control={form.control} name="purchaseUnit" render={({ field }) => (
                             <FormItem>
@@ -229,7 +209,7 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                             <FormMessage />
                             </FormItem>
                         )}/>
-                        <FormField control={form.control} name="purchaseWeightGrams" render={({ field }) => ( <FormItem> <FormLabel>{getDynamicLabel('purchaseWeightGrams')}</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 1000" {...field} /> </FormControl> <FormDescription className="text-xs">{getDynamicDescription('purchaseWeightGrams')}</FormDescription> <FormMessage /> </FormItem> )}/>
+                        <FormField control={form.control} name="purchaseWeightGrams" render={({ field }) => ( <FormItem> <FormLabel>{getDynamicLabel()}</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 1000" {...field} /> </FormControl> <FormDescription className="text-xs">{getDynamicDescription()}</FormDescription> <FormMessage /> </FormItem> )}/>
                         <FormField control={form.control} name="yieldPercentage" render={({ field }) => (
                             <FormItem>
                             <FormLabel>Rendement (%)</FormLabel>
@@ -238,63 +218,64 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                             <FormMessage />
                             </FormItem>
                         )}/>
-                </CardContent>
-            </Card>
+                    </CardContent>
+                </Card>
 
-            <Card>
-                <CardHeader>
-                    <CardTitle>Table d'équivalence</CardTitle>
-                    <CardDescription>Définissez ici les conversions spécifiques (ex: "pièce->g").</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                     {fields.map((field, index) => (
-                        <div key={field.id} className="flex items-end gap-2">
-                            <FormField control={form.control} name={`equivalences.${index}.key`} render={({ field }) => (
-                                <FormItem className="flex-1">
-                                    {index === 0 && <FormLabel>Conversion</FormLabel>}
-                                    <FormControl><Input placeholder="ex: pièce->g" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                            <FormField control={form.control} name={`equivalences.${index}.value`} render={({ field }) => (
-                                <FormItem className="flex-1">
-                                    {index === 0 && <FormLabel>Valeur</FormLabel>}
-                                    <FormControl><Input placeholder="ex: 120" {...field} /></FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}/>
-                            <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
-                                <Trash2 className="h-4 w-4 text-destructive"/>
-                            </Button>
-                        </div>
-                    ))}
-                    <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        className="mt-2"
-                        onClick={() => append({ key: "", value: "" })}
-                    >
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Ajouter une conversion
-                    </Button>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <CardTitle>Gestion du Stock</CardTitle>
-                    <CardDescription>Suivez les quantités et configurez des alertes.</CardDescription>
-                </CardHeader>
-                <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                     <FormField control={form.control} name="stockQuantity" render={({ field }) => ( <FormItem> <FormLabel>Stock actuel</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 10" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
-                     <FormField control={form.control} name="lowStockThreshold" render={({ field }) => ( <FormItem> <FormLabel>Seuil d'alerte</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 2" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
-                </CardContent>
-            </Card>
-
-          </div>
-        </ScrollArea>
-        <div className="flex justify-end pt-4 border-t mt-auto shrink-0">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Gestion du Stock</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                         <FormField control={form.control} name="stockQuantity" render={({ field }) => ( <FormItem> <FormLabel>Stock actuel</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 10" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
+                         <FormField control={form.control} name="lowStockThreshold" render={({ field }) => ( <FormItem> <FormLabel>Seuil d'alerte</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 2" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+            
+            <TabsContent value="equivalences" className="mt-6">
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Table d'équivalence</CardTitle>
+                        <CardDescription>Définissez ici les conversions spécifiques pour cet ingrédient, par exemple "pièce" vers "g", ou "botte" vers "g".</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                         {fields.map((field, index) => (
+                            <div key={field.id} className="flex items-end gap-2">
+                                <FormField control={form.control} name={`equivalences.${index}.key`} render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        {index === 0 && <FormLabel>Conversion</FormLabel>}
+                                        <FormControl><Input placeholder="ex: pièce->g" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name={`equivalences.${index}.value`} render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        {index === 0 && <FormLabel>Valeur</FormLabel>}
+                                        <FormControl><Input placeholder="ex: 120" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <Button type="button" variant="ghost" size="icon" onClick={() => remove(index)}>
+                                    <Trash2 className="h-4 w-4 text-destructive"/>
+                                </Button>
+                            </div>
+                        ))}
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="mt-4"
+                            onClick={() => append({ key: "", value: "" })}
+                        >
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Ajouter une conversion
+                        </Button>
+                    </CardContent>
+                </Card>
+            </TabsContent>
+        </Tabs>
+        
+        <div className="flex justify-end pt-6 border-t">
             <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Sauvegarde..." : "Sauvegarder l'ingrédient"}
             </Button>
@@ -303,3 +284,5 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
+
+    
