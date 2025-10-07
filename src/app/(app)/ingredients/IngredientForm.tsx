@@ -82,16 +82,17 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
   });
   
   const purchaseUnit = form.watch("purchaseUnit");
-  const getDynamicLabel = () => {
+  
+  const getWeightLabel = () => {
     const unit = purchaseUnit?.toLowerCase();
     if (unit === 'pièce' || unit === 'unité') return "Poids moyen par pièce (g)";
     if (unit === 'botte') return "Poids moyen par botte (g)";
     if (unit === 'l' || unit === 'litre' || unit === 'litres' || unit === 'cl' || unit === 'ml') return "Volume équivalent (ml)";
-    return `Poids équivalent (g)`;
+    return `Poids équivalent de l'unité d'achat (g)`;
   };
-  const getDynamicDescription = () => {
-      const unit = purchaseUnit || 'kg';
-      return `Pour 1 ${unit} acheté(e).`;
+  
+  const getWeightDescription = () => {
+      return `Pour 1 ${purchaseUnit || 'unité'} acheté(e).`;
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
@@ -145,95 +146,94 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
                 <TabsTrigger value="equivalences">Table d'équivalence</TabsTrigger>
             </TabsList>
             
-            <TabsContent value="main" className="mt-6 space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Informations Générales</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom de l'ingrédient</FormLabel> <FormControl> <Input placeholder="Ex: Beurre doux AOP" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                             <FormField control={form.control} name="category" render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Catégorie</FormLabel>
-                                    <Select onValueChange={field.onChange} value={field.value}>
+            <TabsContent value="main" className="mt-6">
+                <div className="space-y-6">
+                    <Card>
+                        <CardContent className="pt-6">
+                            <div className="space-y-4">
+                                <FormField control={form.control} name="name" render={({ field }) => ( <FormItem> <FormLabel>Nom de l'ingrédient</FormLabel> <FormControl> <Input placeholder="Ex: Beurre doux AOP" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                     <FormField control={form.control} name="category" render={({ field }) => (
+                                        <FormItem>
+                                            <FormLabel>Catégorie</FormLabel>
+                                            <Select onValueChange={field.onChange} value={field.value}>
+                                                <FormControl>
+                                                    <SelectTrigger><SelectValue placeholder="Sélectionnez une catégorie..." /></SelectTrigger>
+                                                </FormControl>
+                                                <SelectContent> {ingredientCategories.map(cat => ( <SelectItem key={cat} value={cat}> {cat} </SelectItem> ))} </SelectContent>
+                                            </Select>
+                                            <FormMessage />
+                                        </FormItem>
+                                    )}/>
+                                    <FormField control={form.control} name="supplier" render={({ field }) => ( <FormItem> <FormLabel>Fournisseur (Optionnel)</FormLabel> <FormControl> <Input placeholder="Ex: Fournisseur ABC" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                                </div>
+                                 <FormField control={form.control} name="baseUnit" render={({ field }) => (
+                                    <FormItem className="space-y-3 pt-2">
+                                        <FormLabel>Unité de base pour le coût</FormLabel>
                                         <FormControl>
-                                            <SelectTrigger><SelectValue placeholder="Sélectionnez une catégorie..." /></SelectTrigger>
+                                            <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center gap-6">
+                                                <FormItem className="flex items-center space-x-2 space-y-0"> <FormControl> <RadioGroupItem value="g" /> </FormControl> <FormLabel className="font-normal">g (grammes)</FormLabel> </FormItem>
+                                                <FormItem className="flex items-center space-x-2 space-y-0"> <FormControl> <RadioGroupItem value="ml" /> </FormControl> <FormLabel className="font-normal">ml (millilitres)</FormLabel> </FormItem>
+                                            </RadioGroup>
                                         </FormControl>
-                                        <SelectContent> {ingredientCategories.map(cat => ( <SelectItem key={cat} value={cat}> {cat} </SelectItem> ))} </SelectContent>
-                                    </Select>
-                                    <FormMessage />
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Détails d'Achat et Rendement</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                            <FormField control={form.control} name="purchasePrice" render={({ field }) => ( <FormItem> <FormLabel>Prix d'achat (DZD)</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 150" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
+                            <FormField control={form.control} name="purchaseUnit" render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Unité d'achat</FormLabel>
+                                <Select onValueChange={field.onChange} value={field.value}>
+                                    <FormControl>
+                                        <SelectTrigger><SelectValue placeholder="Sélectionnez..." /></SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                        <SelectItem value="kg">Kg</SelectItem>
+                                        <SelectItem value="l">Litres</SelectItem>
+                                        <SelectItem value="pièce">Pièce</SelectItem>
+                                        <SelectItem value="botte">Botte</SelectItem>
+                                        <SelectItem value="g">Grammes</SelectItem>
+                                        <SelectItem value="ml">ml</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <FormMessage />
                                 </FormItem>
                             )}/>
-                            <FormField control={form.control} name="supplier" render={({ field }) => ( <FormItem> <FormLabel>Fournisseur (Optionnel)</FormLabel> <FormControl> <Input placeholder="Ex: Fournisseur ABC" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                        </div>
-                         <FormField control={form.control} name="baseUnit" render={({ field }) => (
-                            <FormItem className="space-y-3 pt-2">
-                                <FormLabel>Unité de base pour le coût</FormLabel>
-                                <FormControl>
-                                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex items-center gap-6">
-                                        <FormItem className="flex items-center space-x-2 space-y-0"> <FormControl> <RadioGroupItem value="g" /> </FormControl> <FormLabel className="font-normal">g (grammes)</FormLabel> </FormItem>
-                                        <FormItem className="flex items-center space-x-2 space-y-0"> <FormControl> <RadioGroupItem value="ml" /> </FormControl> <FormLabel className="font-normal">ml (millilitres)</FormLabel> </FormItem>
-                                    </RadioGroup>
-                                </FormControl>
-                                 <FormDescription className="text-xs">Définit si le coût de revient est calculé par gramme ou par millilitre.</FormDescription>
+                            <FormField control={form.control} name="purchaseWeightGrams" render={({ field }) => ( <FormItem> <FormLabel>{getWeightLabel()}</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 1000" {...field} /> </FormControl> <FormDescription className="text-xs">{getWeightDescription()}</FormDescription> <FormMessage /> </FormItem> )}/>
+                            <FormField control={form.control} name="yieldPercentage" render={({ field }) => (
+                                <FormItem>
+                                <FormLabel>Rendement (%)</FormLabel>
+                                <FormControl><Input type="number" step="1" placeholder="Ex: 80" {...field} /></FormControl>
+                                <FormDescription className="text-xs">% de produit utilisable après parage.</FormDescription>
                                 <FormMessage />
-                            </FormItem>
-                        )}/>
-                    </CardContent>
-                </Card>
+                                </FormItem>
+                            )}/>
+                        </CardContent>
+                    </Card>
 
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Détails d'Achat et Rendement</CardTitle>
-                        <CardDescription>Informations utilisées pour calculer le coût de revient précis.</CardDescription>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                        <FormField control={form.control} name="purchasePrice" render={({ field }) => ( <FormItem> <FormLabel>Prix d'achat (DZD)</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 150" {...field} /> </FormControl> <FormMessage /> </FormItem> )}/>
-                        <FormField control={form.control} name="purchaseUnit" render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Unité d'achat</FormLabel>
-                            <Select onValueChange={field.onChange} value={field.value}>
-                                <FormControl>
-                                    <SelectTrigger><SelectValue placeholder="Sélectionnez..." /></SelectTrigger>
-                                </FormControl>
-                                <SelectContent>
-                                <SelectItem value="kg">Kg</SelectItem>
-                                <SelectItem value="l">Litres</SelectItem>
-                                <SelectItem value="pièce">Pièce</SelectItem>
-                                <SelectItem value="botte">Botte</SelectItem>
-                                <SelectItem value="g">Grammes</SelectItem>
-                                <SelectItem value="ml">ml</SelectItem>
-                                </SelectContent>
-                            </Select>
-                            <FormMessage />
-                            </FormItem>
-                        )}/>
-                        <FormField control={form.control} name="purchaseWeightGrams" render={({ field }) => ( <FormItem> <FormLabel>{getDynamicLabel()}</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 1000" {...field} /> </FormControl> <FormDescription className="text-xs">{getDynamicDescription()}</FormDescription> <FormMessage /> </FormItem> )}/>
-                        <FormField control={form.control} name="yieldPercentage" render={({ field }) => (
-                            <FormItem>
-                            <FormLabel>Rendement (%)</FormLabel>
-                            <FormControl><Input type="number" step="1" placeholder="Ex: 80" {...field} /></FormControl>
-                            <FormDescription className="text-xs">% de produit utilisable après parage.</FormDescription>
-                            <FormMessage />
-                            </FormItem>
-                        )}/>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader>
-                        <CardTitle>Gestion du Stock</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-                         <FormField control={form.control} name="stockQuantity" render={({ field }) => ( <FormItem> <FormLabel>Stock actuel</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 10" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
-                         <FormField control={form.control} name="lowStockThreshold" render={({ field }) => ( <FormItem> <FormLabel>Seuil d'alerte</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 2" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
-                    </CardContent>
-                </Card>
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Gestion du Stock</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
+                             <FormField control={form.control} name="stockQuantity" render={({ field }) => ( <FormItem> <FormLabel>Stock actuel</FormLabel> <FormControl> <Input type="number" step="0.01" placeholder="Ex: 10" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
+                             <FormField control={form.control} name="lowStockThreshold" render={({ field }) => ( <FormItem> <FormLabel>Seuil d'alerte</FormLabel> <FormControl> <Input type="number" step="1" placeholder="Ex: 2" {...field} /> </FormControl> <FormDescription className="text-xs">En unité d'achat ({purchaseUnit}).</FormDescription> <FormMessage /> </FormItem> )}/>
+                        </CardContent>
+                    </Card>
+                </div>
             </TabsContent>
             
             <TabsContent value="equivalences" className="mt-6">
-                <Card>
+                 <Card>
                     <CardHeader>
                         <CardTitle>Table d'équivalence</CardTitle>
                         <CardDescription>Définissez ici les conversions spécifiques pour cet ingrédient, par exemple "pièce" vers "g", ou "botte" vers "g".</CardDescription>
@@ -284,5 +284,3 @@ export function IngredientForm({ ingredient, onSuccess }: IngredientFormProps) {
     </Form>
   );
 }
-
-    
