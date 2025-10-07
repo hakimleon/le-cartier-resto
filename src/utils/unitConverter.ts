@@ -42,14 +42,11 @@ export function getConversionFactor(
     const fIsVolume = volumeUnits.includes(f);
     const tIsVolume = volumeUnits.includes(t);
     
-    // Si même famille (poids-poids ou volume-volume), convertir directement.
-    if ((fIsWeight && tIsWeight) || (fIsVolume && tIsVolume)) {
-      return standardConversions[f] / standardConversions[t];
-    }
-    
-    // Si familles différentes, assumer une densité de 1 (1g = 1ml).
-    if ((fIsWeight && tIsVolume) || (fIsVolume && tIsWeight)) {
-        console.warn(`⚠️ Conversion approximative poids/volume: ${fromUnit} → ${toUnit}.`);
+    // Si même famille (poids-poids ou volume-volume), ou si familles différentes (assume 1g = 1ml)
+    if ((fIsWeight && tIsWeight) || (fIsVolume && tIsVolume) || (fIsWeight && tIsVolume) || (fIsVolume && tIsWeight)) {
+        if(fIsWeight && tIsVolume || fIsVolume && tIsWeight) {
+            console.warn(`⚠️ Conversion approximative poids/volume: ${fromUnit} → ${toUnit}.`);
+        }
         return standardConversions[f] / standardConversions[t];
     }
   }
@@ -110,6 +107,7 @@ export function computeIngredientCost(
     if (!ingredient.baseUnit) {
         return { cost: 0, error: "L'unité de base (g/ml) de l'ingrédient n'est pas définie."};
     }
+    if (usedQuantity <= 0) return { cost: 0 };
 
     // coût brut par unité de base (g ou ml)
     const costPerBaseUnitRaw =
@@ -126,14 +124,6 @@ export function computeIngredientCost(
         usedUnit,
         ingredient.baseUnit
     );
-    
-    // Vérifie si la conversion a échoué silencieusement
-    if (qtyInBase === usedQuantity && usedUnit.toLowerCase() !== ingredient.baseUnit.toLowerCase()) {
-         const factor = getConversionFactor(usedUnit, ingredient.baseUnit, ingredient);
-         if (factor === 1) { // Un facteur de 1 est le signal d'un échec si les unités sont différentes
-            return { cost: 0, error: `Conversion de '${usedUnit}' vers '${ingredient.baseUnit}' non définie.` };
-         }
-    }
     
     const finalCost = qtyInBase * netCostPerBaseUnit;
 
