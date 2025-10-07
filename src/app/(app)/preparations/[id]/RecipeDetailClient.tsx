@@ -43,6 +43,7 @@ import { RecipeConceptOutput } from "@/ai/flows/recipe-workshop-flow";
 import { Dialog, DialogHeader, DialogTitle, DialogDescription, DialogContent } from "@/components/ui/dialog";
 import { computeIngredientCost, getConversionFactor } from "@/utils/unitConverter";
 import { EditableIngredientRow, NewIngredientRow } from "../../menu/[id]/IngredientRow";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
 const PREPARATION_WORKSHOP_CONCEPT_KEY = 'preparationWorkshopGeneratedConcept';
@@ -662,6 +663,17 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
     return { totalRecipeCost: totalCost, costPerPortion: costPerPortionValue };
   }, [currentRecipeData, ingredients, editableIngredients, newIngredients, preparations, editablePreparations, newPreparations, isEditing]);
 
+    const rawConceptData = useMemo(() => {
+        const rawJson = isEditing ? editableRecipe?.rawConcept : recipe?.rawConcept;
+        if (!rawJson) return null;
+        try {
+            return JSON.parse(rawJson) as RecipeConceptOutput;
+        } catch (e) {
+            console.error("Failed to parse rawConcept JSON:", e);
+            return null;
+        }
+    }, [isEditing, recipe, editableRecipe]);
+
 
   if (isLoading) { return <RecipeDetailSkeleton />; }
   if (error) { return ( <div className="container mx-auto py-10"><Alert variant="destructive" className="max-w-2xl mx-auto my-10"><AlertTriangle className="h-4 w-4" /><AlertTitle>Erreur</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></div> ); }
@@ -904,30 +916,26 @@ export default function RecipeDetailClient({ recipeId }: RecipeDetailClientProps
         </div>
 
         <div className="space-y-8">
-            {generatedConcept && isEditing && (
+            {isEditing && rawConceptData && (
                 <Card className="border-primary/20 bg-primary/5">
-                    <CardHeader>
-                        <CardTitle className="flex items-center justify-between text-lg text-primary">
-                            <div className="flex items-center gap-2"><Lightbulb className="h-5 w-5" />Suggestion de l'IA</div>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 text-primary/70 hover:text-primary" onClick={() => setGeneratedConcept(null)}><X className="h-4 w-4" /></Button>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4 text-sm">
-                        <div>
-                            <h4 className="font-semibold mb-1">Ingrédients bruts suggérés</h4>
-                            <ul className="list-disc pl-5 text-muted-foreground text-xs space-y-1">
-                                {generatedConcept.ingredients.map(ing => <li key={ing.name}>{ing.quantity} {ing.unit} {ing.name}</li>)}
-                            </ul>
-                        </div>
-                        <div>
-                            <h4 className="font-semibold mb-1">Procédure brute</h4>
-                            <div className="text-xs text-muted-foreground p-2 border rounded-md max-h-48 overflow-y-auto">
-                                <MarkdownRenderer text={`${generatedConcept.procedure_fabrication}\n${generatedConcept.procedure_service}`} />
-                            </div>
-                        </div>
-                    </CardContent>
+                    <Accordion type="single" collapsible>
+                        <AccordionItem value="item-1" className="border-b-0">
+                            <AccordionTrigger className="p-4 hover:no-underline">
+                                <div className="flex items-center gap-2 text-primary">
+                                    <Lightbulb className="h-5 w-5" />
+                                    <h3 className="text-lg font-semibold">Suggestion de l'Atelier</h3>
+                                </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-4 pb-4">
+                                <pre className="text-xs whitespace-pre-wrap break-all bg-background/50 p-3 rounded-md max-h-96 overflow-y-auto">
+                                    <code>{JSON.stringify(rawConceptData, null, 2)}</code>
+                                </pre>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
                 </Card>
             )}
+
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2 text-muted-foreground">Coût Total Matières</CardTitle>

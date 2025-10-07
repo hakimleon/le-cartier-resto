@@ -39,6 +39,7 @@ import MarkdownRenderer from "@/components/MarkdownRenderer";
 import { PreparationConceptOutput } from "@/ai/flows/workshop-flow";
 import { computeIngredientCost, getConversionFactor } from "@/utils/unitConverter";
 import { EditableIngredientRow, NewIngredientRow } from "../../menu/[id]/IngredientRow";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
 const GARNISH_WORKSHOP_CONCEPT_KEY = 'garnishWorkshopGeneratedConcept';
@@ -108,6 +109,7 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
   const [newPreparationDefaults, setNewPreparationDefaults] = useState<Partial<Preparation> | null>(null);
   const [currentTempId, setCurrentTempId] = useState<string | null>(null);
   const [currentPrepTempId, setCurrentPrepTempId] = useState<string | null>(null);
+  const [rawConceptData, setRawConceptData] = useState<PreparationConceptOutput | null>(null);
 
   // State and handler for editing an existing ingredient
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
@@ -149,9 +151,17 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                 return;
             }
 
-            const fetchedRecipe = { ...recipeSnap.data(), id: recipeSnap.id } as Preparation;
+            const fetchedRecipeData = recipeSnap.data();
+            const fetchedRecipe = { ...fetchedRecipeData, id: recipeSnap.id } as Preparation;
+            
             setRecipe(fetchedRecipe);
             setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
+
+            if (fetchedRecipe.rawConcept) {
+                try {
+                    setRawConceptData(JSON.parse(fetchedRecipe.rawConcept));
+                } catch(e) { console.error("Error parsing raw concept from DB", e); }
+            }
 
             const recipeIngredientsQuery = query(collection(db, "recipeIngredients"), where("recipeId", "==", recipeId));
             const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
@@ -528,6 +538,26 @@ export default function GarnishDetailClient({ recipeId }: RecipeDetailClientProp
                     </Card>
                 </div>
                 <div className="space-y-8">
+                     {isEditing && rawConceptData && (
+                        <Card className="border-primary/20 bg-primary/5">
+                            <Accordion type="single" collapsible>
+                                <AccordionItem value="item-1" className="border-b-0">
+                                    <AccordionTrigger className="p-4 hover:no-underline">
+                                        <div className="flex items-center gap-2 text-primary">
+                                            <Lightbulb className="h-5 w-5" />
+                                            <h3 className="text-lg font-semibold">Suggestion de l'Atelier</h3>
+                                        </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="px-4 pb-4">
+                                        <pre className="text-xs whitespace-pre-wrap break-all bg-background/50 p-3 rounded-md max-h-96 overflow-y-auto">
+                                            <code>{JSON.stringify(rawConceptData, null, 2)}</code>
+                                        </pre>
+                                    </AccordionContent>
+                                </AccordionItem>
+                            </Accordion>
+                        </Card>
+                    )}
+
                     <Card>
                         <CardHeader><CardTitle>Coût Total Matières</CardTitle></CardHeader>
                         <CardContent>
@@ -587,5 +617,3 @@ function RecipeDetailSkeleton() {
       </div>
     );
 }
-
-    
