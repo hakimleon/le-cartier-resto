@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState, useMemo, useCallback } from "react";
@@ -41,7 +40,7 @@ import {
 import { ImageUploadDialog } from "@/app/(app)/menu/[id]/ImageUploadDialog";
 import { generateCommercialArgument } from "@/ai/flows/suggestion-flow";
 import { IngredientModal } from "@/app/(app)/ingredients/IngredientModal";
-import { RecipeConceptOutput } from "@/ai/flows/workshop-flow";
+import type { RecipeConceptOutput } from "@/ai/flows/workshop-flow";
 import { PreparationModal } from "@/app/(app)/preparations/PreparationModal";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
