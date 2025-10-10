@@ -2,7 +2,7 @@
 "use client";
 
 import { useParams } from 'next/navigation';
-import RecipeDetailClient from './RecipeDetailClient';
+import RecipeDetailClient from '@/app/(app)/menu/[id]/RecipeDetailClient';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function RecipeDetailPage() {

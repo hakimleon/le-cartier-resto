@@ -1088,5 +1088,4 @@ function RecipeDetailSkeleton() {
     );
 }
 
-
     
