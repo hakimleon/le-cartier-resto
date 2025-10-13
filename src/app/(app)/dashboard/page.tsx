@@ -10,6 +10,12 @@ type CategoryDistribution = {
     value: number;
 }[];
 
+const formatCategoryForChart = (category?: string): string => {
+    if (!category) return "Non classé";
+    return category.split(/[-–]/)[0].trim();
+};
+
+
 // Utilisation de unstable_cache pour mettre en cache les données du dashboard
 const getDashboardData = unstable_cache(
     async () => {
@@ -22,7 +28,8 @@ const getDashboardData = unstable_cache(
             // Calculate category distribution
             const categoryCounts = allRecipes.reduce((acc, recipe) => {
                 if (recipe.category) {
-                    acc[recipe.category] = (acc[recipe.category] || 0) + 1;
+                    const formattedCategory = formatCategoryForChart(recipe.category);
+                    acc[formattedCategory] = (acc[formattedCategory] || 0) + 1;
                 }
                 return acc;
             }, {} as Record<string, number>);
