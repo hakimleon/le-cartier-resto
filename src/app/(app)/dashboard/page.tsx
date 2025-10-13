@@ -26,15 +26,24 @@ const getDashboardData = unstable_cache(
             const totalDishes = allRecipes.length;
 
             // Calculate category distribution
-            const categoryCounts = allRecipes.reduce((acc, recipe) => {
-                if (recipe.category) {
-                    const formattedCategory = formatCategoryForChart(recipe.category);
-                    acc[formattedCategory] = (acc[formattedCategory] || 0) + 1;
-                }
-                return acc;
-            }, {} as Record<string, number>);
+            const categoryMap = new Map<string, { name: string; value: number }>();
 
-            const categoryDistribution: CategoryDistribution = Object.entries(categoryCounts).map(([name, value]) => ({ name, value }));
+            allRecipes.forEach(recipe => {
+                if (recipe.category) {
+                    const formattedName = formatCategoryForChart(recipe.category);
+                    const lowercasedName = formattedName.toLowerCase();
+
+                    if (categoryMap.has(lowercasedName)) {
+                        const existing = categoryMap.get(lowercasedName)!;
+                        existing.value += 1;
+                    } else {
+                        // Use the formattedName (with original casing) for the label
+                        categoryMap.set(lowercasedName, { name: formattedName, value: 1 });
+                    }
+                }
+            });
+
+            const categoryDistribution: CategoryDistribution = Array.from(categoryMap.values());
 
 
             const preparationsSnapshot = await getDocs(collection(db, "preparations"));
