@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useTransition } from 'react';
@@ -11,7 +10,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, Calculator, ChefHat, Loader2, NotebookText, Carrot } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { calculateProductionPlan, type ProductionPlan } from './actions';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 
 interface ProductionPlanClientProps {
     activeDishes: Recipe[];
@@ -120,20 +120,28 @@ export default function ProductionPlanClient({ activeDishes, initialError }: Pro
                             <CardTitle className="flex items-center gap-2"><NotebookText className="h-5 w-5"/>Préparations Requises</CardTitle>
                         </CardHeader>
                         <CardContent>
-                             <ScrollArea className="h-96">
-                                {results.requiredPreparations.length > 0 ? (
-                                    <ul className="space-y-2 text-sm pr-4">
-                                        {results.requiredPreparations.map(prep => (
-                                            <li key={prep.name} className="p-2 bg-background rounded-md border flex justify-between">
-                                                <span>{prep.name}</span>
-                                                <span className="font-bold">{prep.quantity.toFixed(2)} {prep.unit}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <p className="text-muted-foreground text-sm text-center py-8">Aucune préparation de base requise.</p>
-                                )}
-                            </ScrollArea>
+                             <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Nom</TableHead>
+                                        <TableHead className="text-right">Quantité</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                     {results.requiredPreparations.length > 0 ? (
+                                        results.requiredPreparations.map(prep => (
+                                            <TableRow key={prep.name}>
+                                                <TableCell>{prep.name}</TableCell>
+                                                <TableCell className="text-right font-medium">{prep.quantity.toFixed(2)} {prep.unit}</TableCell>
+                                            </TableRow>
+                                        ))
+                                     ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={2} className="h-24 text-center text-muted-foreground">Aucune préparation de base requise.</TableCell>
+                                        </TableRow>
+                                     )}
+                                </TableBody>
+                            </Table>
                         </CardContent>
                     </Card>
 
@@ -142,20 +150,38 @@ export default function ProductionPlanClient({ activeDishes, initialError }: Pro
                             <CardTitle className="flex items-center gap-2"><Carrot className="h-5 w-5"/>Ingrédients Bruts Requis</CardTitle>
                         </CardHeader>
                         <CardContent>
-                             <ScrollArea className="h-96">
-                                {results.requiredIngredients.length > 0 ? (
-                                    <ul className="space-y-2 text-sm pr-4">
-                                        {results.requiredIngredients.map(ing => (
-                                            <li key={ing.name} className="p-2 bg-background rounded-md border flex justify-between">
-                                                <span>{ing.name}</span>
-                                                <span className="font-bold">{ing.quantity.toFixed(2)} {ing.unit}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                ) : (
-                                    <p className="text-muted-foreground text-sm text-center py-8">Aucun ingrédient brut requis.</p>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Nom</TableHead>
+                                        <TableHead>Quantité</TableHead>
+                                        <TableHead className="text-right">Coût</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {results.requiredIngredients.length > 0 ? (
+                                        results.requiredIngredients.map(ing => (
+                                            <TableRow key={ing.name}>
+                                                <TableCell>{ing.name}</TableCell>
+                                                <TableCell>{ing.quantity.toFixed(2)} {ing.unit}</TableCell>
+                                                <TableCell className="text-right font-medium">{ing.totalCost.toFixed(2)} DZD</TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">Aucun ingrédient brut requis.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                                {results.requiredIngredients.length > 0 && (
+                                    <TableFooter>
+                                        <TableRow>
+                                            <TableCell colSpan={2} className="font-bold">Coût Total des Ingrédients</TableCell>
+                                            <TableCell className="text-right font-extrabold text-lg">{results.totalIngredientsCost.toFixed(2)} DZD</TableCell>
+                                        </TableRow>
+                                    </TableFooter>
                                 )}
-                             </ScrollArea>
+                            </Table>
                         </CardContent>
                     </Card>
                 </div>
