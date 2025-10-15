@@ -13,22 +13,15 @@ export type ProductionPlan = {
     error: string | null;
 };
 
-// Helper function to safely add quantities, requires a base unit conversion logic
-const addQuantities = (map: Map<string, RequiredItem>, id: string, newItem: RequiredItem) => {
+// Helper function to safely add quantities
+const addQuantities = (map: Map<string, RequiredItem>, id: string, newItem: RequiredItem, item?: Ingredient | Preparation) => {
     if (map.has(id)) {
         const existing = map.get(id)!;
-        // This is a simplified aggregation. A real-world app would convert to a base unit (e.g., grams) before adding.
-        // For now, we assume units are compatible or we just add them up which might not be accurate.
-        // A better approach would be to implement a robust unit conversion system.
-        if (existing.unit.toLowerCase() === newItem.unit.toLowerCase()) {
-            existing.quantity += newItem.quantity;
-        } else {
-            // Attempt to convert to existing unit. If not possible, this might lead to inaccurate sums.
-            // For this version, we will assume getConversionFactor handles it reasonably.
-            const conversionFactor = getConversionFactor(newItem.unit, existing.unit, undefined);
-            existing.quantity += newItem.quantity * conversionFactor;
-        }
+        // Convert new item's quantity to the existing item's unit before adding
+        const conversionFactor = getConversionFactor(newItem.unit, existing.unit, item);
+        existing.quantity += newItem.quantity * conversionFactor;
     } else {
+        // If it's a new item, just add it to the map
         map.set(id, { ...newItem });
     }
 };
@@ -40,17 +33,20 @@ export async function calculateProductionPlan(forecast: Record<string, number>):
             preparationsSnap,
             ingredientsSnap,
             recipeIngsSnap,
-            recipePrepsSnap
+            recipePrepsSnap,
+            activeDishesSnap
         ] = await Promise.all([
             getDocs(collection(db, "preparations")),
             getDocs(collection(db, "ingredients")),
             getDocs(collection(db, "recipeIngredients")),
-            getDocs(collection(db, "recipePreparationLinks"))
+            getDocs(collection(db, "recipePreparationLinks")),
+            getDocs(query(collection(db, "recipes"), where("type", "==", "Plat"), where("status", "==", "Actif"))),
         ]);
         
         const allPreparations = new Map(preparationsSnap.docs.map(doc => [doc.id, { ...doc.data(), id: doc.id } as Preparation]));
         const allIngredients = new Map(ingredientsSnap.docs.map(doc => [doc.id, { ...doc.data(), id: doc.id } as Ingredient]));
-        
+        const activeDishes = activeDishesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Recipe));
+
         const linksByParentId = new Map<string, { ingredients: RecipeIngredientLink[], preparations: RecipePreparationLink[] }>();
 
         recipeIngsSnap.forEach(doc => {
@@ -58,6 +54,7 @@ export async function calculateProductionPlan(forecast: Record<string, number>):
             if (!linksByParentId.has(link.recipeId)) linksByParentId.set(link.recipeId, { ingredients: [], preparations: [] });
             linksByParentId.get(link.recipeId)!.ingredients.push(link);
         });
+
         recipePrepsSnap.forEach(doc => {
             const link = doc.data() as RecipePreparationLink;
             if (!linksByParentId.has(link.parentRecipeId)) linksByParentId.set(link.parentRecipeId, { ingredients: [], preparations: [] });
@@ -67,16 +64,17 @@ export async function calculateProductionPlan(forecast: Record<string, number>):
         const totalPreparationsNeeded = new Map<string, RequiredItem>();
         const totalIngredientsNeeded = new Map<string, RequiredItem>();
 
-        const processingQueue: { id: string, multiplier: number }[] = Object.entries(forecast).map(([dishId, quantity]) => ({ id: dishId, multiplier: quantity }));
+        const processingQueue: { id: string, multiplier: number }[] = [];
+        for (const dishId in forecast) {
+            if (Object.prototype.hasOwnProperty.call(forecast, dishId)) {
+                processingQueue.push({ id: dishId, multiplier: forecast[dishId] });
+            }
+        }
         
-        const processed = new Set<string>();
+        const processedItems = new Set<string>();
 
         while (processingQueue.length > 0) {
             const { id, multiplier } = processingQueue.shift()!;
-            
-            // Basic circular dependency check
-            if (processed.has(id)) continue;
-            processed.add(id);
 
             const currentItemLinks = linksByParentId.get(id);
             if (!currentItemLinks) continue;
@@ -86,7 +84,7 @@ export async function calculateProductionPlan(forecast: Record<string, number>):
                 const ingredient = allIngredients.get(ingLink.ingredientId);
                 if (ingredient) {
                     const quantityToAdd = ingLink.quantity * multiplier;
-                    addQuantities(totalIngredientsNeeded, ingredient.id!, { name: ingredient.name, quantity: quantityToAdd, unit: ingLink.unitUse });
+                    addQuantities(totalIngredientsNeeded, ingredient.id!, { name: ingredient.name, quantity: quantityToAdd, unit: ingLink.unitUse }, ingredient);
                 }
             }
 
@@ -95,11 +93,9 @@ export async function calculateProductionPlan(forecast: Record<string, number>):
                 const preparation = allPreparations.get(prepLink.childPreparationId);
                 if (preparation) {
                     const quantityToAdd = prepLink.quantity * multiplier;
-                    addQuantities(totalPreparationsNeeded, preparation.id!, { name: preparation.name, quantity: quantityToAdd, unit: prepLink.unitUse });
+                    addQuantities(totalPreparationsNeeded, preparation.id!, { name: preparation.name, quantity: quantityToAdd, unit: prepLink.unitUse }, preparation);
                     
-                    // Calculate the new multiplier for the next level down the dependency tree
-                    // The multiplier represents how many "full recipes" of the sub-preparation are needed.
-                    const quantityInProductionUnit = quantityToAdd * getConversionFactor(prepLink.unitUse, preparation.productionUnit || 'g', undefined);
+                    const quantityInProductionUnit = quantityToAdd * getConversionFactor(prepLink.unitUse, preparation.productionUnit || 'g', preparation);
                     const nextMultiplier = quantityInProductionUnit / (preparation.productionQuantity || 1);
 
                     if (nextMultiplier > 0) {
@@ -107,12 +103,27 @@ export async function calculateProductionPlan(forecast: Record<string, number>):
                     }
                 }
             }
-             processed.delete(id); // Allow reprocessing for different branches of the plan
         }
         
+        const formatQuantities = (items: RequiredItem[]): RequiredItem[] => {
+            return items.map(item => {
+                const unit = item.unit.toLowerCase();
+                if ((unit === 'g' || unit === 'grammes') && item.quantity >= 1000) {
+                    return { ...item, quantity: item.quantity / 1000, unit: 'kg' };
+                }
+                if ((unit === 'ml' || unit === 'millilitres') && item.quantity >= 1000) {
+                    return { ...item, quantity: item.quantity / 1000, unit: 'L' };
+                }
+                return item;
+            });
+        };
+
+        const finalPreparations = formatQuantities(Array.from(totalPreparationsNeeded.values()));
+        const finalIngredients = formatQuantities(Array.from(totalIngredientsNeeded.values()));
+
         return {
-            requiredPreparations: Array.from(totalPreparationsNeeded.values()).sort((a,b) => a.name.localeCompare(b.name)),
-            requiredIngredients: Array.from(totalIngredientsNeeded.values()).sort((a,b) => a.name.localeCompare(b.name)),
+            requiredPreparations: finalPreparations.sort((a,b) => a.name.localeCompare(b.name)),
+            requiredIngredients: finalIngredients.sort((a,b) => a.name.localeCompare(b.name)),
             error: null,
         };
 
