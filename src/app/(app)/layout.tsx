@@ -18,7 +18,7 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical, CookingPot, Banknote, Receipt, TestTube2 } from 'lucide-react';
+import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical, CookingPot, Banknote, Receipt, TestTube2, ListOrdered } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FloatingAssistant from '@/app/(app)/assistant/FloatingAssistant';
 import Image from 'next/image';
@@ -99,6 +99,14 @@ export default function AppLayout({
                   <Link href="/menu">
                     <ChefHat />
                     <span>Menu & Plats</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/production-plan')} tooltip="Plan de Production">
+                  <Link href="/production-plan">
+                    <ListOrdered />
+                    <span>Plan de Production</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
