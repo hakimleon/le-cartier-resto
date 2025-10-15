@@ -1,7 +1,7 @@
 
 'use server';
 
-import { collection, getDocs, query } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Recipe, Preparation, Ingredient, RecipeIngredientLink, RecipePreparationLink } from '@/lib/types';
 import { getConversionFactor } from '@/utils/unitConverter';
@@ -45,8 +45,7 @@ export async function calculateProductionPlan(forecast: Record<string, number>):
         
         const allPreparations = new Map(preparationsSnap.docs.map(doc => [doc.id, { ...doc.data(), id: doc.id } as Preparation]));
         const allIngredients = new Map(ingredientsSnap.docs.map(doc => [doc.id, { ...doc.data(), id: doc.id } as Ingredient]));
-        const activeDishes = activeDishesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Recipe));
-
+        
         const linksByParentId = new Map<string, { ingredients: RecipeIngredientLink[], preparations: RecipePreparationLink[] }>();
 
         recipeIngsSnap.forEach(doc => {
@@ -71,8 +70,6 @@ export async function calculateProductionPlan(forecast: Record<string, number>):
             }
         }
         
-        const processedItems = new Set<string>();
-
         while (processingQueue.length > 0) {
             const { id, multiplier } = processingQueue.shift()!;
 
@@ -112,7 +109,7 @@ export async function calculateProductionPlan(forecast: Record<string, number>):
                     return { ...item, quantity: item.quantity / 1000, unit: 'kg' };
                 }
                 if ((unit === 'ml' || unit === 'millilitres') && item.quantity >= 1000) {
-                    return { ...item, quantity: item.quantity / 1000, unit: 'L' };
+                    return { ...item, quantity: item.quantity / 1000, unit: 'l' };
                 }
                 return item;
             });
