@@ -7,6 +7,7 @@ import { ListOrdered, NotebookText, Carrot } from 'lucide-react';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 import { AlertTriangle } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
+import { getConversionFactor } from '@/utils/unitConverter';
 
 async function getProductionData() {
     try {
@@ -31,62 +32,87 @@ async function getProductionData() {
         const allPreparations = new Map(preparationsSnap.docs.map(doc => [doc.id, { ...doc.data(), id: doc.id } as Preparation]));
         const allIngredients = new Map(ingredientsSnap.docs.map(doc => [doc.id, { ...doc.data(), id: doc.id } as Ingredient]));
         
-        const linksByParentId = new Map<string, { ingredients: string[], preparations: string[] }>();
+        const linksByParentId = new Map<string, { ingredients: RecipeIngredientLink[], preparations: RecipePreparationLink[] }>();
+
         recipeIngsSnap.forEach(doc => {
             const link = doc.data() as RecipeIngredientLink;
             if (!linksByParentId.has(link.recipeId)) linksByParentId.set(link.recipeId, { ingredients: [], preparations: [] });
-            linksByParentId.get(link.recipeId)!.ingredients.push(link.ingredientId);
+            linksByParentId.get(link.recipeId)!.ingredients.push(link);
         });
         recipePrepsSnap.forEach(doc => {
             const link = doc.data() as RecipePreparationLink;
             if (!linksByParentId.has(link.parentRecipeId)) linksByParentId.set(link.parentRecipeId, { ingredients: [], preparations: [] });
-            linksByParentId.get(link.parentRecipeId)!.preparations.push(link.childPreparationId);
+            linksByParentId.get(link.parentRecipeId)!.preparations.push(link);
         });
 
-        // 2. Resolve all dependencies
-        const requiredPreparationIds = new Set<string>();
-        const requiredIngredientIds = new Set<string>();
-        const queue: string[] = activeDishes.map(d => d.id!); // Start with active dishes
+        // Aggregator maps
+        const totalPreparationsNeeded = new Map<string, { name: string, quantity: number, unit: string }>();
+        const totalIngredientsNeeded = new Map<string, { name: string, quantity: number, unit: string }>();
+        const processedItems = new Set<string>(); // To avoid infinite loops in case of circular dependencies
 
-        const processed = new Set<string>();
+        // Assume a base production of 1 for each active dish
+        const initialQueue: { id: string, multiplier: number }[] = activeDishes.map(d => ({ id: d.id!, multiplier: 1 }));
+        const processingQueue = [...initialQueue];
 
-        while (queue.length > 0) {
-            const currentId = queue.shift()!;
-            if (processed.has(currentId)) continue;
-            processed.add(currentId);
+        while(processingQueue.length > 0) {
+            const { id, multiplier } = processingQueue.shift()!;
+            
+            if (processedItems.has(id + multiplier)) continue; // Avoid re-processing the same item with the same multiplier
+            processedItems.add(id + multiplier);
+            
+            const currentItemLinks = linksByParentId.get(id);
+            if (!currentItemLinks) continue;
 
-            const links = linksByParentId.get(currentId);
-            if (!links) continue;
-
-            // Add raw ingredients
-            links.ingredients.forEach(ingId => requiredIngredientIds.add(ingId));
-
-            // Add sub-preparations and queue them for processing
-            links.preparations.forEach(prepId => {
-                if (allPreparations.has(prepId)) {
-                    requiredPreparationIds.add(prepId);
-                    if (!processed.has(prepId)) {
-                        queue.push(prepId);
+            // Process direct ingredients
+            for (const ingLink of currentItemLinks.ingredients) {
+                const ingredient = allIngredients.get(ingLink.ingredientId);
+                if (ingredient) {
+                    const quantityToAdd = ingLink.quantity * multiplier;
+                    const existing = totalIngredientsNeeded.get(ingredient.id!);
+                    if (existing) {
+                        // For simplicity, we aggregate if units are the same, otherwise we might need more complex logic
+                        if (existing.unit.toLowerCase() === ingLink.unitUse.toLowerCase()) {
+                           existing.quantity += quantityToAdd;
+                        } else {
+                           // In a real scenario, convert to a base unit before adding. Here we just add a new line or overwrite.
+                           // For now, let's just sum it up, assuming conversion is implicitly handled or units are consistent.
+                           existing.quantity += quantityToAdd; 
+                        }
+                    } else {
+                        totalIngredientsNeeded.set(ingredient.id!, { name: ingredient.name, quantity: quantityToAdd, unit: ingLink.unitUse });
                     }
                 }
-            });
+            }
+
+            // Process sub-preparations
+            for (const prepLink of currentItemLinks.preparations) {
+                const preparation = allPreparations.get(prepLink.childPreparationId);
+                if (preparation) {
+                    const quantityToAdd = prepLink.quantity * multiplier;
+                    const existing = totalPreparationsNeeded.get(preparation.id!);
+
+                    if (existing) {
+                        existing.quantity += quantityToAdd;
+                    } else {
+                        totalPreparationsNeeded.set(preparation.id!, { name: preparation.name, quantity: quantityToAdd, unit: prepLink.unitUse });
+                    }
+                    
+                    // Calculate the new multiplier for the next level of dependencies
+                    const conversionFactor = getConversionFactor(prepLink.unitUse, preparation.productionUnit || 'g', undefined);
+                    const quantityInProductionUnit = prepLink.quantity * conversionFactor;
+                    const nextMultiplier = (quantityInProductionUnit / (preparation.productionQuantity || 1)) * multiplier;
+
+                    if (nextMultiplier > 0) {
+                        processingQueue.push({ id: preparation.id!, multiplier: nextMultiplier });
+                    }
+                }
+            }
         }
         
-        // 3. Get full documents for required items
-        const requiredPreparations = Array.from(requiredPreparationIds)
-            .map(id => allPreparations.get(id))
-            .filter((p): p is Preparation => !!p)
-            .sort((a,b) => a.name.localeCompare(b.name));
-
-        const requiredIngredients = Array.from(requiredIngredientIds)
-            .map(id => allIngredients.get(id))
-            .filter((i): i is Ingredient => !!i)
-            .sort((a,b) => a.name.localeCompare(b.name));
-
         return {
             activeDishes,
-            requiredPreparations,
-            requiredIngredients,
+            requiredPreparations: Array.from(totalPreparationsNeeded.values()).sort((a,b) => a.name.localeCompare(b.name)),
+            requiredIngredients: Array.from(totalIngredientsNeeded.values()).sort((a,b) => a.name.localeCompare(b.name)),
             error: null,
         };
 
@@ -130,14 +156,17 @@ export default async function ProductionPlanPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><NotebookText className="h-5 w-5"/>Préparations Requises</CardTitle>
                         <CardDescription>
-                            Liste de toutes les fiches techniques (sauces, fonds, garnitures...) nécessaires pour le service.
+                            Quantité totale de chaque fiche technique à produire pour le service.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {requiredPreparations.length > 0 ? (
                             <ul className="space-y-2 text-sm">
                                 {requiredPreparations.map(prep => (
-                                    <li key={prep.id} className="p-2 bg-background rounded-md border">{prep.name}</li>
+                                    <li key={prep.name} className="p-2 bg-background rounded-md border flex justify-between">
+                                        <span>{prep.name}</span>
+                                        <span className="font-bold">{prep.quantity.toFixed(2)} {prep.unit}</span>
+                                    </li>
                                 ))}
                             </ul>
                         ) : (
@@ -150,14 +179,17 @@ export default async function ProductionPlanPage() {
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><Carrot className="h-5 w-5"/>Ingrédients Bruts Requis</CardTitle>
                         <CardDescription>
-                            Liste consolidée de tous les ingrédients bruts à sortir pour la production.
+                            Quantité totale de chaque ingrédient brut à sortir pour la production.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         {requiredIngredients.length > 0 ? (
                             <ul className="space-y-2 text-sm">
                                 {requiredIngredients.map(ing => (
-                                    <li key={ing.id} className="p-2 bg-background rounded-md border">{ing.name}</li>
+                                     <li key={ing.name} className="p-2 bg-background rounded-md border flex justify-between">
+                                        <span>{ing.name}</span>
+                                        <span className="font-bold">{ing.quantity.toFixed(2)} {ing.unit}</span>
+                                    </li>
                                 ))}
                             </ul>
                         ) : (
@@ -173,7 +205,7 @@ export default async function ProductionPlanPage() {
                 <CardHeader>
                     <CardTitle>Plats Actifs Analysés</CardTitle>
                     <CardDescription>
-                        La production est calculée sur la base de ces {activeDishes.length} plat(s).
+                        Le plan de production est calculé sur la base de ces {activeDishes.length} plat(s) actif(s).
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -191,4 +223,3 @@ export default async function ProductionPlanPage() {
         </div>
     );
 }
-
