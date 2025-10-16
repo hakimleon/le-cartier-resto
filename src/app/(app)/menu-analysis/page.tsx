@@ -33,6 +33,14 @@ export type MutualisationData = {
   frequency: 'Quotidienne' | 'Fréquente' | 'Occasionnelle';
 }
 
+export type PlanningTask = {
+    heure: string;
+    poste: string;
+    tache: string;
+    duree: number;
+    priorite: number;
+}
+
 
 // --- Logique de récupération et d'analyse des données ---
 async function getAnalysisData(): Promise<{ summary: SummaryData; production: ProductionData[], mutualisations: MutualisationData[], error: string | null }> {

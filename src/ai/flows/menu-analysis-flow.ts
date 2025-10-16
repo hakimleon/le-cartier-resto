@@ -10,8 +10,6 @@ import { z } from 'zod';
 import { googleAI } from '@genkit-ai/googleai';
 
 // Schémas Zod pour valider les entrées du flow.
-// Ils doivent correspondre aux types exportés depuis la page d'analyse.
-
 const SummaryDataSchema = z.object({
     totalDishes: z.number(),
     averageDuration: z.number(),
@@ -48,25 +46,41 @@ const AnalysisInputSchema = z.object({
     mutualisations: z.array(MutualisationDataSchema).describe("Liste des préparations communes à plusieurs plats."),
 });
 
+// Schéma pour le planning
+const PlanningTaskSchema = z.object({
+  heure: z.string().describe("L'heure de début de la tâche (ex: '08:00')."),
+  poste: z.string().describe("Le poste de cuisine assigné (ex: 'Chaud', 'Garde-manger', 'Pâtisserie')."),
+  tache: z.string().describe("La description de la tâche à effectuer."),
+  duree: z.number().describe("La durée estimée en minutes."),
+  priorite: z.number().describe("Le niveau de priorité (1=Haute, 2=Moyenne, 3=Basse).")
+});
+
+
+// Schéma de la sortie attendue de l'IA
+const AIOutputSchema = z.object({
+    recommandations: z.string().describe("Les recommandations stratégiques textuelles au format Markdown."),
+    planning: z.array(PlanningTaskSchema).describe("Le planning de production horaire.")
+});
+
 
 const analysisPrompt = ai.definePrompt({
     name: 'menuAnalysisPrompt',
-    input: { schema: z.object({ data: z.string() }) },
-    output: { format: 'markdown'},
+    input: { schema: AnalysisInputSchema },
+    output: { schema: AIOutputSchema },
     model: googleAI.model('gemini-2.5-flash'),
-    prompt: `SYSTEM: Tu es un chef exécutif et consultant en restauration, expert en optimisation de menus. Reçois ce JSON contenant l'analyse complète d'une carte. Ta mission est de fournir des recommandations stratégiques CLAIRES, CONCISES et ACTIONNABLES sous forme de texte en Markdown.
+    prompt: `SYSTEM: Tu es un chef exécutif et manager de production culinaire expert.
+    Ta mission est d’aider à la gestion quotidienne d’un restaurant bistronomique.
+    Tu reçois en entrée un JSON structuré contenant les données d'analyse d'un menu.
+    À partir de ce JSON, tu dois produire un objet JSON unique qui contient des recommandations et un planning.
 
-INSTRUCTIONS:
-1.  **Analyse les données fournies** : summary, production, et mutualisations.
-2.  **Identifie 3 priorités opérationnelles** pour améliorer l'efficacité de la cuisine. Exemples : "Réduire le temps de mise en place du plat le plus long", "Augmenter la production du 'Fond de veau' car il est très utilisé".
-3.  **Propose 3 idées de réingénierie de plats**. Pour chaque idée, sois concret. Exemples : "Remplacer la sauce X (longue) par une émulsion Y (rapide)", "Transformer le plat Z en version 'à partager' pour augmenter la marge". L'objectif est d'améliorer la rentabilité ou de réduire le temps de préparation.
-4.  **Structure ta réponse en Markdown** avec des titres clairs (###) et des listes à puces. Sois direct et va droit au but. Le chef qui te lit est pressé.
+    INSTRUCTIONS:
+    - Génère un planning horaire (matin/service/veille) assigné par poste (chaud, garde-manger, pâtisserie) pour les tâches de mise en place les plus importantes, en se basant sur les durées et les mutualisations.
+    - Pour les recommandations, propose 3 priorités opérationnelles et 3 idées concrètes de réingénierie de plats pour améliorer la rentabilité et/ou réduire le temps de production. Formate cette partie en Markdown.
+    - Retourne UNIQUEMENT un objet JSON valide avec les clés "planning" et "recommandations".
 
-Données d'analyse :
-\`\`\`json
-{{{data}}}
-\`\`\`
-`,
+    Données d'analyse du menu :
+    {{{JSON.stringify(input)}}}
+    `,
 });
 
 
@@ -74,10 +88,13 @@ export const menuAnalysisFlow = ai.defineFlow(
     {
         name: 'menuAnalysisFlow',
         inputSchema: AnalysisInputSchema,
-        outputSchema: z.string(),
+        outputSchema: AIOutputSchema,
     },
     async (input) => {
-        const response = await analysisPrompt({data: JSON.stringify(input)});
-        return response.text;
+        const { output } = await analysisPrompt(input);
+         if (!output) {
+            throw new Error("L'IA n'a pas pu générer une réponse valide.");
+        }
+        return output;
     }
 );

@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Euro, TrendingUp, Info, Sparkles, BrainCircuit, Loader2 } from 'lucide-react';
-import type { SummaryData, ProductionData, MutualisationData } from './page';
+import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Euro, TrendingUp, Info, Sparkles, BrainCircuit, Loader2, CalendarClock } from 'lucide-react';
+import type { SummaryData, ProductionData, MutualisationData, PlanningTask } from './page';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -26,25 +27,42 @@ interface MenuAnalysisClientProps {
     initialError: string | null;
 }
 
+interface AIResults {
+    recommandations: string;
+    planning: PlanningTask[];
+}
+
 export default function MenuAnalysisClient({ summary, productionData, mutualisationData, initialError }: MenuAnalysisClientProps) {
     const [isAnalyzing, startTransition] = useTransition();
-    const [aiRecommendations, setAiRecommendations] = useState<string | null>(null);
+    const [aiResults, setAiResults] = useState<AIResults | null>(null);
 
     const getYieldBadgeVariant = (yieldPerMin: number): "default" | "secondary" | "destructive" => {
         if (yieldPerMin > 100) return "default";
         if (yieldPerMin > 50) return "secondary";
         return "destructive";
     }
+    
+    const getPriorityBadge = (priority: number) => {
+        if (priority === 1) return <Badge variant="destructive">Haute</Badge>
+        if (priority === 2) return <Badge variant="secondary" className="bg-orange-100 text-orange-800">Moyenne</Badge>
+        return <Badge variant="outline">Basse</Badge>
+    }
 
     const handleAIAnalysis = () => {
-        setAiRecommendations(null);
+        setAiResults(null);
         startTransition(async () => {
             const result = await getAIRecommendations({
                 summary,
                 production: productionData,
                 mutualisations: mutualisationData,
             });
-            setAiRecommendations(result);
+            if ('error' in result) {
+                 setAiResults(null);
+                 // You might want to show an error toast here
+                 console.error(result.error);
+            } else {
+                 setAiResults(result);
+            }
         });
     }
     
@@ -69,7 +87,7 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
                 </Alert>
             )}
 
-            {isAnalyzing && !aiRecommendations && (
+            {isAnalyzing && !aiResults && (
                 <Card className="flex flex-col items-center justify-center p-8 text-center animate-pulse">
                     <BrainCircuit className="h-10 w-10 text-primary mb-4"/>
                     <p className="font-semibold">L'IA analyse votre menu...</p>
@@ -77,15 +95,50 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
                 </Card>
             )}
 
-            {aiRecommendations && (
-                 <Card className="border-primary/20 bg-primary/5">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-primary"><Sparkles /> Recommandations Stratégiques de l'IA</CardTitle>
-                    </CardHeader>
-                    <CardContent className="prose prose-sm max-w-none text-foreground">
-                        <MarkdownRenderer text={aiRecommendations} />
-                    </CardContent>
-                </Card>
+            {aiResults && (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                    <Card className="border-primary/20 bg-primary/5">
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2 text-primary"><Sparkles /> Recommandations Stratégiques</CardTitle>
+                        </CardHeader>
+                        <CardContent className="prose prose-sm max-w-none text-foreground">
+                            <MarkdownRenderer text={aiResults.recommandations} />
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><CalendarClock /> Planning de Production Suggéré</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                           <Table>
+                               <TableHeader>
+                                   <TableRow>
+                                       <TableHead>Heure</TableHead>
+                                       <TableHead>Poste</TableHead>
+                                       <TableHead>Tâche</TableHead>
+                                       <TableHead>Priorité</TableHead>
+                                   </TableRow>
+                               </TableHeader>
+                               <TableBody>
+                                   {aiResults.planning && aiResults.planning.length > 0 ? aiResults.planning.map((task, index) => (
+                                       <TableRow key={index}>
+                                           <TableCell className="font-medium">{task.heure}</TableCell>
+                                           <TableCell><Badge variant="outline">{task.poste}</Badge></TableCell>
+                                           <TableCell>{task.tache}</TableCell>
+                                           <TableCell>{getPriorityBadge(task.priorite)}</TableCell>
+                                       </TableRow>
+                                   )) : (
+                                      <TableRow>
+                                           <TableCell colSpan={4} className="h-24 text-center">
+                                               Le planning n'a pas pu être généré.
+                                           </TableCell>
+                                       </TableRow>
+                                   )}
+                               </TableBody>
+                           </Table>
+                        </CardContent>
+                    </Card>
+                </div>
             )}
 
 
@@ -134,18 +187,18 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
                                 <TableRow key={item.id}>
                                     <TableCell className="font-medium">{item.name}</TableCell>
                                     <TableCell>
-                                        <Accordion type="single" collapsible className="w-full">
-                                            <AccordionItem value="item-1" className="border-b-0">
-                                                <AccordionTrigger className="py-1 hover:no-underline">
+                                        <TooltipProvider>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
                                                     <Badge>{item.dishCount} plats</Badge>
-                                                </AccordionTrigger>
-                                                <AccordionContent className="pt-2">
-                                                    <ul className="list-disc pl-5 text-xs text-muted-foreground">
-                                                        {item.dishes && item.dishes.map(dish => <li key={dish}>{dish}</li>)}
+                                                </TooltipTrigger>
+                                                <TooltipContent>
+                                                    <ul className="list-disc pl-5 text-left">
+                                                        {(item.dishes || []).map(dish => <li key={dish}>{dish}</li>)}
                                                     </ul>
-                                                </AccordionContent>
-                                            </AccordionItem>
-                                        </Accordion>
+                                                </TooltipContent>
+                                            </Tooltip>
+                                        </TooltipProvider>
                                     </TableCell>
                                     <TableCell><Badge variant="outline">{item.frequency}</Badge></TableCell>
                                 </TableRow>
