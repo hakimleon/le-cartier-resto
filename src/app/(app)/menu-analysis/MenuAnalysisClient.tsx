@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useTransition } from 'react';
@@ -167,29 +168,31 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
                 </Card>
                 
                 {/* --- Volet 7: PERFORMANCE --- */}
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><Target />Performance &amp; KPIs</CardTitle>
-                    </CardHeader>
-                    <CardContent className="grid gap-4 sm:grid-cols-2">
-                        <Card className="p-4">
-                            <CardDescription className="flex items-center gap-2 text-sm"><Recycle /> Préparations Communes</CardDescription>
-                            <p className="text-2xl font-bold">{performanceData.commonPreparationsCount}</p>
-                        </Card>
-                        <Card className="p-4">
-                            <CardDescription className="flex items-center gap-2 text-sm"><Euro /> Marge Brute Moyenne</CardDescription>
-                            <p className="text-2xl font-bold">{performanceData.averageMargin.toFixed(2)} <span className="text-base text-muted-foreground">DZD</span></p>
-                        </Card>
-                        <Card className="p-4">
-                            <CardDescription className="flex items-center gap-2 text-sm"><ListChecks /> Tps Moyen MEP</CardDescription>
-                            <p className="text-2xl font-bold">{performanceData.averageMepTime.toFixed(0)} <span className="text-base text-muted-foreground">min</span></p>
-                        </Card>
-                        <Card className="p-4">
-                            <CardDescription className="flex items-center gap-2 text-sm"><Puzzle /> Taux de Complexité</CardDescription>
-                            <p className="text-2xl font-bold">{performanceData.complexityRate.toFixed(0)}<span className="text-base text-muted-foreground">%</span></p>
-                        </Card>
-                    </CardContent>
-                </Card>
+                {performanceData && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Target />Performance &amp; KPIs</CardTitle>
+                        </CardHeader>
+                        <CardContent className="grid gap-4 sm:grid-cols-2">
+                            <Card className="p-4">
+                                <CardDescription className="flex items-center gap-2 text-sm"><Recycle /> Préparations Communes</CardDescription>
+                                <p className="text-2xl font-bold">{performanceData.commonPreparationsCount}</p>
+                            </Card>
+                            <Card className="p-4">
+                                <CardDescription className="flex items-center gap-2 text-sm"><Euro /> Marge Brute Moyenne</CardDescription>
+                                <p className="text-2xl font-bold">{performanceData.averageMargin.toFixed(2)} <span className="text-base text-muted-foreground">DZD</span></p>
+                            </Card>
+                            <Card className="p-4">
+                                <CardDescription className="flex items-center gap-2 text-sm"><ListChecks /> Tps Moyen MEP</CardDescription>
+                                <p className="text-2xl font-bold">{performanceData.averageMepTime.toFixed(0)} <span className="text-base text-muted-foreground">min</span></p>
+                            </Card>
+                            <Card className="p-4">
+                                <CardDescription className="flex items-center gap-2 text-sm"><Puzzle /> Taux de Complexité</CardDescription>
+                                <p className="text-2xl font-bold">{performanceData.complexityRate.toFixed(0)}<span className="text-base text-muted-foreground">%</span></p>
+                            </Card>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
 
             {/* --- Volet 3: MUTUALISATIONS --- */}
@@ -298,4 +301,3 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
             </Card>
         </div>
     );
-}

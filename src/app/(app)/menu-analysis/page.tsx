@@ -42,9 +42,16 @@ export type PlanningTask = {
     priorite: number;
 }
 
+export type PerformanceData = {
+    commonPreparationsCount: number;
+    averageMargin: number;
+    averageMepTime: number;
+    complexityRate: number;
+    menuBalance: Record<string, number>;
+};
 
 // --- Logique de récupération et d'analyse des données ---
-async function getAnalysisData(): Promise<{ summary: SummaryData; production: ProductionData[], mutualisations: MutualisationData[], error: string | null }> {
+async function getAnalysisData(): Promise<{ summary: SummaryData; production: ProductionData[], mutualisations: MutualisationData[], performance: PerformanceData, error: string | null }> {
     try {
         const [recipesSnap, ingredientsSnap, preparationsSnap, garnishesSnap, recipeIngsSnap, recipePrepsSnap] = await Promise.all([
             getDocs(query(collection(db, "recipes"), where("type", "==", "Plat"), where("status", "==", "Actif"))),
@@ -77,12 +84,14 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             allRecipePreps.get(link.parentRecipeId)!.push(link);
         });
 
+        const activeRecipes = recipesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Recipe));
+
         // --- Volet 1: Calcul du Résumé (Summary) ---
         const summary: SummaryData = {
-            totalDishes: recipesSnap.size,
-            averageDuration: recipesSnap.docs.reduce((acc, doc) => acc + (doc.data().duration || 0), 0) / (recipesSnap.size || 1),
-            categoryCount: recipesSnap.docs.reduce((acc, doc) => {
-                const cat = doc.data().category || 'Non classé';
+            totalDishes: activeRecipes.length,
+            averageDuration: activeRecipes.reduce((acc, doc) => acc + (doc.duration || 0), 0) / (activeRecipes.length || 1),
+            categoryCount: activeRecipes.reduce((acc, doc) => {
+                const cat = doc.category || 'Non classé';
                 acc[cat] = (acc[cat] || 0) + 1;
                 return acc;
             }, {} as Record<string, number>),
@@ -141,10 +150,7 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
         const prepUsageCount = new Map<string, { name: string, dishes: string[] }>();
         const production: ProductionData[] = [];
 
-        for (const doc of recipesSnap.docs) {
-            const recipe = { ...doc.data(), id: doc.id } as Recipe;
-
-            // --- Calcul de la rentabilité ---
+        for (const recipe of activeRecipes) {
             let dishTotalCost = 0;
             const dishIngredients = allRecipeIngredients.get(recipe.id) || [];
             dishIngredients.forEach(link => {
@@ -211,7 +217,21 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
         }
         mutualisations.sort((a,b) => b.dishCount - a.dishCount);
 
-        return { summary, production, mutualisations, error: null };
+        // --- Volet 7: PERFORMANCE ---
+        const totalGrossMargin = production.reduce((acc, p) => acc + p.grossMargin, 0);
+        const totalMepTime = production.reduce((acc, p) => acc + p.duration_breakdown.mise_en_place, 0);
+        const difficultDishes = activeRecipes.filter(r => r.difficulty === 'Difficile').length;
+
+        const performanceData: PerformanceData = {
+            commonPreparationsCount: mutualisations.length,
+            averageMargin: totalGrossMargin / (production.length || 1),
+            averageMepTime: totalMepTime / (production.length || 1),
+            complexityRate: (difficultDishes / (activeRecipes.length || 1)) * 100,
+            menuBalance: summary.categoryCount
+        };
+
+
+        return { summary, production, mutualisations, performance: performanceData, error: null };
 
     } catch (error) {
         console.error("Error analyzing menu:", error);
@@ -219,13 +239,20 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             summary: { totalDishes: 0, averageDuration: 0, categoryCount: {} },
             production: [],
             mutualisations: [],
+            performance: {
+                commonPreparationsCount: 0,
+                averageMargin: 0,
+                averageMepTime: 0,
+                complexityRate: 0,
+                menuBalance: {}
+            },
             error: error instanceof Error ? `Erreur d'analyse: ${error.message}` : "Une erreur inconnue est survenue."
         };
     }
 }
 
 export default async function MenuAnalysisPage() {
-    const { summary, production, mutualisations, error } = await getAnalysisData();
+    const { summary, production, mutualisations, performance, error } = await getAnalysisData();
     
-    return <MenuAnalysisClient summary={summary} productionData={production} mutualisationData={mutualisations} initialError={error} />;
+    return <MenuAnalysisClient summary={summary} productionData={production} mutualisationData={mutualisations} performanceData={performance} initialError={error} />;
 }
