@@ -1,4 +1,3 @@
-
 'use server';
 
 import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch, query, where, getDocs, getDoc } from 'firebase/firestore';
@@ -165,9 +164,6 @@ export async function analyzeAndSetMode(
     try {
         const resultMode = await analyzeTemporalContext({ name, procedure });
         
-        // Déterminer la collection en fonction de la structure de l'ID ou d'autres logiques
-        // Pour l'instant, on suppose qu'on ne met à jour que des 'recipes' ou 'preparations'
-        // Cette logique peut avoir besoin d'être affinée
         let collectionName: 'recipes' | 'preparations' | 'garnishes' = 'recipes';
         
         const prepDoc = doc(db, 'preparations', recipeId);
@@ -191,4 +187,55 @@ export async function analyzeAndSetMode(
         }
         throw new Error("Une erreur inconnue est survenue lors de l'analyse.");
     }
+}
+
+
+export async function batchUpdateAllTemporalModes(): Promise<{ updatedCount: number, error?: string }> {
+  try {
+    const collectionsToUpdate: ('recipes' | 'preparations' | 'garnishes')[] = ['recipes', 'preparations', 'garnishes'];
+    let updatedCount = 0;
+    
+    // Firestore allows up to 500 operations in a single batch.
+    // We will create multiple batches if needed.
+    const batches = [writeBatch(db)];
+    let currentBatchIndex = 0;
+    let operationsInCurrentBatch = 0;
+
+    for (const collectionName of collectionsToUpdate) {
+      const snapshot = await getDocs(collection(db, collectionName));
+      const docsToUpdate = snapshot.docs.filter(doc => !doc.data().mode_preparation);
+
+      for (const docToUpdate of docsToUpdate) {
+        const data = docToUpdate.data() as Recipe | Preparation;
+        if (data.procedure_fabrication) {
+          try {
+            const resultMode = await analyzeTemporalContext({ name: data.name, procedure: data.procedure_fabrication });
+            
+            if (operationsInCurrentBatch >= 499) {
+                currentBatchIndex++;
+                batches.push(writeBatch(db));
+                operationsInCurrentBatch = 0;
+            }
+
+            batches[currentBatchIndex].update(docToUpdate.ref, { mode_preparation: resultMode });
+            operationsInCurrentBatch++;
+            updatedCount++;
+
+          } catch (e) {
+            console.error(`Échec de l'analyse pour ${data.name} (ID: ${docToUpdate.id}):`, e);
+            // On continue avec les autres même si un échoue
+          }
+        }
+      }
+    }
+    
+    await Promise.all(batches.map(batch => batch.commit()));
+
+    return { updatedCount };
+
+  } catch (error) {
+    console.error("Erreur durant la mise à jour groupée:", error);
+    const message = error instanceof Error ? error.message : "Une erreur inconnue est survenue.";
+    return { updatedCount: 0, error: message };
+  }
 }

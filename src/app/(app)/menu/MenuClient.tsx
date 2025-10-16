@@ -1,18 +1,18 @@
 
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useTransition } from "react";
 import { collection, onSnapshot, query, where } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe } from "@/lib/types";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { AlertTriangle, PlusCircle, Search } from "lucide-react";
+import { AlertTriangle, PlusCircle, Search, RefreshCw, Loader2 } from "lucide-react";
 import { RecipeCard } from "@/components/RecipeCard";
 import { DishModal } from "./DishModal";
 import { useToast } from "@/hooks/use-toast";
-import { deleteDish } from "./actions";
+import { deleteDish, batchUpdateAllTemporalModes } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
@@ -72,6 +72,8 @@ export default function MenuClient() {
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [selectedStatus, setSelectedStatus] = useState<'Actif' | 'Inactif'>('Actif');
   const { toast } = useToast();
+  const [isBatchUpdating, startBatchUpdateTransition] = useTransition();
+
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
@@ -164,6 +166,28 @@ export default function MenuClient() {
     }
   };
 
+  const handleBatchUpdate = () => {
+    startBatchUpdateTransition(async () => {
+      toast({
+        title: "Lancement de la mise à jour groupée...",
+        description: "Analyse de la temporalité de toutes les fiches en cours. Cela peut prendre quelques minutes.",
+      });
+      const result = await batchUpdateAllTemporalModes();
+      if (result.error) {
+        toast({
+          title: "Erreur de la mise à jour groupée",
+          description: result.error,
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Mise à jour terminée !",
+          description: `${result.updatedCount} fiches ont été analysées et mises à jour.`,
+        });
+      }
+    });
+  };
+
   const filteredRecipes = useMemo(() => {
     return recipes.filter(recipe => {
         const statusMatch = recipe.status === selectedStatus;
@@ -239,6 +263,10 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
+             <Button variant="outline" onClick={handleBatchUpdate} disabled={isBatchUpdating}>
+              {isBatchUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4" />}
+              Tout Mettre à Jour
+            </Button>
              <DishModal dish={null} allCategories={activeCategories.filter(c => c !== "Tous")} onSuccess={() => { /* onSnapshot handles updates */ }}>
                 <Button>
                     <PlusCircle className="mr-2 h-4 w-4" />
