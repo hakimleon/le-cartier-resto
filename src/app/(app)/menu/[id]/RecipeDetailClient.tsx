@@ -631,19 +631,32 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
     };
 
     const handleAnalyzeAndSetMode = () => {
-        if (!recipe) return;
+        const dataToAnalyze = isEditing ? editableRecipe : recipe;
+
+        if (!dataToAnalyze) return;
+
         startTransition(async () => {
             try {
                 const resultMode = await analyzeAndSetMode(
-                    recipe.id!,
-                    recipe.name,
-                    recipe.procedure_fabrication || ''
+                    dataToAnalyze.id!,
+                    dataToAnalyze.name,
+                    dataToAnalyze.procedure_fabrication || ''
                 );
-                toast({
-                    title: "Analyse terminée",
-                    description: `Le mode de préparation a été défini sur "${resultMode}".`,
-                });
-                fullDataRefresh();
+                
+                if (isEditing) {
+                    handleRecipeDataChange('mode_preparation', resultMode);
+                    toast({
+                        title: "Analyse terminée",
+                        description: `Mode de préparation suggéré : "${resultMode}". N'oubliez pas de sauvegarder.`,
+                    });
+                } else {
+                    toast({
+                        title: "Analyse et Mise à Jour Réussies",
+                        description: `Le mode de préparation a été mis à jour vers "${resultMode}".`,
+                    });
+                    fullDataRefresh();
+                }
+
             } catch (error) {
                 console.error("Error analyzing mode:", error);
                 toast({
@@ -1158,3 +1171,5 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
+
+    
