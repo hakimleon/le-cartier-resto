@@ -66,7 +66,7 @@ const analysisPrompt = ai.definePrompt({
     name: 'menuAnalysisPrompt',
     input: { schema: AnalysisInputSchema },
     output: { schema: AIOutputSchema },
-    model: googleAI.model('gemini-1.5-pro'),
+    model: googleAI.model('gemini-2.5-flash'),
     config: {
         temperature: 0.2,
     },
