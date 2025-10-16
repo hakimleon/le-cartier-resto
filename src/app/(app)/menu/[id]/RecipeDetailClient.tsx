@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useTransition } from "react";
 import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot, writeBatch } from "firebase/firestore";
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import { Recipe, RecipeIngredientLink, Ingredient, RecipePreparationLink, Preparation, GeneratedIngredient, dishCategories, FullRecipeIngredient } from "@/lib/types";
@@ -12,13 +12,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle, FishSymbol, Pencil } from "lucide-react";
+import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle, FishSymbol, Pencil, BrainCircuit, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { updateRecipeDetails, replaceRecipeIngredients, replaceRecipePreparations } from "@/app/(app)/menu/actions";
+import { updateRecipeDetails, replaceRecipeIngredients, replaceRecipePreparations, analyzeAndSetMode } from "@/app/(app)/menu/actions";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -225,6 +225,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [isAnalyzing, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
     const { toast } = useToast();
 
@@ -629,6 +630,31 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         } finally { setIsGenerating(false); }
     };
 
+    const handleAnalyzeAndSetMode = () => {
+        if (!recipe) return;
+        startTransition(async () => {
+            try {
+                const resultMode = await analyzeAndSetMode(
+                    recipe.id!,
+                    recipe.name,
+                    recipe.procedure_fabrication || ''
+                );
+                toast({
+                    title: "Analyse terminée",
+                    description: `Le mode de préparation a été défini sur "${resultMode}".`,
+                });
+                fullDataRefresh();
+            } catch (error) {
+                console.error("Error analyzing mode:", error);
+                toast({
+                    title: "Erreur d'analyse",
+                    description: error instanceof Error ? error.message : "Une erreur est survenue.",
+                    variant: "destructive"
+                });
+            }
+        });
+    };
+
     const sortedIngredients = useMemo(() => {
         return [...allIngredients].sort((a, b) => a.name.localeCompare(b.name));
     }, [allIngredients]);
@@ -672,14 +698,14 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         result.totalRecipeCost = totalCost;
 
         if (currentRecipeData.type === 'Préparation') {
-            result.costPerPortion = totalCost / (currentRecipeData.productionQuantity || 1);
+            result.costPerPortion = totalCost / ((currentRecipeData as Preparation).productionQuantity || 1);
             return result;
         }
 
         const portions = currentRecipeData.portions || 1;
         const costPerPortionValue = portions > 0 ? totalCost / portions : 0;
-        const tvaRate = currentRecipeData.tvaRate || 10;
-        const price = currentRecipeData.price || 0;
+        const tvaRate = (currentRecipeData as Recipe).tvaRate || 10;
+        const price = (currentRecipeData as Recipe).price || 0;
         const priceHTValue = price / (1 + tvaRate / 100);
 
         result.costPerPortion = costPerPortionValue;
@@ -695,7 +721,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
 
     const proteinCostBreakdown = useMemo(() => {
         if (!currentRecipeData || !costsByCategory) return [];
-        const portions = currentRecipeData.type === 'Plat' ? currentRecipeData.portions || 1 : 1;
+        const portions = currentRecipeData.type === 'Plat' ? (currentRecipeData as Recipe).portions || 1 : 1;
         const proteinCategories = {
             "Viandes & Gibiers": { icon: Beef, color: "bg-red-500", totalCost: costsByCategory["Viandes & Gibiers"] || 0 },
             "Volaille": { icon: Drumstick, color: "bg-amber-500", totalCost: costsByCategory["Volaille"] || 0 },
@@ -799,10 +825,14 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                     <Button variant="outline" onClick={handleToggleEditMode}>
                         {isEditing ? <><X className="mr-2 h-4 w-4" />Annuler</> : <><FilePen className="mr-2 h-4 w-4" />Modifier</>}
                     </Button>
+                    <Button variant="secondary" onClick={handleAnalyzeAndSetMode} disabled={isAnalyzing}>
+                        {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                        {recipe.mode_preparation ? 'Ré-analyser' : 'Analyser la fiche'}
+                    </Button>
                 </div>
             </header>
 
-            {isEditing && (
+            {isEditing ? (
                 <Card className="border-blue-200 bg-blue-50/50">
                     <CardContent className="p-4">
                         <Label>Mode de Préparation</Label>
@@ -826,6 +856,20 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                         </RadioGroup>
                     </CardContent>
                 </Card>
+            ) : (
+                recipe.mode_preparation && (
+                     <Card>
+                        <CardHeader className="p-4">
+                             <CardTitle className="text-base flex items-center gap-2">
+                                <BrainCircuit className="h-5 w-5 text-primary"/>
+                                Analyse de temporalité
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent className="p-4 pt-0">
+                            <p className="text-sm">Cette fiche est classée comme préparation <Badge variant="secondary">{recipe.mode_preparation}</Badge>.</p>
+                        </CardContent>
+                     </Card>
+                )
             )}
 
             {/* Main Grid */}
@@ -862,7 +906,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                             <CardHeader><CardTitle className="flex items-center gap-2"><Info className="h-5 w-5" />Informations Financières</CardTitle></CardHeader>
                             <CardContent className="space-y-4">
                                 <div className="grid grid-cols-3 gap-4 text-center p-4 bg-muted/50 rounded-lg">
-                                    <div><p className="text-sm text-muted-foreground">Vente TTC</p>{isEditing ? <Input type="number" value={(editableRecipe as Recipe)?.price || 0} onChange={(e) => handleRecipeDataChange('price', parseFloat(e.target.value) || 0)} className="font-bold text-lg text-center" /> : <p className="font-bold text-lg">{currentRecipeData.price ? currentRecipeData.price.toFixed(2) : 'N/A'} DZD</p>}</div>
+                                    <div><p className="text-sm text-muted-foreground">Vente TTC</p>{isEditing ? <Input type="number" value={(editableRecipe as Recipe)?.price || 0} onChange={(e) => handleRecipeDataChange('price', parseFloat(e.target.value) || 0)} className="font-bold text-lg text-center" /> : <p className="font-bold text-lg">{currentRecipeData.price ? (currentRecipeData as Recipe).price.toFixed(2) : 'N/A'} DZD</p>}</div>
                                     <div><p className="text-sm text-muted-foreground">Vente HT</p><p className="font-bold text-lg">{priceHT.toFixed(2)} DZD</p></div>
                                     <div><p className="text-sm text-muted-foreground">Portions</p>{isEditing ? <Input type="number" value={(editableRecipe as Recipe)?.portions} onChange={(e) => handleRecipeDataChange('portions', parseInt(e.target.value) || 1)} className="font-bold text-lg text-center" /> : <p className="font-bold text-lg">{currentRecipeData.portions}</p>}</div>
                                 </div>
@@ -1047,7 +1091,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                         <>
                             <Card><CardHeader><CardTitle className="text-xl text-muted-foreground">Food Cost (%)</CardTitle></CardHeader><CardContent className="flex items-center justify-center p-6"><GaugeChart value={foodCostPercentage} unit="%" /></CardContent></Card>
                             <Card><Accordion type="single" collapsible className="w-full"><AccordionItem value="item-1" className="border-b-0"><AccordionTrigger className="p-4 hover:no-underline"><div className="flex items-center gap-2 text-lg font-semibold text-muted-foreground"><ListChecks className="h-5 w-5" />Indicateurs Food Cost</div></AccordionTrigger><AccordionContent className="px-4"><ul className="space-y-3 text-sm">{foodCostIndicators.map(indicator => { const Icon = indicator.icon; return (<li key={indicator.level} className="flex items-start gap-3"><Icon className={cn("h-5 w-5 shrink-0 mt-0.5", indicator.color)} /><div><span className="font-semibold">{indicator.range} - {indicator.level}</span>:<p className="text-muted-foreground text-xs">{indicator.description}</p></div></li>) })}</ul></AccordionContent></AccordionItem></Accordion></Card>
-                            <Card><CardHeader><CardTitle className="flex items-center justify-between text-xl text-muted-foreground"><div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600" />Allergènes</div>{isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4" /></Button>}</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">{recipe.allergens && recipe.allergens.length > 0 ? recipe.allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>) : <p className="text-sm text-muted-foreground">Aucun allergène spécifié.</p>}</CardContent></Card>
+                            <Card><CardHeader><CardTitle className="flex items-center justify-between text-xl text-muted-foreground"><div className="flex items-center gap-2"><AlertTriangle className="h-5 w-5 text-amber-600" />Allergènes</div>{isEditing && <Button variant="ghost" size="icon" className="h-8 w-8"><FilePen className="h-4 w-4" /></Button>}</CardTitle></CardHeader><CardContent className="flex flex-wrap gap-2">{(recipe as Recipe).allergens && (recipe as Recipe).allergens.length > 0 ? (recipe as Recipe).allergens.map(allergen => <Badge key={allergen} variant="secondary">{allergen}</Badge>) : <p className="text-sm text-muted-foreground">Aucun allergène spécifié.</p>}</CardContent></Card>
                             <Card><CardHeader><CardTitle className="flex items-center justify-between text-xl text-muted-foreground"><div className="flex items-center gap-2">Argumentaire Commercial</div>{isEditing && (<Button variant="ghost" size="icon" onClick={handleGenerateArgument} disabled={isGenerating} title="Générer avec l'IA"><Sparkles className={cn("h-4 w-4", isGenerating && "animate-spin")} /></Button>)}</CardTitle></CardHeader><CardContent className="prose prose-sm max-w-none text-muted-foreground">{isEditing ? <Textarea value={(editableRecipe as Recipe)?.commercialArgument || ''} onChange={(e) => handleRecipeDataChange('commercialArgument', e.target.value)} rows={5} placeholder="Un argumentaire de vente concis et alléchant..." /> : <p>{(recipe as Recipe).commercialArgument || 'Aucun argumentaire défini.'}</p>}</CardContent></Card>
                         </>
                     )}
@@ -1114,4 +1158,3 @@ function RecipeDetailSkeleton() {
         </div>
     );
 }
-

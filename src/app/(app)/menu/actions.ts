@@ -5,6 +5,8 @@ import { collection, addDoc, doc, setDoc, deleteDoc, updateDoc, writeBatch, quer
 import { db } from '@/lib/firebase';
 import { Recipe, RecipePreparationLink, Preparation, RecipeIngredientLink } from '@/lib/types';
 import { v2 as cloudinary } from 'cloudinary';
+import { analyzeTemporalContext } from '@/ai/flows/temporal-analysis-flow';
+
 
 cloudinary.config({
   cloud_name: process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME,
@@ -152,4 +154,41 @@ export async function uploadImage(dataUri: string): Promise<string> {
     console.error("Cloudinary upload failed:", error);
     throw new Error("Le téléversement de l'image a échoué.");
   }
+}
+
+
+export async function analyzeAndSetMode(
+    recipeId: string,
+    name: string,
+    procedure: string,
+): Promise<'avance' | 'minute' | 'mixte'> {
+    try {
+        const resultMode = await analyzeTemporalContext({ name, procedure });
+        
+        // Déterminer la collection en fonction de la structure de l'ID ou d'autres logiques
+        // Pour l'instant, on suppose qu'on ne met à jour que des 'recipes' ou 'preparations'
+        // Cette logique peut avoir besoin d'être affinée
+        let collectionName: 'recipes' | 'preparations' | 'garnishes' = 'recipes';
+        
+        const prepDoc = doc(db, 'preparations', recipeId);
+        const prepSnap = await getDoc(prepDoc);
+        if (prepSnap.exists()) {
+            collectionName = 'preparations';
+        } else {
+            const garnishDoc = doc(db, 'garnishes', recipeId);
+            const garnishSnap = await getDoc(garnishDoc);
+            if (garnishSnap.exists()){
+                collectionName = 'garnishes';
+            }
+        }
+
+        await updateRecipeDetails(recipeId, { mode_preparation: resultMode }, collectionName);
+        return resultMode;
+    } catch (e) {
+        console.error("Erreur lors de l'analyse et de la mise à jour du mode :", e);
+        if (e instanceof Error) {
+            throw new Error(`L'analyse par IA a échoué: ${e.message}`);
+        }
+        throw new Error("Une erreur inconnue est survenue lors de l'analyse.");
+    }
 }
