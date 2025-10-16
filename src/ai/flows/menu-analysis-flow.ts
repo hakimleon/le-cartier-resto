@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Flow Genkit pour l'analyse stratégique du menu.
@@ -66,16 +67,21 @@ const analysisPrompt = ai.definePrompt({
     name: 'menuAnalysisPrompt',
     input: { schema: AnalysisInputSchema },
     output: { schema: AIOutputSchema },
-    model: googleAI.model('gemini-2.5-flash'),
+    model: googleAI.model('gemini-1.5-pro'),
     config: {
         temperature: 0.2,
     },
     prompt: `SYSTEM: Tu es un consultant expert en performance de restaurants, spécialisé dans l'analyse de données. Ta mission est d'analyser en profondeur le JSON fourni et de générer des recommandations UNIQUEMENT basées sur ces données. NE PAS donner de conseils génériques.
 
+CONTEXTE CULINAIRE IMPORTANT :
+- Tâches de fond (ex: "Préparation des Fonds", "Mijotage long"): Ce sont des tâches à faible intensité qui peuvent souvent se dérouler en arrière-plan. Elles occupent un poste mais ne demandent pas une attention constante. Ne les considérez pas comme un bloqueur total pour le poste.
+- Tâches de préparation active (ex: "Préparation des Légumes coupés", "Préparation de la Sauce César"): Ce sont des tâches qui demandent une attention et une main-d'œuvre actives.
+- Tâches de cuisson/service (ex: "Préparation du Poulet grillé"): Ce sont des tâches courtes et intenses qui se produisent souvent juste avant ou pendant le service.
+
 EXEMPLE D'ANALYSE ATTENDUE:
 Si tu vois un plat avec un "yieldPerMin" très bas et un "duration" très haut, tu dois le mentionner et proposer une solution.
 Si tu vois une préparation utilisée dans 8 plats différents ("dishCount": 8), tu dois recommander de la produire en grande quantité.
-Si tu vois que 80% des plats utilisent le poste "Chaud", tu dois signaler un risque de goulot d'étranglement.
+Si tu vois que 80% des plats utilisent le poste "Chaud", tu dois signaler un risque de goulot d'étranglement, en tenant compte du type de tâches (actives vs. de fond).
 
 INSTRUCTIONS IMPÉRATIVES:
 1.  **BASE-TOI EXCLUSIVEMENT SUR LES DONNÉES FOURNIES**: Tes recommandations DOIVENT faire référence à des noms de plats, des chiffres, ou des tendances présents dans le JSON en entrée.
