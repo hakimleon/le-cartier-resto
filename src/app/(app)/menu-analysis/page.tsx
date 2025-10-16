@@ -127,7 +127,7 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             const directIngredients = allRecipeIngredients.get(prepId) || [];
             for (const ingLink of directIngredients) {
                 const ingData = allIngredients.get(ingLink.ingredientId);
-                if (ingData) totalCost += computeIngredientCost(ingData, ingLink.quantity, ingLink.unitUse).cost;
+                if (ingData) totalCost += computeIngredientCost(ingData, Number(ingLink.quantity) || 0, ingLink.unitUse).cost;
             }
 
             const subPreps = allRecipePreps.get(prepId) || [];
@@ -139,7 +139,8 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                     totalCost += (subPrepLink.quantity * factor) * costPerUnit;
                 }
             }
-            const costPerProductionUnit = (prep.productionQuantity && prep.productionQuantity > 0) ? totalCost / prep.productionQuantity : 0;
+            const productionQuantity = Number(prep.productionQuantity) || 1;
+            const costPerProductionUnit = productionQuantity > 0 ? totalCost / productionQuantity : 0;
             prepCosts.set(prepId, isNaN(costPerProductionUnit) ? 0 : costPerProductionUnit);
         }
 
@@ -170,7 +171,7 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             
             let weightedTime = 0;
             const mode = item.mode_preparation || (item.type === 'Plat' ? 'minute' : 'avance');
-            const itemDuration = item.duration || 0;
+            const itemDuration = Number(item.duration) || 0;
 
             if (mode === 'minute') {
                 weightedTime += itemDuration;
@@ -195,8 +196,8 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             const dishIngredients = allRecipeIngredients.get(recipe.id) || [];
             dishIngredients.forEach(link => {
                 const ingData = allIngredients.get(link.ingredientId);
-                if(ingData && ingData.purchasePrice > 0 && ingData.purchaseWeightGrams > 0) {
-                     dishTotalCost += computeIngredientCost(ingData, link.quantity, link.unitUse).cost;
+                if(ingData) {
+                     dishTotalCost += computeIngredientCost(ingData, Number(link.quantity) || 0, link.unitUse).cost;
                 }
             });
             
@@ -213,8 +214,10 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 }
             });
 
-            const foodCostPerPortion = dishTotalCost / (recipe.portions || 1);
-            const priceHT = (recipe.price || 0) / (1 + (recipe.tvaRate || 10) / 100);
+            const foodCostPerPortion = (Number(recipe.portions) || 1) > 0 ? dishTotalCost / (Number(recipe.portions) || 1) : 0;
+            const price = Number(recipe.price) || 0;
+            const tvaRate = Number(recipe.tvaRate) || 10;
+            const priceHT = price / (1 + tvaRate / 100);
             const grossMargin = priceHT - foodCostPerPortion;
             
             const weightedDuration = getWeightedDuration(recipe.id!, 'recipe');
@@ -222,7 +225,7 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
 
             let breakdown = recipe.duration_breakdown;
             if (!breakdown) {
-                const d = recipe.duration || 0;
+                const d = Number(recipe.duration) || 0;
                 breakdown = d <= 15 ? { mise_en_place: 5, cuisson: d > 5 ? d-5 : 0, envoi: 2 } : d <= 45 ? { mise_en_place: d * 0.2, cuisson: d * 0.7, envoi: d * 0.1 } : { mise_en_place: d * 0.6, cuisson: d * 0.3, envoi: d * 0.1 };
             }
             
@@ -231,7 +234,7 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 duration: weightedDuration,
                 duration_breakdown: breakdown,
                 foodCost: foodCostPerPortion, grossMargin: grossMargin, yieldPerMin: yieldPerMin,
-                price: recipe.price || 0, mode_preparation: recipe.mode_preparation,
+                price: price, mode_preparation: recipe.mode_preparation,
             });
         };
         

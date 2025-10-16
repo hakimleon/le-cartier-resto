@@ -1,5 +1,5 @@
 
-import type { Ingredient } from '@/lib/types';
+import type { Ingredient, Preparation } from '@/lib/types';
 
 const standardMetricConversions: Record<string, number> = {
   g: 1, kg: 1000, mg: 0.001,
@@ -45,6 +45,8 @@ function getFactor(from: string, to: string, equivalences: Record<string, string
 
 
 export function getConversionFactor(fromUnit: string, toUnit: string, ingredient?: Partial<Pick<Ingredient, 'baseUnit' | 'equivalences'>>): number {
+    if (!fromUnit || !toUnit) return 1;
+
     const f = fromUnit.toLowerCase().trim();
     const t = toUnit.toLowerCase().trim();
     const equivalences = ingredient?.equivalences || {};
@@ -85,7 +87,11 @@ export function computeIngredientCost(
     usedQuantity: number,
     usedUnit: string
 ): { cost: number; error?: string } {
-    if (!ingredient.purchasePrice || ingredient.purchasePrice <= 0 || !ingredient.purchaseWeightGrams || ingredient.purchaseWeightGrams <= 0) {
+    const purchasePrice = Number(ingredient.purchasePrice) || 0;
+    const purchaseWeightGrams = Number(ingredient.purchaseWeightGrams) || 0;
+    const yieldPercentage = Number(ingredient.yieldPercentage) || 100;
+
+    if (purchasePrice <= 0 || purchaseWeightGrams <= 0) {
         return { cost: 0, error: "Données d'achat (prix > 0, poids/volume > 0) invalides." };
     }
     if (!ingredient.baseUnit) {
@@ -93,8 +99,8 @@ export function computeIngredientCost(
     }
     if (usedQuantity <= 0) return { cost: 0 };
 
-    const costPerBaseUnitRaw = ingredient.purchasePrice / ingredient.purchaseWeightGrams;
-    const netCostPerBaseUnit = costPerBaseUnitRaw / ((ingredient.yieldPercentage || 100) / 100);
+    const costPerBaseUnitRaw = purchasePrice / purchaseWeightGrams;
+    const netCostPerBaseUnit = costPerBaseUnitRaw / (yieldPercentage / 100);
 
     const qtyInBase = convertQuantity(ingredient, usedQuantity, usedUnit, ingredient.baseUnit);
     
