@@ -2,7 +2,8 @@
 'use server';
 
 import { menuAnalysisFlow } from '@/ai/flows/menu-analysis-flow';
-import type { SummaryData, ProductionData, MutualisationData, PlanningTask } from './page';
+import type { SummaryData, ProductionData, MutualisationData, PlanningTask } from './MenuAnalysisClient';
+
 
 type AnalysisInput = {
     summary: SummaryData;
