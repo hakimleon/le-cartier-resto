@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Euro, TrendingUp, Info, Sparkles, BrainCircuit, Loader2, CalendarClock } from 'lucide-react';
-import type { SummaryData, ProductionData, MutualisationData, PlanningTask } from './page';
+import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Euro, TrendingUp, Info, Sparkles, BrainCircuit, Loader2, CalendarClock, Target, ListChecks, Percent, Puzzle } from 'lucide-react';
+import type { SummaryData, ProductionData, MutualisationData, PlanningTask, PerformanceData } from './page';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -23,6 +24,7 @@ interface MenuAnalysisClientProps {
     summary: SummaryData;
     productionData: ProductionData[];
     mutualisationData: MutualisationData[];
+    performanceData: PerformanceData;
     initialError: string | null;
 }
 
@@ -31,7 +33,7 @@ interface AIResults {
     planning: PlanningTask[];
 }
 
-export default function MenuAnalysisClient({ summary, productionData, mutualisationData, initialError }: MenuAnalysisClientProps) {
+export default function MenuAnalysisClient({ summary, productionData, mutualisationData, performanceData, initialError }: MenuAnalysisClientProps) {
     const [isAnalyzing, startTransition] = useTransition();
     const [aiResults, setAiResults] = useState<AIResults | null>(null);
     const { toast } = useToast();
@@ -146,30 +148,49 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
             )}
 
 
-            {/* --- Volet 1: SUMMARY --- */}
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><BarChart3 />Résumé du Menu</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                    <Card className="p-4">
-                        <CardDescription className="flex items-center gap-2 text-sm"><Info /> Plats Actifs</CardDescription>
-                        <p className="text-2xl font-bold">{summary.totalDishes}</p>
-                    </Card>
-                     <Card className="p-4">
-                        <CardDescription className="flex items-center gap-2 text-sm"><Clock /> Durée Moyenne</CardDescription>
-                        <p className="text-2xl font-bold">{summary.averageDuration.toFixed(0)} <span className="text-base text-muted-foreground">min</span></p>
-                    </Card>
-                    <Card className="p-4 col-span-2">
-                        <CardDescription className="flex items-center gap-2 text-sm">Répartition</CardDescription>
-                         <div className="flex flex-wrap gap-2 pt-2">
-                            {Object.entries(summary.categoryCount).map(([category, count]) => (
-                                <Badge key={category} variant="secondary" className="text-sm">{category}: {count}</Badge>
-                            ))}
-                        </div>
-                    </Card>
-                </CardContent>
-            </Card>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* --- Volet 1: SUMMARY --- */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><BarChart3 />Résumé du Menu</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 sm:grid-cols-2">
+                        <Card className="p-4">
+                            <CardDescription className="flex items-center gap-2 text-sm"><Info /> Plats Actifs</CardDescription>
+                            <p className="text-2xl font-bold">{summary.totalDishes}</p>
+                        </Card>
+                         <Card className="p-4">
+                            <CardDescription className="flex items-center gap-2 text-sm"><Clock /> Durée Moyenne</CardDescription>
+                            <p className="text-2xl font-bold">{summary.averageDuration.toFixed(0)} <span className="text-base text-muted-foreground">min</span></p>
+                        </Card>
+                    </CardContent>
+                </Card>
+                
+                {/* --- Volet 7: PERFORMANCE --- */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><Target />Performance &amp; KPIs</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-4 sm:grid-cols-2">
+                        <Card className="p-4">
+                            <CardDescription className="flex items-center gap-2 text-sm"><Recycle /> Préparations Communes</CardDescription>
+                            <p className="text-2xl font-bold">{performanceData.commonPreparationsCount}</p>
+                        </Card>
+                        <Card className="p-4">
+                            <CardDescription className="flex items-center gap-2 text-sm"><Euro /> Marge Brute Moyenne</CardDescription>
+                            <p className="text-2xl font-bold">{performanceData.averageMargin.toFixed(2)} <span className="text-base text-muted-foreground">DZD</span></p>
+                        </Card>
+                        <Card className="p-4">
+                            <CardDescription className="flex items-center gap-2 text-sm"><ListChecks /> Tps Moyen MEP</CardDescription>
+                            <p className="text-2xl font-bold">{performanceData.averageMepTime.toFixed(0)} <span className="text-base text-muted-foreground">min</span></p>
+                        </Card>
+                        <Card className="p-4">
+                            <CardDescription className="flex items-center gap-2 text-sm"><Puzzle /> Taux de Complexité</CardDescription>
+                            <p className="text-2xl font-bold">{performanceData.complexityRate.toFixed(0)}<span className="text-base text-muted-foreground">%</span></p>
+                        </Card>
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* --- Volet 3: MUTUALISATIONS --- */}
             <Card>
@@ -220,7 +241,7 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
              {/* --- Volet 2 & 5: PRODUCTION & RENTABILITÉ --- */}
             <Card>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Flame />Vue de Production & Rentabilité</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Flame />Vue de Production &amp; Rentabilité</CardTitle>
                     <CardDescription>Analyse combinée du temps de production et de la rentabilité de chaque plat.</CardDescription>
                 </CardHeader>
                 <CardContent>
