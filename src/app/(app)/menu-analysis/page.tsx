@@ -140,7 +140,6 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
         const prepUsageCount = new Map<string, { name: string, dishes: string[] }>();
         const production: ProductionData[] = [];
 
-        // Fonction récursive pour calculer la durée pondérée
         const getWeightedDuration = (itemId: string, itemType: 'recipe' | 'prep'): number => {
             const item = itemType === 'recipe' ? activeRecipes.find(r => r.id === itemId) : allPrepsAndGarnishes.get(itemId);
             if (!item) return 0;

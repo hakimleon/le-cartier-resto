@@ -61,7 +61,7 @@ export type Preparation = {
   tags?: string[];
   imageUrl?: string;
   rawConcept?: string; // Pour stocker le JSON brut de l'IA
-  mode_preparation?: 'avance' | 'minute' | 'mixte'; // CHAMP AJOUTÉ
+  mode_preparation?: 'avance' | 'minute' | 'mixte';
   
   // Champs Fiche Technique
   procedure_fabrication?: string;
@@ -103,7 +103,7 @@ export type Recipe = {
   tags?: string[];
   imageUrl?: string;
   rawConcept?: string; // Pour stocker le JSON brut de l'IA
-  mode_preparation?: 'avance' | 'minute' | 'mixte'; // CHAMP AJOUTÉ
+  mode_preparation?: 'avance' | 'minute' | 'mixte';
   
   // Champs Fiche Technique
   portions: number;
