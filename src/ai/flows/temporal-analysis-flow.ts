@@ -16,10 +16,10 @@ const TemporalAnalysisInputSchema = z.object({
 
 const TemporalAnalysisOutputSchema = z.enum(['avance', 'minute', 'mixte']);
 
+// Le prompt ne définit plus de schéma de sortie, on va analyser le texte brut.
 const temporalAnalysisPrompt = ai.definePrompt({
   name: 'temporalAnalysisPrompt',
   input: { schema: TemporalAnalysisInputSchema },
-  output: { schema: TemporalAnalysisOutputSchema },
   model: googleAI.model('gemini-2.5-flash'),
   prompt: `Analyse la procédure de la recette suivante et détermine sa temporalité de production.
 Ta réponse doit être UNIQUEMENT l'un des trois mots suivants : 'avance', 'minute', ou 'mixte'.
@@ -42,9 +42,20 @@ Réponds seulement par 'avance', 'minute', ou 'mixte'. Pas de phrases, pas d'exp
 export async function analyzeTemporalContext(
   input: z.infer<typeof TemporalAnalysisInputSchema>
 ): Promise<z.infer<typeof TemporalAnalysisOutputSchema>> {
-  const { output } = await temporalAnalysisPrompt(input);
-  if (!output) {
-    throw new Error("L'IA n'a pas pu déterminer la temporalité.");
+  
+  const response = await temporalAnalysisPrompt(input);
+  const textResponse = response.text.toLowerCase().trim().replace(/['"`]/g, '');
+
+  if (textResponse.includes('avance')) {
+    return 'avance';
   }
-  return output;
+  if (textResponse.includes('mixte')) {
+    return 'mixte';
+  }
+  if (textResponse.includes('minute')) {
+    return 'minute';
+  }
+
+  // Si aucun mot-clé n'est trouvé, cela lève une erreur plus claire.
+  throw new Error(`L'IA a retourné une réponse inattendue et non-conforme: "${response.text}"`);
 }
