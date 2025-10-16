@@ -102,6 +102,7 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
 
             function visit(prepId: string) {
                 if (visited.has(prepId)) return;
+                if (!allPrepsAndGarnishes.has(prepId)) return;
                 visited.add(prepId);
                 (deps.get(prepId) || []).forEach(visit);
                 order.push(prepId);
@@ -133,7 +134,7 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 }
             }
             const costPerProductionUnit = totalCost / (prep.productionQuantity || 1);
-            prepCosts.set(prepId, costPerProductionUnit);
+            prepCosts.set(prepId, isNaN(costPerProductionUnit) ? 0 : costPerProductionUnit);
         }
 
         // --- Volets 2, 3 et 5: Production, Mutualisations et Rentabilité ---
