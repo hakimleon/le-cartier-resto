@@ -51,7 +51,7 @@ const AnalysisInputSchema = z.object({
 
 const analysisPrompt = ai.definePrompt({
     name: 'menuAnalysisPrompt',
-    input: { schema: AnalysisInputSchema },
+    input: { schema: z.object({ data: z.string() }) },
     output: { format: 'markdown'},
     model: googleAI.model('gemini-2.5-flash'),
     prompt: `SYSTEM: Tu es un chef exécutif et consultant en restauration, expert en optimisation de menus. Reçois ce JSON contenant l'analyse complète d'une carte. Ta mission est de fournir des recommandations stratégiques CLAIRES, CONCISES et ACTIONNABLES sous forme de texte en Markdown.
@@ -64,7 +64,7 @@ INSTRUCTIONS:
 
 Données d'analyse :
 \`\`\`json
-{{{jsonStringify input}}}
+{{{data}}}
 \`\`\`
 `,
 });
@@ -77,7 +77,7 @@ export const menuAnalysisFlow = ai.defineFlow(
         outputSchema: z.string(),
     },
     async (input) => {
-        const response = await analysisPrompt(input);
+        const response = await analysisPrompt({data: JSON.stringify(input)});
         return response.text;
     }
 );
