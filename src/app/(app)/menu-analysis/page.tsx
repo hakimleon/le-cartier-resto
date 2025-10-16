@@ -87,42 +87,49 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
 
         const activeRecipes = recipesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Recipe));
         
-        // --- Calcul des coûts de toutes les préparations ---
+        // --- Calcul des coûts de toutes les préparations (avec détection de cycle) ---
         const prepCosts = new Map<string, number>(); // Map<prepId, costPerProductionUnit>
 
         const sortedPreps = (() => {
             const deps = new Map<string, string[]>();
             const order: string[] = [];
-            const visited = new Set<string>();
+            const permMark = new Set<string>();
+            const tempMark = new Set<string>();
+
             allPrepsAndGarnishesList.forEach(p => {
                 const prepLinks = allRecipePreps.get(p.id!) || [];
                 deps.set(p.id!, prepLinks.map(l => l.childPreparationId));
             });
 
             function visit(prepId: string) {
-                if (visited.has(prepId)) return;
+                if (permMark.has(prepId)) return;
+                if (tempMark.has(prepId)) {
+                    console.warn(`Circular dependency detected in cost calculation at prep ID: ${prepId}`);
+                    return; // Cycle detected
+                }
                 if (!allPrepsAndGarnishes.has(prepId)) return;
-                visited.add(prepId);
+                
+                tempMark.add(prepId);
                 (deps.get(prepId) || []).forEach(visit);
+                tempMark.delete(prepId);
+                permMark.add(prepId);
                 order.push(prepId);
             }
             allPrepsAndGarnishesList.forEach(p => visit(p.id!));
             return order;
         })();
-
+        
         for (const prepId of sortedPreps) {
             const prep = allPrepsAndGarnishes.get(prepId);
             if (!prep) continue;
             
             let totalCost = 0;
-            // Coût des ingrédients directs de la préparation
             const directIngredients = allRecipeIngredients.get(prepId) || [];
             for (const ingLink of directIngredients) {
                 const ingData = allIngredients.get(ingLink.ingredientId);
                 if (ingData) totalCost += computeIngredientCost(ingData, ingLink.quantity, ingLink.unitUse).cost;
             }
 
-            // Coût des sous-préparations de la préparation
             const subPreps = allRecipePreps.get(prepId) || [];
             for (const subPrepLink of subPreps) {
                 const subPrepData = allPrepsAndGarnishes.get(subPrepLink.childPreparationId);
@@ -132,7 +139,7 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                     totalCost += (subPrepLink.quantity * factor) * costPerUnit;
                 }
             }
-            const costPerProductionUnit = totalCost / (prep.productionQuantity || 1);
+            const costPerProductionUnit = (prep.productionQuantity && prep.productionQuantity > 0) ? totalCost / prep.productionQuantity : 0;
             prepCosts.set(prepId, isNaN(costPerProductionUnit) ? 0 : costPerProductionUnit);
         }
 
@@ -140,36 +147,38 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
         const prepUsageCount = new Map<string, { name: string, dishes: string[] }>();
         const production: ProductionData[] = [];
 
-        // Helper function to calculate weighted duration recursively
+        // Helper function to calculate weighted duration with memoization and cycle detection
+        const weightedDurationCache = new Map<string, number>();
         const getWeightedDuration = (itemId: string, itemType: 'recipe' | 'prep', visited = new Set<string>()): number => {
             if (visited.has(itemId)) {
-                console.warn(`Circular dependency detected and broken at item ID: ${itemId}`);
-                return 0; // Break the loop
+                console.warn(`Circular dependency detected for duration calculation at item ID: ${itemId}`);
+                return 0; // Break cycle
             }
-            visited.add(itemId);
+            if (weightedDurationCache.has(itemId)) {
+                return weightedDurationCache.get(itemId)!;
+            }
 
+            visited.add(itemId);
             const item = itemType === 'recipe' ? activeRecipes.find(r => r.id === itemId) : allPrepsAndGarnishes.get(itemId);
-            if (!item) return 0;
+            if (!item) {
+                visited.delete(itemId);
+                return 0;
+            }
             
             let weightedTime = 0;
             const mode = item.mode_preparation || (item.type === 'Plat' ? 'minute' : 'avance');
             const itemDuration = item.duration || 0;
 
-            // Apply weighting based on preparation mode
-            if (mode === 'minute') {
-                weightedTime += itemDuration;
-            } else if (mode === 'mixte') {
-                weightedTime += itemDuration * 0.5; // 50% for service time
-            }
-            // 'avance' adds 0
+            if (mode === 'minute') weightedTime += itemDuration;
+            else if (mode === 'mixte') weightedTime += itemDuration * 0.5;
 
-            // Recursively add weighted time from sub-preparations
             const subPreps = allRecipePreps.get(item.id!) || [];
             for (const subPrepLink of subPreps) {
-                // Pass a new Set for the recursive call to allow the same prep to be used in different branches
-                weightedTime += getWeightedDuration(subPrepLink.childPreparationId, 'prep', new Set(visited));
+                weightedTime += getWeightedDuration(subPrepLink.childPreparationId, 'prep', visited);
             }
-
+            
+            visited.delete(itemId);
+            weightedDurationCache.set(itemId, weightedTime);
             return weightedTime;
         };
 
@@ -179,7 +188,9 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             const dishIngredients = allRecipeIngredients.get(recipe.id) || [];
             dishIngredients.forEach(link => {
                 const ingData = allIngredients.get(link.ingredientId);
-                if(ingData) dishTotalCost += computeIngredientCost(ingData, link.quantity, link.unitUse).cost;
+                if(ingData && ingData.purchasePrice > 0 && ingData.purchaseWeightGrams > 0) {
+                     dishTotalCost += computeIngredientCost(ingData, link.quantity, link.unitUse).cost;
+                }
             });
             
             const dishSubPreps = allRecipePreps.get(recipe.id) || [];
@@ -187,9 +198,7 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 const prepData = allPrepsAndGarnishes.get(link.childPreparationId);
                 const costPerUnit = prepCosts.get(link.childPreparationId) || 0;
                 if (prepData) {
-                    if (!prepUsageCount.has(prepData.id!)) {
-                        prepUsageCount.set(prepData.id!, { name: prepData.name, dishes: [] });
-                    }
+                    if (!prepUsageCount.has(prepData.id!)) prepUsageCount.set(prepData.id!, { name: prepData.name, dishes: [] });
                     prepUsageCount.get(prepData.id!)!.dishes.push(recipe.name);
                     
                     const factor = getConversionFactor(link.unitUse, prepData.productionUnit!, prepData);
@@ -211,16 +220,11 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             }
             
             production.push({
-                id: recipe.id,
-                name: recipe.name,
-                category: recipe.category,
-                duration: weightedDuration, // Utilisation de la durée pondérée
+                id: recipe.id, name: recipe.name, category: recipe.category,
+                duration: weightedDuration,
                 duration_breakdown: breakdown,
-                foodCost: foodCostPerPortion,
-                grossMargin: grossMargin,
-                yieldPerMin: yieldPerMin,
-                price: recipe.price || 0,
-                mode_preparation: recipe.mode_preparation,
+                foodCost: foodCostPerPortion, grossMargin: grossMargin, yieldPerMin: yieldPerMin,
+                price: recipe.price || 0, mode_preparation: recipe.mode_preparation,
             });
         };
         
@@ -231,18 +235,11 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 if (data.dishes.length >= 4) freq = 'Quotidienne';
                 else if (data.dishes.length >= 2) freq = 'Fréquente';
 
-                mutualisations.push({
-                    id,
-                    name: data.name,
-                    dishCount: data.dishes.length,
-                    dishes: data.dishes,
-                    frequency: freq,
-                });
+                mutualisations.push({ id, name: data.name, dishCount: data.dishes.length, dishes: data.dishes, frequency: freq });
             }
         }
         mutualisations.sort((a,b) => b.dishCount - a.dishCount);
 
-        // --- Volet 1: Résumé (mis à jour avec durée pondérée) ---
         const summary: SummaryData = {
             totalDishes: activeRecipes.length,
             averageDuration: production.reduce((acc, p) => acc + p.duration, 0) / (production.length || 1),
@@ -253,7 +250,6 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             }, {} as Record<string, number>),
         };
 
-        // --- Volet 7: PERFORMANCE ---
         const totalGrossMargin = production.reduce((acc, p) => acc + p.grossMargin, 0);
         const totalMepTime = production.reduce((acc, p) => acc + p.duration_breakdown.mise_en_place, 0);
         const difficultDishes = activeRecipes.filter(r => r.difficulty === 'Difficile').length;
@@ -273,15 +269,8 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
         console.error("Error analyzing menu:", error);
         return {
             summary: { totalDishes: 0, averageDuration: 0, categoryCount: {} },
-            production: [],
-            mutualisations: [],
-            performance: {
-                commonPreparationsCount: 0,
-                averageMargin: 0,
-                averageMepTime: 0,
-                complexityRate: 0,
-                menuBalance: {}
-            },
+            production: [], mutualisations: [],
+            performance: { commonPreparationsCount: 0, averageMargin: 0, averageMepTime: 0, complexityRate: 0, menuBalance: {} },
             error: error instanceof Error ? `Erreur d'analyse: ${error.message}` : "Une erreur inconnue est survenue."
         };
     }
