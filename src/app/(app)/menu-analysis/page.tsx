@@ -34,8 +34,10 @@ async function getMenuAnalysisData(): Promise<{ dishes: AnalyzedDish[], error: s
         const allIngredients = new Map(ingredientsSnap.docs.map(doc => [doc.id, doc.data() as Ingredient]));
         const allPrepsAndGarnishes = new Map([
             ...preparationsSnap.docs.map(doc => [doc.id, doc.data() as Preparation]),
-            ...garnishesSnap.docs.map(doc => [doc.id, { ...doc.data(), type: 'Garniture' } as unknown as Preparation]),
+            ...garnishesSnap.docs.map(doc => [doc.id, doc.data() as Preparation]),
         ]);
+        const allGarnishIds = new Set(garnishesSnap.docs.map(d => d.id));
+
 
         const linksByParentId = new Map<string, { ingredients: RecipeIngredientLink[], preparations: RecipePreparationLink[] }>();
         recipeIngsSnap.forEach(doc => {
@@ -53,10 +55,13 @@ async function getMenuAnalysisData(): Promise<{ dishes: AnalyzedDish[], error: s
 
         for (const doc of recipesSnap.docs) {
             const dish = { ...doc.data(), id: doc.id } as Recipe;
-            let proteinCategory: ProteinCategory = 'Végétarien';
+            
+            let hasRedMeat = false;
+            let hasPoultry = false;
+            let hasFish = false;
+            
             const accompaniments = new Map<string, Accompaniment>();
-
-            const queue = [dish.id];
+            const queue: string[] = [dish.id];
             const visited = new Set<string>();
 
             while(queue.length > 0) {
@@ -70,17 +75,18 @@ async function getMenuAnalysisData(): Promise<{ dishes: AnalyzedDish[], error: s
                 for (const ingLink of links.ingredients) {
                     const ingredient = allIngredients.get(ingLink.ingredientId);
                     if (ingredient) {
-                        if (ingredient.category === "Viandes & Gibiers" && proteinCategory !== 'Viandes Rouges') proteinCategory = 'Viandes Rouges';
-                        else if (ingredient.category === "Volaille" && proteinCategory === 'Végétarien') proteinCategory = 'Volailles';
-                        else if (ingredient.category === "Poissons & Fruits de mer" && proteinCategory === 'Végétarien') proteinCategory = 'Poissons & Fruits de Mer';
+                        if (ingredient.category === "Viandes & Gibiers") hasRedMeat = true;
+                        if (ingredient.category === "Volaille") hasPoultry = true;
+                        if (ingredient.category === "Poissons & Fruits de mer") hasFish = true;
                     }
                 }
                 
                 for (const prepLink of links.preparations) {
                      const prepOrGarnish = allPrepsAndGarnishes.get(prepLink.childPreparationId);
                      if (prepOrGarnish) {
-                        const isGarnish = garnishesSnap.docs.some(d => d.id === prepLink.childPreparationId);
+                        const isGarnish = allGarnishIds.has(prepLink.childPreparationId);
                         const relevantPrepCategories = ["Purées & mousselines", "Gratins & plats de légumes au four", "Céréales & féculents", "Légumineuses & accompagnements végétariens mijotés"];
+                        
                         if(isGarnish || (prepOrGarnish.category && relevantPrepCategories.includes(prepOrGarnish.category as any))) {
                             if(!accompaniments.has(prepOrGarnish.id!)) {
                                 accompaniments.set(prepOrGarnish.id!, { id: prepOrGarnish.id!, name: prepOrGarnish.name, type: isGarnish ? 'Garniture' : 'Préparation' });
@@ -90,6 +96,17 @@ async function getMenuAnalysisData(): Promise<{ dishes: AnalyzedDish[], error: s
                         }
                      }
                 }
+            }
+
+            let proteinCategory: ProteinCategory;
+            if (hasRedMeat) {
+                proteinCategory = 'Viandes Rouges';
+            } else if (hasPoultry) {
+                proteinCategory = 'Volailles';
+            } else if (hasFish) {
+                proteinCategory = 'Poissons & Fruits de Mer';
+            } else {
+                proteinCategory = 'Végétarien';
             }
 
             analyzedDishes.push({
