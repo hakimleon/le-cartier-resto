@@ -57,6 +57,7 @@ export type Preparation = {
   // Champs communs
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';
   duration?: number; // in minutes
+  duration_breakdown?: { mise_en_place: number; cuisson: number; envoi: number; };
   tags?: string[];
   imageUrl?: string;
   rawConcept?: string; // Pour stocker le JSON brut de l'IA
@@ -97,6 +98,7 @@ export type Recipe = {
   // Champs communs
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';
   duration?: number; // in minutes
+  duration_breakdown?: { mise_en_place: number; cuisson: number; envoi: number; };
   tags?: string[];
   imageUrl?: string;
   rawConcept?: string; // Pour stocker le JSON brut de l'IA
