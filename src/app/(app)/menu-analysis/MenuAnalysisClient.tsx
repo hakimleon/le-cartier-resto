@@ -4,6 +4,7 @@
 import { useState, useTransition, useEffect } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { ai } from '@/ai/genkit';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Sparkles, BrainCircuit, Loader2, CalendarClock, Target, Lightbulb } from 'lucide-react';
@@ -136,12 +137,18 @@ export default function MenuAnalysisClient() {
                 const prepCosts = new Map<string, number>();
                 const weightedDurationCache = new Map<string, number>();
 
-                const getWeightedDuration = (itemId: string, itemType: 'recipe' | 'prep', visited = new Set<string>()): number => {
-                    if (visited.has(itemId)) return 0;
-                    if (weightedDurationCache.has(itemId)) return weightedDurationCache.get(itemId)!;
+                 const getWeightedDuration = (itemId: string, itemType: 'recipe' | 'prep', visited = new Set<string>()): number => {
+                    if (visited.has(itemId)) {
+                        console.warn(`Circular dependency detected and broken at item ID: ${itemId}`);
+                        return 0;
+                    }
+                    if(weightedDurationCache.has(itemId)){ return weightedDurationCache.get(itemId)!; }
                     visited.add(itemId);
                     const item = itemType === 'recipe' ? rawActiveRecipes.find(r => r.id === itemId) : allPrepsAndGarnishes.get(itemId);
-                    if (!item) { visited.delete(itemId); return 0; }
+                    if (!item) {
+                        visited.delete(itemId);
+                        return 0;
+                    }
                     let weightedTime = 0;
                     const mode = item.mode_preparation || (item.type === 'Plat' ? 'minute' : 'avance');
                     const itemDuration = Number(item.duration) || 0;
@@ -159,10 +166,10 @@ export default function MenuAnalysisClient() {
                     const order: string[] = [];
                     const permMark = new Set<string>();
                     const tempMark = new Set<string>();
-                    allPrepsAndGarnishesList.forEach(p => { deps.set(p.id!, (allRecipePrepsMap.get(p.id!) || []).map(l => l.childPreparationId)); });
+                    allPrepsAndGarnishesList.forEach(p => { if(p.id) deps.set(p.id, (allRecipePrepsMap.get(p.id) || []).map(l => l.childPreparationId)); });
                     function visit(prepId: string) {
                         if (permMark.has(prepId)) return;
-                        if (tempMark.has(prepId)) return;
+                        if (tempMark.has(prepId)) { return; }
                         if (!allPrepsAndGarnishes.has(prepId)) return;
                         tempMark.add(prepId);
                         (deps.get(prepId) || []).forEach(visit);
