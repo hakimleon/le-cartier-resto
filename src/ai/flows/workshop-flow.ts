@@ -47,6 +47,7 @@ export const PreparationConceptOutputSchema = z.object({
     
     duration: z.number().int().describe("Durée totale de production en minutes."),
     difficulty: z.enum(['Facile', 'Moyen', 'Difficile']).describe("Niveau de difficulté."),
+    mode_preparation: z.enum(['avance', 'minute', 'mixte']).optional().describe("Le mode de préparation déduit par l'IA."),
     
     portions: z.number().int().optional().describe("Nombre de portions ou de 'parts' que la recette peut produire. Important pour les purées, sauces, etc."),
     productionQuantity: z.number().optional().describe("Quantité totale produite."),
@@ -85,6 +86,7 @@ export const RecipeConceptOutputSchema = z.object({
     
     duration: z.number().int().describe("Durée totale en minutes."),
     difficulty: z.enum(['Facile', 'Moyen', 'Difficile']).describe("Niveau de difficulté."),
+    mode_preparation: z.enum(['avance', 'minute', 'mixte']).optional().describe("Le mode de préparation déduit par l'IA."),
     
     category: z.enum(dishCategories).describe("Catégorie du plat."),
     portions: z.number().int().describe("Nombre de portions pour ce plat."),
