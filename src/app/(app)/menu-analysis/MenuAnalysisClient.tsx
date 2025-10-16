@@ -4,8 +4,8 @@
 import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Euro, TrendingUp, Info, Sparkles, BrainCircuit, Loader2, CalendarClock, Target, ListChecks, Percent, Puzzle, DollarSign, Users, Package } from 'lucide-react';
-import type { SummaryData, ProductionData, MutualisationData, PlanningTask, PerformanceData } from './page';
+import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Euro, TrendingUp, Info, Sparkles, BrainCircuit, Loader2, CalendarClock, Target, ListChecks, Percent, Puzzle, DollarSign, Users, Package, Lightbulb } from 'lucide-react';
+import type { SummaryData, ProductionData, MutualisationData, PlanningTask } from './page';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -17,46 +17,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { getAIRecommendations } from './actions';
 import { useToast } from '@/hooks/use-toast';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
 
-
-const iconMap = {
-  "Optimisation": DollarSign,
-  "Gestion": Users,
-  "Production": Package,
-  "Default": Sparkles,
-};
-
-const ARecommandationRenderer = ({ text }: { text: string }) => {
-    // Split the text into sections based on the numbered points
-    const sections = text.split(/\n(?=\d\.\s)/).filter(s => s.trim());
-
-    return (
-        <div className="space-y-6">
-            {sections.map((section, index) => {
-                const lines = section.replace(/^\d\.\s/, '').trim().split('\n');
-                const title = lines[0];
-                const content = lines.slice(1).join('\n').trim();
-
-                let Icon = iconMap["Default"];
-                if (title.toLowerCase().includes('optimisation')) Icon = iconMap["Optimisation"];
-                else if (title.toLowerCase().includes('gestion')) Icon = iconMap["Gestion"];
-                else if (title.toLowerCase().includes('production')) Icon = iconMap["Production"];
-
-                return (
-                    <div key={index} className="space-y-2">
-                        <h4 className="font-semibold text-base flex items-center gap-2">
-                            <Icon className="h-5 w-5 text-primary" />
-                            {title}
-                        </h4>
-                        <p className="text-sm text-muted-foreground pl-7">
-                            {content}
-                        </p>
-                    </div>
-                )
-            })}
-        </div>
-    );
-};
 
 interface MenuAnalysisClientProps {
     summary: SummaryData;
@@ -66,9 +28,19 @@ interface MenuAnalysisClientProps {
     initialError: string | null;
 }
 
+// Types for the new AI output structure
+interface DishReengineering {
+  id: string;
+  name: string;
+  priority: 'Urgent' | 'Moyen' | 'Bon';
+  suggestion: string;
+  impact: string;
+}
+
 interface AIResults {
-    recommandations: string;
-    planning: PlanningTask[];
+    strategic_recommendations: string;
+    dish_reengineering: DishReengineering[];
+    production_planning_suggestions: PlanningTask[];
 }
 
 export default function MenuAnalysisClient({ summary, productionData, mutualisationData, performanceData, initialError }: MenuAnalysisClientProps) {
@@ -87,6 +59,16 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
         if (priority === 2) return <Badge variant="secondary" className="bg-orange-100 text-orange-800">Moyenne</Badge>
         return <Badge variant="outline">Basse</Badge>
     }
+    
+    const getReengineeringPriorityBadge = (priority: 'Urgent' | 'Moyen' | 'Bon') => {
+        switch (priority) {
+            case 'Urgent': return <Badge variant="destructive">🔴 Urgent</Badge>;
+            case 'Moyen': return <Badge variant="secondary" className="bg-orange-100 text-orange-800">🟠 Moyen</Badge>;
+            case 'Bon': return <Badge variant="secondary" className="bg-green-100 text-green-800">🟢 Bon</Badge>;
+            default: return <Badge variant="outline">{priority}</Badge>;
+        }
+    }
+
 
     const handleAIAnalysis = () => {
         setAiResults(null);
@@ -140,15 +122,49 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
             )}
 
             {aiResults && (
-                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 items-start">
+                 <div className="space-y-6">
                     <Card className="border-primary/20 bg-primary/5">
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-primary"><Sparkles /> Recommandations Stratégiques</CardTitle>
                         </CardHeader>
                         <CardContent>
-                           <ARecommandationRenderer text={aiResults.recommandations} />
+                           <div className="prose prose-sm max-w-none text-muted-foreground"><MarkdownRenderer text={aiResults.strategic_recommendations} /></div>
                         </CardContent>
                     </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><Lightbulb /> Réingénierie des Plats</CardTitle>
+                            <CardDescription>Suggestions d'optimisation pour les plats, classées par priorité.</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <Table>
+                            <TableHeader>
+                                <TableRow>
+                                <TableHead>Plat</TableHead>
+                                <TableHead>Priorité</TableHead>
+                                <TableHead>Suggestion d'Action</TableHead>
+                                <TableHead>Impact Attendu</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {aiResults.dish_reengineering && aiResults.dish_reengineering.length > 0 ? (
+                                aiResults.dish_reengineering.map((dish) => (
+                                    <TableRow key={dish.id}>
+                                    <TableCell className="font-medium">{dish.name}</TableCell>
+                                    <TableCell>{getReengineeringPriorityBadge(dish.priority)}</TableCell>
+                                    <TableCell>{dish.suggestion}</TableCell>
+                                    <TableCell className="font-semibold text-green-600">{dish.impact}</TableCell>
+                                    </TableRow>
+                                ))
+                                ) : (
+                                <TableRow><TableCell colSpan={4}>Aucune suggestion spécifique pour les plats.</TableCell></TableRow>
+                                )}
+                            </TableBody>
+                            </Table>
+                        </CardContent>
+                    </Card>
+
                      <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><CalendarClock /> Planning de Production Suggéré</CardTitle>
@@ -164,7 +180,7 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
                                    </TableRow>
                                </TableHeader>
                                <TableBody>
-                                   {aiResults.planning && aiResults.planning.length > 0 ? aiResults.planning.map((task, index) => (
+                                   {aiResults.production_planning_suggestions && aiResults.production_planning_suggestions.length > 0 ? aiResults.production_planning_suggestions.map((task, index) => (
                                        <TableRow key={index}>
                                            <TableCell className="font-medium">{task.heure}</TableCell>
                                            <TableCell><Badge variant="outline">{task.poste}</Badge></TableCell>
@@ -198,7 +214,7 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
                             <p className="text-2xl font-bold">{summary.totalDishes}</p>
                         </Card>
                          <Card className="p-4">
-                            <CardDescription className="flex items-center gap-2 text-sm"><Clock /> Durée Moyenne</CardDescription>
+                            <CardDescription className="flex items-center gap-2 text-sm"><Clock /> Durée Pondérée Moyenne</CardDescription>
                             <p className="text-2xl font-bold">{summary.averageDuration.toFixed(0)} <span className="text-base text-muted-foreground">min</span></p>
                         </Card>
                     </CardContent>
@@ -289,7 +305,7 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
                         <TableHeader>
                             <TableRow>
                                 <TableHead className="w-1/3">Plat</TableHead>
-                                <TableHead>Temps Total</TableHead>
+                                <TableHead>Temps Pondéré</TableHead>
                                 <TableHead>Coût Portion</TableHead>
                                 <TableHead>Marge Brute</TableHead>
                                 <TableHead className="text-right">Rendement (DZD/min)</TableHead>
@@ -339,5 +355,3 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
         </div>
     );
 }
-
-    

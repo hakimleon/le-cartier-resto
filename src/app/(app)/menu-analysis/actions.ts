@@ -10,22 +10,25 @@ type AnalysisInput = {
     mutualisations: MutualisationData[];
 }
 
+type DishReengineering = {
+  id: string;
+  name: string;
+  priority: 'Urgent' | 'Moyen' | 'Bon';
+  suggestion: string;
+  impact: string;
+}
+
 type AIResults = {
-    recommandations: string;
-    planning: PlanningTask[];
+    strategic_recommendations: string;
+    dish_reengineering: DishReengineering[];
+    production_planning_suggestions: PlanningTask[];
 }
 
 export async function getAIRecommendations(input: AnalysisInput): Promise<AIResults | {error: string}> {
     try {
+        // The flow now returns the new structure directly.
         const result = await menuAnalysisFlow(input);
-
-        // Nettoyage simple pour enlever les "###" et autres artefacts Markdown non désirés du titre
-        const cleanRecommandations = result.recommandations.replace(/###\s*/g, '');
-
-        return {
-            ...result,
-            recommandations: cleanRecommandations,
-        };
+        return result;
 
     } catch (e) {
         console.error("Error getting AI recommendations:", e);
@@ -35,5 +38,3 @@ export async function getAIRecommendations(input: AnalysisInput): Promise<AIResu
         return { error: "Une erreur inconnue est survenue lors de l'analyse par l'IA."};
     }
 }
-
-    
