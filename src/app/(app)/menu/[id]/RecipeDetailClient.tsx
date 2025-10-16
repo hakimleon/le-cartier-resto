@@ -51,6 +51,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { computeIngredientCost, getConversionFactor } from "@/utils/unitConverter";
 import { EditableIngredientRow, NewIngredientRow } from "@/app/(app)/menu/[id]/IngredientRow";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
@@ -596,7 +597,7 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         setIsSaving(true);
         try {
             const recipeDataToSave = {
-                name: editableRecipe.name, description: editableRecipe.description, difficulty: editableRecipe.difficulty, duration: editableRecipe.duration, procedure_fabrication: editableRecipe.procedure_fabrication, procedure_service: editableRecipe.procedure_service, imageUrl: editableRecipe.imageUrl, personalNotes: editableRecipe.personalNotes,
+                name: editableRecipe.name, description: editableRecipe.description, difficulty: editableRecipe.difficulty, duration: editableRecipe.duration, procedure_fabrication: editableRecipe.procedure_fabrication, procedure_service: editableRecipe.procedure_service, imageUrl: editableRecipe.imageUrl, personalNotes: editableRecipe.personalNotes, mode_preparation: editableRecipe.mode_preparation,
                 ...(editableRecipe.type === 'Plat' ? { portions: editableRecipe.portions, tvaRate: editableRecipe.tvaRate, price: editableRecipe.price, commercialArgument: editableRecipe.commercialArgument, status: editableRecipe.status, category: editableRecipe.category, } : { productionQuantity: (editableRecipe as Preparation).productionQuantity, productionUnit: (editableRecipe as Preparation).productionUnit, usageUnit: (editableRecipe as Preparation).usageUnit, })
             };
             await updateRecipeDetails(recipeId, recipeDataToSave, collectionName);
@@ -801,6 +802,32 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                 </div>
             </header>
 
+            {isEditing && (
+                <Card className="border-blue-200 bg-blue-50/50">
+                    <CardContent className="p-4">
+                        <Label>Mode de Préparation</Label>
+                        <RadioGroup
+                            value={editableRecipe?.mode_preparation}
+                            onValueChange={(value) => handleRecipeDataChange('mode_preparation', value)}
+                            className="flex flex-col sm:flex-row gap-4 mt-2"
+                        >
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="avance" id="avance" />
+                                <Label htmlFor="avance" className="font-normal">À l'avance <span className="text-xs text-muted-foreground">- (Fonds, sauces, stockage)</span></Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="mixte" id="mixte" />
+                                <Label htmlFor="mixte" className="font-normal">Mixte <span className="text-xs text-muted-foreground">- (Pré-cuit puis finalisé minute)</span></Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <RadioGroupItem value="minute" id="minute" />
+                                <Label htmlFor="minute" className="font-normal">À la minute <span className="text-xs text-muted-foreground">- (Cuisson, dressage, émulsion)</span></Label>
+                            </div>
+                        </RadioGroup>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Main Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
@@ -887,8 +914,8 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
                                             ing={ing}
                                             handleIngredientChange={handleIngredientChange}
                                             handleRemoveExistingIngredient={handleRemoveExistingIngredient}
+                                            handleOpenEditIngredientModal={handleOpenEditIngredientModal}
                                             sortedIngredients={sortedIngredients}
-                                            onEditIngredient={handleOpenEditIngredientModal}
                                         />
                                     )) : ingredients.map(ing => (
                                         <TableRow key={ing.recipeIngredientId}><TableCell className="font-medium">{ing.name}</TableCell><TableCell>{ing.quantity}</TableCell><TableCell>{ing.unit}</TableCell><TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell></TableRow>
@@ -1088,4 +1115,3 @@ function RecipeDetailSkeleton() {
     );
 }
 
-    
