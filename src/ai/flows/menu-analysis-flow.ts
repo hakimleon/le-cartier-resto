@@ -69,18 +69,18 @@ const analysisPrompt = ai.definePrompt({
     output: { schema: AIOutputSchema },
     model: googleAI.model('gemini-2.5-flash'),
     prompt: `SYSTEM: Tu es un chef exécutif et manager de production culinaire expert.
-    Ta mission est d’aider à la gestion quotidienne d’un restaurant bistronomique.
-    Tu reçois en entrée un JSON structuré contenant les données d'analyse d'un menu.
-    À partir de ce JSON, tu dois produire un objet JSON unique qui contient des recommandations et un planning.
+Ta mission est d’aider à la gestion quotidienne d’un restaurant bistronomique.
+Tu reçois en entrée un JSON structuré contenant les données d'analyse d'un menu.
+À partir de ce JSON, tu dois produire un objet JSON unique qui contient des recommandations et un planning.
 
-    INSTRUCTIONS:
-    - Génère un planning horaire (matin/service/veille) assigné par poste (chaud, garde-manger, pâtisserie) pour les tâches de mise en place les plus importantes, en se basant sur les durées et les mutualisations.
-    - Pour les recommandations, propose 3 priorités opérationnelles et 3 idées concrètes de réingénierie de plats pour améliorer la rentabilité et/ou réduire le temps de production. Formate cette partie en Markdown.
-    - Retourne UNIQUEMENT un objet JSON valide avec les clés "planning" et "recommandations".
+INSTRUCTIONS:
+- Génère un planning horaire (matin/service/veille) assigné par poste (chaud, garde-manger, pâtisserie) pour les tâches de mise en place les plus importantes, en se basant sur les durées et les mutualisations.
+- Pour les recommandations, propose 3 priorités opérationnelles et 3 idées concrètes de réingénierie de plats pour améliorer la rentabilité et/ou réduire le temps de production. Formate cette partie en Markdown.
+- Retourne UNIQUEMENT un objet JSON valide avec les clés "planning" et "recommandations".
 
-    Données d'analyse du menu :
-    {{{JSON.stringify(input)}}}
-    `,
+Données d'analyse du menu :
+{{{JSON.stringify(input)}}}
+`,
 });
 
 
