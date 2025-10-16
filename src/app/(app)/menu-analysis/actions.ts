@@ -18,7 +18,15 @@ type AIResults = {
 export async function getAIRecommendations(input: AnalysisInput): Promise<AIResults | {error: string}> {
     try {
         const result = await menuAnalysisFlow(input);
-        return result;
+
+        // Nettoyage simple pour enlever les "###" et autres artefacts Markdown non désirés du titre
+        const cleanRecommandations = result.recommandations.replace(/###\s*/g, '');
+
+        return {
+            ...result,
+            recommandations: cleanRecommandations,
+        };
+
     } catch (e) {
         console.error("Error getting AI recommendations:", e);
         if (e instanceof Error) {
@@ -27,3 +35,5 @@ export async function getAIRecommendations(input: AnalysisInput): Promise<AIResu
         return { error: "Une erreur inconnue est survenue lors de l'analyse par l'IA."};
     }
 }
+
+    

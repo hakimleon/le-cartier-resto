@@ -1,11 +1,10 @@
 
-
 "use client";
 
 import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Euro, TrendingUp, Info, Sparkles, BrainCircuit, Loader2, CalendarClock, Target, ListChecks, Percent, Puzzle } from 'lucide-react';
+import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Euro, TrendingUp, Info, Sparkles, BrainCircuit, Loader2, CalendarClock, Target, ListChecks, Percent, Puzzle, DollarSign, Users, Package } from 'lucide-react';
 import type { SummaryData, ProductionData, MutualisationData, PlanningTask, PerformanceData } from './page';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -17,9 +16,47 @@ import {
 } from "@/components/ui/tooltip";
 import { Button } from '@/components/ui/button';
 import { getAIRecommendations } from './actions';
-import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { useToast } from '@/hooks/use-toast';
 
+
+const iconMap = {
+  "Optimisation": DollarSign,
+  "Gestion": Users,
+  "Production": Package,
+  "Default": Sparkles,
+};
+
+const ARecommandationRenderer = ({ text }: { text: string }) => {
+    // Split the text into sections based on the numbered points
+    const sections = text.split(/\n(?=\d\.\s)/).filter(s => s.trim());
+
+    return (
+        <div className="space-y-6">
+            {sections.map((section, index) => {
+                const lines = section.replace(/^\d\.\s/, '').trim().split('\n');
+                const title = lines[0];
+                const content = lines.slice(1).join('\n').trim();
+
+                let Icon = iconMap["Default"];
+                if (title.toLowerCase().includes('optimisation')) Icon = iconMap["Optimisation"];
+                else if (title.toLowerCase().includes('gestion')) Icon = iconMap["Gestion"];
+                else if (title.toLowerCase().includes('production')) Icon = iconMap["Production"];
+
+                return (
+                    <div key={index} className="space-y-2">
+                        <h4 className="font-semibold text-base flex items-center gap-2">
+                            <Icon className="h-5 w-5 text-primary" />
+                            {title}
+                        </h4>
+                        <p className="text-sm text-muted-foreground pl-7">
+                            {content}
+                        </p>
+                    </div>
+                )
+            })}
+        </div>
+    );
+};
 
 interface MenuAnalysisClientProps {
     summary: SummaryData;
@@ -108,8 +145,8 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2 text-primary"><Sparkles /> Recommandations Stratégiques</CardTitle>
                         </CardHeader>
-                        <CardContent className="prose prose-sm max-w-none text-foreground">
-                            <MarkdownRenderer text={aiResults.recommandations} />
+                        <CardContent>
+                           <ARecommandationRenderer text={aiResults.recommandations} />
                         </CardContent>
                     </Card>
                      <Card>
@@ -301,3 +338,6 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
             </Card>
         </div>
     );
+}
+
+    
