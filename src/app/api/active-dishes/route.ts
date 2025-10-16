@@ -38,10 +38,15 @@ export async function GET(req: NextRequest) {
     );
 
     const querySnapshot = await getDocs(recipesQuery);
-    const activeDishes = querySnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Recipe[];
+    const activeDishes = querySnapshot.docs.map(doc => {
+      const data = doc.data();
+      // Omitting the requested fields
+      const { commercialArgument, imageUrl, ...rest } = data;
+      return {
+        id: doc.id,
+        ...rest,
+      };
+    }) as Omit<Recipe, 'commercialArgument' | 'imageUrl'>[];
 
     return NextResponse.json(activeDishes);
   } catch (error) {
