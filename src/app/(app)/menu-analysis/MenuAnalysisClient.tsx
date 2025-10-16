@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useTransition } from 'react';
@@ -142,7 +141,7 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
                                                 </AccordionTrigger>
                                                 <AccordionContent className="pt-2">
                                                     <ul className="list-disc pl-5 text-xs text-muted-foreground">
-                                                        {item.dishes.map(dish => <li key={dish}>{dish}</li>)}
+                                                        {item.dishes && item.dishes.map(dish => <li key={dish}>{dish}</li>)}
                                                     </ul>
                                                 </AccordionContent>
                                             </AccordionItem>
