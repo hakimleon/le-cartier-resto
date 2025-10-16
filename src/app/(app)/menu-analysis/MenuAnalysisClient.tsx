@@ -1,10 +1,8 @@
-
 "use client";
 
 import { useState, useTransition, useEffect } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { ai } from '@/ai/genkit';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Sparkles, BrainCircuit, Loader2, CalendarClock, Target, Lightbulb } from 'lucide-react';
