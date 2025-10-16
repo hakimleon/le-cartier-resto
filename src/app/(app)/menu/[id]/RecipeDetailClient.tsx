@@ -12,7 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, Euro, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle, FishSymbol, Pencil, BrainCircuit, Loader2 } from "lucide-react";
+import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle, FishSymbol, Pencil, BrainCircuit, Loader2 } from "lucide-react";
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -775,6 +775,15 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
     return (
         <div className="space-y-4">
             <IngredientModal
+                open={isNewIngredientModalOpen}
+                onOpenChange={setIsNewIngredientModalOpen}
+                ingredient={newIngredientDefaults}
+                onSuccess={(newDbIng) => { if(newDbIng && currentTempId) { handleCreateAndLinkIngredient(currentTempId, newDbIng) }}}
+            >
+                <div />
+            </IngredientModal>
+
+            <IngredientModal
                 open={!!editingIngredient}
                 onOpenChange={(isOpen) => !isOpen && setEditingIngredient(null)}
                 ingredient={editingIngredient}
@@ -1172,4 +1181,3 @@ function RecipeDetailSkeleton() {
     );
 }
 
-    

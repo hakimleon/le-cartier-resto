@@ -44,7 +44,7 @@ function getFactor(from: string, to: string, equivalences: Record<string, string
 }
 
 
-export function getConversionFactor(fromUnit: string, toUnit: string, ingredient?: Ingredient): number {
+export function getConversionFactor(fromUnit: string, toUnit: string, ingredient?: Partial<Pick<Ingredient, 'baseUnit' | 'equivalences'>>): number {
     const f = fromUnit.toLowerCase().trim();
     const t = toUnit.toLowerCase().trim();
     const equivalences = ingredient?.equivalences || {};
@@ -71,7 +71,7 @@ export function getConversionFactor(fromUnit: string, toUnit: string, ingredient
 }
 
 export function convertQuantity(
-    ingredient: Ingredient,
+    ingredient: Partial<Pick<Ingredient, 'baseUnit' | 'equivalences'>>,
     quantity: number,
     fromUnit: string,
     toUnit: string
@@ -81,7 +81,7 @@ export function convertQuantity(
 }
 
 export function computeIngredientCost(
-    ingredient: Ingredient,
+    ingredient: Pick<Ingredient, 'purchasePrice' | 'purchaseWeightGrams' | 'yieldPercentage' | 'baseUnit' | 'equivalences'>,
     usedQuantity: number,
     usedUnit: string
 ): { cost: number; error?: string } {
