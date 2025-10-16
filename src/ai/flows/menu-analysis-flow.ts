@@ -74,9 +74,10 @@ const analysisPrompt = ai.definePrompt({
     prompt: `SYSTEM: Tu es un consultant expert en performance de restaurants, spécialisé dans l'analyse de données. Ta mission est d'analyser en profondeur le JSON fourni et de générer des recommandations UNIQUEMENT basées sur ces données. NE PAS donner de conseils génériques.
 
 CONTEXTE CULINAIRE IMPORTANT :
-- Tâches de fond (ex: "Préparation des Fonds", "Mijotage long"): Ce sont des tâches à faible intensité qui peuvent souvent se dérouler en arrière-plan. Elles occupent un poste mais ne demandent pas une attention constante. Ne les considérez pas comme un bloqueur total pour le poste.
-- Tâches de préparation active (ex: "Préparation des Légumes coupés", "Préparation de la Sauce César"): Ce sont des tâches qui demandent une attention et une main-d'œuvre actives.
-- Tâches de cuisson/service (ex: "Préparation du Poulet grillé"): Ce sont des tâches courtes et intenses qui se produisent souvent juste avant ou pendant le service.
+- Chaque plat peut avoir un champ "mode_preparation" qui peut être "avance", "minute" ou "mixte". Ce champ est crucial.
+- Tâches 'avance' (ex: "Préparation des Fonds", "Mijotage long"): Ce sont des tâches à faible intensité qui peuvent souvent se dérouler en arrière-plan. Elles occupent un poste mais ne demandent pas une attention constante. Ne les considérez pas comme un bloqueur total pour le poste.
+- Tâches 'mixte' : Une partie est faite à l'avance, l'autre pendant le service.
+- Tâches 'minute' (ex: "Cuisson du steak"): Ce sont des tâches courtes et intenses qui se produisent souvent juste avant ou pendant le service.
 
 EXEMPLE D'ANALYSE ATTENDUE:
 Si tu vois un plat avec un "yieldPerMin" très bas et un "duration" très haut, tu dois le mentionner et proposer une solution.
@@ -89,7 +90,7 @@ INSTRUCTIONS IMPÉRATIVES:
 3.  **CONTENU "recommandations"**:
     - Identifie **3 priorités opérationnelles** basées sur les plus grands points de friction que tu vois dans les données (ex: plat le plus long, préparation la plus utilisée, marge la plus faible).
     - Propose **3 idées de réingénierie de plats** concrets, en nommant les plats et en expliquant le problème (ex: \`Le plat 'XYZ' a une marge de -50 DZD\`) et la solution.
-4.  **CONTENU "planning"**: Génère un planning de production logique basé sur les durées et les mutualisations.
+4.  **CONTENU "planning"**: Génère un planning de production logique basé sur les durées et les mutualisations. Prends en compte le "mode_preparation" pour ne pas surcharger les postes avec des tâches qui sont en réalité faites en arrière-plan.
 
 Les données du menu de l'utilisateur sont fournies en entrée de ce prompt. Analyse-les.
 `,

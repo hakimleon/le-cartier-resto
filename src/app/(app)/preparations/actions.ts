@@ -9,16 +9,17 @@ import type { Preparation, PreparationCategory } from '@/lib/types';
  * Sauvegarde une préparation (crée ou met à jour).
  */
 export async function savePreparation(preparation: Partial<Omit<Preparation, 'id'>>, id: string | null): Promise<Preparation> {
-  const dataToSave = {
+  const dataToSave: Partial<Preparation> = {
     name: preparation.name || 'Nouvelle Préparation',
     description: preparation.description || '',
     category: preparation.category || 'Sauces chaudes', // Default category
     type: 'Préparation' as const,
-    difficulty: 'Moyen',
-    duration: 0,
-    productionQuantity: 1,
-    productionUnit: 'Unité',
-    usageUnit: 'g',
+    difficulty: preparation.difficulty || 'Moyen',
+    duration: preparation.duration || 0,
+    productionQuantity: preparation.productionQuantity || 1,
+    productionUnit: preparation.productionUnit || 'Unité',
+    usageUnit: preparation.usageUnit || 'g',
+    mode_preparation: preparation.mode_preparation || 'avance',
   };
 
   let savedPreparation: Preparation;

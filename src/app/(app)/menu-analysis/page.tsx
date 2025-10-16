@@ -18,12 +18,13 @@ export type ProductionData = {
     id: string;
     name: string;
     category: string;
-    duration: number;
+    duration: number; // Durée PONDÉRÉE pour la charge de travail du service
     duration_breakdown: { mise_en_place: number; cuisson: number; envoi: number; };
     foodCost: number; // Coût matière par portion
     grossMargin: number; // Marge brute par portion
     yieldPerMin: number; // Rendement en €/min
     price: number;
+    mode_preparation?: 'avance' | 'minute' | 'mixte';
 };
 
 export type MutualisationData = {
@@ -85,17 +86,6 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
         });
 
         const activeRecipes = recipesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Recipe));
-
-        // --- Volet 1: Calcul du Résumé (Summary) ---
-        const summary: SummaryData = {
-            totalDishes: activeRecipes.length,
-            averageDuration: activeRecipes.reduce((acc, doc) => acc + (doc.duration || 0), 0) / (activeRecipes.length || 1),
-            categoryCount: activeRecipes.reduce((acc, doc) => {
-                const cat = doc.category || 'Non classé';
-                acc[cat] = (acc[cat] || 0) + 1;
-                return acc;
-            }, {} as Record<string, number>),
-        };
         
         // --- Calcul des coûts de toutes les préparations ---
         const prepCosts = new Map<string, number>(); // Map<prepId, costPerProductionUnit>
@@ -150,6 +140,27 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
         const prepUsageCount = new Map<string, { name: string, dishes: string[] }>();
         const production: ProductionData[] = [];
 
+        // Fonction récursive pour calculer la durée pondérée
+        const getWeightedDuration = (itemId: string, itemType: 'recipe' | 'prep'): number => {
+            const item = itemType === 'recipe' ? activeRecipes.find(r => r.id === itemId) : allPrepsAndGarnishes.get(itemId);
+            if (!item) return 0;
+            
+            let weightedTime = 0;
+            const mode = item.mode_preparation || (item.type === 'Plat' ? 'minute' : 'avance');
+            const itemDuration = item.duration || 0;
+
+            if (mode === 'minute') weightedTime += itemDuration;
+            if (mode === 'mixte') weightedTime += itemDuration * 0.5;
+
+            const subPreps = allRecipePreps.get(item.id!) || [];
+            for (const subPrepLink of subPreps) {
+                weightedTime += getWeightedDuration(subPrepLink.childPreparationId, 'prep');
+            }
+
+            return weightedTime;
+        };
+
+
         for (const recipe of activeRecipes) {
             let dishTotalCost = 0;
             const dishIngredients = allRecipeIngredients.get(recipe.id) || [];
@@ -163,13 +174,11 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 const prepData = allPrepsAndGarnishes.get(link.childPreparationId);
                 const costPerUnit = prepCosts.get(link.childPreparationId) || 0;
                 if (prepData) {
-                    // Track for mutualization
                     if (!prepUsageCount.has(prepData.id!)) {
                         prepUsageCount.set(prepData.id!, { name: prepData.name, dishes: [] });
                     }
                     prepUsageCount.get(prepData.id!)!.dishes.push(recipe.name);
                     
-                    // Add to cost
                     const factor = getConversionFactor(link.unitUse, prepData.productionUnit!, prepData);
                     dishTotalCost += (link.quantity * factor) * costPerUnit;
                 }
@@ -178,7 +187,9 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             const foodCostPerPortion = dishTotalCost / (recipe.portions || 1);
             const priceHT = (recipe.price || 0) / (1 + (recipe.tvaRate || 10) / 100);
             const grossMargin = priceHT - foodCostPerPortion;
-            const yieldPerMin = recipe.duration ? grossMargin / recipe.duration : 0;
+            
+            const weightedDuration = getWeightedDuration(recipe.id!, 'recipe');
+            const yieldPerMin = weightedDuration > 0 ? grossMargin / weightedDuration : 0;
 
             let breakdown = recipe.duration_breakdown;
             if (!breakdown) {
@@ -190,12 +201,13 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 id: recipe.id,
                 name: recipe.name,
                 category: recipe.category,
-                duration: recipe.duration || 0,
+                duration: weightedDuration, // Utilisation de la durée pondérée
                 duration_breakdown: breakdown,
                 foodCost: foodCostPerPortion,
                 grossMargin: grossMargin,
                 yieldPerMin: yieldPerMin,
                 price: recipe.price || 0,
+                mode_preparation: recipe.mode_preparation,
             });
         };
         
@@ -216,6 +228,17 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             }
         }
         mutualisations.sort((a,b) => b.dishCount - a.dishCount);
+
+        // --- Volet 1: Résumé (mis à jour avec durée pondérée) ---
+        const summary: SummaryData = {
+            totalDishes: activeRecipes.length,
+            averageDuration: production.reduce((acc, p) => acc + p.duration, 0) / (production.length || 1),
+            categoryCount: activeRecipes.reduce((acc, doc) => {
+                const cat = doc.category || 'Non classé';
+                acc[cat] = (acc[cat] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>),
+        };
 
         // --- Volet 7: PERFORMANCE ---
         const totalGrossMargin = production.reduce((acc, p) => acc + p.grossMargin, 0);
