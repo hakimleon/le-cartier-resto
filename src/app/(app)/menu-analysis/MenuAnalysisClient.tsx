@@ -1,9 +1,10 @@
 
 "use client";
 
+import { useState, useTransition } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Euro, TrendingUp, Info } from 'lucide-react';
+import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Euro, TrendingUp, Info, Sparkles, BrainCircuit, Loader2 } from 'lucide-react';
 import type { SummaryData, ProductionData, MutualisationData } from './page';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +13,12 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from "@/components/ui/tooltip"
+} from "@/components/ui/tooltip";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Button } from '@/components/ui/button';
+import { getAIRecommendations } from './actions';
+import MarkdownRenderer from '@/components/MarkdownRenderer';
+
 
 interface MenuAnalysisClientProps {
     summary: SummaryData;
@@ -22,18 +28,38 @@ interface MenuAnalysisClientProps {
 }
 
 export default function MenuAnalysisClient({ summary, productionData, mutualisationData, initialError }: MenuAnalysisClientProps) {
-    
+    const [isAnalyzing, startTransition] = useTransition();
+    const [aiRecommendations, setAiRecommendations] = useState<string | null>(null);
+
     const getYieldBadgeVariant = (yieldPerMin: number): "default" | "secondary" | "destructive" => {
-        if (yieldPerMin > 1) return "default";
-        if (yieldPerMin > 0.5) return "secondary";
+        if (yieldPerMin > 100) return "default";
+        if (yieldPerMin > 50) return "secondary";
         return "destructive";
+    }
+
+    const handleAIAnalysis = () => {
+        setAiRecommendations(null);
+        startTransition(async () => {
+            const result = await getAIRecommendations({
+                summary,
+                production: productionData,
+                mutualisations: mutualisationData,
+            });
+            setAiRecommendations(result);
+        });
     }
     
     return (
         <div className="space-y-6">
-            <header>
-                <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Analyse du Menu</h1>
-                <p className="text-muted-foreground">Synthèse, production et rentabilité de vos plats actifs.</p>
+            <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Analyse du Menu</h1>
+                    <p className="text-muted-foreground">Synthèse, production et rentabilité de vos plats actifs.</p>
+                </div>
+                 <Button onClick={handleAIAnalysis} disabled={isAnalyzing}>
+                    {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <Sparkles className="mr-2 h-4 w-4" />}
+                    {isAnalyzing ? 'Analyse en cours...' : "Analyser avec l'IA"}
+                </Button>
             </header>
 
             {initialError && (
@@ -43,6 +69,26 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
                     <AlertDescription>{initialError}</AlertDescription>
                 </Alert>
             )}
+
+            {isAnalyzing && !aiRecommendations && (
+                <Card className="flex flex-col items-center justify-center p-8 text-center animate-pulse">
+                    <BrainCircuit className="h-10 w-10 text-primary mb-4"/>
+                    <p className="font-semibold">L'IA analyse votre menu...</p>
+                    <p className="text-sm text-muted-foreground">Calcul des optimisations, rentabilité et points de friction.</p>
+                </Card>
+            )}
+
+            {aiRecommendations && (
+                 <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-primary"><Sparkles /> Recommandations Stratégiques de l'IA</CardTitle>
+                    </CardHeader>
+                    <CardContent className="prose prose-sm max-w-none text-foreground">
+                        <MarkdownRenderer text={aiRecommendations} />
+                    </CardContent>
+                </Card>
+            )}
+
 
             {/* --- Volet 1: SUMMARY --- */}
             <Card>
@@ -72,7 +118,7 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
             {/* --- Volet 3: MUTUALISATIONS --- */}
             <Card>
                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><Recycle />Mutualisation des Préparations</CardTitle>
+                    <CardTitle className="flex items-center gap-2"><Recycle />Opportunités de Mutualisation</CardTitle>
                     <CardDescription>Détecte les préparations que vous pouvez produire en lot pour gagner du temps.</CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -81,36 +127,32 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
                             <TableRow>
                                 <TableHead className="w-1/3">Préparation</TableHead>
                                 <TableHead>Utilisée dans</TableHead>
-                                <TableHead>Plats Concernés</TableHead>
                                 <TableHead>Fréquence Suggérée</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
                             {mutualisationData.length > 0 ? mutualisationData.map(item => (
-                                <TableRow key={item.name}>
+                                <TableRow key={item.id}>
                                     <TableCell className="font-medium">{item.name}</TableCell>
-                                    <TableCell><Badge>{item.count} plats</Badge></TableCell>
                                     <TableCell>
-                                        <TooltipProvider>
-                                            <Tooltip>
-                                                <TooltipTrigger>
-                                                    <span className="text-sm text-muted-foreground underline decoration-dashed cursor-pointer">
-                                                        Voir les plats
-                                                    </span>
-                                                </TooltipTrigger>
-                                                <TooltipContent>
-                                                    <ul className="list-disc pl-4">
-                                                        {item.usedIn.map(dish => <li key={dish}>{dish}</li>)}
+                                        <Accordion type="single" collapsible className="w-full">
+                                            <AccordionItem value="item-1" className="border-b-0">
+                                                <AccordionTrigger className="py-1 hover:no-underline">
+                                                    <Badge>{item.dishCount} plats</Badge>
+                                                </AccordionTrigger>
+                                                <AccordionContent className="pt-2">
+                                                    <ul className="list-disc pl-5 text-xs text-muted-foreground">
+                                                        {item.dishes.map(dish => <li key={dish}>{dish}</li>)}
                                                     </ul>
-                                                </TooltipContent>
-                                            </Tooltip>
-                                        </TooltipProvider>
+                                                </AccordionContent>
+                                            </AccordionItem>
+                                        </Accordion>
                                     </TableCell>
                                     <TableCell><Badge variant="outline">{item.frequency}</Badge></TableCell>
                                 </TableRow>
                             )) : (
                                 <TableRow>
-                                    <TableCell colSpan={4} className="h-24 text-center">Aucune mutualisation évidente trouvée (minimum 2 plats).</TableCell>
+                                    <TableCell colSpan={3} className="h-24 text-center">Aucune mutualisation évidente trouvée (minimum 2 plats).</TableCell>
                                 </TableRow>
                             )}
                         </TableBody>
@@ -133,7 +175,7 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
                                 <TableHead>Temps Total</TableHead>
                                 <TableHead>Coût Portion</TableHead>
                                 <TableHead>Marge Brute</TableHead>
-                                <TableHead className="text-right">Rendement (€/min)</TableHead>
+                                <TableHead className="text-right">Rendement (DZD/min)</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
