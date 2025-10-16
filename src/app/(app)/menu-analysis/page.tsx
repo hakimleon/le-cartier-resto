@@ -140,6 +140,7 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
         const prepUsageCount = new Map<string, { name: string, dishes: string[] }>();
         const production: ProductionData[] = [];
 
+        // Helper function to calculate weighted duration recursively
         const getWeightedDuration = (itemId: string, itemType: 'recipe' | 'prep'): number => {
             const item = itemType === 'recipe' ? activeRecipes.find(r => r.id === itemId) : allPrepsAndGarnishes.get(itemId);
             if (!item) return 0;
@@ -148,9 +149,15 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             const mode = item.mode_preparation || (item.type === 'Plat' ? 'minute' : 'avance');
             const itemDuration = item.duration || 0;
 
-            if (mode === 'minute') weightedTime += itemDuration;
-            if (mode === 'mixte') weightedTime += itemDuration * 0.5;
+            // Apply weighting based on preparation mode
+            if (mode === 'minute') {
+                weightedTime += itemDuration;
+            } else if (mode === 'mixte') {
+                weightedTime += itemDuration * 0.5; // 50% for service time
+            }
+            // 'avance' adds 0
 
+            // Recursively add weighted time from sub-preparations
             const subPreps = allRecipePreps.get(item.id!) || [];
             for (const subPrepLink of subPreps) {
                 weightedTime += getWeightedDuration(subPrepLink.childPreparationId, 'prep');
