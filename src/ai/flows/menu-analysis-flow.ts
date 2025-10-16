@@ -1,4 +1,3 @@
-
 'use server';
 /**
  * @fileOverview Flow Genkit pour l'analyse stratégique du menu.
@@ -78,8 +77,7 @@ INSTRUCTIONS:
 - Pour les recommandations, propose 3 priorités opérationnelles et 3 idées concrètes de réingénierie de plats pour améliorer la rentabilité et/ou réduire le temps de production. Formate cette partie en Markdown.
 - Retourne UNIQUEMENT un objet JSON valide avec les clés "planning" et "recommandations".
 
-Données d'analyse du menu :
-{{{JSON.stringify(input)}}}
+Les données d'analyse du menu de l'utilisateur sont fournies en entrée de ce prompt. Tu dois les utiliser pour effectuer ton analyse.
 `,
 });
 

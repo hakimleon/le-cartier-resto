@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useTransition } from 'react';
@@ -17,6 +16,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { getAIRecommendations } from './actions';
 import MarkdownRenderer from '@/components/MarkdownRenderer';
+import { useToast } from '@/hooks/use-toast';
 
 
 interface MenuAnalysisClientProps {
@@ -34,6 +34,7 @@ interface AIResults {
 export default function MenuAnalysisClient({ summary, productionData, mutualisationData, initialError }: MenuAnalysisClientProps) {
     const [isAnalyzing, startTransition] = useTransition();
     const [aiResults, setAiResults] = useState<AIResults | null>(null);
+    const { toast } = useToast();
 
     const getYieldBadgeVariant = (yieldPerMin: number): "default" | "secondary" | "destructive" => {
         if (yieldPerMin > 100) return "default";
@@ -57,7 +58,11 @@ export default function MenuAnalysisClient({ summary, productionData, mutualisat
             });
             if ('error' in result) {
                  setAiResults(null);
-                 // You might want to show an error toast here
+                 toast({
+                    title: "Erreur d'analyse IA",
+                    description: result.error,
+                    variant: "destructive",
+                 });
                  console.error(result.error);
             } else {
                  setAiResults(result);
