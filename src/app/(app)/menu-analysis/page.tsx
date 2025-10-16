@@ -79,15 +79,13 @@ async function getMenuAnalysisData(): Promise<{ dishes: AnalyzedDish[], error: s
                 for (const prepLink of links.preparations) {
                      const prepOrGarnish = allPrepsAndGarnishes.get(prepLink.childPreparationId);
                      if (prepOrGarnish) {
-                        // Consider it an accompaniment if it's from the garnishes collection or a relevant prep category
                         const isGarnish = garnishesSnap.docs.some(d => d.id === prepLink.childPreparationId);
                         const relevantPrepCategories = ["Purées & mousselines", "Gratins & plats de légumes au four", "Céréales & féculents", "Légumineuses & accompagnements végétariens mijotés"];
-                        if(isGarnish || (prepOrGarnish.category && relevantPrepCategories.includes(prepOrGarnish.category))) {
+                        if(isGarnish || (prepOrGarnish.category && relevantPrepCategories.includes(prepOrGarnish.category as any))) {
                             if(!accompaniments.has(prepOrGarnish.id!)) {
                                 accompaniments.set(prepOrGarnish.id!, { id: prepOrGarnish.id!, name: prepOrGarnish.name, type: isGarnish ? 'Garniture' : 'Préparation' });
                             }
                         } else {
-                            // If it's not a final accompaniment, add it to the queue to check its ingredients
                             queue.push(prepLink.childPreparationId);
                         }
                      }

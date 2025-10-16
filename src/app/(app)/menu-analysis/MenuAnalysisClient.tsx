@@ -141,4 +141,3 @@ export default function MenuAnalysisClient({ analyzedDishes, initialError }: Men
         </div>
     );
 }
-
