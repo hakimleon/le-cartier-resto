@@ -1,7 +1,8 @@
 
+
 import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import type { Recipe, Ingredient, RecipeIngredientLink } from '@/lib/types';
+import type { Recipe, Ingredient, Preparation, RecipeIngredientLink, RecipePreparationLink } from '@/lib/types';
 import MenuAnalysisClient from './MenuAnalysisClient';
 import { computeIngredientCost } from '@/utils/unitConverter';
 
@@ -25,19 +26,31 @@ export type ProductionData = {
     price: number;
 };
 
+export type MutualisationData = {
+  name: string;
+  usedIn: string[];
+  count: number;
+  frequency: 'Quotidienne' | 'Fréquente' | 'Occasionnelle';
+  suggestedProduction: string;
+}
+
 // --- Logique de récupération et d'analyse des données ---
 
-async function getAnalysisData(): Promise<{ summary: SummaryData; production: ProductionData[], error: string | null }> {
+async function getAnalysisData(): Promise<{ summary: SummaryData; production: ProductionData[], mutualisations: MutualisationData[], error: string | null }> {
     try {
-        const [recipesSnap, ingredientsSnap, recipeIngsSnap, recipePrepsSnap] = await Promise.all([
+        const [recipesSnap, ingredientsSnap, preparationsSnap, recipeIngsSnap, recipePrepsSnap] = await Promise.all([
             getDocs(query(collection(db, "recipes"), where("type", "==", "Plat"), where("status", "==", "Actif"))),
             getDocs(collection(db, "ingredients")),
+            getDocs(collection(db, "preparations")),
             getDocs(collection(db, "recipeIngredients")),
             getDocs(collection(db, "recipePreparationLinks")),
         ]);
 
         const allIngredients = new Map(ingredientsSnap.docs.map(doc => [doc.id, { ...doc.data(), id: doc.id } as Ingredient]));
         const allIngredientLinks = recipeIngsSnap.docs.map(doc => doc.data() as RecipeIngredientLink);
+        
+        const allPreparations = new Map(preparationsSnap.docs.map(doc => [doc.id, { ...doc.data(), id: doc.id } as Preparation]));
+        const allPreparationLinks = recipePrepsSnap.docs.map(doc => doc.data() as RecipePreparationLink);
         
         // --- Volet 1: Calcul du Résumé (Summary) ---
         const totalDishes = recipesSnap.size;
@@ -57,12 +70,14 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             averageDuration: totalDishes > 0 ? totalDuration / totalDishes : 0,
             categoryCount,
         };
+        
+        // Map pour l'analyse des mutualisations
+        const mutualisationMap = new Map<string, { name: string, usedIn: Set<string> }>();
 
         // --- Volet 2: Calcul de la Vue Production ---
         const production: ProductionData[] = recipesSnap.docs.map(doc => {
             const recipe = { ...doc.data(), id: doc.id } as Recipe;
 
-            // Heuristique pour le découpage de la durée
             let breakdown = recipe.duration_breakdown;
             if (!breakdown) {
                 const d = recipe.duration || 0;
@@ -71,7 +86,6 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 else breakdown = { mise_en_place: d * 0.6, cuisson: d * 0.3, envoi: d * 0.1 };
             }
 
-            // Ingrédients et Coût
             const dishIngredientsLinks = allIngredientLinks.filter(l => l.recipeId === recipe.id);
             let foodCost = 0;
             const dishIngredientsWithCost = dishIngredientsLinks.map(link => {
@@ -89,6 +103,20 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 .slice(0, 3)
                 .map(i => i.name);
             
+             // Logique pour les sous-recettes et la mutualisation
+            const subRecipes = allPreparationLinks.filter(l => l.parentRecipeId === recipe.id);
+            const subRecipeNames = subRecipes.map(sr => {
+                const prep = allPreparations.get(sr.childPreparationId);
+                if(prep) {
+                    if(!mutualisationMap.has(prep.id!)) {
+                        mutualisationMap.set(prep.id!, { name: prep.name, usedIn: new Set() });
+                    }
+                    mutualisationMap.get(prep.id!)!.usedIn.add(recipe.name);
+                    return prep.name;
+                }
+                return 'Préparation inconnue';
+            });
+            
             return {
                 id: recipe.id,
                 name: recipe.name,
@@ -96,26 +124,50 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 duration: recipe.duration || 0,
                 duration_breakdown: breakdown,
                 keyIngredients: keyIngredients,
-                subRecipes: [], // A implémenter dans une prochaine étape
-                foodCost: foodCost / (recipe.portions || 1), // Coût par portion
+                subRecipes: subRecipeNames,
+                foodCost: foodCost / (recipe.portions || 1),
                 price: recipe.price || 0,
             };
         });
+        
+        // --- Volet 3: Calcul des Mutualisations ---
+        const mutualisations: MutualisationData[] = [];
+        for(const [id, data] of mutualisationMap.entries()) {
+            if (data.usedIn.size >= 2) {
+                let frequency: MutualisationData['frequency'] = 'Occasionnelle';
+                if(data.usedIn.size >= 4) {
+                    frequency = 'Quotidienne';
+                } else if (data.usedIn.size >= 2) {
+                    frequency = 'Fréquente';
+                }
+                
+                mutualisations.push({
+                    name: data.name,
+                    usedIn: Array.from(data.usedIn),
+                    count: data.usedIn.size,
+                    frequency: frequency,
+                    suggestedProduction: frequency === 'Quotidienne' ? 'Lot quotidien' : 'Lot tous les 2-3 jours'
+                });
+            }
+        }
+        mutualisations.sort((a,b) => b.count - a.count);
 
-        return { summary, production, error: null };
+
+        return { summary, production, mutualisations, error: null };
 
     } catch (error) {
         console.error("Error analyzing menu:", error);
         return {
             summary: { totalDishes: 0, averageDuration: 0, categoryCount: {} },
             production: [],
+            mutualisations: [],
             error: error instanceof Error ? `Erreur d'analyse: ${error.message}` : "Une erreur inconnue est survenue."
         };
     }
 }
 
 export default async function MenuAnalysisPage() {
-    const { summary, production, error } = await getAnalysisData();
+    const { summary, production, mutualisations, error } = await getAnalysisData();
     
-    return <MenuAnalysisClient summary={summary} productionData={production} initialError={error} />;
+    return <MenuAnalysisClient summary={summary} productionData={production} mutualisationData={mutualisations} initialError={error} />;
 }
