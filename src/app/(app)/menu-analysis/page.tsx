@@ -141,7 +141,13 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
         const production: ProductionData[] = [];
 
         // Helper function to calculate weighted duration recursively
-        const getWeightedDuration = (itemId: string, itemType: 'recipe' | 'prep'): number => {
+        const getWeightedDuration = (itemId: string, itemType: 'recipe' | 'prep', visited = new Set<string>()): number => {
+            if (visited.has(itemId)) {
+                console.warn(`Circular dependency detected and broken at item ID: ${itemId}`);
+                return 0; // Break the loop
+            }
+            visited.add(itemId);
+
             const item = itemType === 'recipe' ? activeRecipes.find(r => r.id === itemId) : allPrepsAndGarnishes.get(itemId);
             if (!item) return 0;
             
@@ -160,7 +166,8 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             // Recursively add weighted time from sub-preparations
             const subPreps = allRecipePreps.get(item.id!) || [];
             for (const subPrepLink of subPreps) {
-                weightedTime += getWeightedDuration(subPrepLink.childPreparationId, 'prep');
+                // Pass a new Set for the recursive call to allow the same prep to be used in different branches
+                weightedTime += getWeightedDuration(subPrepLink.childPreparationId, 'prep', new Set(visited));
             }
 
             return weightedTime;
