@@ -1,10 +1,12 @@
 
 "use client";
 
-import { useState, useTransition, useEffect, useMemo } from 'react';
+import { useState, useTransition, useEffect } from 'react';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '@/lib/firebase';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Euro, Sparkles, BrainCircuit, Loader2, CalendarClock, Target, ListChecks, Lightbulb } from 'lucide-react';
+import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Sparkles, BrainCircuit, Loader2, CalendarClock, Target, Lightbulb } from 'lucide-react';
 import type { Recipe, Ingredient, Preparation, RecipeIngredientLink, RecipePreparationLink } from '@/lib/types';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -21,7 +23,7 @@ import MarkdownRenderer from '@/components/MarkdownRenderer';
 import { getConversionFactor, computeIngredientCost } from '@/utils/unitConverter';
 import { Skeleton } from '@/components/ui/skeleton';
 
-// Re-defining data structures for the client-side
+// Data structures for analysis
 export type SummaryData = {
     totalDishes: number;
     averageDuration: number;
@@ -79,27 +81,11 @@ interface AIResults {
     production_planning_suggestions: PlanningTask[];
 }
 
-interface MenuAnalysisClientProps {
-    rawActiveRecipes: Recipe[];
-    rawIngredients: Ingredient[];
-    rawPreparations: Preparation[];
-    rawGarnishes: Preparation[];
-    rawRecipeIngredients: RecipeIngredientLink[];
-    rawRecipePreps: RecipePreparationLink[];
-    initialError: string | null;
-}
 
-export default function MenuAnalysisClient({ 
-    rawActiveRecipes, 
-    rawIngredients, 
-    rawPreparations,
-    rawGarnishes,
-    rawRecipeIngredients,
-    rawRecipePreps,
-    initialError 
-}: MenuAnalysisClientProps) {
+export default function MenuAnalysisClient() {
     const [isAnalyzingAI, startAIAnalysisTransition] = useTransition();
-    const [isCalculating, setIsCalculating] = useState(true);
+    const [isLoading, setIsLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const [summary, setSummary] = useState<SummaryData | null>(null);
     const [productionData, setProductionData] = useState<ProductionData[]>([]);
@@ -110,144 +96,172 @@ export default function MenuAnalysisClient({
     const { toast } = useToast();
 
     useEffect(() => {
-      setIsCalculating(true);
-      
-      const allIngredients = new Map(rawIngredients.map(doc => [doc.id!, doc]));
-      const allPrepsAndGarnishesList = [...rawPreparations, ...rawGarnishes];
-      const allPrepsAndGarnishes = new Map(allPrepsAndGarnishesList.map(p => [p.id!, p]));
-      
-      const allRecipeIngredientsMap = new Map<string, RecipeIngredientLink[]>();
-      rawRecipeIngredients.forEach(link => {
-          if (!allRecipeIngredientsMap.has(link.recipeId)) allRecipeIngredientsMap.set(link.recipeId, []);
-          allRecipeIngredientsMap.get(link.recipeId)!.push(link);
-      });
+        const performAnalysis = async () => {
+            try {
+                setIsLoading(true);
+                setError(null);
+                
+                // Fetch all data sequentially from the client
+                const recipesSnap = await getDocs(query(collection(db, "recipes"), where("type", "==", "Plat"), where("status", "==", "Actif")));
+                const ingredientsSnap = await getDocs(collection(db, "ingredients"));
+                const preparationsSnap = await getDocs(collection(db, "preparations"));
+                const garnishesSnap = await getDocs(collection(db, "garnishes"));
+                const recipeIngsSnap = await getDocs(collection(db, "recipeIngredients"));
+                const recipePrepsSnap = await getDocs(collection(db, "recipePreparationLinks"));
 
-      const allRecipePrepsMap = new Map<string, RecipePreparationLink[]>();
-      rawRecipePreps.forEach(link => {
-          if (!allRecipePrepsMap.has(link.parentRecipeId)) allRecipePrepsMap.set(link.parentRecipeId, []);
-          allRecipePrepsMap.get(link.parentRecipeId)!.push(link);
-      });
+                const rawActiveRecipes = recipesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Recipe));
+                const rawIngredients = ingredientsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Ingredient));
+                const rawPreparations = preparationsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+                const rawGarnishes = garnishesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation));
+                const rawRecipeIngredients = recipeIngsSnap.docs.map(doc => doc.data() as RecipeIngredientLink);
+                const rawRecipePreps = recipePrepsSnap.docs.map(doc => doc.data() as RecipePreparationLink);
+                
+                // === Start of calculation logic moved from server ===
+                const allIngredients = new Map(rawIngredients.map(doc => [doc.id!, doc]));
+                const allPrepsAndGarnishesList = [...rawPreparations, ...rawGarnishes];
+                const allPrepsAndGarnishes = new Map(allPrepsAndGarnishesList.map(p => [p.id!, p]));
+                
+                const allRecipeIngredientsMap = new Map<string, RecipeIngredientLink[]>();
+                rawRecipeIngredients.forEach(link => {
+                    if (!allRecipeIngredientsMap.has(link.recipeId)) allRecipeIngredientsMap.set(link.recipeId, []);
+                    allRecipeIngredientsMap.get(link.recipeId)!.push(link);
+                });
 
-      const prepCosts = new Map<string, number>();
-      const weightedDurationCache = new Map<string, number>();
+                const allRecipePrepsMap = new Map<string, RecipePreparationLink[]>();
+                rawRecipePreps.forEach(link => {
+                    if (!allRecipePrepsMap.has(link.parentRecipeId)) allRecipePrepsMap.set(link.parentRecipeId, []);
+                    allRecipePrepsMap.get(link.parentRecipeId)!.push(link);
+                });
 
-      const getWeightedDuration = (itemId: string, itemType: 'recipe' | 'prep', visited: Set<string>): number => {
-          if (visited.has(itemId)) { return 0; }
-          if (weightedDurationCache.has(itemId)) { return weightedDurationCache.get(itemId)!; }
-          visited.add(itemId);
-          const item = itemType === 'recipe' ? rawActiveRecipes.find(r => r.id === itemId) : allPrepsAndGarnishes.get(itemId);
-          if (!item) { visited.delete(itemId); return 0; }
-          let weightedTime = 0;
-          const mode = item.mode_preparation || (item.type === 'Plat' ? 'minute' : 'avance');
-          const itemDuration = Number(item.duration) || 0;
-          if (mode === 'minute') { weightedTime += itemDuration; }
-          else if (mode === 'mixte') { weightedTime += itemDuration * 0.5; }
-          const subPreps = allRecipePrepsMap.get(item.id!) || [];
-          for (const subPrepLink of subPreps) { weightedTime += getWeightedDuration(subPrepLink.childPreparationId, 'prep', visited); }
-          visited.delete(itemId);
-          weightedDurationCache.set(itemId, weightedTime);
-          return weightedTime;
-      };
+                const prepCosts = new Map<string, number>();
+                const weightedDurationCache = new Map<string, number>();
 
-      const sortedPrepsOrder: string[] = [];
-      (() => {
-          const deps = new Map<string, string[]>();
-          const permMark = new Set<string>();
-          const tempMark = new Set<string>();
-          allPrepsAndGarnishesList.forEach(p => { deps.set(p.id!, (allRecipePrepsMap.get(p.id!) || []).map(l => l.childPreparationId)); });
-          function visit(prepId: string) {
-              if (permMark.has(prepId)) return;
-              if (tempMark.has(prepId)) { return; }
-              if (!allPrepsAndGarnishes.has(prepId)) return;
-              tempMark.add(prepId);
-              (deps.get(prepId) || []).forEach(visit);
-              tempMark.delete(prepId);
-              permMark.add(prepId);
-              sortedPrepsOrder.push(prepId);
-          }
-          allPrepsAndGarnishesList.forEach(p => p.id && visit(p.id));
-      })();
+                const getWeightedDuration = (itemId: string, itemType: 'recipe' | 'prep', visited = new Set<string>()): number => {
+                    if (visited.has(itemId)) return 0;
+                    if (weightedDurationCache.has(itemId)) return weightedDurationCache.get(itemId)!;
+                    visited.add(itemId);
+                    const item = itemType === 'recipe' ? rawActiveRecipes.find(r => r.id === itemId) : allPrepsAndGarnishes.get(itemId);
+                    if (!item) { visited.delete(itemId); return 0; }
+                    let weightedTime = 0;
+                    const mode = item.mode_preparation || (item.type === 'Plat' ? 'minute' : 'avance');
+                    const itemDuration = Number(item.duration) || 0;
+                    if (mode === 'minute') weightedTime += itemDuration;
+                    else if (mode === 'mixte') weightedTime += itemDuration * 0.5;
+                    const subPreps = allRecipePrepsMap.get(item.id!) || [];
+                    for (const subPrepLink of subPreps) { weightedTime += getWeightedDuration(subPrepLink.childPreparationId, 'prep', visited); }
+                    visited.delete(itemId);
+                    weightedDurationCache.set(itemId, weightedTime);
+                    return weightedTime;
+                };
 
-      for (const prepId of sortedPrepsOrder) {
-          const prep = allPrepsAndGarnishes.get(prepId);
-          if (!prep) continue;
-          let totalCost = 0;
-          const directIngredients = allRecipeIngredientsMap.get(prepId) || [];
-          for (const ingLink of directIngredients) {
-              const ingData = allIngredients.get(ingLink.ingredientId);
-              if (ingData) totalCost += computeIngredientCost(ingData, Number(ingLink.quantity) || 0, ingLink.unitUse).cost;
-          }
-          const subPreps = allRecipePrepsMap.get(prepId) || [];
-          for (const subPrepLink of subPreps) {
-              const subPrepData = allPrepsAndGarnishes.get(subPrepLink.childPreparationId);
-              const costPerUnit = prepCosts.get(subPrepLink.childPreparationId) || 0;
-              if (subPrepData) {
-                  const factor = getConversionFactor(subPrepLink.unitUse, subPrepData.productionUnit!, subPrepData);
-                  totalCost += (Number(subPrepLink.quantity) * factor) * costPerUnit;
-              }
-          }
-          const productionQuantity = Number(prep.productionQuantity) || 1;
-          const costPerProductionUnit = productionQuantity > 0 ? totalCost / productionQuantity : 0;
-          prepCosts.set(prepId, isNaN(costPerProductionUnit) ? 0 : costPerProductionUnit);
-      }
+                const sortedPrepsOrder = (() => {
+                    const deps = new Map<string, string[]>();
+                    const order: string[] = [];
+                    const permMark = new Set<string>();
+                    const tempMark = new Set<string>();
+                    allPrepsAndGarnishesList.forEach(p => { deps.set(p.id!, (allRecipePrepsMap.get(p.id!) || []).map(l => l.childPreparationId)); });
+                    function visit(prepId: string) {
+                        if (permMark.has(prepId)) return;
+                        if (tempMark.has(prepId)) return;
+                        if (!allPrepsAndGarnishes.has(prepId)) return;
+                        tempMark.add(prepId);
+                        (deps.get(prepId) || []).forEach(visit);
+                        tempMark.delete(prepId);
+                        permMark.add(prepId);
+                        order.push(prepId);
+                    }
+                    allPrepsAndGarnishesList.forEach(p => p.id && visit(p.id));
+                    return order;
+                })();
 
-      const prepUsageCount = new Map<string, { name: string, dishes: string[] }>();
-      const tempProductionData: ProductionData[] = [];
-      for (const recipe of rawActiveRecipes) {
-          let dishTotalCost = 0;
-          (allRecipeIngredientsMap.get(recipe.id!) || []).forEach(link => {
-              const ingData = allIngredients.get(link.ingredientId);
-              if(ingData) dishTotalCost += computeIngredientCost(ingData, Number(link.quantity) || 0, link.unitUse).cost;
-          });
-          (allRecipePrepsMap.get(recipe.id!) || []).forEach(link => {
-              const prepData = allPrepsAndGarnishes.get(link.childPreparationId);
-              const costPerUnit = prepCosts.get(link.childPreparationId) || 0;
-              if (prepData) {
-                  if (!prepUsageCount.has(prepData.id!)) prepUsageCount.set(prepData.id!, { name: prepData.name, dishes: [] });
-                  prepUsageCount.get(prepData.id!)!.dishes.push(recipe.name);
-                  const factor = getConversionFactor(link.unitUse, prepData.productionUnit!, prepData);
-                  dishTotalCost += (Number(link.quantity) * factor) * costPerUnit;
-              }
-          });
+                for (const prepId of sortedPrepsOrder) {
+                    const prep = allPrepsAndGarnishes.get(prepId);
+                    if (!prep) continue;
+                    let totalCost = 0;
+                    const directIngredients = allRecipeIngredientsMap.get(prepId) || [];
+                    for (const ingLink of directIngredients) {
+                        const ingData = allIngredients.get(ingLink.ingredientId);
+                        if (ingData) totalCost += computeIngredientCost(ingData, Number(ingLink.quantity) || 0, ingLink.unitUse).cost;
+                    }
+                    const subPreps = allRecipePrepsMap.get(prepId) || [];
+                    for (const subPrepLink of subPreps) {
+                        const subPrepData = allPrepsAndGarnishes.get(subPrepLink.childPreparationId);
+                        const costPerUnit = prepCosts.get(subPrepLink.childPreparationId) || 0;
+                        if (subPrepData) {
+                            const factor = getConversionFactor(subPrepLink.unitUse, subPrepData.productionUnit!, subPrepData);
+                            totalCost += (Number(subPrepLink.quantity) * factor) * costPerUnit;
+                        }
+                    }
+                    const productionQuantity = Number(prep.productionQuantity) || 1;
+                    const costPerProductionUnit = productionQuantity > 0 ? totalCost / productionQuantity : 0;
+                    prepCosts.set(prepId, isNaN(costPerProductionUnit) ? 0 : costPerProductionUnit);
+                }
 
-          const foodCostPerPortion = (Number(recipe.portions) || 1) > 0 ? dishTotalCost / (Number(recipe.portions) || 1) : 0;
-          const price = Number(recipe.price) || 0;
-          const tvaRate = Number(recipe.tvaRate) || 10;
-          const priceHT = price / (1 + tvaRate / 100);
-          const grossMargin = priceHT - foodCostPerPortion;
-          const weightedDuration = getWeightedDuration(recipe.id!, 'recipe', new Set());
-          const yieldPerMin = weightedDuration > 0 ? grossMargin / weightedDuration : 0;
-          let breakdown = recipe.duration_breakdown;
-          if (!breakdown) {
-              const d = Number(recipe.duration) || 0;
-              breakdown = d <= 15 ? { mise_en_place: 5, cuisson: d > 5 ? d - 5 : 0, envoi: 2 } : d <= 45 ? { mise_en_place: d * 0.2, cuisson: d * 0.7, envoi: d * 0.1 } : { mise_en_place: d * 0.6, cuisson: d * 0.3, envoi: d * 0.1 };
-          }
-          tempProductionData.push({ id: recipe.id!, name: recipe.name, category: recipe.category, duration: weightedDuration, duration_breakdown: breakdown, foodCost: foodCostPerPortion, grossMargin: grossMargin, yieldPerMin: yieldPerMin, price: price, mode_preparation: recipe.mode_preparation });
-      }
-      setProductionData(tempProductionData);
-      
-      const tempSummary: SummaryData = { totalDishes: rawActiveRecipes.length, averageDuration: tempProductionData.reduce((acc, p) => acc + p.duration, 0) / (tempProductionData.length || 1), categoryCount: rawActiveRecipes.reduce((acc, doc) => { const cat = doc.category || 'Non classé'; acc[cat] = (acc[cat] || 0) + 1; return acc; }, {} as Record<string, number>)};
-      setSummary(tempSummary);
-      
-      const tempMutualisations: MutualisationData[] = [];
-      for (const [id, data] of prepUsageCount.entries()) {
-          if (data.dishes.length >= 2) {
-              let freq: MutualisationData['frequency'] = 'Occasionnelle';
-              if (data.dishes.length >= 4) freq = 'Quotidienne';
-              else if (data.dishes.length >= 2) freq = 'Fréquente';
-              tempMutualisations.push({ id, name: data.name, dishCount: data.dishes.length, dishes: data.dishes, frequency: freq });
-          }
-      }
-      setMutualisationData(tempMutualisations.sort((a, b) => b.dishCount - a.dishCount));
+                const prepUsageCount = new Map<string, { name: string, dishes: string[] }>();
+                const tempProductionData: ProductionData[] = [];
+                for (const recipe of rawActiveRecipes) {
+                    let dishTotalCost = 0;
+                    (allRecipeIngredientsMap.get(recipe.id!) || []).forEach(link => {
+                        const ingData = allIngredients.get(link.ingredientId);
+                        if(ingData) dishTotalCost += computeIngredientCost(ingData, Number(link.quantity) || 0, link.unitUse).cost;
+                    });
+                    (allRecipePrepsMap.get(recipe.id!) || []).forEach(link => {
+                        const prepData = allPrepsAndGarnishes.get(link.childPreparationId);
+                        const costPerUnit = prepCosts.get(link.childPreparationId) || 0;
+                        if (prepData) {
+                            if (!prepUsageCount.has(prepData.id!)) prepUsageCount.set(prepData.id!, { name: prepData.name, dishes: [] });
+                            prepUsageCount.get(prepData.id!)!.dishes.push(recipe.name);
+                            const factor = getConversionFactor(link.unitUse, prepData.productionUnit!, prepData);
+                            dishTotalCost += (Number(link.quantity) * factor) * costPerUnit;
+                        }
+                    });
+                    const foodCostPerPortion = (Number(recipe.portions) || 1) > 0 ? dishTotalCost / (Number(recipe.portions) || 1) : 0;
+                    const price = Number(recipe.price) || 0;
+                    const tvaRate = Number(recipe.tvaRate) || 10;
+                    const priceHT = price / (1 + tvaRate / 100);
+                    const grossMargin = priceHT - foodCostPerPortion;
+                    const weightedDuration = getWeightedDuration(recipe.id!, 'recipe');
+                    const yieldPerMin = weightedDuration > 0 ? grossMargin / weightedDuration : 0;
+                    let breakdown = recipe.duration_breakdown;
+                    if (!breakdown) {
+                        const d = Number(recipe.duration) || 0;
+                        breakdown = d <= 15 ? { mise_en_place: 5, cuisson: d > 5 ? d - 5 : 0, envoi: 2 } : d <= 45 ? { mise_en_place: d * 0.2, cuisson: d * 0.7, envoi: d * 0.1 } : { mise_en_place: d * 0.6, cuisson: d * 0.3, envoi: d * 0.1 };
+                    }
+                    tempProductionData.push({ id: recipe.id!, name: recipe.name, category: recipe.category, duration: weightedDuration, duration_breakdown: breakdown, foodCost: foodCostPerPortion, grossMargin: grossMargin, yieldPerMin: yieldPerMin, price: price, mode_preparation: recipe.mode_preparation });
+                }
+                setProductionData(tempProductionData);
+                
+                const tempSummary: SummaryData = { totalDishes: rawActiveRecipes.length, averageDuration: tempProductionData.reduce((acc, p) => acc + p.duration, 0) / (tempProductionData.length || 1), categoryCount: rawActiveRecipes.reduce((acc, doc) => { const cat = doc.category || 'Non classé'; acc[cat] = (acc[cat] || 0) + 1; return acc; }, {} as Record<string, number>)};
+                setSummary(tempSummary);
+                
+                const tempMutualisations: MutualisationData[] = [];
+                for (const [id, data] of prepUsageCount.entries()) {
+                    if (data.dishes.length >= 2) {
+                        let freq: MutualisationData['frequency'] = 'Occasionnelle';
+                        if (data.dishes.length >= 4) freq = 'Quotidienne';
+                        else if (data.dishes.length >= 2) freq = 'Fréquente';
+                        tempMutualisations.push({ id, name: data.name, dishCount: data.dishes.length, dishes: data.dishes, frequency: freq });
+                    }
+                }
+                setMutualisationData(tempMutualisations.sort((a, b) => b.dishCount - a.dishCount));
 
-      const totalGrossMargin = tempProductionData.reduce((acc, p) => acc + p.grossMargin, 0);
-      const totalMepTime = tempProductionData.reduce((acc, p) => acc + p.duration_breakdown.mise_en_place, 0);
-      const difficultDishes = rawActiveRecipes.filter(r => r.difficulty === 'Difficile').length;
-      const tempPerformanceData: PerformanceData = { commonPreparationsCount: tempMutualisations.length, averageMargin: totalGrossMargin / (tempProductionData.length || 1), averageMepTime: totalMepTime / (tempProductionData.length || 1), complexityRate: (difficultDishes / (rawActiveRecipes.length || 1)) * 100, menuBalance: tempSummary.categoryCount };
-      setPerformanceData(tempPerformanceData);
+                const totalGrossMargin = tempProductionData.reduce((acc, p) => acc + p.grossMargin, 0);
+                const totalMepTime = tempProductionData.reduce((acc, p) => acc + p.duration_breakdown.mise_en_place, 0);
+                const difficultDishes = rawActiveRecipes.filter(r => r.difficulty === 'Difficile').length;
+                const tempPerformanceData: PerformanceData = { commonPreparationsCount: tempMutualisations.length, averageMargin: totalGrossMargin / (tempProductionData.length || 1), averageMepTime: totalMepTime / (tempProductionData.length || 1), complexityRate: (difficultDishes / (rawActiveRecipes.length || 1)) * 100, menuBalance: tempSummary.categoryCount };
+                setPerformanceData(tempPerformanceData);
+                // === End of calculation logic ===
 
-      setIsCalculating(false);
-    }, [rawActiveRecipes, rawIngredients, rawPreparations, rawGarnishes, rawRecipeIngredients, rawRecipePreps]);
+            } catch (e: any) {
+                console.error("Error analyzing menu on client:", e);
+                setError(e.message || "Une erreur inconnue est survenue lors de l'analyse.");
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        performAnalysis();
+    }, []);
     
     const handleAIAnalysis = () => {
         if (!summary || !productionData || !mutualisationData) return;
@@ -279,22 +293,27 @@ export default function MenuAnalysisClient({
         }
     }
     
-    if (initialError) {
+    if (error) {
         return (
              <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>Erreur de Chargement des Données</AlertTitle>
-                <AlertDescription>{initialError}</AlertDescription>
+                <AlertDescription>{error}</AlertDescription>
             </Alert>
         );
     }
 
-    if (isCalculating || !summary || !performanceData) {
+    if (isLoading || !summary || !performanceData) {
         return (
             <div className="space-y-6">
                 <div className="flex justify-between items-center">
                     <Skeleton className="h-10 w-1/3" />
                     <Skeleton className="h-10 w-48" />
+                </div>
+                 <div className="flex flex-col items-center justify-center p-8 text-center">
+                    <Loader2 className="h-10 w-10 text-primary mb-4 animate-spin"/>
+                    <p className="font-semibold">Chargement et analyse des données du menu...</p>
+                    <p className="text-sm text-muted-foreground">Cette opération peut prendre un moment.</p>
                 </div>
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                     <Skeleton className="h-48 w-full" />
