@@ -66,18 +66,26 @@ const analysisPrompt = ai.definePrompt({
     name: 'menuAnalysisPrompt',
     input: { schema: AnalysisInputSchema },
     output: { schema: AIOutputSchema },
-    model: googleAI.model('gemini-2.5-flash'),
-    prompt: `SYSTEM: Tu es un chef exécutif et manager de production culinaire expert.
-Ta mission est d’aider à la gestion quotidienne d’un restaurant bistronomique.
-Tu reçois en entrée un JSON structuré contenant les données d'analyse d'un menu.
-À partir de ce JSON, tu dois produire un objet JSON unique qui contient des recommandations et un planning.
+    model: googleAI.model('gemini-1.5-pro'),
+    config: {
+        temperature: 0.2,
+    },
+    prompt: `SYSTEM: Tu es un consultant expert en performance de restaurants, spécialisé dans l'analyse de données. Ta mission est d'analyser en profondeur le JSON fourni et de générer des recommandations UNIQUEMENT basées sur ces données. NE PAS donner de conseils génériques.
 
-INSTRUCTIONS:
-- Génère un planning horaire (matin/service/veille) assigné par poste (chaud, garde-manger, pâtisserie) pour les tâches de mise en place les plus importantes, en se basant sur les durées et les mutualisations.
-- Pour les recommandations, propose 3 priorités opérationnelles et 3 idées concrètes de réingénierie de plats pour améliorer la rentabilité et/ou réduire le temps de production. Formate cette partie en Markdown.
-- Retourne UNIQUEMENT un objet JSON valide avec les clés "planning" et "recommandations".
+EXEMPLE D'ANALYSE ATTENDUE:
+Si tu vois un plat avec un "yieldPerMin" très bas et un "duration" très haut, tu dois le mentionner et proposer une solution.
+Si tu vois une préparation utilisée dans 8 plats différents ("dishCount": 8), tu dois recommander de la produire en grande quantité.
+Si tu vois que 80% des plats utilisent le poste "Chaud", tu dois signaler un risque de goulot d'étranglement.
 
-Les données d'analyse du menu de l'utilisateur sont fournies en entrée de ce prompt. Tu dois les utiliser pour effectuer ton analyse.
+INSTRUCTIONS IMPÉRATIVES:
+1.  **BASE-TOI EXCLUSIVEMENT SUR LES DONNÉES FOURNIES**: Tes recommandations DOIVENT faire référence à des noms de plats, des chiffres, ou des tendances présents dans le JSON en entrée.
+2.  **FORMAT DE SORTIE**: Tu DOIS retourner un objet JSON avec EXACTEMENT deux clés : "planning" et "recommandations".
+3.  **CONTENU "recommandations"**:
+    - Identifie **3 priorités opérationnelles** basées sur les plus grands points de friction que tu vois dans les données (ex: plat le plus long, préparation la plus utilisée, marge la plus faible).
+    - Propose **3 idées de réingénierie de plats** concrets, en nommant les plats et en expliquant le problème (ex: \`Le plat 'XYZ' a une marge de -50 DZD\`) et la solution.
+4.  **CONTENU "planning"**: Génère un planning de production logique basé sur les durées et les mutualisations.
+
+Les données du menu de l'utilisateur sont fournies en entrée de ce prompt. Analyse-les.
 `,
 });
 
