@@ -111,11 +111,11 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 
                 tempMark.add(prepId);
                 (deps.get(prepId) || []).forEach(visit);
-                tempMark.delete(prepId);
+                tempMark.delete(prepId); // Backtrack
                 permMark.add(prepId);
                 order.push(prepId);
             }
-            allPrepsAndGarnishesList.forEach(p => visit(p.id!));
+            allPrepsAndGarnishesList.forEach(p => p.id && visit(p.id));
             return order;
         })();
         
@@ -149,16 +149,19 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
 
         // Helper function to calculate weighted duration with memoization and cycle detection
         const weightedDurationCache = new Map<string, number>();
+
         const getWeightedDuration = (itemId: string, itemType: 'recipe' | 'prep', visited = new Set<string>()): number => {
             if (visited.has(itemId)) {
-                console.warn(`Circular dependency detected for duration calculation at item ID: ${itemId}`);
-                return 0; // Break cycle
+                console.warn(`Circular dependency detected and broken at item ID: ${itemId}`);
+                return 0; // Break the loop
             }
-            if (weightedDurationCache.has(itemId)) {
+            
+            if(weightedDurationCache.has(itemId)){
                 return weightedDurationCache.get(itemId)!;
             }
 
             visited.add(itemId);
+
             const item = itemType === 'recipe' ? activeRecipes.find(r => r.id === itemId) : allPrepsAndGarnishes.get(itemId);
             if (!item) {
                 visited.delete(itemId);
@@ -169,8 +172,11 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             const mode = item.mode_preparation || (item.type === 'Plat' ? 'minute' : 'avance');
             const itemDuration = item.duration || 0;
 
-            if (mode === 'minute') weightedTime += itemDuration;
-            else if (mode === 'mixte') weightedTime += itemDuration * 0.5;
+            if (mode === 'minute') {
+                weightedTime += itemDuration;
+            } else if (mode === 'mixte') {
+                weightedTime += itemDuration * 0.5;
+            }
 
             const subPreps = allRecipePreps.get(item.id!) || [];
             for (const subPrepLink of subPreps) {
@@ -179,6 +185,7 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             
             visited.delete(itemId);
             weightedDurationCache.set(itemId, weightedTime);
+
             return weightedTime;
         };
 
