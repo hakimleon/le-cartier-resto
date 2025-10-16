@@ -30,6 +30,7 @@ const ProductionDataSchema = z.object({
     grossMargin: z.number(),
     yieldPerMin: z.number(),
     price: z.number(),
+    mode_preparation: z.enum(['avance', 'minute', 'mixte']).optional(),
 });
 
 const MutualisationDataSchema = z.object({
@@ -65,13 +66,18 @@ const AIOutputSchema = z.object({
 
 const analysisPrompt = ai.definePrompt({
     name: 'menuAnalysisPrompt',
-    input: { schema: AnalysisInputSchema },
+    input: { schema: z.object({ jsonData: z.string() }) },
     output: { schema: AIOutputSchema },
-    model: googleAI.model('gemini-1.5-pro'),
+    model: googleAI.model('gemini-1.5-pro-preview-0514'),
     config: {
         temperature: 0.2,
     },
-    prompt: `SYSTEM: Tu es un consultant expert en performance de restaurants, spécialisé dans l'analyse de données. Ta mission est d'analyser en profondeur le JSON fourni et de générer des recommandations UNIQUEMENT basées sur ces données. NE PAS donner de conseils génériques.
+    prompt: `SYSTEM: Tu es un consultant expert en performance de restaurants, spécialisé dans l'analyse de données. Ta mission est d'analyser en profondeur le JSON fourni ci-dessous. Tu dois OBLIGATOIREMENT utiliser ces données, et uniquement ces données. NE PAS inventer de plats ou de chiffres.
+
+DONNÉES DU MENU À ANALYSER :
+\`\`\`json
+{{{jsonData}}}
+\`\`\`
 
 CONTEXTE CULINAIRE IMPORTANT :
 - Chaque plat peut avoir un champ "mode_preparation" qui peut être "avance", "minute" ou "mixte". Ce champ est crucial.
@@ -85,14 +91,12 @@ Si tu vois une préparation utilisée dans 8 plats différents ("dishCount": 8),
 Si tu vois que 80% des plats utilisent le poste "Chaud", tu dois signaler un risque de goulot d'étranglement, en tenant compte du type de tâches (actives vs. de fond).
 
 INSTRUCTIONS IMPÉRATIVES:
-1.  **BASE-TOI EXCLUSIVEMENT SUR LES DONNÉES FOURNIES**: Tes recommandations DOIVENT faire référence à des noms de plats, des chiffres, ou des tendances présents dans le JSON en entrée.
+1.  **BASE-TOI EXCLUSIVEMENT SUR LES DONNÉES FOURNIES DANS LE BLOC JSON CI-DESSUS**: Tes recommandations DOIVENT faire référence à des noms de plats, des chiffres, ou des tendances présents dans le JSON en entrée.
 2.  **FORMAT DE SORTIE**: Tu DOIS retourner un objet JSON avec EXACTEMENT deux clés : "planning" et "recommandations".
 3.  **CONTENU "recommandations"**:
     - Identifie **3 priorités opérationnelles** basées sur les plus grands points de friction que tu vois dans les données (ex: plat le plus long, préparation la plus utilisée, marge la plus faible).
     - Propose **3 idées de réingénierie de plats** concrets, en nommant les plats et en expliquant le problème (ex: \`Le plat 'XYZ' a une marge de -50 DZD\`) et la solution.
 4.  **CONTENU "planning"**: Génère un planning de production logique basé sur les durées et les mutualisations. Prends en compte le "mode_preparation" pour ne pas surcharger les postes avec des tâches qui sont en réalité faites en arrière-plan.
-
-Les données du menu de l'utilisateur sont fournies en entrée de ce prompt. Analyse-les.
 `,
 });
 
@@ -104,7 +108,7 @@ export const menuAnalysisFlow = ai.defineFlow(
         outputSchema: AIOutputSchema,
     },
     async (input) => {
-        const { output } = await analysisPrompt(input);
+        const { output } = await analysisPrompt({ jsonData: JSON.stringify(input) });
          if (!output) {
             throw new Error("L'IA n'a pas pu générer une réponse valide.");
         }
