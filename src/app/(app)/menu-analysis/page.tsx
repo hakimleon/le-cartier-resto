@@ -19,8 +19,6 @@ export type ProductionData = {
     category: string;
     duration: number;
     duration_breakdown: { mise_en_place: number; cuisson: number; envoi: number; };
-    keyIngredients: string[];
-    subRecipes: string[];
     foodCost: number; // Coût matière par portion
     grossMargin: number; // Marge brute par portion
     yieldPerMin: number; // Rendement en €/min
@@ -30,8 +28,8 @@ export type ProductionData = {
 export type MutualisationData = {
   id: string;
   name: string;
-  count: number;
-  usedIn: string[];
+  dishCount: number;
+  dishes: string[];
   frequency: 'Quotidienne' | 'Fréquente' | 'Occasionnelle';
 }
 
@@ -130,13 +128,13 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
         }
 
         // --- Volets 2, 3 et 5: Production, Mutualisations et Rentabilité ---
-        const mutualisationMap = new Map<string, { name: string, usedIn: Set<string> }>();
+        const prepUsageCount = new Map<string, { name: string, dishes: string[] }>();
         const production: ProductionData[] = [];
 
         for (const doc of recipesSnap.docs) {
             const recipe = { ...doc.data(), id: doc.id } as Recipe;
 
-            // Calcul du coût matière total pour ce plat
+            // --- Calcul de la rentabilité ---
             let dishTotalCost = 0;
             const dishIngredients = allRecipeIngredients.get(recipe.id) || [];
             dishIngredients.forEach(link => {
@@ -149,13 +147,20 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 const prepData = allPrepsAndGarnishes.get(link.childPreparationId);
                 const costPerUnit = prepCosts.get(link.childPreparationId) || 0;
                 if (prepData) {
+                    // Track for mutualization
+                    if (!prepUsageCount.has(prepData.id!)) {
+                        prepUsageCount.set(prepData.id!, { name: prepData.name, dishes: [] });
+                    }
+                    prepUsageCount.get(prepData.id!)!.dishes.push(recipe.name);
+                    
+                    // Add to cost
                     const factor = getConversionFactor(link.unitUse, prepData.productionUnit!, prepData);
                     dishTotalCost += (link.quantity * factor) * costPerUnit;
                 }
             });
 
             const foodCostPerPortion = dishTotalCost / (recipe.portions || 1);
-            const priceHT = recipe.price / (1 + (recipe.tvaRate || 10) / 100);
+            const priceHT = (recipe.price || 0) / (1 + (recipe.tvaRate || 10) / 100);
             const grossMargin = priceHT - foodCostPerPortion;
             const yieldPerMin = recipe.duration ? grossMargin / recipe.duration : 0;
 
@@ -165,24 +170,12 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
                 breakdown = d <= 15 ? { mise_en_place: 5, cuisson: d > 5 ? d-5 : 0, envoi: 2 } : d <= 45 ? { mise_en_place: d * 0.2, cuisson: d * 0.7, envoi: d * 0.1 } : { mise_en_place: d * 0.6, cuisson: d * 0.3, envoi: d * 0.1 };
             }
             
-            const subRecipeNames = dishSubPreps.map(sr => {
-                const prep = allPrepsAndGarnishes.get(sr.childPreparationId);
-                if(prep) {
-                    if(!mutualisationMap.has(prep.id!)) mutualisationMap.set(prep.id!, { name: prep.name, usedIn: new Set() });
-                    mutualisationMap.get(prep.id!)!.usedIn.add(recipe.name);
-                    return prep.name;
-                }
-                return 'Préparation inconnue';
-            });
-            
             production.push({
                 id: recipe.id,
                 name: recipe.name,
                 category: recipe.category,
                 duration: recipe.duration || 0,
                 duration_breakdown: breakdown,
-                keyIngredients: (allRecipeIngredients.get(recipe.id) || []).slice(0, 3).map(l => allIngredients.get(l.ingredientId)?.name || ''),
-                subRecipes: subRecipeNames,
                 foodCost: foodCostPerPortion,
                 grossMargin: grossMargin,
                 yieldPerMin: yieldPerMin,
@@ -190,20 +183,23 @@ async function getAnalysisData(): Promise<{ summary: SummaryData; production: Pr
             });
         };
         
-        const mutualisations = Array.from(mutualisationMap.values())
-            .filter(m => m.usedIn.size >= 2)
-            .map(m => {
+        const mutualisations: MutualisationData[] = [];
+        for (const [id, data] of prepUsageCount.entries()) {
+            if (data.dishes.length >= 2) {
                 let freq: MutualisationData['frequency'] = 'Occasionnelle';
-                if(m.usedIn.size >= 4) freq = 'Quotidienne';
-                else if (m.usedIn.size >= 2) freq = 'Fréquente';
-                return {
-                    id: m.name, // Simple ID for now
-                    name: m.name,
-                    count: m.usedIn.size,
-                    usedIn: Array.from(m.usedIn),
+                if (data.dishes.length >= 4) freq = 'Quotidienne';
+                else if (data.dishes.length >= 2) freq = 'Fréquente';
+
+                mutualisations.push({
+                    id,
+                    name: data.name,
+                    dishCount: data.dishes.length,
+                    dishes: data.dishes,
                     frequency: freq,
-                };
-            }).sort((a,b) => b.count - a.count);
+                });
+            }
+        }
+        mutualisations.sort((a,b) => b.dishCount - a.dishCount);
 
         return { summary, production, mutualisations, error: null };
 
