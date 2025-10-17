@@ -725,7 +725,10 @@ export default function RecipeDetailClient({ recipeId, collectionName }: RecipeD
         result.priceHT = priceHTValue;
         result.grossMargin = priceHTValue > 0 ? priceHTValue - costPerPortionValue : 0;
         result.grossMarginPercentage = priceHTValue > 0 ? (result.grossMargin / priceHTValue) * 100 : 0;
-        result.foodCostPercentage = priceHTValue > 0 ? (costPerPortionValue / priceHTValue) * 100 : 0;
+        
+        // Corrected Food Cost Calculation
+        result.foodCostPercentage = price > 0 ? (costPerPortionValue / price) * 100 : 0;
+        
         result.multiplierCoefficient = costPerPortionValue > 0 ? priceHTValue / costPerPortionValue : 0;
 
         return result;
