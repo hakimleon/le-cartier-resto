@@ -107,7 +107,7 @@ export default function MenuAnalysisClient() {
                     function visit(prepId: string) {
                         if (!prepId || !allPrepsAndGarnishes.has(prepId)) return;
                         if (permMark.has(prepId)) return;
-if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour la préparation ID: '${prepId}'`); return; }
+                        if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour la préparation ID: '${prepId}'`); return; }
                         
                         tempMark.add(prepId);
                         (deps.get(prepId) || []).forEach(visit);
@@ -253,8 +253,13 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                 });
 
                 if (!res.ok) {
-                    const errorData = await res.json();
-                    throw new Error(errorData.error || `Erreur API (${res.status})`);
+                    const errorText = await res.text();
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        throw new Error(errorJson.error || `Erreur API (${res.status})`);
+                    } catch (e) {
+                         throw new Error(`Erreur API (${res.status}): ${errorText}`);
+                    }
                 }
 
                 const result = await res.json();
@@ -319,64 +324,63 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                     <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
-
-            <div className="space-y-6">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Données de Production et Rentabilité</CardTitle>
-                        <CardDescription>Voici les données qui seront envoyées à l'IA pour analyse. Cliquez sur le bouton ci-dessous pour lancer l'analyse.</CardDescription>
-                    </CardHeader>
-                    {isLoading ? renderSkeleton() : (
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Plat</TableHead>
-                                        <TableHead>Catégorie</TableHead>
-                                        <TableHead className="text-right">Prix de Vente</TableHead>
-                                        <TableHead className="text-right">Food Cost % (sur TTC)</TableHead>
-                                        <TableHead className="text-right">Temps Service (min)</TableHead>
-                                        <TableHead className="text-right">Rendement (DZD/min)</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {dishes.length > 0 ? (
-                                        dishes.map(dish => (
-                                            <TableRow key={dish.id}>
-                                                <TableCell className="font-medium">{dish.name}</TableCell>
-                                                <TableCell>{dish.category}</TableCell>
-                                                <TableCell className="text-right">{dish.price.toFixed(2)} DZD</TableCell>
-                                                <TableCell className="text-right font-semibold">
-                                                    {dish.foodCostPercentage !== undefined ? `${dish.foodCostPercentage.toFixed(1)} %` : 'Calcul...'}
-                                                </TableCell>
-                                                <TableCell className="text-right">{dish.duration || 0} min</TableCell>
-                                                <TableCell className="text-right font-bold">{dish.yieldPerMin?.toFixed(2)}</TableCell>
-                                            </TableRow>
-                                        ))
-                                    ) : (
-                                        <TableRow>
-                                            <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">Aucun plat actif à analyser.</TableCell>
-                                        </TableRow>
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    )}
-                </Card>
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Lancer l'Analyse IA</CardTitle>
-                        <CardDescription>Cliquez sur le bouton pour envoyer les données à l'IA et recevoir un rapport d'optimisation complet.</CardDescription>
-                    </CardHeader>
+            
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">Données de Production et Rentabilité</CardTitle>
+                    <CardDescription>Voici les données qui seront envoyées à l'IA pour analyse. Cliquez sur le bouton ci-dessous pour lancer l'analyse.</CardDescription>
+                </CardHeader>
+                {isLoading ? renderSkeleton() : (
                     <CardContent>
-                        <Button onClick={handleAnalysis} disabled={isAnalyzing || isLoading || dishes.length === 0}>
-                            {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
-                            {isAnalyzing ? "Analyse en cours..." : "Lancer l'analyse IA"}
-                        </Button>
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Plat</TableHead>
+                                    <TableHead>Catégorie</TableHead>
+                                    <TableHead className="text-right">Prix de Vente</TableHead>
+                                    <TableHead className="text-right">Food Cost % (sur TTC)</TableHead>
+                                    <TableHead className="text-right">Temps Service (min)</TableHead>
+                                    <TableHead className="text-right">Rendement (DZD/min)</TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {dishes.length > 0 ? (
+                                    dishes.map(dish => (
+                                        <TableRow key={dish.id}>
+                                            <TableCell className="font-medium">{dish.name}</TableCell>
+                                            <TableCell>{dish.category}</TableCell>
+                                            <TableCell className="text-right">{dish.price.toFixed(2)} DZD</TableCell>
+                                            <TableCell className="text-right font-semibold">
+                                                {dish.foodCostPercentage !== undefined ? `${dish.foodCostPercentage.toFixed(1)} %` : 'Calcul...'}
+                                            </TableCell>
+                                            <TableCell className="text-right">{dish.duration || 0} min</TableCell>
+                                            <TableCell className="text-right font-bold">{dish.yieldPerMin?.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">Aucun plat actif à analyser.</TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
                     </CardContent>
-                </Card>
-            </div>
+                )}
+            </Card>
 
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">Lancer l'Analyse IA</CardTitle>
+                    <CardDescription>Cliquez sur le bouton pour envoyer les données à l'IA et recevoir un rapport d'optimisation complet.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button onClick={handleAnalysis} disabled={isAnalyzing || isLoading || dishes.length === 0}>
+                        {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                        {isAnalyzing ? "Analyse en cours..." : "Lancer l'analyse IA"}
+                    </Button>
+                </CardContent>
+            </Card>
+            
             {isAnalyzing && (
                 <div className="text-center p-8 border-2 border-dashed rounded-lg">
                     <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
