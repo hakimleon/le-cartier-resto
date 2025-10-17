@@ -21,7 +21,6 @@ import MarkdownRenderer from '@/components/MarkdownRenderer';
 
 type EnrichedRecipe = Recipe & { 
     foodCost?: number;
-    foodCostPercentage?: number;
     costPerPortion?: number;
     grossMargin?: number;
     yieldPerMin?: number;
@@ -175,7 +174,7 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                     const duration = recipe.duration || 0;
                     const yieldPerMin = duration > 0 ? grossMargin / duration : 0;
                     
-                    return { ...recipe, foodCost: dishTotalCost, costPerPortion, foodCostPercentage, grossMargin, yieldPerMin };
+                    return { ...recipe, foodCost: dishTotalCost, costPerPortion, grossMargin, yieldPerMin };
                 });
                 
                 setDishes(enrichedDishes);
@@ -308,10 +307,9 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
             )}
 
             {isLoading ? renderSkeleton() : !error && (
-                <>
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Étape 1 & 2 : Données de Production</CardTitle>
+                        <CardTitle className="flex items-center gap-2">Étape 1 : Données de Production</CardTitle>
                         <CardDescription>Voici les données de rentabilité et de temps de production qui seront envoyées à l'IA pour analyse.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -337,20 +335,20 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                         </Table>
                     </CardContent>
                 </Card>
-                 <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Étape 3 : Lancer l'Analyse IA</CardTitle>
-                        <CardDescription>Cliquez sur le bouton pour envoyer les données à l'IA et recevoir un rapport d'optimisation complet.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <Button onClick={handleAnalysis} disabled={isAnalyzing || dishes.length === 0}>
-                            {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
-                            {isAnalyzing ? "Analyse en cours..." : "Lancer l'analyse IA"}
-                        </Button>
-                    </CardContent>
-                </Card>
-                </>
             )}
+
+            <Card>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">Étape 2 : Lancer l'Analyse IA</CardTitle>
+                    <CardDescription>Cliquez sur le bouton pour envoyer les données à l'IA et recevoir un rapport d'optimisation complet.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Button onClick={handleAnalysis} disabled={isAnalyzing || isLoading || dishes.length === 0}>
+                        {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                        {isAnalyzing ? "Analyse en cours..." : "Lancer l'analyse IA"}
+                    </Button>
+                </CardContent>
+            </Card>
 
             {isAnalyzing && (
                 <div className="text-center p-8 border-2 border-dashed rounded-lg">
@@ -369,6 +367,7 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
 
             {analysisResults && (
                 <div className="space-y-6">
+                     <h2 className="text-xl font-bold tracking-tight text-muted-foreground pt-4 border-t">Résultats de l'Analyse IA</h2>
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><FileText />Recommandations Stratégiques Globales</CardTitle>
