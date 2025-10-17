@@ -182,7 +182,7 @@ export default function MenuAnalysisClient() {
                             <TableHead>Nom du Plat</TableHead>
                             <TableHead>Catégorie</TableHead>
                             <TableHead className="text-right">Prix de Vente</TableHead>
-                            <TableHead className="text-right">Food Cost %</TableHead>
+                            <TableHead className="text-right">Food Cost % (sur TTC)</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -230,7 +230,7 @@ export default function MenuAnalysisClient() {
                                     <TableHead>Nom du Plat</TableHead>
                                     <TableHead>Catégorie</TableHead>
                                     <TableHead className="text-right">Prix de Vente (TTC)</TableHead>
-                                    <TableHead className="text-right">Food Cost %</TableHead>
+                                    <TableHead className="text-right">Food Cost % (sur TTC)</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -259,4 +259,3 @@ export default function MenuAnalysisClient() {
             )}
         </div>
     );
-}
