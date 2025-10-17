@@ -22,7 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const WORKSHOP_CONCEPT_KEY = 'workshopGeneratedConcept';
 
-export default function WorkshopClient() {
+export default function PreparationWorkshopClient() {
     const [isLoading, setIsLoading] = useState(false);
     const [generatedConcept, setGeneratedConcept] = useState<PreparationConceptOutput | null>(null);
     const [rawGeneratedJson, setRawGeneratedJson] = useState<string | null>(null);

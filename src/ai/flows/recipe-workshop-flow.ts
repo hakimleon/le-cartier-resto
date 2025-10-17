@@ -110,7 +110,7 @@ ${dishCategories.map(c => `- ${c}`).join('\n')}
 
 ---
 ## INSTRUCTIONS DE FORMATAGE DE SORTIE
-- **VALEUR IMPÉRATIVE POUR LE CHAMP \`type\` : La valeur du champ \`type\` doit OBLIGATOIREMENT être "Plat".**
+- **VALEUR IMPÉRATIVE POUR LE CHAMP \`type\` : La valeur du champ \`type\` doit OBLIGATOirement être "Plat".**
 - **Ceci est un PLAT.** Remplissez tous les champs demandés, en particulier \`name\`, \`description\`, \`portions\`, \`category\`, \`commercialArgument\` et \`mode_preparation\`.
 - Le champ \`category\` DOIT correspondre à une des catégories de la liste fournie.
 - Si le nom n'est pas fourni, générez-en un qui soit créatif et vendeur.
