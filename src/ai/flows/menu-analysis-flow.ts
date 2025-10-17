@@ -41,11 +41,12 @@ const MutualisationDataSchema = z.object({
     frequency: z.string(),
 });
 
-const AnalysisInputSchema = z.object({
+export const AnalysisInputSchema = z.object({
     summary: SummaryDataSchema.describe("Résumé général du menu."),
     production: z.array(ProductionDataSchema).describe("Données de production et de rentabilité pour chaque plat."),
     mutualisations: z.array(MutualisationDataSchema).describe("Liste des préparations communes à plusieurs plats."),
 });
+export type AnalysisInput = z.infer<typeof AnalysisInputSchema>;
 
 
 // --- NOUVEAUX SCHÉMAS DE SORTIE ---
@@ -64,13 +65,16 @@ const PlanningTaskSchema = z.object({
   duree: z.number().describe("La durée estimée en minutes."),
   priorite: z.number().describe("Le niveau de priorité (1=Haute, 2=Moyenne, 3=Basse).")
 });
+export type PlanningTask = z.infer<typeof PlanningTaskSchema>;
+
 
 // Schéma de la sortie attendue de l'IA
-const AIOutputSchema = z.object({
+export const AIOutputSchema = z.object({
     strategic_recommendations: z.string().describe("Les recommandations stratégiques globales au format Markdown (gestion des postes, flux de production, mutualisation)."),
     dish_reengineering: z.array(DishAnalysisSchema).describe("La liste des plats identifiés pour une réingénierie, classés par priorité."),
     production_planning_suggestions: z.array(PlanningTaskSchema).describe("Le planning de production horaire suggéré, optimisé selon l'analyse.")
 });
+export type AIResults = z.infer<typeof AIOutputSchema>;
 
 
 const analysisPrompt = ai.definePrompt({

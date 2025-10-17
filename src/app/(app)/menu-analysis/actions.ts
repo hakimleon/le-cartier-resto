@@ -2,28 +2,8 @@
 'use server';
 
 import { menuAnalysisFlow } from '@/ai/flows/menu-analysis-flow';
-import type { SummaryData, ProductionData, MutualisationData, PlanningTask } from './MenuAnalysisClient';
+import type { AnalysisInput, AIResults } from '@/ai/flows/menu-analysis-flow';
 
-
-type AnalysisInput = {
-    summary: SummaryData;
-    production: ProductionData[];
-    mutualisations: MutualisationData[];
-}
-
-type DishReengineering = {
-  id: string;
-  name: string;
-  priority: 'Urgent' | 'Moyen' | 'Bon';
-  suggestion: string;
-  impact: string;
-}
-
-type AIResults = {
-    strategic_recommendations: string;
-    dish_reengineering: DishReengineering[];
-    production_planning_suggestions: PlanningTask[];
-}
 
 export async function getAIRecommendations(input: AnalysisInput): Promise<AIResults | {error: string}> {
     try {

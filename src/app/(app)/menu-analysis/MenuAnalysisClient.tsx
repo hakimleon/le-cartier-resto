@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useTransition, useEffect } from 'react';
@@ -7,6 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, BarChart3, Clock, Flame, Recycle, Sparkles, BrainCircuit, Loader2, CalendarClock, Target, Lightbulb } from 'lucide-react';
 import type { Recipe, Ingredient, Preparation, RecipeIngredientLink, RecipePreparationLink } from '@/lib/types';
+import type { AIResults, PlanningTask } from '@/ai/flows/menu-analysis-flow';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -50,14 +52,6 @@ export type MutualisationData = {
   frequency: 'Quotidienne' | 'Fréquente' | 'Occasionnelle';
 }
 
-export type PlanningTask = {
-    heure: string;
-    poste: string;
-    tache: string;
-    duree: number;
-    priorite: number;
-}
-
 export type PerformanceData = {
     commonPreparationsCount: number;
     averageMargin: number;
@@ -65,21 +59,6 @@ export type PerformanceData = {
     complexityRate: number;
     menuBalance: Record<string, number>;
 };
-
-interface DishReengineering {
-  id: string;
-  name: string;
-  priority: 'Urgent' | 'Moyen' | 'Bon';
-  suggestion: string;
-  impact: string;
-}
-
-interface AIResults {
-    strategic_recommendations: string;
-    dish_reengineering: DishReengineering[];
-    production_planning_suggestions: PlanningTask[];
-}
-
 
 export default function MenuAnalysisClient() {
     const [isAnalyzingAI, startAIAnalysisTransition] = useTransition();
