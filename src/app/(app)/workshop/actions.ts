@@ -55,6 +55,7 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
                 productionQuantity: concept.productionQuantity || 1,
                 productionUnit: concept.productionUnit || 'kg',
                 usageUnit: concept.usageUnit || 'g',
+                baseUnit: 'g', // Default base unit for new preparations
                 tags: [],
                 imageUrl: concept.imageUrl || null, 
                 allergens: [],
@@ -94,7 +95,8 @@ export async function createPreparation(prepData: Partial<Preparation>, _id: str
             duration: 0,
             productionQuantity: 1,
             productionUnit: 'kg',
-            usageUnit: 'g'
+            usageUnit: 'g',
+            baseUnit: 'g',
         };
 
         const docRef = await addDoc(collection(db, 'preparations'), dataToSave);

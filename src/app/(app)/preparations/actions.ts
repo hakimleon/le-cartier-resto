@@ -20,6 +20,7 @@ export async function savePreparation(preparation: Partial<Omit<Preparation, 'id
     productionUnit: preparation.productionUnit || 'Unité',
     usageUnit: preparation.usageUnit || 'g',
     mode_preparation: preparation.mode_preparation || 'avance',
+    baseUnit: preparation.baseUnit || 'g',
   };
 
   let savedPreparation: Preparation;

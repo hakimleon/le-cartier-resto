@@ -44,12 +44,12 @@ function getFactor(from: string, to: string, equivalences: Record<string, string
 }
 
 
-export function getConversionFactor(fromUnit: string, toUnit: string, ingredient?: Partial<Pick<Ingredient, 'baseUnit' | 'equivalences'>>): number {
+export function getConversionFactor(fromUnit: string, toUnit: string, item?: Partial<Pick<Ingredient | Preparation, 'baseUnit' | 'equivalences'>>): number {
     if (!fromUnit || !toUnit) return 1;
 
     const f = fromUnit.toLowerCase().trim();
     const t = toUnit.toLowerCase().trim();
-    const equivalences = ingredient?.equivalences || {};
+    const equivalences = item?.equivalences || {};
 
     if (f === t) return 1;
 
@@ -58,8 +58,8 @@ export function getConversionFactor(fromUnit: string, toUnit: string, ingredient
     if (factor !== null) return factor;
 
     // Attempt 2: Chained conversion via baseUnit
-    if (ingredient?.baseUnit) {
-        const baseUnit = ingredient.baseUnit;
+    if (item?.baseUnit) {
+        const baseUnit = item.baseUnit;
         const fromToBaseFactor = getFactor(f, baseUnit, equivalences);
         const baseToTargetFactor = getFactor(baseUnit, t, equivalences);
 
@@ -73,12 +73,12 @@ export function getConversionFactor(fromUnit: string, toUnit: string, ingredient
 }
 
 export function convertQuantity(
-    ingredient: Partial<Pick<Ingredient, 'baseUnit' | 'equivalences'>>,
+    item: Partial<Pick<Ingredient | Preparation, 'baseUnit' | 'equivalences'>>,
     quantity: number,
     fromUnit: string,
     toUnit: string
 ): number {
-    const factor = getConversionFactor(fromUnit, toUnit, ingredient);
+    const factor = getConversionFactor(fromUnit, toUnit, item);
     return quantity * factor;
 }
 
