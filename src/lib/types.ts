@@ -74,6 +74,7 @@ export type Preparation = {
   productionQuantity?: number; // Quantité produite
   productionUnit?: string; // Unité de la quantité produite (kg, litre, pièce)
   usageUnit?: string; // Unité d'utilisation suggérée (g, ml, pièce)
+  equivalences?: Record<string, number | string>;
 };
 
 export const dishCategories = [
