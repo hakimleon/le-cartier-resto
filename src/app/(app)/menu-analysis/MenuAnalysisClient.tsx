@@ -17,6 +17,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 type EnrichedRecipe = Recipe & { 
     foodCost?: number;
     foodCostPercentage?: number;
+    costPerPortion?: number;
 };
 
 export default function MenuAnalysisClient() {
@@ -144,12 +145,13 @@ export default function MenuAnalysisClient() {
                         }
                     }
 
+                    const portions = recipe.portions || 1;
+                    const costPerPortion = dishTotalCost / portions;
+                    
                     const price = recipe.price || 0;
-                    const tvaRate = recipe.tvaRate || 10;
-                    const priceHT = price > 0 ? price / (1 + tvaRate / 100) : 0;
-                    const foodCostPercentage = priceHT > 0 ? (dishTotalCost / priceHT) * 100 : 0;
+                    const foodCostPercentage = price > 0 ? (costPerPortion / price) * 100 : 0;
 
-                    return { ...recipe, foodCost: dishTotalCost, foodCostPercentage };
+                    return { ...recipe, foodCost: dishTotalCost, foodCostPercentage, costPerPortion };
                 });
                 
                 setDishes(enrichedDishes);
@@ -218,7 +220,7 @@ export default function MenuAnalysisClient() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><ChefHat />Plats Actifs & Coût Matière</CardTitle>
-                        <CardDescription>Voici la liste des plats avec leur "Food Cost" en pourcentage.</CardDescription>
+                        <CardDescription>Voici la liste des plats avec leur "Food Cost" en pourcentage, calculé sur le prix de vente TTC.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -226,7 +228,7 @@ export default function MenuAnalysisClient() {
                                 <TableRow>
                                     <TableHead>Nom du Plat</TableHead>
                                     <TableHead>Catégorie</TableHead>
-                                    <TableHead className="text-right">Prix de Vente</TableHead>
+                                    <TableHead className="text-right">Prix de Vente (TTC)</TableHead>
                                     <TableHead className="text-right">Food Cost %</TableHead>
                                 </TableRow>
                             </TableHeader>
