@@ -172,7 +172,7 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                     const priceHT = price > 0 ? price / (1 + tvaRate / 100) : 0;
                     const foodCostPercentage = priceHT > 0 ? (costPerPortion / priceHT) * 100 : 0;
                     const grossMargin = priceHT > 0 ? priceHT - costPerPortion : 0;
-                    const duration = (recipe.duration_breakdown?.mise_en_place || 0) + (recipe.duration_breakdown?.cuisson || 0) + (recipe.duration_breakdown?.envoi || 0);
+                    const duration = recipe.duration || 0;
                     const yieldPerMin = duration > 0 ? grossMargin / duration : 0;
                     
                     return { ...recipe, foodCost: dishTotalCost, costPerPortion, foodCostPercentage, grossMargin, yieldPerMin };
@@ -222,7 +222,7 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
         setAnalysisResults(null);
         setAnalysisError(null);
         startAnalysis(async () => {
-            const totalDuration = dishes.reduce((acc, dish) => acc + ((dish.duration_breakdown?.envoi || 0) + (dish.duration_breakdown?.cuisson || 0)), 0);
+            const totalDuration = dishes.reduce((acc, dish) => acc + (dish.duration || 0), 0);
 
             const analysisInput: AnalysisInput = {
                 summary: {
@@ -321,7 +321,7 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                                     <TableHead>Plat</TableHead>
                                     <TableHead className="text-right">Marge Brute</TableHead>
                                     <TableHead className="text-right">Temps Service (min)</TableHead>
-                                    <TableHead className="text-right">Rendement (€/min)</TableHead>
+                                    <TableHead className="text-right">Rendement (DZD/min)</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -329,7 +329,7 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                                     <TableRow key={dish.id}>
                                         <TableCell className="font-medium">{dish.name}</TableCell>
                                         <TableCell className="text-right">{dish.grossMargin?.toFixed(2)} DZD</TableCell>
-                                        <TableCell className="text-right">{dish.duration_breakdown?.cuisson || 0 + (dish.duration_breakdown?.envoi || 0)} min</TableCell>
+                                        <TableCell className="text-right">{dish.duration || 0} min</TableCell>
                                         <TableCell className="text-right font-bold">{dish.yieldPerMin?.toFixed(2)}</TableCell>
                                     </TableRow>
                                 ))}
