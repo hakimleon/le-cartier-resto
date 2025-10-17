@@ -150,9 +150,7 @@ export default function MenuAnalysisClient() {
                     const costPerPortion = dishTotalCost / portions;
                     
                     const price = recipe.price || 0;
-                    const tvaRate = recipe.tvaRate || 10;
-                    const priceHT = price > 0 ? price / (1 + tvaRate / 100) : 0;
-                    const foodCostPercentage = priceHT > 0 ? (costPerPortion / priceHT) * 100 : 0;
+                    const foodCostPercentage = price > 0 ? (costPerPortion / price) * 100 : 0;
 
                     return { ...recipe, foodCost: dishTotalCost, foodCostPercentage, costPerPortion };
                 });
@@ -223,7 +221,7 @@ export default function MenuAnalysisClient() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><ChefHat />Plats Actifs & Coût Matière</CardTitle>
-                        <CardDescription>Voici la liste des plats avec leur "Food Cost" en pourcentage, calculé sur le prix de vente Hors Taxe (HT).</CardDescription>
+                        <CardDescription>Voici la liste des plats avec leur "Food Cost" en pourcentage, calculé sur le prix de vente Toutes Taxes Comprises (TTC).</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -262,5 +260,3 @@ export default function MenuAnalysisClient() {
         </div>
     );
 }
-
-    
