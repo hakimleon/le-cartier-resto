@@ -90,7 +90,7 @@ export default function MenuAnalysisClient() {
                     function visit(prepId: string) {
                         if (!prepId || !allPrepsAndGarnishes.has(prepId)) return;
                         if (permMark.has(prepId)) return;
-                        if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour la préparation ID: ${'\'\'\''}{prepId}\'\'\'`); return; }
+                        if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour la préparation ID: '${prepId}'`); return; }
                         
                         tempMark.add(prepId);
                         (deps.get(prepId) || []).forEach(visit);
@@ -241,7 +241,7 @@ export default function MenuAnalysisClient() {
                                             <TableCell>{dish.category}</TableCell>
                                             <TableCell className="text-right">{dish.price.toFixed(2)} DZD</TableCell>
                                             <TableCell className="text-right font-semibold">
-                                                {dish.foodCostPercentage !== undefined ? `${'\'\'\''}{dish.foodCostPercentage.toFixed(1)} %\'\'\''}` : 'Calcul...'}
+                                                {dish.foodCostPercentage !== undefined ? `${dish.foodCostPercentage.toFixed(1)} %` : 'Calcul...'}
                                             </TableCell>
                                         </TableRow>
                                     ))
@@ -261,3 +261,4 @@ export default function MenuAnalysisClient() {
     );
 
     
+}
