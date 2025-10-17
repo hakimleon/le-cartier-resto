@@ -22,10 +22,15 @@ import { config } from 'dotenv';
 
 // Import all flows to ensure they are registered with Genkit
 import '@/ai/flows/recipe-workshop-flow';
+import '@/ai/flows/preparation-workshop-flow';
+import '@/ai/flows/garnish-workshop-flow';
 import '@/ai/flows/suggestion-flow';
-import '@/ai/flows/workshop-flow';
 import '@/ai/flows/assistant-flow';
+import '@/ai/flows/menu-analysis-flow';
+import '@/ai/flows/temporal-analysis-flow';
 
+// We don't import workshop-flow directly as it only contains types/schemas
+// and they are imported by the flows that use them.
 
 config();
 

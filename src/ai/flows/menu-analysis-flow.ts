@@ -57,6 +57,7 @@ const DishAnalysisSchema = z.object({
   suggestion: z.string().describe("La recommandation spécifique pour ce plat (ex: 'Ajuster recette/prix', 'Passer en cuisson sous-vide')."),
   impact: z.string().describe("L'impact attendu de la suggestion (ex: 'Gain de marge', 'Réduction du temps de service').")
 });
+export type DishAnalysis = z.infer<typeof DishAnalysisSchema>;
 
 const PlanningTaskSchema = z.object({
   heure: z.string().describe("L'heure de début de la tâche (ex: '08:00')."),
