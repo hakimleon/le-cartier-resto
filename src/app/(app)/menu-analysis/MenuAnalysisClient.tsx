@@ -54,6 +54,7 @@ export default function MenuAnalysisClient() {
 
                 const activeRecipes = recipesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Recipe));
                 const allIngredients = new Map(ingredientsSnap.docs.map(doc => [doc.id, { ...doc.data(), id: doc.id } as Ingredient]));
+                
                 const allPrepsAndGarnishesList = [
                     ...preparationsSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation)),
                     ...garnishesSnap.docs.map(doc => ({ ...doc.data(), id: doc.id } as Preparation))
@@ -149,7 +150,9 @@ export default function MenuAnalysisClient() {
                     const costPerPortion = dishTotalCost / portions;
                     
                     const price = recipe.price || 0;
-                    const foodCostPercentage = price > 0 ? (costPerPortion / price) * 100 : 0;
+                    const tvaRate = recipe.tvaRate || 10;
+                    const priceHT = price > 0 ? price / (1 + tvaRate / 100) : 0;
+                    const foodCostPercentage = priceHT > 0 ? (costPerPortion / priceHT) * 100 : 0;
 
                     return { ...recipe, foodCost: dishTotalCost, foodCostPercentage, costPerPortion };
                 });
@@ -220,7 +223,7 @@ export default function MenuAnalysisClient() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><ChefHat />Plats Actifs & Coût Matière</CardTitle>
-                        <CardDescription>Voici la liste des plats avec leur "Food Cost" en pourcentage, calculé sur le prix de vente TTC.</CardDescription>
+                        <CardDescription>Voici la liste des plats avec leur "Food Cost" en pourcentage, calculé sur le prix de vente Hors Taxe (HT).</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -259,3 +262,5 @@ export default function MenuAnalysisClient() {
         </div>
     );
 }
+
+    
