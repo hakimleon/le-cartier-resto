@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -12,7 +13,11 @@ import { AlertTriangle, ChefHat } from 'lucide-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 
-type EnrichedRecipe = Recipe & { foodCost?: number };
+// Donnée enrichie avec le coût calculé
+type EnrichedRecipe = Recipe & { 
+    foodCost?: number;
+    foodCostPercentage?: number;
+};
 
 export default function MenuAnalysisClient() {
     const [dishes, setDishes] = useState<EnrichedRecipe[]>([]);
@@ -57,7 +62,6 @@ export default function MenuAnalysisClient() {
                 const recipeIngredientLinks = recipeIngsSnap.docs.map(d => d.data() as RecipeIngredientLink);
                 const recipePreparationLinks = recipePrepsSnap.docs.map(d => d.data() as RecipePreparationLink);
                 
-                // Regrouper les liens par parent pour un accès rapide
                 const linksByParentId = new Map<string, { ingredients: RecipeIngredientLink[], preparations: RecipePreparationLink[] }>();
                 
                 recipeIngredientLinks.forEach(link => {
@@ -69,7 +73,6 @@ export default function MenuAnalysisClient() {
                     linksByParentId.get(link.parentRecipeId)!.preparations.push(link);
                 });
 
-                // Étape 2: Calculer le coût de toutes les préparations de base (tri topologique pour les dépendances)
                 const costsByPrepId = new Map<string, number>();
                 const sortedPreps = (() => {
                     const deps = new Map<string, string[]>();
@@ -105,14 +108,12 @@ export default function MenuAnalysisClient() {
                     let prepTotalCost = 0;
                     const links = linksByParentId.get(prepId);
 
-                    // Coût des ingrédients directs
                     for (const ingLink of links?.ingredients || []) {
                         const ingData = allIngredients.get(ingLink.ingredientId);
                         if (ingData) {
                             prepTotalCost += computeIngredientCost(ingData, ingLink.quantity, ingLink.unitUse).cost;
                         }
                     }
-                    // Coût des sous-préparations
                     for (const subPrepLink of links?.preparations || []) {
                         const subPrepData = allPrepsAndGarnishes.get(subPrepLink.childPreparationId);
                         const subPrepCostPerUnit = costsByPrepId.get(subPrepLink.childPreparationId) || 0;
@@ -124,18 +125,16 @@ export default function MenuAnalysisClient() {
                     costsByPrepId.set(prepId, (prepTotalCost / (prep.productionQuantity || 1)) || 0);
                 }
 
-                // Étape 3: Calculer le coût final pour chaque plat actif
-                const enrichedDishes = activeRecipes.map(recipe => {
+                const enrichedDishes: EnrichedRecipe[] = activeRecipes.map(recipe => {
                     let dishTotalCost = 0;
                     const links = linksByParentId.get(recipe.id!);
-                    // Coût des ingrédients directs
+                    
                     for (const ingLink of links?.ingredients || []) {
                         const ingData = allIngredients.get(ingLink.ingredientId);
                         if (ingData) {
                             dishTotalCost += computeIngredientCost(ingData, ingLink.quantity, ingLink.unitUse).cost;
                         }
                     }
-                    // Coût des sous-préparations
                     for (const subPrepLink of links?.preparations || []) {
                         const subPrepData = allPrepsAndGarnishes.get(subPrepLink.childPreparationId);
                         const subPrepCostPerUnit = costsByPrepId.get(subPrepLink.childPreparationId) || 0;
@@ -144,7 +143,13 @@ export default function MenuAnalysisClient() {
                             dishTotalCost += quantityInProductionUnit * subPrepCostPerUnit;
                         }
                     }
-                    return { ...recipe, foodCost: dishTotalCost };
+
+                    const price = recipe.price || 0;
+                    const tvaRate = recipe.tvaRate || 10;
+                    const priceHT = price > 0 ? price / (1 + tvaRate / 100) : 0;
+                    const foodCostPercentage = priceHT > 0 ? (dishTotalCost / priceHT) * 100 : 0;
+
+                    return { ...recipe, foodCost: dishTotalCost, foodCostPercentage };
                 });
                 
                 setDishes(enrichedDishes);
@@ -168,15 +173,26 @@ export default function MenuAnalysisClient() {
                 <Skeleton className="h-4 w-3/4" />
             </CardHeader>
             <CardContent>
-                <div className="space-y-2">
-                    {Array.from({ length: 5 }).map((_, i) => (
-                        <div key={i} className="flex justify-between items-center h-8">
-                            <Skeleton className="h-5 w-1/4" />
-                             <Skeleton className="h-5 w-1/4" />
-                            <Skeleton className="h-5 w-1/4" />
-                        </div>
-                    ))}
-                </div>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Nom du Plat</TableHead>
+                            <TableHead>Catégorie</TableHead>
+                            <TableHead className="text-right">Prix de Vente</TableHead>
+                            <TableHead className="text-right">Food Cost %</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                         {Array.from({ length: 5 }).map((_, i) => (
+                            <TableRow key={i}>
+                                <TableCell><Skeleton className="h-5 w-3/4" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-1/2" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-1/4 ml-auto" /></TableCell>
+                                <TableCell><Skeleton className="h-5 w-1/4 ml-auto" /></TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
     );
@@ -202,7 +218,7 @@ export default function MenuAnalysisClient() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><ChefHat />Plats Actifs & Coût Matière</CardTitle>
-                        <CardDescription>Voici la liste des plats avec leur coût matière calculé.</CardDescription>
+                        <CardDescription>Voici la liste des plats avec leur "Food Cost" en pourcentage.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <Table>
@@ -211,7 +227,7 @@ export default function MenuAnalysisClient() {
                                     <TableHead>Nom du Plat</TableHead>
                                     <TableHead>Catégorie</TableHead>
                                     <TableHead className="text-right">Prix de Vente</TableHead>
-                                    <TableHead className="text-right">Coût Matière</TableHead>
+                                    <TableHead className="text-right">Food Cost %</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -222,7 +238,7 @@ export default function MenuAnalysisClient() {
                                             <TableCell>{dish.category}</TableCell>
                                             <TableCell className="text-right">{dish.price.toFixed(2)} DZD</TableCell>
                                             <TableCell className="text-right font-semibold">
-                                                {dish.foodCost !== undefined ? `${dish.foodCost.toFixed(2)} DZD` : 'Calcul...'}
+                                                {dish.foodCostPercentage !== undefined ? `${dish.foodCostPercentage.toFixed(1)} %` : 'Calcul...'}
                                             </TableCell>
                                         </TableRow>
                                     ))
