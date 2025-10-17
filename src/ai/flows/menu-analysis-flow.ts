@@ -2,7 +2,7 @@
 'use server';
 /**
  * @fileOverview Flow Genkit pour l'analyse stratégique du menu.
- * - menuAnalysisFlow: Reçoit les données d'analyse et demande des recommandations à l'IA.
+ * - runMenuAnalysis: Reçoit les données d'analyse et demande des recommandations à l'IA.
  */
 
 import { ai } from '@/ai/genkit';
@@ -41,7 +41,7 @@ const MutualisationDataSchema = z.object({
     frequency: z.string(),
 });
 
-export const AnalysisInputSchema = z.object({
+const AnalysisInputSchema = z.object({
     summary: SummaryDataSchema.describe("Résumé général du menu."),
     production: z.array(ProductionDataSchema).describe("Données de production et de rentabilité pour chaque plat."),
     mutualisations: z.array(MutualisationDataSchema).describe("Liste des préparations communes à plusieurs plats."),
@@ -69,7 +69,7 @@ export type PlanningTask = z.infer<typeof PlanningTaskSchema>;
 
 
 // Schéma de la sortie attendue de l'IA
-export const AIOutputSchema = z.object({
+const AIOutputSchema = z.object({
     strategic_recommendations: z.string().describe("Les recommandations stratégiques globales au format Markdown (gestion des postes, flux de production, mutualisation)."),
     dish_reengineering: z.array(DishAnalysisSchema).describe("La liste des plats identifiés pour une réingénierie, classés par priorité."),
     production_planning_suggestions: z.array(PlanningTaskSchema).describe("Le planning de production horaire suggéré, optimisé selon l'analyse.")
@@ -123,7 +123,7 @@ Ne te base que sur les données du JSON. Sois précis et orienté action.
 });
 
 
-export const menuAnalysisFlow = ai.defineFlow(
+const menuAnalysisFlow = ai.defineFlow(
     {
         name: 'menuAnalysisFlow',
         inputSchema: AnalysisInputSchema,
@@ -137,3 +137,8 @@ export const menuAnalysisFlow = ai.defineFlow(
         return output;
     }
 );
+
+// Wrapper asynchrone pour l'exportation
+export async function runMenuAnalysis(input: AnalysisInput): Promise<AIResults> {
+    return menuAnalysisFlow(input);
+}
