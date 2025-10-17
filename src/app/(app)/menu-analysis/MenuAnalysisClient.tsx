@@ -5,8 +5,6 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import type { Recipe, Ingredient, Preparation, RecipeIngredientLink, RecipePreparationLink } from '@/lib/types';
 import { getConversionFactor, computeIngredientCost } from '@/utils/unitConverter';
-// L'import direct de l'action est supprimé
-// import { getAIRecommendations } from './actions'; 
 import type { AnalysisInput, AIResults, PlanningTask, DishAnalysis } from '@/ai/flows/menu-analysis-flow';
 
 
@@ -170,7 +168,7 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                     const price = recipe.price || 0;
                     const tvaRate = recipe.tvaRate || 10;
                     const priceHT = price > 0 ? price / (1 + tvaRate / 100) : 0;
-                    const foodCostPercentage = price > 0 ? (costPerPortion / price) * 100 : 0; // Basé sur le prix TTC
+                    const foodCostPercentage = price > 0 ? (costPerPortion / price) * 100 : 0;
                     const grossMargin = priceHT > 0 ? priceHT - costPerPortion : 0;
                     const duration = recipe.duration || 0;
                     const yieldPerMin = duration > 0 ? grossMargin / duration : 0;
@@ -180,7 +178,6 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                 
                 setDishes(enrichedDishes);
 
-                // Calcul des mutualisations
                 const prepUsageMap = new Map<string, { name: string; dishes: string[] }>();
                 activeRecipes.forEach(recipe => {
                     const links = linksByParentId.get(recipe.id!)?.preparations || [];
@@ -323,51 +320,52 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                 </Alert>
             )}
 
-            {isLoading ? renderSkeleton() : !error && (
-                <>
+            <div className="space-y-6">
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Étape 1 & 2 : Données de Production</CardTitle>
-                        <CardDescription>Voici les données de rentabilité et de temps de production qui seront envoyées à l'IA pour analyse.</CardDescription>
+                        <CardTitle className="flex items-center gap-2">Données de Production et Rentabilité</CardTitle>
+                        <CardDescription>Voici les données qui seront envoyées à l'IA pour analyse. Cliquez sur le bouton ci-dessous pour lancer l'analyse.</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <Table>
-                            <TableHeader>
-                                <TableRow>
-                                    <TableHead>Plat</TableHead>
-                                    <TableHead>Catégorie</TableHead>
-                                    <TableHead className="text-right">Prix de Vente</TableHead>
-                                    <TableHead className="text-right">Food Cost % (sur TTC)</TableHead>
-                                    <TableHead className="text-right">Temps Service (min)</TableHead>
-                                    <TableHead className="text-right">Rendement (DZD/min)</TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {dishes.length > 0 ? (
-                                    dishes.map(dish => (
-                                        <TableRow key={dish.id}>
-                                            <TableCell className="font-medium">{dish.name}</TableCell>
-                                            <TableCell>{dish.category}</TableCell>
-                                            <TableCell className="text-right">{dish.price.toFixed(2)} DZD</TableCell>
-                                            <TableCell className="text-right font-semibold">
-                                                {dish.foodCostPercentage !== undefined ? `${dish.foodCostPercentage.toFixed(1)} %` : 'Calcul...'}
-                                            </TableCell>
-                                            <TableCell className="text-right">{dish.duration || 0} min</TableCell>
-                                            <TableCell className="text-right font-bold">{dish.yieldPerMin?.toFixed(2)}</TableCell>
-                                        </TableRow>
-                                    ))
-                                ) : (
+                    {isLoading ? renderSkeleton() : (
+                        <CardContent>
+                            <Table>
+                                <TableHeader>
                                     <TableRow>
-                                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">Aucun plat actif à analyser.</TableCell>
+                                        <TableHead>Plat</TableHead>
+                                        <TableHead>Catégorie</TableHead>
+                                        <TableHead className="text-right">Prix de Vente</TableHead>
+                                        <TableHead className="text-right">Food Cost % (sur TTC)</TableHead>
+                                        <TableHead className="text-right">Temps Service (min)</TableHead>
+                                        <TableHead className="text-right">Rendement (DZD/min)</TableHead>
                                     </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </CardContent>
+                                </TableHeader>
+                                <TableBody>
+                                    {dishes.length > 0 ? (
+                                        dishes.map(dish => (
+                                            <TableRow key={dish.id}>
+                                                <TableCell className="font-medium">{dish.name}</TableCell>
+                                                <TableCell>{dish.category}</TableCell>
+                                                <TableCell className="text-right">{dish.price.toFixed(2)} DZD</TableCell>
+                                                <TableCell className="text-right font-semibold">
+                                                    {dish.foodCostPercentage !== undefined ? `${dish.foodCostPercentage.toFixed(1)} %` : 'Calcul...'}
+                                                </TableCell>
+                                                <TableCell className="text-right">{dish.duration || 0} min</TableCell>
+                                                <TableCell className="text-right font-bold">{dish.yieldPerMin?.toFixed(2)}</TableCell>
+                                            </TableRow>
+                                        ))
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">Aucun plat actif à analyser.</TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </CardContent>
+                    )}
                 </Card>
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Étape 3 : Lancer l'Analyse IA</CardTitle>
+                        <CardTitle className="flex items-center gap-2">Lancer l'Analyse IA</CardTitle>
                         <CardDescription>Cliquez sur le bouton pour envoyer les données à l'IA et recevoir un rapport d'optimisation complet.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -377,8 +375,7 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                         </Button>
                     </CardContent>
                 </Card>
-                </>
-            )}
+            </div>
 
             {isAnalyzing && (
                 <div className="text-center p-8 border-2 border-dashed rounded-lg">
