@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useState, useEffect, useMemo, useTransition } from 'react';
@@ -6,7 +5,8 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import type { Recipe, Ingredient, Preparation, RecipeIngredientLink, RecipePreparationLink } from '@/lib/types';
 import { getConversionFactor, computeIngredientCost } from '@/utils/unitConverter';
-import { getAIRecommendations } from './actions';
+// L'import direct de l'action est supprimé
+// import { getAIRecommendations } from './actions'; 
 import type { AnalysisInput, AIResults, PlanningTask, DishAnalysis } from '@/ai/flows/menu-analysis-flow';
 
 
@@ -24,6 +24,7 @@ type EnrichedRecipe = Recipe & {
     costPerPortion?: number;
     grossMargin?: number;
     yieldPerMin?: number;
+    foodCostPercentage?: number;
 };
 
 type MutualizedPreparation = {
@@ -169,12 +170,12 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                     const price = recipe.price || 0;
                     const tvaRate = recipe.tvaRate || 10;
                     const priceHT = price > 0 ? price / (1 + tvaRate / 100) : 0;
-                    const foodCostPercentage = priceHT > 0 ? (costPerPortion / priceHT) * 100 : 0;
+                    const foodCostPercentage = price > 0 ? (costPerPortion / price) * 100 : 0; // Basé sur le prix TTC
                     const grossMargin = priceHT > 0 ? priceHT - costPerPortion : 0;
                     const duration = recipe.duration || 0;
                     const yieldPerMin = duration > 0 ? grossMargin / duration : 0;
                     
-                    return { ...recipe, foodCost: dishTotalCost, costPerPortion, grossMargin, yieldPerMin };
+                    return { ...recipe, foodCost: dishTotalCost, costPerPortion, grossMargin, yieldPerMin, foodCostPercentage };
                 });
                 
                 setDishes(enrichedDishes);
@@ -247,11 +248,27 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                 mutualisations: mutualisations,
             };
 
-            const result = await getAIRecommendations(analysisInput);
-            if ('error' in result) {
-                setAnalysisError(result.error);
-            } else {
-                setAnalysisResults(result);
+            try {
+                const res = await fetch('/api/menu-analysis', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(analysisInput),
+                });
+
+                if (!res.ok) {
+                    const errorData = await res.json();
+                    throw new Error(errorData.error || `Erreur API (${res.status})`);
+                }
+
+                const result = await res.json();
+                if (result.error) {
+                    setAnalysisError(result.error);
+                } else {
+                    setAnalysisResults(result);
+                }
+            } catch (e: any) {
+                console.error(e);
+                setAnalysisError(e.message);
             }
         });
     };
@@ -276,13 +293,13 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                 <Table>
                     <TableHeader>
                         <TableRow>
-                            {Array.from({length: 4}).map((_,i) => <TableHead key={i}><Skeleton className="h-5 w-full" /></TableHead>)}
+                            {Array.from({length: 5}).map((_,i) => <TableHead key={i}><Skeleton className="h-5 w-full" /></TableHead>)}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                          {Array.from({ length: 5 }).map((_, i) => (
                             <TableRow key={i}>
-                               {Array.from({length: 4}).map((_,j) => <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>)}
+                               {Array.from({length: 5}).map((_,j) => <TableCell key={j}><Skeleton className="h-5 w-full" /></TableCell>)}
                             </TableRow>
                         ))}
                     </TableBody>
@@ -307,9 +324,10 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
             )}
 
             {isLoading ? renderSkeleton() : !error && (
+                <>
                 <Card>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">Étape 1 : Données de Production</CardTitle>
+                        <CardTitle className="flex items-center gap-2">Étape 1 & 2 : Données de Production</CardTitle>
                         <CardDescription>Voici les données de rentabilité et de temps de production qui seront envoyées à l'IA pour analyse.</CardDescription>
                     </CardHeader>
                     <CardContent>
@@ -317,38 +335,50 @@ if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour
                             <TableHeader>
                                 <TableRow>
                                     <TableHead>Plat</TableHead>
-                                    <TableHead className="text-right">Marge Brute</TableHead>
+                                    <TableHead>Catégorie</TableHead>
+                                    <TableHead className="text-right">Prix de Vente</TableHead>
+                                    <TableHead className="text-right">Food Cost % (sur TTC)</TableHead>
                                     <TableHead className="text-right">Temps Service (min)</TableHead>
                                     <TableHead className="text-right">Rendement (DZD/min)</TableHead>
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {dishes.map(dish => (
-                                    <TableRow key={dish.id}>
-                                        <TableCell className="font-medium">{dish.name}</TableCell>
-                                        <TableCell className="text-right">{dish.grossMargin?.toFixed(2)} DZD</TableCell>
-                                        <TableCell className="text-right">{dish.duration || 0} min</TableCell>
-                                        <TableCell className="text-right font-bold">{dish.yieldPerMin?.toFixed(2)}</TableCell>
+                                {dishes.length > 0 ? (
+                                    dishes.map(dish => (
+                                        <TableRow key={dish.id}>
+                                            <TableCell className="font-medium">{dish.name}</TableCell>
+                                            <TableCell>{dish.category}</TableCell>
+                                            <TableCell className="text-right">{dish.price.toFixed(2)} DZD</TableCell>
+                                            <TableCell className="text-right font-semibold">
+                                                {dish.foodCostPercentage !== undefined ? `${dish.foodCostPercentage.toFixed(1)} %` : 'Calcul...'}
+                                            </TableCell>
+                                            <TableCell className="text-right">{dish.duration || 0} min</TableCell>
+                                            <TableCell className="text-right font-bold">{dish.yieldPerMin?.toFixed(2)}</TableCell>
+                                        </TableRow>
+                                    ))
+                                ) : (
+                                    <TableRow>
+                                        <TableCell colSpan={6} className="h-24 text-center text-muted-foreground">Aucun plat actif à analyser.</TableCell>
                                     </TableRow>
-                                ))}
+                                )}
                             </TableBody>
                         </Table>
                     </CardContent>
                 </Card>
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">Étape 3 : Lancer l'Analyse IA</CardTitle>
+                        <CardDescription>Cliquez sur le bouton pour envoyer les données à l'IA et recevoir un rapport d'optimisation complet.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <Button onClick={handleAnalysis} disabled={isAnalyzing || isLoading || dishes.length === 0}>
+                            {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
+                            {isAnalyzing ? "Analyse en cours..." : "Lancer l'analyse IA"}
+                        </Button>
+                    </CardContent>
+                </Card>
+                </>
             )}
-
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">Étape 2 : Lancer l'Analyse IA</CardTitle>
-                    <CardDescription>Cliquez sur le bouton pour envoyer les données à l'IA et recevoir un rapport d'optimisation complet.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Button onClick={handleAnalysis} disabled={isAnalyzing || isLoading || dishes.length === 0}>
-                        {isAnalyzing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BrainCircuit className="mr-2 h-4 w-4" />}
-                        {isAnalyzing ? "Analyse en cours..." : "Lancer l'analyse IA"}
-                    </Button>
-                </CardContent>
-            </Card>
 
             {isAnalyzing && (
                 <div className="text-center p-8 border-2 border-dashed rounded-lg">
