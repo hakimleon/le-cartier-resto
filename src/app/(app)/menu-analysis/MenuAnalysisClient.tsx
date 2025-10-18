@@ -198,7 +198,7 @@ export default function MenuAnalysisClient() {
             };
 
             try {
-                const res = await fetch('/api/menu-analysis', {
+                const res = await fetch('/api/actions/analyze-menu', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(analysisInput),
