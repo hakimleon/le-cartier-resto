@@ -98,7 +98,7 @@ export default function MenuAnalysisClient() {
                     function visit(prepId: string) {
                         if (!prepId || !allPrepsAndGarnishes.has(prepId)) return;
                         if (permMark.has(prepId)) return;
-                        if (tempMark.has(prepId)) { return; }
+                        if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour la préparation ID: '${prepId}'`); return; }
                         
                         tempMark.add(prepId);
                         (deps.get(prepId) || []).forEach(visit);
@@ -205,13 +205,11 @@ export default function MenuAnalysisClient() {
                 });
 
                 if (!res.ok) {
-                     const errorText = await res.text();
+                    const errorText = await res.text();
                     try {
-                        // First, try to parse as JSON, as our catch block in API might return JSON
                         const errorJson = JSON.parse(errorText);
                         throw new Error(errorJson.error || `Erreur API (${res.status})`);
                     } catch (e) {
-                         // If it's not JSON, it's likely an HTML error page
                          throw new Error(`Erreur API (${res.status}): Le serveur a retourné une réponse inattendue. Détails : ${errorText.substring(0, 100)}...`);
                     }
                 }
