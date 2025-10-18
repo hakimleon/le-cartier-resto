@@ -5,7 +5,7 @@ import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import type { Recipe, Ingredient, Preparation, RecipeIngredientLink, RecipePreparationLink } from '@/lib/types';
 import { getConversionFactor, computeIngredientCost } from '@/utils/unitConverter';
-import type { AnalysisInput, AIResults, PlanningTask, DishAnalysis } from '@/ai/flows/menu-analysis-flow';
+import type { SimplifiedAnalysisInput, AIResults, DishAnalysis } from '@/ai/flows/menu-analysis-flow';
 
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,17 +25,8 @@ type EnrichedRecipe = Recipe & {
     foodCostPercentage?: number;
 };
 
-type MutualizedPreparation = {
-    id: string;
-    name: string;
-    dishCount: number;
-    dishes: string[];
-    frequency: string;
-}
-
 export default function MenuAnalysisClient() {
     const [dishes, setDishes] = useState<EnrichedRecipe[]>([]);
-    const [mutualisations, setMutualisations] = useState<MutualizedPreparation[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -107,7 +98,7 @@ export default function MenuAnalysisClient() {
                     function visit(prepId: string) {
                         if (!prepId || !allPrepsAndGarnishes.has(prepId)) return;
                         if (permMark.has(prepId)) return;
-                        if (tempMark.has(prepId)) { console.warn(`Dépendance circulaire détectée pour la préparation ID: '${prepId}'`); return; }
+                        if (tempMark.has(prepId)) { return; }
                         
                         tempMark.add(prepId);
                         (deps.get(prepId) || []).forEach(visit);
@@ -178,32 +169,6 @@ export default function MenuAnalysisClient() {
                 
                 setDishes(enrichedDishes);
 
-                const prepUsageMap = new Map<string, { name: string; dishes: string[] }>();
-                activeRecipes.forEach(recipe => {
-                    const links = linksByParentId.get(recipe.id!)?.preparations || [];
-                    links.forEach(link => {
-                        const prep = allPrepsAndGarnishes.get(link.childPreparationId);
-                        if (prep) {
-                            if (!prepUsageMap.has(prep.id!)) {
-                                prepUsageMap.set(prep.id!, { name: prep.name, dishes: [] });
-                            }
-                            prepUsageMap.get(prep.id!)!.dishes.push(recipe.name);
-                        }
-                    });
-                });
-
-                const mutualisationsData: MutualizedPreparation[] = Array.from(prepUsageMap.entries())
-                    .map(([id, data]) => ({
-                        id,
-                        ...data,
-                        dishCount: data.dishes.length,
-                        frequency: data.dishes.length > 3 ? 'Élevée' : data.dishes.length > 1 ? 'Moyenne' : 'Faible',
-                    }))
-                    .filter(item => item.dishCount > 1)
-                    .sort((a,b) => b.dishCount - a.dishCount);
-
-                setMutualisations(mutualisationsData);
-
             } catch (e: any) {
                 console.error("Failed to calculate costs:", e);
                 setError("Impossible de calculer les coûts. " + e.message);
@@ -219,30 +184,17 @@ export default function MenuAnalysisClient() {
         setAnalysisResults(null);
         setAnalysisError(null);
         startAnalysis(async () => {
-            const totalDuration = dishes.reduce((acc, dish) => acc + (dish.duration || 0), 0);
 
-            const analysisInput: AnalysisInput = {
-                summary: {
-                    totalDishes: dishes.length,
-                    averageDuration: dishes.length > 0 ? totalDuration / dishes.length : 0,
-                    categoryCount: dishes.reduce((acc, dish) => {
-                        acc[dish.category] = (acc[dish.category] || 0) + 1;
-                        return acc;
-                    }, {} as Record<string, number>),
-                },
+            const analysisInput: SimplifiedAnalysisInput = {
                 production: dishes.map(d => ({
                     id: d.id!,
                     name: d.name,
                     category: d.category,
                     duration: d.duration || 0,
-                    duration_breakdown: d.duration_breakdown || { mise_en_place: 0, cuisson: 0, envoi: 0 },
                     foodCost: d.costPerPortion || 0,
                     grossMargin: d.grossMargin || 0,
-                    yieldPerMin: d.yieldPerMin || 0,
                     price: d.price || 0,
-                    mode_preparation: d.mode_preparation,
                 })),
-                mutualisations: mutualisations,
             };
 
             try {
@@ -253,12 +205,14 @@ export default function MenuAnalysisClient() {
                 });
 
                 if (!res.ok) {
-                    const errorText = await res.text();
+                     const errorText = await res.text();
                     try {
+                        // First, try to parse as JSON, as our catch block in API might return JSON
                         const errorJson = JSON.parse(errorText);
                         throw new Error(errorJson.error || `Erreur API (${res.status})`);
                     } catch (e) {
-                         throw new Error(`Erreur API (${res.status}): ${errorText}`);
+                         // If it's not JSON, it's likely an HTML error page
+                         throw new Error(`Erreur API (${res.status}): Le serveur a retourné une réponse inattendue. Détails : ${errorText.substring(0, 100)}...`);
                     }
                 }
 
@@ -278,8 +232,8 @@ export default function MenuAnalysisClient() {
     const getPriorityBadge = (priority: 'Urgent' | 'Moyen' | 'Bon') => {
         switch(priority) {
             case 'Urgent': return <Badge variant="destructive">Urgent</Badge>;
-            case 'Moyen': return <Badge className="bg-orange-500 text-white">Moyen</Badge>;
-            case 'Bon': return <Badge className="bg-green-500 text-white">Bon</Badge>;
+            case 'Moyen': return <Badge className="bg-orange-500 text-white hover:bg-orange-500/80">Moyen</Badge>;
+            case 'Bon': return <Badge className="bg-green-500 text-white hover:bg-green-500/80">Bon</Badge>;
             default: return <Badge variant="secondary">{priority}</Badge>;
         }
     }
@@ -371,7 +325,7 @@ export default function MenuAnalysisClient() {
             <Card>
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">Lancer l'Analyse IA</CardTitle>
-                    <CardDescription>Cliquez sur le bouton pour envoyer les données à l'IA et recevoir un rapport d'optimisation complet.</CardDescription>
+                    <CardDescription>Cliquez sur le bouton pour envoyer les données à l'IA et recevoir un rapport d'optimisation.</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Button onClick={handleAnalysis} disabled={isAnalyzing || isLoading || dishes.length === 0}>
@@ -399,15 +353,7 @@ export default function MenuAnalysisClient() {
             {analysisResults && (
                 <div className="space-y-6">
                      <h2 className="text-xl font-bold tracking-tight text-muted-foreground pt-4 border-t">Résultats de l'Analyse IA</h2>
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><FileText />Recommandations Stratégiques Globales</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                            <MarkdownRenderer text={analysisResults.strategic_recommendations} />
-                        </CardContent>
-                    </Card>
-
+                    
                      <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><BarChart3 />Réingénierie des Plats</CardTitle>
@@ -437,34 +383,6 @@ export default function MenuAnalysisClient() {
                         </CardContent>
                     </Card>
 
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><ListOrdered />Suggestions de Planning de Production</CardTitle>
-                             <CardDescription>Un exemple de planning optimisé pour la mise en place du matin.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Heure</TableHead>
-                                        <TableHead>Poste</TableHead>
-                                        <TableHead>Tâche</TableHead>
-                                        <TableHead>Durée (min)</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {analysisResults.production_planning_suggestions.map((task, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell className="font-mono">{task.heure}</TableCell>
-                                            <TableCell>{task.poste}</TableCell>
-                                            <TableCell className="font-medium">{task.tache}</TableCell>
-                                            <TableCell>{task.duree}</TableCell>
-                                        </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
-                        </CardContent>
-                    </Card>
                 </div>
             )}
         </div>
