@@ -103,16 +103,16 @@ export default function AppLayout({
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith('/production-plan')} tooltip="Plan de Production">
-                  <Link href="/production-plan">
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/production-plan')} tooltip="Plan de Production (Désactivé)" disabled className="cursor-not-allowed opacity-50">
+                  <Link href="/production-plan" tabIndex={-1} aria-disabled="true">
                     <ListOrdered />
                     <span>Plan de Production</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={pathname.startsWith('/menu-analysis')} tooltip="Analyse du Menu">
-                  <Link href="/menu-analysis">
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/menu-analysis')} tooltip="Analyse du Menu (Désactivé)" disabled className="cursor-not-allowed opacity-50">
+                  <Link href="/menu-analysis" tabIndex={-1} aria-disabled="true">
                     <BarChart3 />
                     <span>Analyse du Menu</span>
                   </Link>
