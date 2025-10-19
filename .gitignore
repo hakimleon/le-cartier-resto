@@ -40,3 +40,5 @@ next-env.d.ts
 
 # studio
 src/app/_old-app/
+
+.env
