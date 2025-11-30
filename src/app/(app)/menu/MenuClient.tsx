@@ -16,6 +16,7 @@ import { deleteDish } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
+import { useRouter } from "next/navigation";
 
 const formatCategory = (category?: string): string => {
     if (!category) return "Non classé";
@@ -72,6 +73,7 @@ export default function MenuClient() {
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [selectedStatus, setSelectedStatus] = useState<'Actif' | 'Inactif'>('Actif');
   const { toast } = useToast();
+  const router = useRouter();
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
@@ -239,12 +241,10 @@ export default function MenuClient() {
                     onChange={handleSearchChange}
                 />
             </div>
-             <DishModal dish={null} allCategories={activeCategories.filter(c => c !== "Tous")} onSuccess={() => { /* onSnapshot handles updates */ }}>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Nouveau Plat
-                </Button>
-            </DishModal>
+             <Button onClick={() => router.push('/workshop')}>
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Nouveau Plat
+            </Button>
         </div>
       </header>
 

@@ -2,6 +2,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,9 +72,18 @@ export const EditableIngredientRow = ({ ing, handleIngredientChange, handleRemov
             <TableCell className="text-right font-semibold">{(ing.totalCost || 0).toFixed(2)} DZD</TableCell>
             <TableCell className="text-right">
                 <div className="flex items-center justify-end">
-                    <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditIngredientModal(ing.id)} title="Modifier l'ingrédient de base">
-                        <Pencil className="h-4 w-4" />
-                    </Button>
+                    {ing.id && (
+                        <Link href={`/ingredients/${ing.id}`}>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8" 
+                                title="Modifier l'ingrédient de base"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                    )}
                     <AlertDialog>
                         <AlertDialogTrigger asChild><Button variant="ghost" size="icon" className="h-8 w-8"><Trash2 className="h-4 w-4 text-red-500" /></Button></AlertDialogTrigger>
                         <AlertDialogContent>
@@ -180,9 +190,16 @@ export const NewIngredientRow = ({ newIng, sortedIngredients, handleNewIngredien
             <TableCell className="text-right">
                 <div className="flex items-center justify-end">
                      {newIng.ingredientId && (
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenEditIngredientModal(newIng.ingredientId!)} title="Modifier l'ingrédient de base">
-                            <Pencil className="h-4 w-4" />
-                        </Button>
+                        <Link href={`/ingredients/${newIng.ingredientId}`}>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8" 
+                                title="Modifier l'ingrédient de base"
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                        </Link>
                      )}
                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleOpenSuggestionModal(newIng.tempId, newIng.name, true)} title="Suggérer des alternatives">
                         <Sparkles className="h-4 w-4 text-amber-500" />
