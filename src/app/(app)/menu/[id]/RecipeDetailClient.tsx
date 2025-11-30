@@ -1,7 +1,6 @@
 "use client";
 
-<<<<<<< HEAD
-import { useEffect, useState, useMemo, useCallback } from "react";
+import { useEffect, useState, useMemo, useCallback, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   doc,
@@ -15,10 +14,6 @@ import {
   onSnapshot,
   writeBatch,
 } from "firebase/firestore";
-=======
-import { useEffect, useState, useMemo, useCallback, useTransition } from "react";
-import { doc, getDoc, collection, query, where, getDocs, addDoc, updateDoc, onSnapshot, writeBatch } from "firebase/firestore";
->>>>>>> cd994cfa6087663d6368001b95604158d5da3fd9
 import { db, isFirebaseConfigured } from "@/lib/firebase";
 import {
   Recipe,
@@ -50,7 +45,6 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-<<<<<<< HEAD
 import {
   AlertTriangle,
   Beef,
@@ -85,10 +79,9 @@ import {
   Pencil,
   Eye,
   EyeOff,
+  BrainCircuit,
+  Loader2,
 } from "lucide-react";
-=======
-import { AlertTriangle, Beef, ChefHat, Drumstick, Clock, FilePen, Fish, FileText, Image as ImageIcon, Info, Lightbulb, ListChecks, NotebookText, PlusCircle, Save, Soup, Trash2, Utensils, X, Star, CheckCircle2, Shield, CircleX, BookCopy, Sparkles, ChevronsUpDown, Check, PercentCircle, FishSymbol, Pencil, BrainCircuit, Loader2 } from "lucide-react";
->>>>>>> cd994cfa6087663d6368001b95604158d5da3fd9
 import Image from "next/image";
 import { GaugeChart } from "@/components/ui/gauge-chart";
 import {
@@ -100,15 +93,12 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-<<<<<<< HEAD
 import {
   updateRecipeDetails,
   replaceRecipeIngredients,
   replaceRecipePreparations,
+  analyzeAndSetMode,
 } from "@/app/(app)/menu/actions";
-=======
-import { updateRecipeDetails, replaceRecipeIngredients, replaceRecipePreparations, analyzeAndSetMode } from "@/app/(app)/menu/actions";
->>>>>>> cd994cfa6087663d6368001b95604158d5da3fd9
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import {
@@ -136,7 +126,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { ImageUploadDialog } from "@/app/(app)/menu/[id]/ImageUploadDialog";
+import { ImageUploadDialog } from "./ImageUploadDialog";
 import { generateCommercialArgument } from "@/ai/flows/suggestion-flow";
 import type { RecipeConceptOutput } from "@/ai/flows/workshop-flow";
 import { PreparationModal } from "@/app/(app)/preparations/PreparationModal";
@@ -153,25 +143,17 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { ImagePreviewModal } from "@/app/(app)/menu/[id]/ImagePreviewModal";
+import { ImagePreviewModal } from "./ImagePreviewModal";
 import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-<<<<<<< HEAD
 import { Switch } from "@/components/ui/switch";
 import {
   computeIngredientCost,
   getConversionFactor,
 } from "@/utils/unitConverter";
-import {
-  EditableIngredientRow,
-  NewIngredientRow,
-} from "@/app/(app)/menu/[id]/IngredientRow";
-=======
-import { computeIngredientCost, getConversionFactor } from "@/utils/unitConverter";
-import { EditableIngredientRow, NewIngredientRow } from "@/app/(app)/menu/[id]/IngredientRow";
+import { EditableIngredientRow, NewIngredientRow } from "./IngredientRow";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
->>>>>>> cd994cfa6087663d6368001b95604158d5da3fd9
 
 const WORKSHOP_CONCEPT_KEY = "workshopGeneratedConcept";
 // Mot de passe pour accéder aux informations financières
@@ -471,18 +453,10 @@ export default function RecipeDetailClient({
   const { toast } = useToast();
   const router = useRouter();
 
-<<<<<<< HEAD
   const [isEditing, setIsEditing] = useState(false);
   const [isImageUploadOpen, setIsImageUploadOpen] = useState(false);
   const [isImagePreviewOpen, setIsImagePreviewOpen] = useState(false);
-=======
-    const [isLoading, setIsLoading] = useState(true);
-    const [isSaving, setIsSaving] = useState(false);
-    const [isGenerating, setIsGenerating] = useState(false);
-    const [isAnalyzing, startTransition] = useTransition();
-    const [error, setError] = useState<string | null>(null);
-    const { toast } = useToast();
->>>>>>> cd994cfa6087663d6368001b95604158d5da3fd9
+  const [isAnalyzing, startTransition] = useTransition();
 
   const [newIngredients, setNewIngredients] = useState<NewRecipeIngredient[]>(
     []
@@ -656,35 +630,11 @@ export default function RecipeDetailClient({
     setRecipe(fetchedRecipe);
     setEditableRecipe(JSON.parse(JSON.stringify(fetchedRecipe)));
 
-<<<<<<< HEAD
     const recipeIngredientsQuery = query(
       collection(db, "recipeIngredients"),
       where("recipeId", "==", recipeId)
-=======
-    const handleSave = async () => {
-        if (!editableRecipe) return;
-        setIsSaving(true);
-        try {
-            const recipeDataToSave = {
-                name: editableRecipe.name, description: editableRecipe.description, difficulty: editableRecipe.difficulty, duration: editableRecipe.duration, procedure_fabrication: editableRecipe.procedure_fabrication, procedure_service: editableRecipe.procedure_service, imageUrl: editableRecipe.imageUrl, personalNotes: editableRecipe.personalNotes, mode_preparation: editableRecipe.mode_preparation,
-                ...(editableRecipe.type === 'Plat' ? { portions: editableRecipe.portions, tvaRate: editableRecipe.tvaRate, price: editableRecipe.price, commercialArgument: editableRecipe.commercialArgument, status: editableRecipe.status, category: editableRecipe.category, } : { productionQuantity: (editableRecipe as Preparation).productionQuantity, productionUnit: (editableRecipe as Preparation).productionUnit, usageUnit: (editableRecipe as Preparation).usageUnit, })
-            };
-            await updateRecipeDetails(recipeId, recipeDataToSave, collectionName);
-
-            const allCurrentIngredients = [...editableIngredients.map(ing => ({ ingredientId: ing.id, quantity: ing.quantity, unitUse: ing.unit })), ...newIngredients.map(ing => ({ ingredientId: ing.ingredientId, quantity: ing.quantity, unitUse: ing.unit }))].filter(ing => ing.ingredientId && ing.quantity > 0) as Omit<RecipeIngredientLink, 'id' | 'recipeId'>[];
-            await replaceRecipeIngredients(recipeId, allCurrentIngredients);
-
-            const existingPrepLinks = editablePreparations.map(p => ({ parentRecipeId: recipeId, childPreparationId: p.childPreparationId, quantity: p.quantity, unitUse: p.unit }));
-            const newPrepLinks = newPreparations.map(p => ({ parentRecipeId: recipeId, childPreparationId: p.childPreparationId, quantity: p.quantity, unitUse: p.unit })).filter(p => p.childPreparationId);
-            const allPrepLinks = [...existingPrepLinks, ...newPrepLinks] as Omit<RecipePreparationLink, 'id'>[];
-            await replaceRecipePreparations(recipeId, allPrepLinks);
-
-            await fullDataRefresh();
-
-            toast({ title: "Succès", description: "Les modifications ont été sauvegardées." });
-            setIsEditing(false); setNewIngredients([]); setNewPreparations([]);
-        } catch (error) { console.error("Error saving changes:", error); toast({ title: "Erreur", description: "La sauvegarde des modifications a échoué.", variant: "destructive", }); } finally { setIsSaving(false); }
-    };
+    );
+    const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
 
     const handleGenerateArgument = async () => {
         if (!editableRecipe || editableRecipe.type !== 'Plat') return;
@@ -1237,7 +1187,6 @@ export default function RecipeDetailClient({
 
             {isEditing && (<div className="fixed bottom-6 right-6 z-50"><Card className="p-2 border-primary/20 bg-background/80 backdrop-blur-sm shadow-lg"><Button onClick={handleSave} disabled={isSaving}><Save className="mr-2 h-4 w-4" />{isSaving ? "Sauvegarde..." : `Sauvegarder les modifications`}</Button></Card></div>)}
         </div>
->>>>>>> cd994cfa6087663d6368001b95604158d5da3fd9
     );
     const recipeIngredientsSnap = await getDocs(recipeIngredientsQuery);
     const ingredientsData = recipeIngredientsSnap.docs
@@ -3156,7 +3105,3 @@ function RecipeDetailSkeleton() {
     </div>
   );
 }
-<<<<<<< HEAD
-=======
-
->>>>>>> cd994cfa6087663d6368001b95604158d5da3fd9
