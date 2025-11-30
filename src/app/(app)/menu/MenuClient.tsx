@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AlertTriangle, PlusCircle, Search, RefreshCw, Loader2 } from "lucide-react";
 import { RecipeCard } from "@/components/RecipeCard";
-import { DishModal } from "./DishModal";
+
 import { useToast } from "@/hooks/use-toast";
 import { deleteDish, batchUpdateAllTemporalModes } from "./actions";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -19,16 +19,16 @@ import { Label } from "@/components/ui/label";
 import { useRouter } from "next/navigation";
 
 const formatCategory = (category?: string): string => {
-    if (!category) return "Non classé";
-    const cat = category.toLowerCase();
+  if (!category) return "Non classé";
+  const cat = category.toLowerCase();
 
-    // Correction ciblée pour les variations de "pâtes"
-    if (cat.includes('pates') || cat.includes('pâtes')) {
-        return 'Symphonie de pâtes';
-    }
+  // Correction ciblée pour les variations de "pâtes"
+  if (cat.includes('pates') || cat.includes('pâtes')) {
+    return 'Symphonie de pâtes';
+  }
 
-    // Comportement par défaut pour toutes les autres catégories
-    return category.split(/[-–]/)[0].trim();
+  // Comportement par défaut pour toutes les autres catégories
+  return category.split(/[-–]/)[0].trim();
 };
 
 
@@ -46,12 +46,12 @@ const sortCategories = (categories: string[]) => {
   return [...categories].sort((a, b) => {
     const normalizedA = formatCategory(a).toLowerCase().trim();
     const normalizedB = formatCategory(b).toLowerCase().trim();
-    
+
     const indexA = customOrder.findIndex(item => formatCategory(item).toLowerCase().trim() === normalizedA);
     const indexB = customOrder.findIndex(item => formatCategory(item).toLowerCase().trim() === normalizedB);
 
     if (indexA === -1 && indexB === -1) {
-        return a.localeCompare(b);
+      return a.localeCompare(b);
     }
 
     if (indexA !== -1 && indexB !== -1) {
@@ -73,12 +73,8 @@ export default function MenuClient() {
   const [selectedCategory, setSelectedCategory] = useState("Tous");
   const [selectedStatus, setSelectedStatus] = useState<'Actif' | 'Inactif'>('Actif');
   const { toast } = useToast();
-<<<<<<< HEAD
   const router = useRouter();
-=======
   const [isBatchUpdating, startBatchUpdateTransition] = useTransition();
-
->>>>>>> cd994cfa6087663d6368001b95604158d5da3fd9
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
@@ -86,84 +82,84 @@ export default function MenuClient() {
       setIsLoading(false);
       return;
     }
-    
+
     setIsLoading(true);
     const recipesCol = collection(db, "recipes");
     const q = query(recipesCol, where("type", "==", "Plat"));
-    
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-        try {
-            const recipesData = querySnapshot.docs.map(
-                (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
-            );
-            
-            setRecipes(recipesData);
-            
-            const activeCategoryMap = new Map<string, string>();
-            const inactiveCategoryMap = new Map<string, string>();
 
-            recipesData.forEach(recipe => {
-                if (recipe.category) {
-                    const formattedCat = formatCategory(recipe.category);
-                    const lowercasedFormattedCat = formattedCat.toLowerCase();
-                    if(recipe.status === 'Actif') {
-                        if (!activeCategoryMap.has(lowercasedFormattedCat)) {
-                            activeCategoryMap.set(lowercasedFormattedCat, formattedCat);
-                        }
-                    } else {
-                         if (!inactiveCategoryMap.has(lowercasedFormattedCat)) {
-                            inactiveCategoryMap.set(lowercasedFormattedCat, formattedCat);
-                        }
-                    }
-                }
-            });
-            
-            const uniqueActiveCategories = Array.from(activeCategoryMap.values());
-            const uniqueInactiveCategories = Array.from(inactiveCategoryMap.values());
-            
-            setActiveCategories(["Tous", ...sortCategories(uniqueActiveCategories)]);
-            setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
-            setError(null);
-        } catch(e: any) {
-            console.error("Error processing recipes snapshot: ", e);
-            setError("Impossible de traiter les données du menu. " + e.message);
-        } finally {
-            setIsLoading(false);
-        }
-    }, (e: any) => {
-        console.error("Error fetching recipes with onSnapshot: ", e);
-        setError("Impossible de charger le menu en temps réel. " + e.message);
+    const unsubscribe = onSnapshot(q, (querySnapshot) => {
+      try {
+        const recipesData = querySnapshot.docs.map(
+          (doc) => ({ ...doc.data(), id: doc.id } as Recipe)
+        );
+
+        setRecipes(recipesData);
+
+        const activeCategoryMap = new Map<string, string>();
+        const inactiveCategoryMap = new Map<string, string>();
+
+        recipesData.forEach(recipe => {
+          if (recipe.category) {
+            const formattedCat = formatCategory(recipe.category);
+            const lowercasedFormattedCat = formattedCat.toLowerCase();
+            if (recipe.status === 'Actif') {
+              if (!activeCategoryMap.has(lowercasedFormattedCat)) {
+                activeCategoryMap.set(lowercasedFormattedCat, formattedCat);
+              }
+            } else {
+              if (!inactiveCategoryMap.has(lowercasedFormattedCat)) {
+                inactiveCategoryMap.set(lowercasedFormattedCat, formattedCat);
+              }
+            }
+          }
+        });
+
+        const uniqueActiveCategories = Array.from(activeCategoryMap.values());
+        const uniqueInactiveCategories = Array.from(inactiveCategoryMap.values());
+
+        setActiveCategories(["Tous", ...sortCategories(uniqueActiveCategories)]);
+        setInactiveCategories(["Tous", ...sortCategories(uniqueInactiveCategories)]);
+        setError(null);
+      } catch (e: any) {
+        console.error("Error processing recipes snapshot: ", e);
+        setError("Impossible de traiter les données du menu. " + e.message);
+      } finally {
         setIsLoading(false);
+      }
+    }, (e: any) => {
+      console.error("Error fetching recipes with onSnapshot: ", e);
+      setError("Impossible de charger le menu en temps réel. " + e.message);
+      setIsLoading(false);
     });
 
     return () => {
-        if(unsubscribe) {
-            unsubscribe();
-        }
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, []);
-  
-   useEffect(() => {
+
+  useEffect(() => {
     setSelectedCategory("Tous");
   }, [selectedStatus]);
 
   const handleDelete = async (id: string, name: string) => {
-      try {
-        await deleteDish(id);
-        toast({
-          title: "Succès",
-          description: `Le plat "${name}" a été supprimé.`,
-        });
-      } catch (error) {
-        console.error("Error deleting dish:", error);
-        toast({
-          title: "Erreur",
-          description: "La suppression du plat a échoué.",
-          variant: "destructive",
-        });
-      }
+    try {
+      await deleteDish(id);
+      toast({
+        title: "Succès",
+        description: `Le plat "${name}" a été supprimé.`,
+      });
+    } catch (error) {
+      console.error("Error deleting dish:", error);
+      toast({
+        title: "Erreur",
+        description: "La suppression du plat a échoué.",
+        variant: "destructive",
+      });
+    }
   };
-  
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
     if (e.target.value) {
@@ -195,27 +191,27 @@ export default function MenuClient() {
 
   const filteredRecipes = useMemo(() => {
     return recipes.filter(recipe => {
-        const statusMatch = recipe.status === selectedStatus;
-        const searchTermMatch = searchTerm === '' || recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
-        const categoryMatch = selectedCategory === 'Tous' || formatCategory(recipe.category) === selectedCategory;
-        return statusMatch && searchTermMatch && categoryMatch;
+      const statusMatch = recipe.status === selectedStatus;
+      const searchTermMatch = searchTerm === '' || recipe.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const categoryMatch = selectedCategory === 'Tous' || formatCategory(recipe.category) === selectedCategory;
+      return statusMatch && searchTermMatch && categoryMatch;
     });
   }, [recipes, searchTerm, selectedCategory, selectedStatus]);
 
 
   const renderRecipeList = (recipeList: Recipe[]) => {
     if (isLoading) {
-       return (
+      return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex flex-col space-y-3">
-                    <div className="h-48 rounded-md bg-muted animate-pulse" />
-                    <div className="space-y-2">
-                        <div className="h-4 w-3/4 rounded bg-muted animate-pulse" />
-                        <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
-                    </div>
-                </div>
-            ))}
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="flex flex-col space-y-3">
+              <div className="h-48 rounded-md bg-muted animate-pulse" />
+              <div className="space-y-2">
+                <div className="h-4 w-3/4 rounded bg-muted animate-pulse" />
+                <div className="h-4 w-1/2 rounded bg-muted animate-pulse" />
+              </div>
+            </div>
+          ))}
         </div>
       );
     }
@@ -225,9 +221,9 @@ export default function MenuClient() {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {recipeList.map((recipe) => (
-          <RecipeCard 
-            key={recipe.id} 
-            recipe={recipe} 
+          <RecipeCard
+            key={recipe.id}
+            recipe={recipe}
             allCategories={selectedStatus === 'Actif' ? activeCategories.filter(c => c !== "Tous") : inactiveCategories.filter(c => c !== "Tous")}
             onDelete={() => handleDelete(recipe.id!, recipe.name)}
           />
@@ -235,56 +231,47 @@ export default function MenuClient() {
       </div>
     );
   };
-  
+
   const currentCategories = selectedStatus === 'Actif' ? activeCategories : inactiveCategories;
 
 
   if (error && !isFirebaseConfigured) {
     return (
-        <Alert variant="destructive" className="max-w-2xl mx-auto">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Erreur de configuration Firebase</AlertTitle>
-          <AlertDescription>
-            {error}
-          </AlertDescription>
-        </Alert>
-      );
+      <Alert variant="destructive" className="max-w-2xl mx-auto">
+        <AlertTriangle className="h-4 w-4" />
+        <AlertTitle>Erreur de configuration Firebase</AlertTitle>
+        <AlertDescription>
+          {error}
+        </AlertDescription>
+      </Alert>
+    );
   }
 
   return (
     <div className="space-y-6">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-            <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Gestion du Menu</h1>
-            <p className="text-muted-foreground">Gérez les plats de votre restaurant.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-muted-foreground">Gestion du Menu</h1>
+          <p className="text-muted-foreground">Gérez les plats de votre restaurant.</p>
         </div>
         <div className="flex items-center gap-2">
-            <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
-                    placeholder="Rechercher un plat..." 
-                    className="pl-9"
-                    value={searchTerm}
-                    onChange={handleSearchChange}
-                />
-            </div>
-<<<<<<< HEAD
-             <Button onClick={() => router.push('/workshop')}>
-                <PlusCircle className="mr-2 h-4 w-4" />
-                Nouveau Plat
-            </Button>
-=======
-             <Button variant="outline" onClick={handleBatchUpdate} disabled={isBatchUpdating}>
-              {isBatchUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin"/> : <RefreshCw className="mr-2 h-4 w-4" />}
-              Tout Mettre à Jour
-            </Button>
-             <DishModal dish={null} allCategories={activeCategories.filter(c => c !== "Tous")} onSuccess={() => { /* onSnapshot handles updates */ }}>
-                <Button>
-                    <PlusCircle className="mr-2 h-4 w-4" />
-                    Nouveau Plat
-                </Button>
-            </DishModal>
->>>>>>> cd994cfa6087663d6368001b95604158d5da3fd9
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher un plat..."
+              className="pl-9"
+              value={searchTerm}
+              onChange={handleSearchChange}
+            />
+          </div>
+          <Button variant="outline" onClick={handleBatchUpdate} disabled={isBatchUpdating}>
+            {isBatchUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+            Tout Mettre à Jour
+          </Button>
+          <Button onClick={() => router.push('/workshop')}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Nouveau Plat
+          </Button>
         </div>
       </header>
 
@@ -298,24 +285,24 @@ export default function MenuClient() {
 
       <Tabs value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as 'Actif' | 'Inactif')} className="w-full">
         <TabsList>
-            <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
-            <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
+          <TabsTrigger value="Actif">Plats Actifs</TabsTrigger>
+          <TabsTrigger value="Inactif">Plats Inactifs</TabsTrigger>
         </TabsList>
         <TabsContent value="Actif">
-            <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
-                <TabsList className="h-auto justify-start flex-wrap">
-                    {activeCategories.map(cat => <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>)}
-                </TabsList>
-                <div className="pt-4">{renderRecipeList(filteredRecipes)}</div>
-            </Tabs>
+          <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
+            <TabsList className="h-auto justify-start flex-wrap">
+              {activeCategories.map(cat => <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>)}
+            </TabsList>
+            <div className="pt-4">{renderRecipeList(filteredRecipes)}</div>
+          </Tabs>
         </TabsContent>
         <TabsContent value="Inactif">
-            <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
-                <TabsList className="h-auto justify-start flex-wrap">
-                    {inactiveCategories.map(cat => <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>)}
-                </TabsList>
-                 <div className="pt-4">{renderRecipeList(filteredRecipes)}</div>
-            </Tabs>
+          <Tabs value={selectedCategory} onValueChange={setSelectedCategory} className="pt-4">
+            <TabsList className="h-auto justify-start flex-wrap">
+              {inactiveCategories.map(cat => <TabsTrigger key={cat} value={cat}>{cat}</TabsTrigger>)}
+            </TabsList>
+            <div className="pt-4">{renderRecipeList(filteredRecipes)}</div>
+          </Tabs>
         </TabsContent>
       </Tabs>
     </div>
