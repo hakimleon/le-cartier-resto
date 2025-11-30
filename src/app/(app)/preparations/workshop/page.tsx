@@ -1,8 +1,8 @@
 
-import WorkshopClient from "./WorkshopClient";
+import PreparationWorkshopClient from "./WorkshopClient";
 
 export default function PreparationWorkshopPage() {
   return (
-      <WorkshopClient />
+      <PreparationWorkshopClient />
   );
 }

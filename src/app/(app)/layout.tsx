@@ -18,7 +18,7 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical, CookingPot, Banknote, Receipt, TestTube2 } from 'lucide-react';
+import { NotebookText, Carrot, LayoutDashboard, Settings, ChefHat, FlaskConical, CookingPot, Banknote, Receipt, TestTube2, ListOrdered, BarChart3 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import FloatingAssistant from '@/app/(app)/assistant/FloatingAssistant';
 import Image from 'next/image';
@@ -99,6 +99,22 @@ export default function AppLayout({
                   <Link href="/menu">
                     <ChefHat />
                     <span>Menu & Plats</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/production-plan')} tooltip="Plan de Production (Désactivé)" disabled className="cursor-not-allowed opacity-50">
+                  <Link href="/production-plan" tabIndex={-1} aria-disabled="true">
+                    <ListOrdered />
+                    <span>Plan de Production</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname.startsWith('/menu-analysis')} tooltip="Analyse du Menu (Désactivé)" disabled className="cursor-not-allowed opacity-50">
+                  <Link href="/menu-analysis" tabIndex={-1} aria-disabled="true">
+                    <BarChart3 />
+                    <span>Analyse du Menu</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

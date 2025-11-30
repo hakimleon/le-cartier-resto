@@ -84,14 +84,16 @@ Pour la liste des ingrédients, fournis IMPÉRATIVEMENT juste le nom, la quantit
 Si c'est une préparation, estime une quantité produite (productionQuantity) et une unité (productionUnit), ainsi qu'une unité d'utilisation (usageUnit).
 Ne fournis QUE la réponse au format JSON demandé, correspondant à ce schéma : ${JSON.stringify(RecipeOutputSchema.jsonSchema)}
 `;
-  const { output } = await ai.generate({
-    model: googleAI.model('gemini-2.5-flash'),
+  const { text } = await ai.generate({
+    model: googleAI.model('gemini-1.5-flash'),
     prompt,
-    output: {
-      schema: RecipeOutputSchema,
-    },
   });
-  return output!;
+  try {
+    return JSON.parse(text) as RecipeOutput;
+  } catch(e) {
+    console.error("Failed to parse JSON from generateRecipe AI response:", text);
+    throw new Error("La réponse de l'IA n'était pas un JSON valide.");
+  }
 }
 
 // --- Flow pour les préparations dérivées ---
@@ -137,15 +139,16 @@ Exemple pour un "Fond brun de veau" :
 
 Fournis uniquement la réponse au format JSON demandé. Ne crée pas de plats finis complexes, mais bien des applications directes ou des transformations simples de la base.`;
 
-    const { output } = await ai.generate({
-        model: googleAI.model('gemini-2.5-flash'),
+    const { text } = await ai.generate({
+        model: googleAI.model('gemini-1.5-flash'),
         prompt,
-        output: {
-            format: 'json',
-            schema: DerivedPreparationsOutputSchema,
-        },
     });
-    return output!;
+     try {
+        return JSON.parse(text) as DerivedPreparationsOutput;
+    } catch (e) {
+        console.error("Failed to parse JSON from generateDerivedPreparations AI response:", text);
+        throw new Error("La réponse de l'IA n'était pas un JSON valide.");
+    }
 }
 
 
@@ -177,13 +180,15 @@ Propose 3 alternatives pertinentes. Pour chaque suggestion, fournis le nom du su
 
 Réponds uniquement au format JSON demandé.`;
 
-    const { output } = await ai.generate({
-        model: googleAI.model('gemini-2.5-flash'),
+    const { text } = await ai.generate({
+        model: googleAI.model('gemini-1.5-flash'),
         prompt,
-        output: {
-            schema: IngredientAlternativeOutputSchema,
-        },
     });
 
-    return output!;
+    try {
+        return JSON.parse(text) as IngredientAlternativeOutput;
+    } catch (e) {
+        console.error("Failed to parse JSON from generateIngredientAlternative AI response:", text);
+        throw new Error("La réponse de l'IA n'était pas un JSON valide.");
+    }
 }

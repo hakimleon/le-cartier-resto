@@ -38,6 +38,7 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
                 tvaRate: 10, // Default TVA rate
                 allergens: [],
                 tags: [],
+                mode_preparation: concept.mode_preparation || 'minute',
                 rawConcept: rawConceptString,
             };
         } else { // Handles 'Préparation' and 'Garniture'
@@ -54,9 +55,11 @@ export async function createDishFromWorkshop(concept: RecipeConceptOutput, colle
                 productionQuantity: concept.productionQuantity || 1,
                 productionUnit: concept.productionUnit || 'kg',
                 usageUnit: concept.usageUnit || 'g',
+                baseUnit: 'g', // Default base unit for new preparations
                 tags: [],
                 imageUrl: concept.imageUrl || null, 
                 allergens: [],
+                mode_preparation: concept.mode_preparation || 'avance',
                 rawConcept: rawConceptString,
             };
         }
@@ -92,7 +95,8 @@ export async function createPreparation(prepData: Partial<Preparation>, _id: str
             duration: 0,
             productionQuantity: 1,
             productionUnit: 'kg',
-            usageUnit: 'g'
+            usageUnit: 'g',
+            baseUnit: 'g',
         };
 
         const docRef = await addDoc(collection(db, 'preparations'), dataToSave);
@@ -102,4 +106,3 @@ export async function createPreparation(prepData: Partial<Preparation>, _id: str
         throw new Error("Failed to create preparation in database.");
     }
 }
-

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -27,6 +28,7 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 // Schema for a "Plat"
 const formSchema = z.object({
@@ -41,6 +43,7 @@ const formSchema = z.object({
     category: z.enum(dishCategories, { required_error: "Veuillez sélectionner une catégorie."}),
     status: z.enum(["Actif", "Inactif"]),
     portions: z.coerce.number().int().positive("Le nombre de portions doit être un entier positif."),
+    mode_preparation: z.enum(['avance', 'minute', 'mixte']).optional(),
 });
 
 type DishFormProps = {
@@ -58,6 +61,7 @@ export function DishForm({ dish, onSuccess }: DishFormProps) {
         ...dish,
         difficulty: dish.difficulty || "Moyen",
         duration: dish.duration || 10,
+        mode_preparation: dish.mode_preparation || 'minute',
     } : {
         type: 'Plat',
         name: "",
@@ -68,6 +72,7 @@ export function DishForm({ dish, onSuccess }: DishFormProps) {
         category: "Plats et Grillades",
         status: "Actif",
         portions: 1,
+        mode_preparation: 'minute',
     }
   });
 
@@ -168,6 +173,29 @@ export function DishForm({ dish, onSuccess }: DishFormProps) {
             )}
         />
         </div>
+
+        <FormField control={form.control} name="mode_preparation" render={({ field }) => (
+            <FormItem className="space-y-3 rounded-lg border p-4">
+                <FormLabel>Mode de Préparation</FormLabel>
+                <FormControl>
+                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl><RadioGroupItem value="minute" /></FormControl>
+                            <FormLabel className="font-normal">À la minute <span className="text-xs text-muted-foreground">- (Cuisson, assemblage final...)</span></FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl><RadioGroupItem value="mixte" /></FormControl>
+                            <FormLabel className="font-normal">Mixte <span className="text-xs text-muted-foreground">- (Purée pré-cuite, montée minute...)</span></FormLabel>
+                        </FormItem>
+                         <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl><RadioGroupItem value="avance" /></FormControl>
+                            <FormLabel className="font-normal">À l'avance <span className="text-xs text-muted-foreground">- (Terrine, plat mijoté entièrement à l'avance...)</span></FormLabel>
+                        </FormItem>
+                    </RadioGroup>
+                </FormControl>
+                <FormMessage />
+            </FormItem>
+        )}/>
 
         <div className="grid grid-cols-3 gap-4">
             <FormField

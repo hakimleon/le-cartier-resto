@@ -37,6 +37,15 @@ Vous devez obligatoirement utiliser les préparations suivantes si elles corresp
 
 ---
 
+## ANALYSE DE TEMPORALITÉ (IMPORTANT)
+En te basant sur la procédure, détermine le \`mode_preparation\` du plat. C'est une information cruciale.
+- 'avance': Si tout peut être fait bien avant le service (ex: un fond, une sauce mère). C'est le mode par défaut pour une préparation de base.
+- 'minute': Si la préparation est conçue pour être faite à la commande (ex: une vinaigrette montée minute).
+- 'mixte': Si une partie est faite en avance et l'autre à la minute (ex: une base de sauce qui est finalisée au moment du service).
+Tu dois remplir le champ \`mode_preparation\` dans ta sortie JSON.
+
+---
+
 ## RÈGLES D'OR ABSOLUES
 1. **ZÉRO ALCOOL** : Vous ne devez JAMAIS, sous AUCUN prétexte, inclure un ingrédient contenant de l'alcool (vin, bière, cognac, etc.). Si une recette classique en contient, vous DEVEZ le remplacer par une alternative sans alcool (bouillon, jus) ou l’omettre.
 

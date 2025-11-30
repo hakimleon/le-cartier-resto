@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -20,11 +21,13 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 const formSchema = z.object({
   name: z.string().min(2, "Le nom doit contenir au moins 2 caractères."),
   description: z.string().optional(),
   category: z.string().min(1, "La catégorie est requise."),
+  mode_preparation: z.enum(['avance', 'minute', 'mixte']).optional(),
 });
 
 
@@ -43,6 +46,7 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
         name: preparation?.name || "",
         description: preparation?.description || "",
         category: preparation?.category || "",
+        mode_preparation: preparation?.mode_preparation || 'avance',
     }
   });
 
@@ -128,6 +132,29 @@ export function PreparationForm({ preparation, onSuccess }: PreparationFormProps
             </FormItem>
           )}
         />
+
+        <FormField control={form.control} name="mode_preparation" render={({ field }) => (
+            <FormItem className="space-y-3 rounded-lg border p-4">
+                <FormLabel>Mode de Préparation</FormLabel>
+                <FormControl>
+                    <RadioGroup onValueChange={field.onChange} defaultValue={field.value} className="flex flex-col space-y-1">
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl><RadioGroupItem value="avance" /></FormControl>
+                            <FormLabel className="font-normal">À l'avance <span className="text-xs text-muted-foreground">- (Fonds, sauces mères, stockage...)</span></FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl><RadioGroupItem value="mixte" /></FormControl>
+                            <FormLabel className="font-normal">Mixte <span className="text-xs text-muted-foreground">- (Pré-cuit puis finalisé minute...)</span></FormLabel>
+                        </FormItem>
+                        <FormItem className="flex items-center space-x-3 space-y-0">
+                            <FormControl><RadioGroupItem value="minute" /></FormControl>
+                            <FormLabel className="font-normal">À la minute <span className="text-xs text-muted-foreground">- (Vinaigrette, émulsion rapide...)</span></FormLabel>
+                        </FormItem>
+                    </RadioGroup>
+                </FormControl>
+                <FormMessage />
+            </FormItem>
+        )}/>
         
         <div className="flex justify-end pt-4">
             <Button type="submit" disabled={isSubmitting}>

@@ -51,6 +51,15 @@ Si un composant de votre recette correspond à l'une de ces préparations, vous 
 
 ---
 
+## ANALYSE DE TEMPORALITÉ (IMPORTANT)
+En te basant sur la procédure, détermine le \`mode_preparation\` du plat. C'est une information capitale.
+- 'avance': Si tout peut être fait bien avant le service (ex: une terrine, un plat entièrement mijoté).
+- 'minute': Si la majorité du travail se fait à la commande (ex: un steak grillé, un poisson nacré). C'est le mode le plus courant pour un plat.
+- 'mixte': Si une partie est faite en avance et l'autre à la minute (ex: une purée pré-cuite, une viande marquée et réchauffée, une sauce finie minute).
+Tu dois OBLIGATOIREMENT remplir le champ \`mode_preparation\` dans ta sortie JSON.
+
+---
+
 ## CATÉGORIES DE PLAT POSSIBLES
 Le champ \`category\` doit obligatoirement être l'une des valeurs suivantes :
 ${dishCategories.map(c => `- ${c}`).join('\n')}
@@ -101,8 +110,8 @@ ${dishCategories.map(c => `- ${c}`).join('\n')}
 
 ---
 ## INSTRUCTIONS DE FORMATAGE DE SORTIE
-- **VALEUR IMPÉRATIVE POUR LE CHAMP \`type\` : La valeur du champ \`type\` doit OBLIGATOIREMENT être "Plat".**
-- **Ceci est un PLAT.** Remplissez tous les champs demandés, en particulier \`name\`, \`description\`, \`portions\`, \`category\`, et \`commercialArgument\`.
+- **VALEUR IMPÉRATIVE POUR LE CHAMP \`type\` : La valeur du champ \`type\` doit OBLIGATOirement être "Plat".**
+- **Ceci est un PLAT.** Remplissez tous les champs demandés, en particulier \`name\`, \`description\`, \`portions\`, \`category\`, \`commercialArgument\` et \`mode_preparation\`.
 - Le champ \`category\` DOIT correspondre à une des catégories de la liste fournie.
 - Si le nom n'est pas fourni, générez-en un qui soit créatif et vendeur.
 - La procédure de fabrication (\`procedure_fabrication\`) doit être claire, chronologique et utiliser le format Markdown.

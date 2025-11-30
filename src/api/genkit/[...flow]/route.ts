@@ -24,8 +24,10 @@ import { config } from 'dotenv';
 import '@/ai/flows/recipe-workshop-flow';
 import '@/ai/flows/preparation-workshop-flow';
 import '@/ai/flows/garnish-workshop-flow';
-import '@/ai_flows/suggestion-flow';
+import '@/ai/flows/suggestion-flow';
 import '@/ai/flows/assistant-flow';
+import '@/ai/flows/menu-analysis-flow';
+import '@/ai/flows/temporal-analysis-flow';
 
 // We don't import workshop-flow directly as it only contains types/schemas
 // and they are imported by the flows that use them.

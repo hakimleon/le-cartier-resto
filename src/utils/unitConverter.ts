@@ -1,5 +1,5 @@
 
-import type { Ingredient } from '@/lib/types';
+import type { Ingredient, Preparation } from '@/lib/types';
 
 const standardMetricConversions: Record<string, number> = {
   g: 1, kg: 1000, mg: 0.001,
@@ -44,10 +44,12 @@ function getFactor(from: string, to: string, equivalences: Record<string, string
 }
 
 
-export function getConversionFactor(fromUnit: string, toUnit: string, ingredient?: Ingredient): number {
+export function getConversionFactor(fromUnit: string, toUnit: string, item?: Partial<Pick<Ingredient | Preparation, 'baseUnit' | 'equivalences'>>): number {
+    if (!fromUnit || !toUnit) return 1;
+
     const f = fromUnit.toLowerCase().trim();
     const t = toUnit.toLowerCase().trim();
-    const equivalences = ingredient?.equivalences || {};
+    const equivalences = item?.equivalences || {};
 
     if (f === t) return 1;
 
@@ -56,8 +58,8 @@ export function getConversionFactor(fromUnit: string, toUnit: string, ingredient
     if (factor !== null) return factor;
 
     // Attempt 2: Chained conversion via baseUnit
-    if (ingredient?.baseUnit) {
-        const baseUnit = ingredient.baseUnit;
+    if (item?.baseUnit) {
+        const baseUnit = item.baseUnit;
         const fromToBaseFactor = getFactor(f, baseUnit, equivalences);
         const baseToTargetFactor = getFactor(baseUnit, t, equivalences);
 
@@ -71,21 +73,25 @@ export function getConversionFactor(fromUnit: string, toUnit: string, ingredient
 }
 
 export function convertQuantity(
-    ingredient: Ingredient,
+    item: Partial<Pick<Ingredient | Preparation, 'baseUnit' | 'equivalences'>>,
     quantity: number,
     fromUnit: string,
     toUnit: string
 ): number {
-    const factor = getConversionFactor(fromUnit, toUnit, ingredient);
+    const factor = getConversionFactor(fromUnit, toUnit, item);
     return quantity * factor;
 }
 
 export function computeIngredientCost(
-    ingredient: Ingredient,
+    ingredient: Pick<Ingredient, 'purchasePrice' | 'purchaseWeightGrams' | 'yieldPercentage' | 'baseUnit' | 'equivalences'>,
     usedQuantity: number,
     usedUnit: string
 ): { cost: number; error?: string } {
-    if (!ingredient.purchasePrice || ingredient.purchasePrice <= 0 || !ingredient.purchaseWeightGrams || ingredient.purchaseWeightGrams <= 0) {
+    const purchasePrice = Number(ingredient.purchasePrice) || 0;
+    const purchaseWeightGrams = Number(ingredient.purchaseWeightGrams) || 0;
+    const yieldPercentage = Number(ingredient.yieldPercentage) || 100;
+
+    if (purchasePrice <= 0 || purchaseWeightGrams <= 0) {
         return { cost: 0, error: "Données d'achat (prix > 0, poids/volume > 0) invalides." };
     }
     if (!ingredient.baseUnit) {
@@ -93,8 +99,8 @@ export function computeIngredientCost(
     }
     if (usedQuantity <= 0) return { cost: 0 };
 
-    const costPerBaseUnitRaw = ingredient.purchasePrice / ingredient.purchaseWeightGrams;
-    const netCostPerBaseUnit = costPerBaseUnitRaw / ((ingredient.yieldPercentage || 100) / 100);
+    const costPerBaseUnitRaw = purchasePrice / purchaseWeightGrams;
+    const netCostPerBaseUnit = costPerBaseUnitRaw / (yieldPercentage / 100);
 
     const qtyInBase = convertQuantity(ingredient, usedQuantity, usedUnit, ingredient.baseUnit);
     

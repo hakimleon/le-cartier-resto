@@ -57,9 +57,11 @@ export type Preparation = {
   // Champs communs
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';
   duration?: number; // in minutes
+  duration_breakdown?: { mise_en_place: number; cuisson: number; envoi: number; };
   tags?: string[];
   imageUrl?: string;
   rawConcept?: string; // Pour stocker le JSON brut de l'IA
+  mode_preparation?: 'avance' | 'minute' | 'mixte';
   
   // Champs Fiche Technique
   procedure_fabrication?: string;
@@ -72,6 +74,8 @@ export type Preparation = {
   productionQuantity?: number; // Quantité produite
   productionUnit?: string; // Unité de la quantité produite (kg, litre, pièce)
   usageUnit?: string; // Unité d'utilisation suggérée (g, ml, pièce)
+  baseUnit: 'g' | 'ml';
+  equivalences?: Record<string, number | string>;
 };
 
 export const dishCategories = [
@@ -97,9 +101,11 @@ export type Recipe = {
   // Champs communs
   difficulty?: 'Facile' | 'Moyen' | 'Difficile';
   duration?: number; // in minutes
+  duration_breakdown?: { mise_en_place: number; cuisson: number; envoi: number; };
   tags?: string[];
   imageUrl?: string;
   rawConcept?: string; // Pour stocker le JSON brut de l'IA
+  mode_preparation?: 'avance' | 'minute' | 'mixte';
   
   // Champs Fiche Technique
   portions: number;
